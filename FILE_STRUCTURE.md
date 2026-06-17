@@ -17,6 +17,12 @@ SuperMario/
 ├── CODING_RULES.md
 ├── .gitignore
 │
+├── thirdparty/                 ← Thư mục chứa các thư viện bên thứ ba
+│   └── SFML/                   ← SFML 2.6.2 pre-compiled cho Windows
+│       ├── bin/                ← Chứa file .dll để chạy game
+│       ├── include/            ← Headers của thư viện SFML
+│       └── lib/                ← Thư viện liên kết (.lib / .a)
+│
 ├── docs/                       ← TV1 maintain
 │   ├── class_diagram.drawio    ← file draw.io để edit
 │   ├── class_diagram.png       ← export PNG để nộp bài

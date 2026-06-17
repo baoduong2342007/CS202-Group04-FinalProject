@@ -108,3 +108,9 @@ $RECYCLE.BIN/
 saves/*
 !saves/.gitkeep
 *.log
+
+# ==========================================
+# Third-party libraries
+# ==========================================
+thirdparty/*
+!thirdparty/.gitkeep

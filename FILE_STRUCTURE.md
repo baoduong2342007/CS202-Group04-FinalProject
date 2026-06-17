@@ -18,7 +18,7 @@ SuperMario/
 ├── .gitignore
 │
 ├── thirdparty/                 ← Thư mục chứa các thư viện bên thứ ba
-│   └── SFML/                   ← SFML 2.6.2 pre-compiled cho Windows
+│   └── SFML/                   ← SFML 3.0.0 (MinGW-w64)
 │       ├── bin/                ← Chứa file .dll để chạy game
 │       ├── include/            ← Headers của thư viện SFML
 │       └── lib/                ← Thư viện liên kết (.lib / .a)

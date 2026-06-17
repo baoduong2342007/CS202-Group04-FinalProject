@@ -53,8 +53,8 @@ brew install sfml
 ### 2. Clone repo
 
 ```bash
-git clone https://github.com/<org>/SuperMario.git
-cd SuperMario
+git clone https://github.com/baoduong2342007/CS202-Group04-FinalProject.git
+cd CS202-Group04-FinalProject
 ```
 
 ### 3. Build
@@ -75,6 +75,21 @@ main.exe            # Windows
 > **Lưu ý:** executable phải được chạy từ thư mục `build/` vì asset path là `assets/` tương đối.
 
 ---
+
+## Cấu trúc thư mục tóm tắt
+
+```
+CS202-Group04-FinalProject/
+├── assets/          # Sprite sheet, âm thanh, nhạc nền, font chữ
+├── include/         # Các file header (.h) phân theo module (core, entities, states...)
+├── src/             # File source (.cpp) tương ứng với include/
+├── levels/          # File text chứa cấu trúc màn chơi (.txt)
+├── thirdparty/      # Thư viện ngoài (SFML 3.0.0 đính kèm sẵn cho MinGW)
+└── CMakeLists.txt   # File cấu hình build CMake
+```
+
+Chi tiết cấu trúc file và quy định đặt tên, xem tại [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md).
+
 ---
 
 ## .gitignore (copy vào root)

@@ -38,8 +38,7 @@
 
 **Windows (MinGW):**
 - Cài đặt **g++ (MinGW-w64) 14.2.0 trở lên** và **CMake 3.15 trở lên**.
-- Tải **SFML 3.0.0** cho MinGW từ [sfml-dev.org](https://www.sfml-dev.org/download.php).
-- Giải nén và copy nội dung vào thư mục `thirdparty/SFML` trong project (để CMake tự nhận diện và copy DLL sau khi build).
+- Thư viện **SFML 3.0.0** đã được tích hợp sẵn trong repo tại thư mục `thirdparty/SFML` (không cần tải thêm). Cửa sổ game và DLLs sẽ tự động được copy sau khi build.
 
 **Ubuntu/Debian:**
 ```bash

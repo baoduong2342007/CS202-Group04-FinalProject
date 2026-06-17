@@ -20,21 +20,21 @@ find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
 
 # Nạp tất cả source code
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(main ${SOURCES})
 
 # Cấu hình compiler (MinGW/GCC)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
+target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
 
 # Ẩn console khi build Release trên Windows
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE TRUE)
+    set_property(TARGET main PROPERTY WIN32_EXECUTABLE TRUE)
 endif()
 
 # Thư mục include
-target_include_directories(${PROJECT_NAME} PRIVATE include)
+target_include_directories(main PRIVATE include)
 
 # Liên kết SFML 3 (Target names thay đổi thành SFML::Component)
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(main PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
@@ -44,8 +44,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # Tự động copy assets & levels sau khi build
 foreach(DIR "assets" "levels")
     if(EXISTS "${CMAKE_SOURCE_DIR}/${DIR}")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/${DIR}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${DIR}"
+        add_custom_command(TARGET main POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/${DIR}" "$<TARGET_FILE_DIR:main>/${DIR}"
             COMMENT "Copying ${DIR} to output directory..."
         )
     endif()
@@ -73,8 +73,8 @@ if(WIN32)
     )
     foreach(DLL_FILE IN LISTS SFML_MINGW_DLLS)
         if(EXISTS "${DLL_FILE}")
-            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_FILE}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/"
+            add_custom_command(TARGET main POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_FILE}" "$<TARGET_FILE_DIR:main>/"
                 COMMENT "Copying ${DLL_FILE}..."
             )
         endif()

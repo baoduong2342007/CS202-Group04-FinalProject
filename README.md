@@ -40,16 +40,6 @@
 - Cài đặt **g++ (MinGW-w64) 14.2.0 trở lên** và **CMake 3.15 trở lên**.
 - Thư viện **SFML 3.0.0** đã được tích hợp sẵn trong repo tại thư mục `thirdparty/SFML` (không cần tải thêm). Cửa sổ game và DLLs sẽ tự động được copy sau khi build.
 
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install libsfml-dev
-```
-
-**macOS:**
-```bash
-brew install sfml
-```
-
 ### 2. Clone repo
 
 ```bash

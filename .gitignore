@@ -114,3 +114,5 @@ saves/*
 # ==========================================
 thirdparty/*
 !thirdparty/.gitkeep
+!thirdparty/SFML/
+!thirdparty/SFML/**

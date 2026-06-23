@@ -1,15 +1,15 @@
-# Cấu trúc thư mục & file
+# Directory & File Structure
 
-> Rule vàng: **mỗi class → 1 cặp `.h` + `.cpp`**, đặt đúng thư mục theo chức năng.
+> Golden Rule: **each class → 1 pair of `.h` + `.cpp`**, placed in the correct directory according to its function.
 
 ---
 
-## Cây thư mục đầy đủ
+## Complete Directory Tree
 
 ```
 SuperMario/
 │
-├── CMakeLists.txt              ← TV1 maintain (cấu hình SFML)
+├── CMakeLists.txt              ← TV1 (Dương) maintain (SFML configuration)
 ├── README.md
 ├── ROLES.md
 ├── WEEKLY_PLAN.md
@@ -17,22 +17,22 @@ SuperMario/
 ├── CODING_RULES.md
 ├── .gitignore
 │
-├── thirdparty/                 ← Thư mục chứa các thư viện bên thứ ba
+├── thirdparty/                 ← Folder containing external libraries
 │   └── SFML/                   ← SFML 3.0.0 (MinGW-w64)
-│       ├── bin/                ← Chứa file .dll để chạy game
-│       ├── include/            ← Headers của thư viện SFML
-│       └── lib/                ← Thư viện liên kết (.lib / .a)
+│       ├── bin/                ← Contains DLLs to run the game
+│       ├── include/            ← Headers of SFML library
+│       └── lib/                ← Library files (.lib / .a)
 │
-├── docs/                       ← TV1 maintain
-│   ├── class_diagram.drawio    ← file draw.io để edit
-│   ├── class_diagram.png       ← export PNG để nộp bài
-│   └── design_patterns.md      ← mô tả 5 pattern (TV1 viết tuần 5)
+├── docs/                       ← TV1 (Dương) maintain
+│   ├── class_diagram.drawio    ← draw.io file for editing
+│   ├── class_diagram.png       ← exported PNG for submission
+│   └── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
 │
-├── assets/                     ← TV5 maintain
+├── assets/                     ← TV5 (Truyền) maintain
 │   ├── textures/
 │   │   ├── mario/
 │   │   │   ├── idle.png
-│   │   │   ├── walk.png        ← sprite sheet (nhiều frame ngang)
+│   │   │   ├── walk.png        ← sprite sheet (horizontal frames)
 │   │   │   ├── jump.png
 │   │   │   ├── big_idle.png
 │   │   │   ├── big_walk.png
@@ -42,7 +42,7 @@ SuperMario/
 │   │   │   ├── goomba.png      ← sprite sheet: walk + squish
 │   │   │   └── koopa.png       ← sprite sheet: walk + shell
 │   │   ├── tiles/
-│   │   │   └── tileset.png     ← 1 file duy nhất, dùng texture rect
+│   │   │   └── tileset.png     ← single file, using texture rect
 │   │   ├── items/
 │   │   │   ├── coin.png
 │   │   │   ├── mushroom.png
@@ -60,72 +60,72 @@ SuperMario/
 │   │   │   ├── kick.wav
 │   │   │   └── fireball.wav
 │   │   └── music/
-│   │       ├── overworld.ogg   ← nhạc chính (ogg vì SFML streaming)
+│   │       ├── overworld.ogg   ← main music (ogg for SFML streaming)
 │   │       ├── underground.ogg
 │   │       └── gameover.ogg
 │   └── fonts/
-│       └── mario.ttf           ← hoặc font pixel free bất kỳ
+│       └── mario.ttf           ← or any free pixel font
 │
-├── levels/                     ← TV4 maintain
+├── levels/                     ← TV4 (Vy) maintain
 │   ├── level1.txt
 │   ├── level2.txt
 │   └── level3.txt
 │
-├── saves/                      ← auto-generated, không commit
-│   └── .gitkeep               ← file rỗng để Git track thư mục
+├── saves/                      ← auto-generated, do not commit
+│   └── .gitkeep                ← empty file to force Git to track the directory
 │
-├── include/                    ← tất cả file .h
+├── include/                    ← all .h header files
 │   ├── core/
-│   │   ├── Game.h              ← TV2: main loop, window, delta time
-│   │   ├── GameManager.h       ← TV1: Singleton, state machine host
-│   │   └── SoundManager.h      ← TV5: Singleton âm thanh
+│   │   ├── Game.h              ← TV2 (Nhật): main loop, window, delta time
+│   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host
+│   │   └── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
 │   │
-│   ├── states/                 ← TV1 + TV2
-│   │   ├── IGameState.h        ← TV1: interface (init/update/render/exit)
-│   │   ├── MenuState.h         ← TV2
-│   │   ├── PlayState.h         ← TV1: điều phối gameplay
-│   │   ├── PauseState.h        ← TV2
-│   │   ├── GameOverState.h     ← TV2
-│   │   └── WinState.h          ← TV2
+│   ├── states/                 ← TV1 (Dương) + TV2 (Nhật)
+│   │   ├── IGameState.h        ← TV1 (Dương): interface (init/update/render/exit)
+│   │   ├── MenuState.h         ← TV2 (Nhật)
+│   │   ├── PlayState.h         ← TV1 (Dương): gameplay controller
+│   │   ├── PauseState.h        ← TV2 (Nhật)
+│   │   ├── GameOverState.h     ← TV2 (Nhật)
+│   │   └── WinState.h          ← TV2 (Nhật)
 │   │
-│   ├── entities/               ← TV3 (Mario) + TV4 (Enemy) + TV1 (base)
-│   │   ├── Entity.h            ← TV1: base class mọi object có vật lý
-│   │   ├── Character.h         ← TV1: abstract (enemy + mario chung)
-│   │   ├── Mario.h             ← TV3
-│   │   ├── Enemy.h             ← TV4: abstract base cho enemy
-│   │   ├── Goomba.h            ← TV4
-│   │   ├── Koopa.h             ← TV4
-│   │   └── FireBall.h          ← TV3
+│   ├── entities/               ← TV3 (Bảo) (Mario) + TV4 (Vy) (Enemy) + TV1 (Dương) (base)
+│   │   ├── Entity.h            ← TV1 (Dương): base class for all physical objects
+│   │   ├── Character.h         ← TV1 (Dương): abstract (common base for enemy + mario)
+│   │   ├── Mario.h             ← TV3 (Bảo)
+│   │   ├── Enemy.h             ← TV4 (Vy): abstract base for enemies
+│   │   ├── Goomba.h            ← TV4 (Vy)
+│   │   ├── Koopa.h             ← TV4 (Vy)
+│   │   └── FireBall.h          ← TV3 (Bảo)
 │   │
-│   ├── items/                  ← TV5
+│   ├── items/                  ← TV5 (Truyền)
 │   │   ├── Item.h              ← abstract base
 │   │   ├── Coin.h
 │   │   ├── Mushroom.h
 │   │   ├── FireFlower.h
 │   │   └── Star.h
 │   │
-│   ├── level/                  ← TV4
-│   │   ├── Level.h             ← chứa TileMap + danh sách entity
-│   │   ├── TileMap.h           ← parse + render tile
-│   │   └── Camera.h            ← TV2: sf::View follow player
+│   ├── level/                  ← TV4 (Vy)
+│   │   ├── Level.h             ← contains TileMap + entity list
+│   │   ├── TileMap.h           ← parse + render tiles
+│   │   └── Camera.h            ← TV2 (Nhật): sf::View follow player
 │   │
-│   ├── patterns/               ← TV1 + TV5
-│   │   ├── EntityFactory.h     ← TV1: Factory pattern
-│   │   ├── IObserver.h         ← TV1: Observer interface
-│   │   ├── ISubject.h          ← TV1
-│   │   ├── EventBus.h          ← TV1: global event bus (Singleton)
-│   │   ├── ICommand.h          ← TV5: Command interface
-│   │   └── InputHandler.h      ← TV5: map key → command
+│   ├── patterns/               ← TV1 (Dương) + TV5 (Truyền)
+│   │   ├── EntityFactory.h     ← TV1 (Dương): Factory pattern
+│   │   ├── IObserver.h         ← TV1 (Dương): Observer interface
+│   │   ├── ISubject.h          ← TV1 (Dương)
+│   │   ├── EventBus.h          ← TV1 (Dương): global event bus (Singleton)
+│   │   ├── ICommand.h          ← TV5 (Truyền): Command interface
+│   │   └── InputHandler.h      ← TV5 (Truyền): map key → command
 │   │
-│   ├── physics/                ← TV3
+│   ├── physics/                ← TV3 (Bảo)
 │   │   ├── PhysicsEngine.h
 │   │   └── CollisionManager.h
 │   │
-│   └── ui/                     ← TV5
+│   └── ui/                     ← TV5 (Truyền)
 │       ├── HUD.h
 │       └── Button.h
 │
-└── src/                        ← tất cả file .cpp, mirror cấu trúc include/
+└── src/                        ← all .cpp source files, mirroring include/ structure
     ├── core/
     │   ├── Game.cpp
     │   ├── GameManager.cpp
@@ -164,20 +164,20 @@ SuperMario/
     ├── ui/
     │   ├── HUD.cpp
     │   └── Button.cpp
-    └── main.cpp                ← chỉ có: Game game; game.run(); return 0;
+    └── main.cpp                ← only contains: Game game; game.run(); return 0;
 ```
 
 ---
 
-## Quy tắc về file
+## File Rules
 
-### Header file `.h`
+### Header files `.h`
 
 ```cpp
-// Đầu mỗi .h — bắt buộc
+// Required at the top of each .h file
 #pragma once
 
-// Thứ tự include:
+// Include order:
 // 1. Standard library
 #include <string>
 #include <vector>
@@ -185,70 +185,70 @@ SuperMario/
 // 2. SFML
 #include <SFML/Graphics.hpp>
 
-// 3. Project headers (relative path từ include/)
+// 3. Project headers (relative path from include/)
 #include "entities/Character.h"
 ```
 
-### Source file `.cpp`
+### Source files `.cpp`
 
 ```cpp
-// Đầu mỗi .cpp — bắt buộc có comment header
+// Required header comment at the top of each .cpp file
 /**
  * @file Mario.cpp
  * @author TV3
  * @brief Mario character: movement, jump, power-up state machine
  */
 
-// Include header của chính nó trước
+// Include its own header first
 #include "entities/Mario.h"
 
-// Sau đó là các include khác
+// Followed by other includes
 #include "physics/CollisionManager.h"
 ```
 
-### Asset path
+### Asset paths
 
-Luôn dùng path tương đối từ executable (do CMake copy assets vào `build/`):
+Always use relative paths from the executable (since CMake copies assets to the `build/` output folder):
 
 ```cpp
-// ĐÚNG
+// CORRECT
 texture.loadFromFile("assets/textures/mario/walk.png");
 
-// SAI — hard-code absolute path, máy người khác không chạy được
+// INCORRECT — hardcoded absolute path, will not run on others' machines
 texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
 ```
 
-### File level
+### Level files
 
 ```
-# Chú thích bắt đầu bằng #, bị bỏ qua khi parse
-# Mỗi dòng = 1 hàng tile
-# Mỗi ký tự cách nhau bởi space
+# Comments start with #, ignored when parsed
+# Each line = 1 row of tiles
+# Each character separated by a space
 #
-# Ký tự:
+# Characters:
 # 0 = empty (air)
 # 1 = ground tile (solid)
 # 2 = brick block
-# 3 = question block (có item bên trong)
-# C = coin (trên không)
+# 3 = question block (contains item)
+# C = coin (airborne)
 # G = Goomba spawn point
 # K = Koopa spawn point
-# P = Mario spawn point (chỉ 1 cái mỗi level)
-# F = finish flag (điểm cuối level)
+# P = Mario spawn point (exactly 1 per level)
+# F = finish flag (end of level)
 ```
 
 ---
 
-## Naming convention nhanh
+## Naming Conventions Quick Guide
 
-| Loại | Convention | Ví dụ |
+| Type | Convention | Example |
 |---|---|---|
 | Class | `PascalCase` | `GameManager`, `TileMap` |
 | Method | `camelCase` | `update()`, `loadFromFile()` |
-| Variable | `camelCase` | `playerHealth`, `tileSize` |
+| Variable | `camelCase` | `playerScore`, `tileSize` |
 | Private member | `m_` prefix | `m_position`, `m_health` |
 | Constant / enum | `UPPER_SNAKE` | `TILE_SIZE`, `MAX_LIVES` |
 | File | class name | `GameManager.h`, `GameManager.cpp` |
 | Branch | `feature/...` | `feature/goomba-ai` |
 
-→ Chi tiết đầy đủ: xem [`CODING_RULES.md`](CODING_RULES.md)
+→ Full details: see [`CODING_RULES.md`](CODING_RULES.md)

@@ -1,146 +1,144 @@
-# Phân vai nhóm — 5 thành viên
+# Team Roles — 5 Members
 
-> Mỗi người "sở hữu" 1 module: tự thiết kế, tự code, tự test module đó.  
-> Khi cần phối hợp qua module khác → trao đổi trước, không tự ý sửa code của người khác.
+> Each person "owns" 1 module: designing, coding, and testing that module.  
+> When collaboration is needed in another module → discuss first, do not modify someone else's code without permission.
 
 ---
 
-## TV1 — Architect / Team Lead
+## TV1 (Dương) — Architect / Team Lead
 
-**Trách nhiệm chính:**
-- Thiết kế tổng thể OOP: class hierarchy, interface giữa các module
-- Viết & maintain class diagram (draw.io / PlantUML)
-- Chịu trách nhiệm implement đúng **5 design patterns** (đảm bảo 25 điểm rubric)
-- Code review cuối mỗi tuần: kiểm tra các bạn có đi đúng hướng không
-- Điều phối khi 2 module cần kết nối với nhau
+**Main Responsibilities:**
+- Overall OOP design: class hierarchy, interfaces between modules
+- Write & maintain class diagram (draw.io / PlantUML)
+- Responsible for implementing **5 design patterns** (ensuring 25 points on the rubric)
+- Code review at the end of each week: check if members are on the right track
+- Coordinate when 2 modules need to interface with each other
 
-**Module sở hữu:**
-- `GameManager` (Singleton) — điều phối vòng lặp game
-- `EventBus` / `Observer` — hệ thống sự kiện toàn game
+**Owned Modules:**
+- `GameManager` (Singleton) — coordinates the game loop
+- `EventBus` / `Observer` — global game event system
 - `GameState` machine (State pattern) — menu / playing / pause / gameover
 
-**Interfaces TV1 phải expose cho các thành viên khác:**
+**Interfaces TV1 must expose to other members:**
 ```cpp
-// TV2 dùng để chuyển state
+// TV2 uses this to change state
 GameManager::getInstance().changeState(new PlayState());
 
-// TV3/TV4/TV5 dùng để phát sự kiện
+// TV3/TV4/TV5 use this to publish events
 EventBus::getInstance().publish(Event::COIN_COLLECTED, data);
 
-// TV2 dùng để lắng nghe sự kiện
+// TV2 uses this to subscribe to events
 EventBus::getInstance().subscribe(Event::PLAYER_DIED, callback);
 ```
 
 ---
 
-## TV2 — Engine & Render
+## TV2 (Nhật) — Engine & Render
 
-**Trách nhiệm chính:**
+**Main Responsibilities:**
 - Setup SFML: window, game loop, delta time
-- Hệ thống render: sprite, texture manager, z-ordering
+- Rendering system: sprites, texture manager, z-ordering
 - `AnimationSystem`: sprite sheet, frame timing
-- `Camera`: follow Mario, clamp theo level boundary
-- Màn hình UI: Menu, GameOver, Win screen, transitions
+- `Camera`: follows Mario, clamped to level boundaries
+- UI screens: Menu, GameOver, Win screen, transitions
 
-**Module sở hữu:**
+**Owned Modules:**
 - `Game` — main loop, window, delta time
-- `TextureManager` — load và cache texture
-- `AnimationSystem` — quản lý animation clip
+- `TextureManager` — load and cache textures
+- `AnimationSystem` — manage animation clips
 - `Camera` — viewport follow player
 - `MenuState`, `GameOverState`, `WinState` — UI screens
 
-**Output tuần 2 TV3 cần:**
+**Output for TV3 in Week 2:**
 ```cpp
-// TV2 cung cấp sẵn để TV3 dùng
+// TV2 provides these for TV3 to use
 void Entity::setSprite(const std::string& texturePath);
 void Entity::playAnimation(const std::string& clipName);
 ```
 
 ---
 
-## TV3 — Mario & Physics
+## TV3 (Bảo) — Mario & Physics
 
-**Trách nhiệm chính:**
+**Main Responsibilities:**
 - Class `Mario`: movement, jump, gravity, power-up states
 - `PhysicsEngine`: gravity, velocity, acceleration
 - `CollisionManager`: AABB collision detection, resolution
-- Power-up system: Small → Big → Fire (cả hiệu ứng biến đổi)
-- `FireBall` projectile nếu có FireFlower
+- Power-up system: Small → Big → Fire (including transition effects)
+- `FireBall` projectile if FireFlower is active
 
-**Module sở hữu:**
-- `Entity` (base class cho tất cả object có vật lý)
-- `Character` (abstract, kế thừa Entity)
-- `Mario` (kế thừa Character)
+**Owned Modules:**
+- `Entity` (base class for all physical objects)
+- `Character` (abstract, inherits from Entity)
+- `Mario` (inherits from Character)
 - `PhysicsEngine`
 - `CollisionManager`
 - `FireBall`
 
-**Collision interface TV4 cần:**
+**Collision interface TV4 needs:**
 ```cpp
-// TV3 expose để TV4 dùng cho enemy
+// TV3 exposes these for TV4 to use for enemies
 CollisionManager::checkCollision(Entity* a, Entity* b);
 CollisionManager::resolveCollision(Entity* a, Entity* b, Direction dir);
 ```
 
 ---
 
-## TV4 — Level & Enemy
+## TV4 (Vy) — Level & Enemy
 
-**Trách nhiệm chính:**
-- Format và load tilemap từ file `.txt` (định nghĩa format từ tuần 1)
-- Thiết kế và dựng 3 level có độ khó tăng dần
-- `Goomba`: AI patrol qua lại, bị giẫm chết
-- `Koopa`: AI patrol, bị giẫm thành shell, shell có thể trượt
-- `SaveManager`: save/load điểm cao qua file
+**Main Responsibilities:**
+- Format and load tilemap from a `.txt` file (define format in Week 1)
+- Design and build 3 levels with increasing difficulty
+- `Goomba`: AI patrol back and forth, dies when stomped
+- `Koopa`: AI patrol, stomped into a shell, shell can slide
+- `SaveManager`: save/load high scores to/from file
 
-**Module sở hữu:**
-- `Level` — load, update, render 1 màn chơi
-- `TileMap` — parse file, render tile
-- `Enemy` (abstract, kế thừa Character)
-- `Goomba`, `Koopa` (kế thừa Enemy)
+**Owned Modules:**
+- `Level` — load, update, render a level
+- `TileMap` — parse file, render tiles
+- `Enemy` (abstract, inherits from Character)
+- `Goomba`, `Koopa` (inherit from Enemy)
 - `SaveManager`
-- File dữ liệu: `levels/level1.txt`, `level2.txt`, `level3.txt`
+- Data files: `levels/level1.txt`, `level2.txt`, `level3.txt`
 
-**Format file level (TV4 định nghĩa, cả nhóm tuân theo):**
+**Level file format (defined by TV4, followed by the team):**
 ```
 # level1.txt — 0=empty, 1=ground, 2=brick, 3=coin, G=Goomba, K=Koopa, M=Mario spawn
 0 0 0 0 0 0 0 0 0
-0 0 0 3 0 0 0 0 0
-0 0 0 1 0 0 0 0 0
 1 1 G 1 1 0 K 0 M
 ```
 
 ---
 
-## TV5 — UI, Sound & Items
+## TV5 (Truyền) — UI, Sound & Items
 
-**Trách nhiệm chính:**
-- `SoundManager` (Singleton): load và play sound effect + nhạc nền
-- `HUD`: hiển thị score, lives, thời gian, power-up indicator
-- Tất cả items: `Coin`, `Mushroom`, `FireFlower`, `Star`
-- `InputHandler` với Command pattern: map phím → action
-- Thu thập và tổ chức assets (texture, sound) vào đúng thư mục
+**Main Responsibilities:**
+- `SoundManager` (Singleton): load and play sound effects + background music
+- `HUD`: display score, lives, time, power-up indicator
+- All items: `Coin`, `Mushroom`, `FireFlower`, `Star`
+- `InputHandler` with Command pattern: map keys → actions
+- Collect and organize assets (textures, sounds) into the correct directories
 
-**Module sở hữu:**
+**Owned Modules:**
 - `SoundManager` (Singleton)
 - `HUD`
 - `Item` (abstract base)
 - `Coin`, `Mushroom`, `FireFlower`, `Star`
 - `ICommand`, `InputHandler` (Command pattern)
-- Thư mục `assets/`
+- `assets/` directory
 
-**Command pattern TV5 expose cho TV3:**
+**Command pattern TV5 exposes to TV3:**
 ```cpp
-// TV3 dùng InputHandler để lấy action
+// TV3 uses InputHandler to get actions
 auto action = inputHandler.getAction(sf::Keyboard::Space);
 if (action) action->execute(mario);
 ```
 
 ---
 
-## Quy tắc phối hợp
+## Collaboration Rules
 
-1. **Không commit vào module của người khác** khi chưa báo trước.
-2. **Interface thay đổi → thông báo cả nhóm** trước khi merge vào `develop`.
-3. **Cuối tuần thứ Sáu:** TV1 merge `develop` vào `main`, tất cả cùng build lại để xác nhận không broken.
-4. **TV1 có quyền quyết định** khi xảy ra conflict về design. Ý kiến khác → raise trong meeting, không tự sửa.
+1. **Do not commit to other people's modules** without prior notification.
+2. **Interface changes → notify the entire team** before merging into `develop`.
+3. **Friday End of Week:** TV1 merges `develop` into `main`, everyone pulls and rebuilds to verify nothing is broken.
+4. **TV1 has the final decision** in case of design conflicts. Other opinions → raise during meetings, do not modify directly.

@@ -1,94 +1,94 @@
-# Kế hoạch 6 tuần — Công việc từng thành viên
+# 6-Week Plan — Work Allocation by Member
 
-> **Demo checkpoint cuối mỗi tuần:** cả nhóm ngồi lại, chạy game, verify bằng mắt — không chấp nhận "xong rồi nhưng chưa test".
+> **Weekly Demo Checkpoint:** At the end of each week, the team will sit together, run the game, and verify visually — "done but untested" is not accepted.
 
 ---
 
-## Tuần 1 — Setup & Architecture
+## Week 1 — Setup & Architecture
 
-**Demo checkpoint:** Mọi người clone repo → `cmake .. && cmake --build .` → chạy được → thấy **cửa sổ SFML trống màu đen**, không báo lỗi.
+**Demo Checkpoint:** Everyone clones the repo → runs `cmake .. && cmake --build .` → runs executable → sees a **blank black SFML window** without errors.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | Tạo repo, README, CMakeLists.txt (tải SFML), phân công | SFML window + game loop skeleton | Thiết kế `Entity` và `Character` base class | Định nghĩa format file level `.txt` | SoundManager skeleton + thu thập assets |
-| **Chi tiết** | Vẽ class diagram sơ bộ trên draw.io; chọn và ghi lại 5 design pattern sẽ dùng; viết CMakeLists.txt (dùng FetchContent tải SFML); tạo branch `develop` | Viết `Game.h / Game.cpp`: init window, game loop với delta time, xử lý sf::Event; test build trên máy mọi người | Viết `Entity.h` (position, velocity, sprite); `Character.h` (health, direction, abstract `update()`); chưa implement | Viết spec format `.txt` cho level (ghi vào ROLES.md mục TV4); tạo `levels/level1.txt` placeholder | Tạo `SoundManager.h` (Singleton skeleton); lên danh sách asset cần (sprite sheet Mario, tileset, âm thanh); tìm asset free hoặc dùng placeholder |
-| **Deliverable** | `README.md`, `ROLES.md`, `WEEKLY_PLAN.md`, class diagram draft | Project build được, cửa sổ 1280x720 mở ra | `Entity.h`, `Character.h` với stub methods | `levels/level1.txt` (placeholder), spec format ghi vào doc | `SoundManager.h`, danh sách asset đã có |
-| **Thời gian ước tính** | ~5–6h | ~6–8h | ~3–4h | ~2–3h | ~4–5h |
+| **Main Task** | Create repo, README, CMakeLists.txt (SFML fetching), allocation | SFML window + game loop skeleton | Design `Entity` and `Character` base classes | Define level `.txt` file format | SoundManager skeleton + collect assets |
+| **Details** | Draw draft class diagram on draw.io; select and document 5 design patterns; write CMakeLists.txt; create `develop` branch | Write `Game.h / Game.cpp`: window initialization, game loop with delta time, handle sf::Event; test build on everyone's machines | Write `Entity.h` (position, velocity, sprite); `Character.h` (health, direction, abstract `update()`); no implementation yet | Write level `.txt` spec (save in ROLES.md under TV4 section); create placeholder `levels/level1.txt` | Create `SoundManager.h` (Singleton skeleton); list required assets (Mario sprite sheet, tileset, sounds); find free/placeholder assets |
+| **Deliverables** | `README.md`, `ROLES.md`, `WEEKLY_PLAN.md`, class diagram draft | Project compiles, 1280x720 window opens | `Entity.h`, `Character.h` with stub methods | `levels/level1.txt` (placeholder), format spec in doc | `SoundManager.h`, list of acquired assets |
+| **Est. Time** | ~5–6h | ~6–8h | ~3–4h | ~2–3h | ~4–5h |
 
 ---
 
-## Tuần 2 — Core Mechanics
+## Week 2 — Core Mechanics
 
-**Demo checkpoint:** Chạy game → thấy **sprite Mario trên màn hình** → bấm ←/→ Mario di chuyển → bấm Space Mario nhảy → Mario rơi xuống đất không xuyên qua nền.
+**Demo Checkpoint:** Run game → see **Mario sprite on screen** → press ←/→ Mario moves → press Space Mario jumps → Mario falls back to the ground without falling through tiles.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | Implement `Observer` / `EventBus` + `EventBus::publish/subscribe` | `TextureManager`, `AnimationSystem`, `Camera` | `Mario`: movement, jump, gravity; `PhysicsEngine`; collision với ground | `TileMap`: parse file `.txt` → render tile, load static level 1 | `InputHandler` + Command pattern (4 commands: MoveLeft, MoveRight, Jump, Pause) |
-| **Chi tiết** | Viết `IObserver.h`, `ISubject.h`, `EventBus.h` (Singleton); test với 1 event giả; đảm bảo TV3/TV4/TV5 có thể dùng | `TextureManager`: load, cache sf::Texture; `AnimationSystem`: sprite sheet, frame switching theo thời gian; `Camera`: sf::View follow player, clamp boundary | `Mario.cpp`: `handleInput()` → `CommandHandler`; velocity += gravity * dt; AABB collision với tile sàn; không cho xuyên tile; chưa cần enemy | `TileMap`: đọc file, map ký tự → tile type; render bằng sf::VertexArray hoặc từng sprite; connect với `Camera` của TV2 | `ICommand.h`, `InputHandler.h`; map sf::Keyboard::Key → ICommand; expose `getCommand(key)` cho TV3 dùng |
-| **Deliverable** | `EventBus.h/.cpp` hoạt động, có test nhỏ | Mario sprite hiện lên, animation walk chạy | Mario di chuyển, nhảy, không xuyên sàn | Level 1 render đúng tile, camera follow | InputHandler map phím → action |
-| **Thời gian ước tính** | ~5–6h | ~8–10h | ~10–12h | ~8–10h | ~6–7h |
+| **Main Task** | Implement `Observer` / `EventBus` + `EventBus::publish/subscribe` | `TextureManager`, `AnimationSystem`, `Camera` | `Mario`: movement, jump, gravity; `PhysicsEngine`; collision with ground | `TileMap`: parse `.txt` file → render tiles, load static Level 1 | `InputHandler` + Command pattern (MoveLeft, MoveRight, Jump, Pause) |
+| **Details** | Write `IObserver.h`, `ISubject.h`, `EventBus.h` (Singleton); test with dummy event; ensure TV3/4/5 can use it | `TextureManager`: load, cache sf::Texture; `AnimationSystem`: sprite sheet, frame switching over time; `Camera`: sf::View follow player, clamp boundaries | `Mario.cpp`: `handleInput()` → `CommandHandler`; velocity += gravity * dt; AABB collision with ground tiles; resolve overlapping; no enemies yet | `TileMap`: read file, map char → tile type; render using sf::VertexArray or individual sprites; connect with TV2's `Camera` | `ICommand.h`, `InputHandler.h`; map sf::Keyboard::Key → ICommand; expose `getAction(key)` for TV3 |
+| **Deliverables** | Functional `EventBus.h/.cpp` with simple tests | Mario sprite visible, walking animation works | Mario moves, jumps, collides with ground | Level 1 renders correctly, camera follows | InputHandler maps keys to actions |
+| **Est. Time** | ~5–6h | ~8–10h | ~10–12h | ~8–10h | ~6–7h |
 
 ---
 
-## Tuần 3 — Level 1 Playable
+## Week 3 — Level 1 Playable
 
-**Demo checkpoint:** Chơi từ đầu Level 1 → gặp Goomba → giẫm chết hoặc bị chết → restart → đến cuối level → qua màn.
+**Demo Checkpoint:** Play from beginning of Level 1 → encounter Goomba → stomp Goomba to kill it or touch it to die → restart → reach the end of the level → transition to next screen.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | Implement `EntityFactory` (Factory pattern); review & merge tuần 2 | Death animation, spawn animation, level transition (màn hình "fade") | Collision với enemy: giẫm → enemy chết; chạm bên → Mario mất mạng | Level 1 hoàn chỉnh + `Goomba` AI patrol | `Coin` item, sound effects cơ bản |
-| **Chi tiết** | `EntityFactory`: `createEnemy(type, pos)`, `createItem(type, pos)` — trả về `Entity*` polymorphically; TV4 dùng Factory này để spawn enemy từ file level | `AnimationSystem` thêm clip "death", "spawn"; `Camera` shake nhẹ khi Mario chết; transition fade-to-black 0.5s khi qua màn | `CollisionManager::resolve()`: nếu Mario hit top của enemy → enemy die; nếu hit side → Mario lose life; `LivesManager` quản lý số mạng | Level 1 dựng xong (đủ dài, có ít nhất 3 nhóm enemy, có chướng ngại); `Goomba.cpp`: move left until hit wall → reverse; `Goomba` dies khi bị giẫm | `Coin.h/.cpp` kế thừa `Item`; collect khi Mario overlap; publish `COIN_COLLECTED` event; sound jump.wav, coin.wav, die.wav load được |
-| **Deliverable** | `EntityFactory.h/.cpp`; merge branch tuần 2 clean | Death + spawn animation; level transition | Collision enemy hoạt động đúng | Level 1 playable end-to-end | Coin hoạt động; 3 sound effects chạy |
-| **Thời gian ước tính** | ~5–6h | ~7–8h | ~8–10h | ~10–12h | ~6–8h |
+| **Main Task** | Implement `EntityFactory` (Factory pattern); review & merge Week 2 code | Death animation, spawn animation, level transition (screen fade) | Collision with enemies: stomp → enemy dies; side touch → Mario dies | Level 1 complete + `Goomba` AI patrol | `Coin` item, basic sound effects |
+| **Details** | `EntityFactory`: `createEnemy(type, pos)`, `createItem(type, pos)` returning `Entity*` polymorphically; TV4 uses it to spawn entities from level file | `AnimationSystem` adds "death", "spawn" clips; `Camera` shakes when Mario dies; transition fade-to-black 0.5s when passing level | `CollisionManager::resolve()`: Mario hits top of enemy → enemy dies; side hit → Mario loses a life; `LivesManager` handles life count | Level 1 fully built (long enough, >= 3 enemy groups, obstacles); `Goomba.cpp`: move left until hit wall → reverse; Goomba dies on stomp | `Coin.h/.cpp` inherits from `Item`; collects on overlap; publishes `COIN_COLLECTED` event; load sound effect files |
+| **Deliverables** | `EntityFactory.h/.cpp` functional; clean merge of Week 2 | Death/spawn animations; level transition works | Enemy collision behavior is correct | Level 1 playable end-to-end | Coin works; 3 basic sound effects active |
+| **Est. Time** | ~5–6h | ~7–8h | ~8–10h | ~10–12h | ~6–8h |
 
 ---
 
-## Tuần 4 — Full Game Loop (3 levels, Game State, Items)
+## Week 4 — Full Game Loop (3 levels, Game State, Items)
 
-**Demo checkpoint:** Từ menu → chọn Start → chơi 3 level liên tiếp → Game Over / Win → quay về menu. Mushroom làm Mario to.
+**Demo Checkpoint:** From menu → select Start → play 3 consecutive levels → Game Over / Win screen → return to menu. Mushroom grows Mario.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | `GameState` machine (State pattern) | Menu screen, GameOver, Win screen | Power-up system: Small/Big/Fire Mario | Level 2 + Level 3; Koopa enemy | FireFlower + Star items; background music; HUD đầy đủ |
-| **Chi tiết** | `IGameState.h` (interface: init, update, render, exit); `MenuState`, `PlayState`, `PauseState`, `GameOverState`, `WinState`; `GameManager` lưu stack state và gọi changeState | Menu: background + text + sf::Sound click; GameOver: score hiển thị; Win: "Congratulations" screen; Pause: overlay mờ | `MarioState` enum (Small/Big/Fire); khi collect Mushroom → grow animation; khi bị đánh khi Big → shrink; khi collect FireFlower → Fire form + có thể bắn FireBall | Level 2 và Level 3 design (khó hơn: nhiều enemy hơn, platform cao hơn, ít coin hơn); `Koopa.cpp`: bị giẫm → thành shell → shell trượt khi bị đá | `Mushroom.h/.cpp` (collect → notify TV3 grow); `FireFlower.h/.cpp`; `Star.h/.cpp` (invincibility timer); background music ogg loop; HUD: score, lives, level name, thời gian đếm ngược |
-| **Deliverable** | Game state machine hoạt động: menu → play → gameover | Menu + GameOver + Win screens | Power-up đúng hành vi | Level 2 + 3 playable; Koopa | Items + music + HUD đầy đủ |
-| **Thời gian ước tính** | ~8–10h | ~8–10h | ~8–10h | ~10–12h | ~10–12h |
+| **Main Task** | `GameState` machine (State pattern) | Menu screen, GameOver, Win screen | Power-up system: Small/Big/Fire Mario | Level 2 + Level 3; Koopa enemy | FireFlower + Star items; background music; full HUD |
+| **Details** | `IGameState` interface (init/update/render/exit); `MenuState`, `PlayState`, `PauseState`, `GameOverState`, `WinState`; `GameManager` stores state stack and transitions | Menu: background + text + select sound; GameOver: display final score; Win: "Congratulations" screen; Pause: dark overlay | `MarioState` enum (Small/Big/Fire); Mushroom collect → grow animation; hit while Big → shrink; FireFlower collect → Fire form + shoot FireBall | Level 2 & 3 designs (harder: more enemies, higher platforms, fewer coins); `Koopa.cpp`: stomped → shell → slide shell when kicked | `Mushroom.h/.cpp` (collect → notify TV3 to grow); `FireFlower.h/.cpp`; `Star.h/.cpp` (invincibility timer); looping background music; HUD: score, lives, level, time |
+| **Deliverables** | Game state machine works: menu → play → gameover | Menu + GameOver + Win screens active | Power-ups work correctly | Levels 2 & 3 playable; Koopa works | Items + music + HUD fully functional |
+| **Est. Time** | ~8–10h | ~8–10h | ~8–10h | ~10–12h | ~10–12h |
 
 ---
 
-## Tuần 5 — Design Patterns & Polish
+## Week 5 — Design Patterns & Polish
 
-**Demo checkpoint:** Code review nội bộ: TV1 mở code và chỉ đúng chỗ implement từng trong 5 pattern. Chạy game: có âm thanh đầy đủ, score lưu lại sau khi thoát.
+**Demo Checkpoint:** Code review: TV1 reviews the code and shows correct implementation of all 5 patterns. Running game has sound effects and saves high scores on exit.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | Code review 5 patterns; viết `docs/design_patterns.md`; `SaveManager` | Visual polish: particle, smooth transitions | Physics edge cases; gameplay feel tuning | Enemy AI cải thiện; spawn system qua Factory | Full sound integration; save/load highscore |
-| **Chi tiết** | Đọc toàn bộ code, xác nhận 5 pattern implement đúng (Factory, Singleton, Observer, State, Command); viết doc mô tả từng pattern: class áp dụng, lý do chọn, UML nhỏ; `SaveManager`: ghi score + progress vào `saves/save.dat` | Thêm particle đơn giản khi enemy chết (sf::CircleShape bắn ra); screen shake khi Mario bị đánh; animation transition mượt hơn (flip sprite khi đổi hướng) | Kiểm tra và fix: Mario bị kẹt góc tường, nhảy đôi, xuyên tile mỏng; tinh chỉnh jump height và walk speed cho cảm giác tốt hơn | AI: Goomba nhìn thấy Mario trong range → tăng speed; spawn enemy đúng qua EntityFactory (không còn hard-code `new Goomba`); test toàn bộ enemy behavior | Tất cả sound effect gắn đúng event (subscribe EventBus); `SoundManager` quản lý volume; `SaveManager` ghi/đọc highscore; hiển thị highscore trên menu |
-| **Deliverable** | `docs/design_patterns.md` hoàn chỉnh; `SaveManager` | Visual cải thiện rõ rệt | Gameplay mượt, không glitch thường gặp | Enemy AI + spawn qua Factory | Sound đầy đủ; highscore lưu được |
-| **Thời gian ước tính** | ~8–10h | ~6–8h | ~6–8h | ~6–8h | ~6–8h |
+| **Main Task** | Code review 5 patterns; write `docs/design_patterns.md`; `SaveManager` | Visual polish: particles, smooth transitions | Physics edge cases; gameplay feel tuning | Improve enemy AI; spawn via Factory | Full sound integration; save/load high scores |
+| **Details** | Review entire code, confirm 5 patterns are correct (Factory, Singleton, Observer, State, Command); write doc detailing patterns; write highscore database logic | Add simple particle effects when enemy dies; screen shake on hit; flip sprites smoothly on direction change | Fix bugs: Mario stuck in corners, double jumps, thin wall clipping; tweak jump height and walk speed for better control | AI: Goomba detects Mario in range → increase speed; spawn all enemies via EntityFactory; test all enemy interactions | Bind all sound effects to correct EventBus events; `SoundManager` volume control; menu displays high score from file |
+| **Deliverables** | `docs/design_patterns.md` complete; `SaveManager` works | Visual quality improved | Gameplay smooth, no common glitches | Enemy AI + Factory spawning complete | Sound complete; high score saving works |
+| **Est. Time** | ~8–10h | ~6–8h | ~6–8h | ~6–8h | ~6–8h |
 
 ---
 
-## Tuần 6 — Polish, Test & Nộp bài
+## Week 6 — Polish, Test & Submission
 
-**Demo checkpoint:** Chơi toàn bộ game từ menu đến win screen không crash. Video demo quay xong. Tài liệu đầy đủ.
+**Demo Checkpoint:** Play entire game from menu to win screen without crashing. Demo video recorded. Documents ready.
 
-| | TV1 (Architect) | TV2 (Engine) | TV3 (Physics) | TV4 (Level) | TV5 (Sound/UI) |
+| | TV1 (Dương - Architect) | TV2 (Nhật - Engine) | TV3 (Bảo - Physics) | TV4 (Vy - Level) | TV5 (Truyền - Sound/UI) |
 |---|---|---|---|---|---|
-| **Việc chính** | Class diagram final; check rubric; tổng hợp tài liệu | Fix render bug; ổn định frame rate | Bug fix gameplay; test 3 level | Level balance; bug fix enemy | Quay video demo; đóng gói nộp |
-| **Chi tiết** | Vẽ class diagram chính thức (draw.io) có đủ class, kế thừa, association; kiểm từng dòng rubric (65+35+15 điểm), đánh dấu done/missing; compile tài liệu cho nộp | Cap frame rate 60fps; fix bất kỳ flicker, z-order sai; test trên máy có màn hình khác kích thước | Chơi 3 level liên tiếp 3 lần không crash; log bug → fix bug | Chỉnh lại vị trí enemy/coin/platform để độ khó mượt hơn; test enemy không bị stuck | Quay video demo (OBS): gameplay 3 level + thuyết minh ngắn về pattern đã dùng; zip project, kiểm tra build từ đầu trên máy sạch |
-| **Deliverable** | `docs/class_diagram.png`; checklist rubric | Build release ổn định | Zero critical bug | 3 level balanced | Video demo + project zip |
-| **Thời gian ước tính** | ~8–10h | ~4–6h | ~6–8h | ~4–6h | ~6–8h |
+| **Main Task** | Final class diagram; check rubric; compile documentation | Fix render bugs; stabilize frame rate | Gameplay bug fixes; test 3 levels | Level balancing; enemy bug fixes | Record demo video; package project |
+| **Details** | Draw official class diagram (draw.io); check rubric criteria (65+35+15 points); compile all project documentation | Cap frame rate at 60fps; fix screen flickering, z-ordering bugs; test on different monitor sizes | Play through all 3 levels 3 times without crash; log and fix remaining bugs | Tweak enemy/coin/platform positions for smooth difficulty curve; test enemy paths | Record demo video (OBS) with voiceover explaining patterns used; zip project and test clean build |
+| **Deliverables** | `docs/class_diagram.png`; rubric checklist | Stable release build | Zero critical bugs | 3 levels balanced | Demo video + packaged project zip |
+| **Est. Time** | ~8–10h | ~4–6h | ~6–8h | ~4–6h | ~6–8h |
 
 ---
 
-## Tóm tắt milestone theo tuần
+## Weekly Milestones Summary
 
 ```
-Tuần 1 │ ▪ Cửa sổ SFML mở được (mọi máy)
-Tuần 2 │ ▪ Mario di chuyển + nhảy trên platform
-Tuần 3 │ ▪ Level 1 chơi được đầu → cuối (có enemy)
-Tuần 4 │ ▪ 3 level + menu + game over + items
-Tuần 5 │ ▪ 5 pattern hoàn chỉnh + sound + save
-Tuần 6 │ ▪ Nộp bài (source + doc + video)
+Week 1 │ ▪ SFML window opens on all machines
+Week 2 │ ▪ Mario moves & jumps on platforms
+Week 3 │ ▪ Level 1 playable start-to-finish (with enemies)
+Week 4 │ ▪ 3 levels + menu + game over + items
+Week 5 │ ▪ 5 design patterns complete + sounds + saves
+Week 6 │ ▪ Project submission (source code + documentation + video)
 ```

@@ -1,46 +1,46 @@
 # Super Mario — CS202 Final Project
 
-> Dự án game 2D Mario-style viết bằng C++17 + SFML 3.0.0  
-> Nhóm 5 người · 6 tuần
+> 2D Mario-style game project written in C++17 + SFML 3.0.0  
+> 5 members · 6 weeks
 
 ---
 
-## Thành viên & vai trò nhanh
+## Team Members & Quick Roles
 
-| Thành viên | Vai trò | Module chính |
-|---|---|---|
-| TV1 | Architect / Team Lead | OOP design, design patterns, tích hợp |
-| TV2 | Engine & Render | SFML wrapper, animation, camera |
-| TV3 | Mario & Physics | Character controller, collision |
-| TV4 | Level & Enemy | Tilemap, enemy AI, level design |
-| TV5 | UI, Sound & Items | HUD, menu, âm thanh, power-up |
+| Member | Name | Role | Main Module |
+|---|---|---|---|
+| TV1 | Dương | Architect / Team Lead | OOP design, design patterns, integration |
+| TV2 | Nhật | Engine & Render | SFML wrapper, animation, camera |
+| TV3 | Bảo | Mario & Physics | Character controller, collision |
+| TV4 | Vy | Level & Enemy | Tilemap, enemy AI, level design |
+| TV5 | Truyền | UI, Sound & Items | HUD, menu, sound, power-up |
 
-→ Chi tiết: xem [`ROLES.md`](ROLES.md)  
-→ Kế hoạch tuần: xem [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md)
+→ Detailed roles: see [`ROLES.md`](ROLES.md)  
+→ Weekly plan: see [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md)
 
 ---
 
-## Tech stack
+## Tech Stack
 
-| Thứ | Chi tiết |
+| Component | Details |
 |---|---|
-| Ngôn ngữ | C++17 |
-| Game engine | SFML 3.0.0 (graphics, window, system, audio) |
-| Build | CMake 3.15+ |
+| Language | C++17 |
+| Game Engine | SFML 3.0.0 (graphics, window, system, audio) |
+| Build System | CMake 3.15+ |
 | Compiler | g++ (MinGW-w64) 14.2.0+ |
-| Version control | Git + GitHub |
+| Version Control | Git + GitHub |
 
 ---
 
-## Cài đặt & build
+## Installation & Build
 
-### 1. Cài SFML & Tools
+### 1. Install SFML & Tools
 
 **Windows (MinGW):**
-- Cài đặt **g++ (MinGW-w64) 14.2.0 trở lên** và **CMake 3.15 trở lên**.
-- Thư viện **SFML 3.0.0** đã được tích hợp sẵn trong repo tại thư mục `thirdparty/SFML` (không cần tải thêm). Cửa sổ game và DLLs sẽ tự động được copy sau khi build.
+- Install **g++ (MinGW-w64) 14.2.0 or higher** and **CMake 3.15 or higher**.
+- The **SFML 3.0.0** library is already pre-integrated in the repository under the `thirdparty/SFML` folder (no need to download separately). The game executable and DLLs will be automatically copied after building.
 
-### 2. Clone repo
+### 2. Clone the repository
 
 ```bash
 git clone https://github.com/baoduong2342007/CS202-Group04-FinalProject.git
@@ -55,34 +55,34 @@ cmake ..
 cmake --build .
 ```
 
-### 4. Chạy game
+### 4. Run the game
 
 ```bash
 ./main              # Linux/macOS
 main.exe            # Windows
 ```
 
-> **Lưu ý:** executable phải được chạy từ thư mục `build/` vì asset path là `assets/` tương đối.
+> **Note:** The executable must be run from the `build/` directory because the asset paths are relative to `assets/`.
 
 ---
 
-## Cấu trúc thư mục tóm tắt
+## Directory Structure Summary
 
 ```
 CS202-Group04-FinalProject/
-├── assets/          # Sprite sheet, âm thanh, nhạc nền, font chữ
-├── include/         # Các file header (.h) phân theo module (core, entities, states...)
-├── src/             # File source (.cpp) tương ứng với include/
-├── levels/          # File text chứa cấu trúc màn chơi (.txt)
-├── thirdparty/      # Thư viện ngoài (SFML 3.0.0 đính kèm sẵn cho MinGW)
-└── CMakeLists.txt   # File cấu hình build CMake
+├── assets/          # Sprite sheets, sounds, background music, fonts
+├── include/         # Header files (.h) organized by module (core, entities, states...)
+├── src/             # Source files (.cpp) corresponding to include/
+├── levels/          # Text files containing level designs (.txt)
+├── thirdparty/      # External libraries (SFML 3.0.0 pre-packaged for MinGW)
+└── CMakeLists.txt   # CMake build configuration file
 ```
 
-Chi tiết cấu trúc file và quy định đặt tên, xem tại [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md).
+For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md).
 
 ---
 
-## .gitignore (copy vào root)
+## .gitignore (copy to root)
 
 ```
 build/
@@ -97,11 +97,11 @@ CMakeFiles/
 
 ---
 
-## Tài liệu liên quan
+## Related Documents
 
-- [`ROLES.md`](ROLES.md) — Phân vai chi tiết
-- [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md) — Kế hoạch 6 tuần theo từng thành viên
-- [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Cấu trúc thư mục & file
-- [`CODING_RULES.md`](CODING_RULES.md) — Quy tắc code, Git, naming
-- [`docs/design_patterns.md`](docs/design_patterns.md) — Mô tả 5 design pattern _(TV1 viết — tuần 5)_
-- [`docs/class_diagram.png`](docs/class_diagram.png) — Class diagram _(tuần 6)_
+- [`ROLES.md`](ROLES.md) — Detailed role assignments
+- [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md) — 6-week plan by member
+- [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Folder & file structure
+- [`CODING_RULES.md`](CODING_RULES.md) — Coding conventions, Git, naming rules
+- [`docs/design_patterns.md`](docs/design_patterns.md) — Description of the 5 design patterns _(written by TV1 in Week 5)_
+- [`docs/class_diagram.png`](docs/class_diagram.png) — Class diagram _(Week 6)_

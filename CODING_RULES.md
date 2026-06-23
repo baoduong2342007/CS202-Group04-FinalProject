@@ -1,71 +1,75 @@
-# Quy tắc chung — Coding & Git
+# General Rules — Coding & Git
 
-> Đây là luật của nhóm. Ai vi phạm → TV1 có quyền yêu cầu làm lại trước khi merge.
+> These are the rules of the team. If anyone violates them → TV1 has the right to request a refactor before merging.
 
 ---
 
-## 1. Git workflow
+## 1. Git Workflow
 
-### Nhánh (branch)
+### Branches
 
 ```
-main        ← chỉ chứa code đã ổn, merge vào cuối mỗi tuần
-develop     ← nhánh tích hợp chính, mọi người merge feature vào đây
-feature/... ← nhánh làm việc hàng ngày
-fix/...     ← nhánh vá bug
+main        ← only contains stable code, merged at the end of each week
+develop     ← main integration branch, everyone merges features here
+feature/... ← daily development branch
+fix/...     ← hotfix branch
 ```
 
-**Quy trình:**
+**Process:**
 ```
-1. Bắt đầu việc mới:
+1. Start new task:
    git checkout develop
    git pull
    git checkout -b feature/goomba-ai
 
-2. Làm xong → commit:
+2. Finish task → commit:
    git add .
    git commit -m "[TV4] Add Goomba patrol AI with direction reversal"
 
-3. Push lên remote:
+3. Push to remote:
    git push origin feature/goomba-ai
 
-4. Tạo Pull Request vào develop trên GitHub
-   → Tag 1 người review (ưu tiên TV1 nếu là core class)
-   → Sau khi được approve → merge → xóa branch
+4. Create Pull Request into develop on GitHub
+   → Tag 1 reviewer (prioritize TV1 if it is a core class)
+   → Once approved → merge → delete branch
 
-5. Cuối tuần (thứ Sáu):
-   TV1 merge develop vào main
-   Cả nhóm pull main về và build lại để xác nhận
+5. End of week (Friday):
+   TV1 merges develop into main
+   Whole team pulls main and rebuilds to confirm
 ```
 
-### Format commit message
+### Commit Message Format
 
 ```
-[TVx] <Động từ> <Mô tả ngắn>
+[TVx] <Verb> <Short Description>
 
-Ví dụ tốt:
+Good examples:
 [TV3] Add gravity and vertical velocity to Mario
 [TV2] Fix camera clamp when Mario reaches level boundary
 [TV1] Implement Observer pattern with EventBus singleton
 [TV4] Design Level 2 tilemap with increasing difficulty
 
-Ví dụ xấu (không dùng):
+Bad examples (do not use):
 fix stuff
 update code
 TV4 done
 wip
 ```
 
-### Quy tắc commit
+### Commit Rules
 
-- **Commit thường xuyên**, sau mỗi unit việc nhỏ — không gom 8 tiếng vào 1 commit
-- **Không commit code không compile** vào `develop`
-- **Không commit file build** (`/build`, `.exe`, `.o`) — đã có `.gitignore`
-- **Không commit file tạm** (`test_main.cpp`, `debug.txt`, `TODO.md` cá nhân)
+- **All commit messages must be written in English**. Example: `[TV3] Add jump mechanics` instead of `[TV3] Them nhay`.
+- **Commit frequently**, after each small unit of work — do not bundle 8 hours of work into 1 commit.
+- **Do not commit code that does not compile** into `develop`.
+- **Do not commit build files** (`/build`, `.exe`, `.o`) — `.gitignore` is already set up.
+- **Do not commit temporary files** (`test_main.cpp`, `debug.txt`, personal `TODO.md`).
 
 ---
 
-## 2. C++ Coding conventions
+## 2. C++ Coding Conventions
+
+### Language Rule
+- **English Only**: All code identifiers (variable names, class names, functions, etc.), source comments, and project documentation must be written in English.
 
 ### Naming
 
@@ -95,13 +99,13 @@ const int TILE_SIZE = 32;
 const int MAX_LIVES = 3;
 
 enum class MarioState { SMALL, BIG, FIRE };
-// dùng scoped enum (enum class), không dùng enum thường
+// use scoped enum (enum class), do not use plain enum
 
-// File → tên class (1-1)
+// File → class name (1-1)
 // GameManager → GameManager.h + GameManager.cpp
 ```
 
-### Class structure — thứ tự viết
+### Class Structure — Layout Order
 
 ```cpp
 class Mario : public Character {
@@ -137,54 +141,54 @@ private:
 };
 ```
 
-### Con trỏ và memory
+### Pointers & Memory
 
 ```cpp
-// ƯU TIÊN smart pointer
+// PREFER smart pointers
 std::unique_ptr<Enemy> enemy = std::make_unique<Goomba>(pos);
-std::shared_ptr<Texture> tex = std::make_shared<sf::Texture>();
+std::shared_ptr<sf::Texture> tex = std::make_shared<sf::Texture>();
 
-// Dùng raw pointer KHI NÀO: khi object không sở hữu bộ nhớ (observer pointer)
-void setTarget(Mario* mario);  // OK — không sở hữu
+// Use raw pointers ONLY WHEN: the object does not own the memory (observer pointer)
+void setTarget(Mario* mario);  // OK — does not own
 
-// KHÔNG dùng new/delete trực tiếp trong game logic
+// DO NOT use new/delete directly in game logic
 // BAD:
-Enemy* e = new Goomba(pos);  // ai delete?
+Enemy* e = new Goomba(pos);  // who deletes it?
 
-// EXCEPTION: EntityFactory trả về raw pointer — caller sở hữu
-// → Factory method: caller wrap vào unique_ptr ngay lập tức
+// EXCEPTION: EntityFactory returns raw pointer — caller owns it
+// → Factory method: caller wraps into unique_ptr immediately
 auto enemy = std::unique_ptr<Enemy>(EntityFactory::create(EnemyType::GOOMBA, pos));
 ```
 
-### Hàm
+### Functions
 
 ```cpp
-// Tối đa 40–50 dòng mỗi hàm
-// Nếu dài hơn → tách thành hàm private nhỏ hơn
+// Maximum 40–50 lines per function
+// If longer → split into smaller private helper functions
 
-// Hàm không thay đổi state → const
+// Functions that do not modify state → const
 int getScore() const;
 bool isAlive() const;
 
-// Tham số lớn → pass by const reference
+// Large parameters → pass by const reference
 void loadLevel(const std::string& filename);
 void render(const sf::RenderWindow& window) const;
 
-// Trả về bool nếu có thể fail
-bool loadTexture(const std::string& path);  // false nếu file không tồn tại
+// Return bool if it can fail
+bool loadTexture(const std::string& path);  // false if file doesn't exist
 ```
 
-### Không dùng
+### Do Not Use
 
 ```cpp
-// Không dùng using namespace std; trong .h — ô nhiễm namespace
-// BAD trong header:
+// Do not use using namespace std; in headers — namespace pollution
+// BAD in header:
 using namespace std;
 
-// OK trong .cpp (và chỉ ở đó):
-using namespace std;  // chấp nhận được, nhưng ưu tiên viết std:: rõ ràng
+// OK in .cpp (and only there):
+using namespace std;  // acceptable, but prefer explicit std::
 
-// Không dùng magic number
+// Do not use magic numbers
 // BAD:
 if (mario.y > 720) mario.die();
 
@@ -192,37 +196,37 @@ if (mario.y > 720) mario.die();
 const float SCREEN_HEIGHT = 720.f;
 if (mario.getY() > SCREEN_HEIGHT) mario.die();
 
-// Không để code chết (commented-out code) trong PR
+// Do not leave dead code (commented-out code) in PRs
 // BAD:
-// void oldUpdate() { ... }   ← xóa đi
+// void oldUpdate() { ... }   ← delete it
 ```
 
 ---
 
-## 3. Header comment bắt buộc
+## 3. Required Header Comments
 
-Mỗi file `.cpp` phải có comment header như sau:
+Each `.cpp` and `.h` file must have a header comment like this:
 
 ```cpp
 /**
  * @file Goomba.cpp
  * @author TV4
  * @brief Goomba enemy: patrol AI, death on stomp, Factory-compatible
- * @note Tuần 3 — sử dụng EntityFactory để spawn
+ * @note Week 3 — uses EntityFactory for spawning
  */
 ```
 
 ---
 
-## 4. Quy tắc về Design Patterns
+## 4. Design Patterns Guidelines
 
-Mỗi pattern phải được ghi nhận rõ trong code bằng comment:
+Each pattern must be clearly documented in the code with a comment block:
 
 ```cpp
 // ============================================================
 // PATTERN: Factory Method
-// Lý do: tránh hard-code new Goomba(), new Koopa() ở nhiều nơi;
-//         cho phép thêm enemy type mới mà không sửa Level.cpp
+// Reason: avoids hardcoded new Goomba(), new Koopa() in multiple places;
+//         allows adding new enemy types without modifying Level.cpp
 // ============================================================
 Enemy* EntityFactory::create(EnemyType type, sf::Vector2f pos) {
     switch (type) {
@@ -233,54 +237,54 @@ Enemy* EntityFactory::create(EnemyType type, sf::Vector2f pos) {
 }
 ```
 
-5 pattern cần implement và ghi nhận:
+5 patterns to implement and document:
 
-| # | Pattern | File chính | Người implement |
+| # | Pattern | Main File | Implementer |
 |---|---|---|---|
-| 1 | Factory | `EntityFactory.h/.cpp` | TV1 |
-| 2 | Singleton | `GameManager.h`, `SoundManager.h` | TV1, TV5 |
-| 3 | Observer | `EventBus.h`, `IObserver.h` | TV1 |
-| 4 | State | `IGameState.h`, `*State.cpp` | TV1, TV2 |
-| 5 | Command | `ICommand.h`, `InputHandler.h` | TV5 |
+| 1 | Factory | `EntityFactory.h/.cpp` | TV1 (Dương) |
+| 2 | Singleton | `GameManager.h`, `SoundManager.h` | TV1 (Dương), TV5 (Truyền) |
+| 3 | Observer | `EventBus.h`, `IObserver.h` | TV1 (Dương) |
+| 4 | State | `IGameState.h`, `*State.cpp` | TV1 (Dương), TV2 (Nhật) |
+| 5 | Command | `ICommand.h`, `InputHandler.h` | TV5 (Truyền) |
 
 ---
 
-## 5. Quy tắc Pull Request
+## 5. Pull Request Checklist
 
-Trước khi tạo PR, tự kiểm tra:
+Before creating a PR, check yourself:
 
-- [ ] Code compile không warning
-- [ ] Không có code chết (commented-out code vô nghĩa)
-- [ ] Không có `std::cout` debug bừa bãi — dùng `#ifdef DEBUG` nếu cần
-- [ ] Đã test tay scenario mình đang implement
-- [ ] Tên branch và commit message đúng format
+- [ ] Code compiles without warnings
+- [ ] No dead code (meaningless commented-out code)
+- [ ] No messy debug `std::cout` — use `#ifdef DEBUG` if needed
+- [ ] Manual test of the scenario being implemented
+- [ ] Branch name and commit message formatted correctly
 
-Người review kiểm tra:
-- [ ] Logic đúng với thiết kế trong class diagram
-- [ ] Không vi phạm quy tắc naming
-- [ ] Không break build (checkout về branch đó, build thử)
-- [ ] Pattern được dùng đúng nếu liên quan
-
----
-
-## 6. Quy tắc họp nhóm
-
-- **Họp ngắn đầu tuần** (~30 phút): mỗi người nói công việc tuần này là gì
-- **Sync nhanh giữa tuần** (~15 phút): ai bị block → báo ngay để người khác hỗ trợ
-- **Demo cuối tuần**: ngồi lại, chạy game, tick checklist — không bỏ bước này
-- **Kênh liên lạc**: dùng Discord/Zalo riêng cho nhóm; đặt câu hỏi kỹ thuật trong thread riêng
+Reviewer check:
+- [ ] Logic aligns with class diagram design
+- [ ] Naming rules are followed
+- [ ] Build is not broken (checkout to branch and test build)
+- [ ] Patterns are used correctly if applicable
 
 ---
 
-## 7. Checklist trước khi nộp bài
+## 6. Team Meetings Rules
 
-Tuần 6 TV1 dùng checklist này:
+- **Weekly Sync Meeting** (~30 minutes): each member states their tasks for the week
+- **Mid-week Sync** (~15 minutes): raise any blockers so other members can support
+- **Weekend Demo Checkpoint**: sit together, run the game, check off list — do not skip
+- **Communication Channels**: Discord/Zalo for team; ask technical questions in dedicated threads
 
-- [ ] Build từ đầu trên máy sạch (chưa clone bao giờ) thành công
-- [ ] Chạy game 3 level không crash
-- [ ] `docs/class_diagram.png` có đủ tất cả class chính
-- [ ] `docs/design_patterns.md` mô tả đủ 5 pattern
-- [ ] Code có comment đủ (đặc biệt chỗ dùng pattern)
-- [ ] Video demo quay xong, có giọng giải thích
-- [ ] Rubric 65+35+15: mỗi dòng đã check done hoặc ghi rõ lý do bỏ
-- [ ] Nộp đúng deadline, đúng định dạng yêu cầu
+---
+
+## 7. Pre-submission Checklist
+
+In Week 6, TV1 uses this checklist:
+
+- [ ] Clean build succeeds from scratch on a new machine
+- [ ] Play through 3 levels without crash
+- [ ] `docs/class_diagram.png` contains all main classes
+- [ ] `docs/design_patterns.md` describes all 5 patterns
+- [ ] Code is well documented (especially where patterns are used)
+- [ ] Demo video recorded, with voice explanation
+- [ ] Rubric 65+35+15: each row checked done or reason documented
+- [ ] Submit on time and in correct format

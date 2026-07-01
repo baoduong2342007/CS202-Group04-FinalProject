@@ -348,6 +348,16 @@ classDiagram
         +render(sf::RenderWindow& window) void
     }
 
+    class Button {
+        -sf::RectangleShape m_shape
+        -sf::Text m_text
+        -bool m_isHovered
+        +Button(string label, sf::Vector2f pos)
+        +handleEvent(sf::Event event) bool
+        +render(sf::RenderWindow& window) void
+        +isClicked() bool
+    }
+
     class SaveManager {
         +saveHighScore(int score) void
         +loadHighScore() int

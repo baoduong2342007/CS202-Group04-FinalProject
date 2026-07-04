@@ -34,11 +34,16 @@
 
 ## Installation & Build
 
-### 1. Install SFML & Tools
+### 1. Install Build Tools
 
 **Windows (MinGW):**
-- Install **g++ (MinGW-w64) 14.2.0 or higher** and **CMake 3.15 or higher**.
-- The **SFML 3.0.0** library is already pre-integrated in the repository under the `thirdparty/SFML` folder (no need to download separately). The game executable and DLLs will be automatically copied after building.
+- Install **g++ (MinGW-w64) 14.2.0 or higher** and **CMake 3.16 or higher**.
+- If `thirdparty/SFML` does not exist, **SFML 3.0.0 pre-built binaries** (~30MB) will be automatically downloaded and extracted into `thirdparty/SFML` on the first build.
+
+**macOS (Homebrew):**
+```bash
+brew install cmake sfml
+```
 
 ### 2. Clone the repository
 
@@ -49,20 +54,31 @@ cd CS202-Group04-FinalProject
 
 ### 3. Build
 
+**Windows (MinGW):**
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
+cmake -B build -G "MinGW Makefiles"
+cmake --build build
+```
+
+**macOS / Linux:**
+```bash
+cmake -B build
+cmake --build build
 ```
 
 ### 4. Run the game
 
+**Windows:**
 ```bash
-./main              # Linux/macOS
-main.exe            # Windows
+.\build\main.exe
 ```
 
-> **Note:** The executable must be run from the `build/` directory because the asset paths are relative to `assets/`.
+**macOS / Linux:**
+```bash
+./build/main
+```
+
+> **Note:** The executable is built into the `build/` directory, and all required DLLs (on Windows) as well as the `assets/` and `levels/` folders are automatically copied there during the build.
 
 ---
 
@@ -74,26 +90,11 @@ CS202-Group04-FinalProject/
 ├── include/         # Header files (.h) organized by module (core, entities, states...)
 ├── src/             # Source files (.cpp) corresponding to include/
 ├── levels/          # Text files containing level designs (.txt)
-├── thirdparty/      # External libraries (SFML 3.0.0 pre-packaged for MinGW)
+├── thirdparty/      # External libraries (SFML binaries are auto-downloaded here on Windows)
 └── CMakeLists.txt   # CMake build configuration file
 ```
 
 For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md).
-
----
-
-## .gitignore (copy to root)
-
-```
-build/
-saves/highscore.dat
-*.o
-*.exe
-.vscode/
-.idea/
-CMakeCache.txt
-CMakeFiles/
-```
 
 ---
 

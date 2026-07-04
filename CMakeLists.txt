@@ -17,10 +17,38 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # ==============================================================================
-# 2. FIND SFML LIBRARY
+# 2. FIND OR DOWNLOAD SFML LIBRARY (cross-platform: Windows, macOS, Linux)
 # ==============================================================================
-# Prioritize local SFML in the `thirdparty/SFML` directory
-if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+# On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it
+if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+    message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
+    set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
+    file(DOWNLOAD "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip" 
+                  "${SFML_ZIP_PATH}" 
+                  TLS_VERIFY OFF
+                  SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
+    list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+    if(STATUS_CODE EQUAL 0)
+        message(STATUS "Extracting SFML 3.0.0 into thirdparty/...")
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${SFML_ZIP_PATH}"
+                        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/thirdparty")
+        # Rename extracted folder (e.g. SFML-3.0.0) to SFML if necessary
+        file(GLOB EXTRACTED_DIR "${CMAKE_SOURCE_DIR}/thirdparty/SFML-*")
+        if(EXTRACTED_DIR)
+            list(GET EXTRACTED_DIR 0 FIRST_DIR)
+            file(RENAME "${FIRST_DIR}" "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+        endif()
+        file(REMOVE "${SFML_ZIP_PATH}")
+        message(STATUS "Pre-built SFML 3.0.0 installed successfully in thirdparty/SFML")
+    else()
+        list(GET DOWNLOAD_STATUS 1 ERROR_MSG)
+        message(FATAL_ERROR "Failed to download pre-built SFML: ${ERROR_MSG}")
+    endif()
+endif()
+
+# Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
+# On macOS/Linux, install SFML via package manager (e.g., brew install sfml)
+if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
@@ -53,9 +81,13 @@ target_link_libraries(main PRIVATE
     SFML::Audio
 )
 
-# Hide console window in Release build type on Windows
+# Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set_property(TARGET main PROPERTY WIN32_EXECUTABLE TRUE)
+    if(WIN32)
+        set_property(TARGET main PROPERTY WIN32_EXECUTABLE TRUE)
+    elseif(APPLE)
+        set_property(TARGET main PROPERTY MACOSX_BUNDLE TRUE)
+    endif()
 endif()
 
 # ==============================================================================

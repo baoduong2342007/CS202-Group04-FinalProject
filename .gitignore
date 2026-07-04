@@ -49,8 +49,6 @@ saves/*
 !saves/.gitkeep
 *.log
 
-# Third-party libraries (SFML is tracked, others are ignored)
+# Third-party libraries
 thirdparty/*
 !thirdparty/.gitkeep
-!thirdparty/SFML/
-!thirdparty/SFML/**

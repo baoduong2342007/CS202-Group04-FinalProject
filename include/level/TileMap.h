@@ -26,4 +26,4 @@ public:
 private:
     std::vector<std::string> m_grid;
     sf::Texture m_tileset;
-}
+};

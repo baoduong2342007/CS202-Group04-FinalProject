@@ -102,10 +102,27 @@ CollisionManager::resolveCollision(Entity* a, Entity* b, Direction dir);
 - Data files: `levels/level1.txt`, `level2.txt`, `level3.txt`
 
 **Level file format (defined by TV4, followed by the team):**
-```
-# level1.txt — 0=empty, 1=ground, 2=brick, 3=coin, G=Goomba, K=Koopa, M=Mario spawn
-0 0 0 0 0 0 0 0 0
-1 1 G 1 1 0 K 0 M
+```txt
+Each level is stored as a `.txt` file inside the `levels/` folder.
+
+Rules:
+- Each line represents one row of the map.
+- Each character represents one tile or object.
+- All rows should have the same length.
+- `M` should appear only once as Mario's spawn position.
+- Enemies such as `G` and `K` will be spawned based on their positions in the file.
+
+Symbols:
+```txt
+. = empty space
+1 = ground block
+B = brick block
+? = question block
+C = coin
+G = Goomba enemy
+K = Koopa enemy
+M = Mario spawn point
+F = finish flag / level end
 ```
 
 ---

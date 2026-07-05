@@ -20,7 +20,10 @@ endif()
 # 2. FIND OR DOWNLOAD SFML LIBRARY (cross-platform: Windows, macOS, Linux)
 # ==============================================================================
 # On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it
-if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFMLConfig.cmake")
+    if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+        file(REMOVE_RECURSE "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+    endif()
     message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
     file(DOWNLOAD "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip" 

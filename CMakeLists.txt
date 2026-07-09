@@ -65,6 +65,20 @@ endif()
 find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
 
 # ==============================================================================
+# 2.2. FIND OR DOWNLOAD BOX2D LIBRARY
+# ==============================================================================
+include(FetchContent)
+FetchContent_Declare(
+    box2d
+    GIT_REPOSITORY https://github.com/erincatto/box2d.git
+    GIT_TAG v2.4.1
+)
+# Disable Box2D unit tests and documentation to speed up compilation
+set(BOX2D_BUILD_UNIT_TESTS OFF CACHE INTERNAL "")
+set(BOX2D_BUILD_DOCS OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(box2d)
+
+# ==============================================================================
 # 3. DEFINE TARGET & SOURCE FILES
 # ==============================================================================
 # Recursively scan all .cpp source files in the src/ directory
@@ -86,12 +100,13 @@ elseif(MSVC)
     target_compile_options(main PRIVATE /W4)
 endif()
 
-# Link SFML libraries
+# Link SFML and Box2D libraries
 target_link_libraries(main PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
     SFML::Audio
+    box2d
 )
 
 # Platform-specific Release build settings

@@ -1,5 +1,8 @@
 #include <SFML/Graphics.hpp>
+#include "physics/PhysicsEngine.h"
+#include "entities/Mario.h"
 #include <iostream>
+#include <optional>
 
 int main() {
     // Define standard HD 16:9 window size
@@ -9,23 +12,48 @@ int main() {
     // Create a game window with fixed size (1280x720) and disable resizing
     sf::RenderWindow window(
         sf::VideoMode({windowWidth, windowHeight}), 
-        "Super Mario - Test SFML", 
+        "Super Mario - Box2D Physics Test", 
         sf::Style::Titlebar | sf::Style::Close
     );
     window.setFramerateLimit(60);
 
-    // Circle size and color for testing
-    const float radius = 100.f;
-    sf::CircleShape shape(radius);
-    shape.setFillColor(sf::Color(46, 204, 113)); // More pleasant than the default green color
-    
-    // Center the circle dynamically based on the window size
-    shape.setPosition({
-        (windowWidth / 2.f) - radius,
-        (windowHeight / 2.f) - radius
-    });
+    // Initialize Box2D Physics Engine with downward gravity (approx. 15 m/s^2)
+    // Positive Y is down in SFML coordinates, so gravity is positive Y.
+    PhysicsEngine::getInstance().init(sf::Vector2f(0.0f, 900.0f));
 
-    std::cout << "Starting SFML window. Press ESC or close the window to exit." << std::endl;
+    // Get the world reference
+    b2World* world = PhysicsEngine::getInstance().getWorld();
+
+    // 1. Create a static ground body at the bottom of the screen
+    b2BodyDef floorBodyDef;
+    floorBodyDef.type = b2_staticBody;
+    // Set floor center position (X: middle of screen, Y: near the bottom)
+    floorBodyDef.position = PhysicsEngine::pixelsToMeters(sf::Vector2f(640.f, 650.f));
+    b2Body* floorBody = world->CreateBody(&floorBodyDef);
+
+    b2PolygonShape floorBox;
+    // Box2D SetAsBox takes half-width and half-height
+    floorBox.SetAsBox(PhysicsEngine::pixelsToMeters(640.f), PhysicsEngine::pixelsToMeters(25.f));
+    floorBody->CreateFixture(&floorBox, 0.0f);
+
+    // Visual representation for the floor
+    sf::RectangleShape floorShape(sf::Vector2f(1280.f, 50.f));
+    floorShape.setFillColor(sf::Color(127, 140, 141)); // Pleasant grey color
+    floorShape.setPosition({0.f, 625.f});
+
+    // 2. Create dynamic Mario character
+    Mario mario(sf::Vector2f(620.f, 100.f), sf::Vector2f(40.f, 40.f));
+    mario.initPhysics(b2_dynamicBody, sf::Vector2f(40.f, 40.f));
+
+    // Visual representation for Mario (Red square)
+    sf::RectangleShape marioShape(sf::Vector2f(40.f, 40.f));
+    marioShape.setFillColor(sf::Color(231, 76, 60)); // Mario red
+
+    std::cout << "Starting Box2D Physics Demo." << std::endl;
+    std::cout << "Controls: Left/Right Arrow or A/D to move, Space/W or Up Arrow to jump." << std::endl;
+    std::cout << "Press ESC or close the window to exit." << std::endl;
+
+    sf::Clock clock;
 
     // Game loop following SFML 3.0.0 standards
     while (window.isOpen()) {
@@ -42,16 +70,29 @@ int main() {
             }
         }
 
+        // Measure elapsed time
+        float dt = clock.restart().asSeconds();
+        if (dt > 0.1f) dt = 0.1f; // Cap delta time during lag spikes
+
+        // Handle controls and update physics
+        mario.handleInput();
+        PhysicsEngine::getInstance().update(dt);
+        mario.update(dt);
+
+        // Update visual position of Mario shape from physical position
+        marioShape.setPosition(mario.getPosition());
+
         // Clear the screen with a pleasant dark color
-        window.clear(sf::Color(30, 30, 30));
+        window.clear(sf::Color(44, 62, 80));
 
-        // Draw the test circle
-        window.draw(shape);
+        // Draw static floor and Mario
+        window.draw(floorShape);
+        window.draw(marioShape);
 
-        // Display the new frame
+        // Display the frame
         window.display();
     }
 
-    std::cout << "Window closed successfully." << std::endl;
+    std::cout << "Demo closed successfully." << std::endl;
     return 0;
 }

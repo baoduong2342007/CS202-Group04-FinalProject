@@ -36,5 +36,15 @@ bool TileMap::loadFromFile(const std::string& path){
         return false;
     }
     
+    const std::size_t expectedWidth = m_grid.front().size();
+    
+    for (const std::string& row : m_grid){
+        if (row.size() != expectedWidth){
+            std::cerr << "Invalid level file: inconsistent row width in " << path << std::endl;
+            m_grid.clear();
+            return false;
+        }
+    }
+    
     return true;
 }

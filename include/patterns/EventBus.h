@@ -22,6 +22,15 @@
 #include "patterns/ISubject.h"
 
 /**
+ * @brief Custom hash functor for EventType enum class for cross-compiler portability.
+ */
+struct EventTypeHash {
+    std::size_t operator()(EventType event) const noexcept {
+        return static_cast<std::size_t>(event);
+    }
+};
+
+/**
  * @brief Global singleton event bus decoupling game entities, HUD, and audio managers.
  */
 class EventBus : public ISubject {
@@ -44,5 +53,5 @@ private:
     ~EventBus() override = default;
 
     // Private members
-    std::unordered_map<EventType, std::vector<IObserver*>> m_listeners;
+    std::unordered_map<EventType, std::vector<IObserver*>, EventTypeHash> m_listeners;
 };

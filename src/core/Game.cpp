@@ -2,7 +2,7 @@
  * @file Game.cpp
  * @author TV2
  * @brief Game loop, window management and event handling
- * @note Week 1 — SFML 3.0.0 setup
+ * @note Week 2 — SFML 3.0.0 setup
  */
 #include "core/Game.h"
 #include <iostream>

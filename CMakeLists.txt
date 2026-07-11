@@ -73,8 +73,9 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/erincatto/box2d.git
     GIT_TAG v2.4.1
 )
-# Disable Box2D unit tests and documentation to speed up compilation
+# Disable Box2D unit tests, testbed and documentation to speed up compilation
 set(BOX2D_BUILD_UNIT_TESTS OFF CACHE INTERNAL "")
+set(BOX2D_BUILD_TESTBED OFF CACHE INTERNAL "")
 set(BOX2D_BUILD_DOCS OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(box2d)
 

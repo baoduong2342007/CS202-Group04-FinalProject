@@ -5,7 +5,7 @@
 #include <optional>
 
 
-int main() {
+int runBox2DDemo() {
   // Define standard HD 16:9 window size
   const unsigned int windowWidth = 1280;
   const unsigned int windowHeight = 720;

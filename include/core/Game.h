@@ -2,10 +2,10 @@
  * @file Game.h
  * @author TV2
  * @brief Game loop, window management and event handling
- * @note Week 1 — SFML 3.0.0 setup
+ * @note Week 2 — SFML 3.0.0 setup
  */
-#ifndef GAME_H
-#define GAME_H
+
+#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -22,5 +22,3 @@ private:
     sf::RenderWindow m_window;
     sf::CircleShape m_shape;
 };
-
-#endif

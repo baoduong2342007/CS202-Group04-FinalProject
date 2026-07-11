@@ -5,8 +5,7 @@
  * @note Week 2 — bound to sf::Keyboard::Key::Left by default in InputHandler
  */
 
-#ifndef MOVELEFTCOMMAND_H
-#define MOVELEFTCOMMAND_H
+#pragma once
 
 #include "patterns/ICommand.h"
 
@@ -32,5 +31,3 @@ private:
     // 6. Private members
     Mario* m_mario;  // non-owning pointer — Command does not own Mario
 };
-
-#endif // MOVELEFTCOMMAND_H

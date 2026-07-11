@@ -5,8 +5,7 @@
  * @note Week 2 — bound to sf::Keyboard::Key::Escape by default in InputHandler
  */
 
-#ifndef PAUSECOMMAND_H
-#define PAUSECOMMAND_H
+#pragma once
 
 #include "patterns/ICommand.h"
 
@@ -32,5 +31,3 @@ private:
     // 6. Private members
     GameManager* m_gameManager;  // non-owning pointer — delegates to state machine
 };
-
-#endif // PAUSECOMMAND_H

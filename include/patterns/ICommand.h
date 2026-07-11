@@ -5,8 +5,7 @@
  * @note Week 2 — used by InputHandler to map keys to game actions
  */
 
-#ifndef ICOMMAND_H
-#define ICOMMAND_H
+#pragma once
 
 // ============================================================
 // PATTERN: Command
@@ -22,5 +21,3 @@ public:
 
     virtual void undo() = 0;
 };
-
-#endif // ICOMMAND_H

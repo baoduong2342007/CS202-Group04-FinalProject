@@ -5,8 +5,7 @@
  * @note Week 2 — uses Command pattern (ICommand) to decouple keys from actions
  */
 
-#ifndef INPUTHANDLER_H
-#define INPUTHANDLER_H
+#pragma once
 
 // 1. Standard library
 #include <memory>
@@ -52,5 +51,3 @@ private:
     // 6. Private members
     std::unordered_map<sf::Keyboard::Key, std::unique_ptr<ICommand>> m_keyBindings;
 };
-
-#endif // INPUTHANDLER_H

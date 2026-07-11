@@ -5,8 +5,7 @@
  * @note Week 2 — bound to sf::Keyboard::Key::Space by default in InputHandler
  */
 
-#ifndef JUMPCOMMAND_H
-#define JUMPCOMMAND_H
+#pragma once
 
 #include "patterns/ICommand.h"
 
@@ -32,5 +31,3 @@ private:
     // 6. Private members
     Mario* m_mario;  // non-owning pointer
 };
-
-#endif // JUMPCOMMAND_H

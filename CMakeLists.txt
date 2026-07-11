@@ -24,9 +24,15 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
     if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
         file(REMOVE_RECURSE "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     endif()
-    message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
+    if(MSVC)
+        message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
+        set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-vc17-64-bit.zip")
+    else()
+        message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
+        set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip")
+    endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    file(DOWNLOAD "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip" 
+    file(DOWNLOAD "${SFML_URL}" 
                   "${SFML_ZIP_PATH}" 
                   TLS_VERIFY OFF
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
@@ -59,6 +65,20 @@ endif()
 find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
 
 # ==============================================================================
+# 2.2. FIND OR DOWNLOAD BOX2D LIBRARY
+# ==============================================================================
+include(FetchContent)
+FetchContent_Declare(
+    box2d
+    GIT_REPOSITORY https://github.com/erincatto/box2d.git
+    GIT_TAG v2.4.1
+)
+# Disable Box2D unit tests and documentation to speed up compilation
+set(BOX2D_BUILD_UNIT_TESTS OFF CACHE INTERNAL "")
+set(BOX2D_BUILD_DOCS OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(box2d)
+
+# ==============================================================================
 # 3. DEFINE TARGET & SOURCE FILES
 # ==============================================================================
 # Recursively scan all .cpp source files in the src/ directory
@@ -74,14 +94,19 @@ add_executable(main ${SOURCES})
 target_include_directories(main PRIVATE include)
 
 # Compiler flags
-target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(main PRIVATE /W4)
+endif()
 
-# Link SFML libraries
+# Link SFML and Box2D libraries
 target_link_libraries(main PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
     SFML::Audio
+    box2d
 )
 
 # Platform-specific Release build settings

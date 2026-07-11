@@ -38,6 +38,9 @@ compile_commands.json
 *.sln
 *.vcxproj
 *.filters
+.agents/
+.agent/
+.gemini/
 
 # OS files
 .DS_Store

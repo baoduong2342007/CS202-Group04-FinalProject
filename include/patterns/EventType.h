@@ -2,7 +2,7 @@
  * @file EventType.h
  * @author TV1
  * @brief Core event type enumeration for decoupled EventBus messaging
- * @note Week 2
+ * @note Week 4 expanded with core gameplay events
  */
 
 #pragma once
@@ -15,7 +15,13 @@ enum class EventType {
     PLAYER_LANDED,
     PLAYER_DIED,
     PLAYER_POWER_UP,
+    PLAYER_POWER_DOWN,
+    ENEMY_STOMPED,
     ENEMY_KILLED,
     COIN_COLLECTED,
-    LEVEL_COMPLETED
+    POWERUP_SPAWNED,
+    FIREBALL_FIRED,
+    LEVEL_COMPLETED,
+    GAME_OVER,
+    GAME_PAUSED
 };

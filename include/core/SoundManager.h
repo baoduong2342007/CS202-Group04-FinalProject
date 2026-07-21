@@ -14,13 +14,17 @@
 // 2. SFML
 #include <SFML/Audio.hpp>
 
+// 3. Project headers
+#include "patterns/IObserver.h"
+
 // ============================================================
-// PATTERN: Singleton
+// PATTERN: Singleton & Observer (Subscriber)
 // Reason: only one audio device / mixer should exist at a time;
 //         any class can play sounds without owning the manager.
+//         listens to EventBus for decoupled audio feedback.
 // ============================================================
 
-class SoundManager {
+class SoundManager : public IObserver {
 public:
     // ── 1. Singleton access ──────────────────────────────────
     static SoundManager& getInstance();
@@ -31,7 +35,12 @@ public:
     SoundManager(SoundManager&&) = delete;
     SoundManager& operator=(SoundManager&&) = delete;
 
-    // ── 2. Public methods ────────────────────────────────────
+    // ── 2. Override methods (IObserver) ──────────────────────
+    /// @brief IObserver implementation: handles global events from EventBus
+    /// @note TV5: Subscribe in init/constructor -> EventBus::getInstance().subscribe(EventType::PLAYER_JUMPED, this);
+    void onNotify(EventType event) override;
+
+    // ── 3. Public methods ────────────────────────────────────
 
     /// Load a sound effect (.wav) and cache it under `id`
     /// @return true on success

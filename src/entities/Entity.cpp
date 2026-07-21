@@ -5,8 +5,8 @@
  */
 
 #include "entities/Entity.h"
-#include "physics/PhysicsEngine.h"
 #include <iostream>
+#include "physics/PhysicsEngine.h"
 
 Entity::Entity()
     : m_boundingBox({0.f, 0.f}, {0.f, 0.f}),

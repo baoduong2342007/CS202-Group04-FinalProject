@@ -24,7 +24,7 @@ bool TileMap::loadFromFile(const std::string& path){
     std::string line;
     
     while(std::getline(inputFile, line)){
-        if (line.empty() or line.front() == '#'){
+        if (line.empty() || line.front() == '#'){
             continue;
         }
         

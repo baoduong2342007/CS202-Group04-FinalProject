@@ -1,8 +1,8 @@
 /**
  * @file TileMap.cpp
  * @author TV4 (Vy)
- * @brief Implementation of TileMap file loading
- * @note Week 2 TileMap parsing
+ * @brief Implementation of TileMap file loading and validation
+ * @note Sprint 4 - validates ASCII level data before updating TileMap
  */
 
 #include "level/TileMap.h"
@@ -10,6 +10,30 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+namespace {
+
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMF";
+
+bool isBlankLine(const std::string& line){
+    return line.find_first_not_of(" \t") == std::string::npos;
+    
+}
+
+bool isCommentLine(const std::string& line){
+    const std::size_t firstCharacter = line.find_first_not_of(" \t");
+    
+    return firstCharacter != std::string::npos and line[firstCharacter] == '#';
+}
+
+bool isValidTileSymbol(char symbol){
+    return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
+}
+
+}
 
 bool TileMap::loadFromFile(const std::string& path){
     std::ifstream inputFile(path);
@@ -19,32 +43,73 @@ bool TileMap::loadFromFile(const std::string& path){
         return false;
     }
     
-    m_grid.clear();
+    std::vector<std::string> loadedGrid;
     
+    std::size_t expectedWidth = 0;
+    std::size_t finishCount = 0;
+    std::size_t lineNumber = 0;
+    std::size_t marioSpawnCount = 0;
+        
     std::string line;
     
     while(std::getline(inputFile, line)){
-        if (line.empty() || line.front() == '#'){
+        ++lineNumber;
+        
+        // Remove the carriage-return character from Windows CRLF files.
+        if (!line.empty() and line.back() == '\r'){
+            line.pop_back();
+        }
+        
+        if (isBlankLine(line) or isCommentLine(line)){
             continue;
         }
         
-        m_grid.push_back(line);
+        if (expectedWidth == 0){
+            expectedWidth = line.size();
+        } else if (line.size() != expectedWidth){
+            std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
+            
+            return false;
+        }
+        
+        for (std::size_t column = 0; column < line.size(); ++ column){
+            const char symbol = line[column];
+            
+            if (!isValidTileSymbol(symbol)){
+                std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
+                
+                return false;
+            }
+            
+            if (symbol == 'M'){
+                ++marioSpawnCount;
+            } else if (symbol == 'F'){
+                ++finishCount;
+            }
+        }
+        
+        loadedGrid.push_back(line);
     }
     
-    if (m_grid.empty()){
+    if (loadedGrid.empty()){
         std::cerr << "Level file contains no map data: " << path << std::endl;
+        
         return false;
     }
     
-    const std::size_t expectedWidth = m_grid.front().size();
-    
-    for (const std::string& row : m_grid){
-        if (row.size() != expectedWidth){
-            std::cerr << "Invalid level file: inconsistent row width in " << path << std::endl;
-            m_grid.clear();
-            return false;
-        }
+    if (marioSpawnCount != 1){
+        std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << marioSpawnCount << " in " << path << std::endl;
+        
+        return false;
     }
+    
+    if (finishCount == 0){
+        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
+        
+        return false;
+    }
+    
+    m_grid = std::move(loadedGrid);
     
     return true;
 }

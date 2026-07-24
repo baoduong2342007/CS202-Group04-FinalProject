@@ -2,7 +2,7 @@
  * @file Goomba.cpp
  * @author TV4 (Vy)
  * @brief Implementation of Goomba patrol and stomp behaviour
- * @note Sprint 4 — basic patrol AI and wall-direction reversal
+ * @note Sprint 4 - basic patrol AI and wall-direction reversal
  */
 
 #include "entities/Goomba.h"
@@ -16,7 +16,7 @@ constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
 
 const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
-}
+} // namespace
 
 Goomba::Goomba(const sf::Vector2f& position)
 : Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),

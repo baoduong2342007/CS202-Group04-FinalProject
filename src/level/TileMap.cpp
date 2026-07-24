@@ -64,7 +64,7 @@ void appendColoredVertex(sf::VertexArray& vertices,
     vertices.append(vertex);
 }
 
-}
+} // namespace
 
 bool TileMap::loadFromFile(const std::string& path){
     std::ifstream inputFile(path);

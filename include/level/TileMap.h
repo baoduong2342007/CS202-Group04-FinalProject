@@ -2,14 +2,14 @@
  * @file TileMap.h
  * @author TV4 (Vy)
  * @brief TileMap management: load, query, and render level tiles
- * @note Week 2 skeleton setup
+ * @note Sprint 4 - level loading, validation, queries, and placeholder rendering
  */
 
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
-#include <cstddef>
 
 #include <SFML/Graphics.hpp>
 

@@ -2,7 +2,7 @@
  * @file Enemy.h
  * @author TV4 (Vy)
  * @brief Abstract Enemy base class for Goomba and Koopa
- * @note Week 2 skeleton setup
+ * @note Sprint 4 - abstract enemy interface for patrol and collision responses
  */
 
 #pragma once
@@ -10,7 +10,7 @@
 #include "entities/Character.h"
 
 /*
- * PATTERN: Runtime Polymorphism
+ * OOP PRINCIPLE: Runtime Polymorphism
  * Reason: Enemy defines the common interface for enemy behavior,
  *         while specific enemies such as Goomba and Koopa implement
  *         their own patrol, stomp, and wall-collision behaviour.

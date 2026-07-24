@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <cstddef>
 
 #include <SFML/Graphics.hpp>
 
@@ -18,12 +19,20 @@ public:
     ~TileMap() = default;
     
     bool loadFromFile(const std::string& path);
-    void render(sf::RenderWindow& window);
+    
+    void render(sf::RenderWindow& window) const;
     
     char getTileAt(int column, int row) const;
     bool isSolid(int column, int row) const;
     
+    std::size_t getWidth() const;
+    std::size_t getHeight() const;
+    
 private:
+    static constexpr unsigned int TILE_SIZE = 32;
+    
+    void rebuildVertices();
+
     std::vector<std::string> m_grid;
     sf::Texture m_tileset;
 };

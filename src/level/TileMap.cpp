@@ -138,3 +138,15 @@ bool TileMap::isSolid(int column, int row) const {
     
     return tile == '1' or tile == 'B' or tile == '?';
 }
+
+std::size_t TileMap::getWidth() const {
+    if (m_grid.empty()){
+        return 0;
+    }
+
+    return m_grid.front().size();
+}
+
+std::size_t TileMap::getHeight() const {
+    return m_grid.size();
+}

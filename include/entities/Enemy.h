@@ -10,7 +10,7 @@
 #include "entities/Character.h"
 
 /*
- * PATTERN: Template Method / Polymorphism
+ * PATTERN: Runtime Polymorphism
  * Reason: Enemy defines the common interface for enemy behavior,
  *         while specific enemies such as Goomba and Koopa implement
  *         their own patrol movement and stomp reaction.
@@ -18,7 +18,7 @@
 
 class Enemy : public Character {
 public:
-    Enemy() = default;
+    Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health);
     ~Enemy() override = default;
     
     virtual void patrol() = 0;

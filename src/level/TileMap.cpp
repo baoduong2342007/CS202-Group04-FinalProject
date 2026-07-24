@@ -219,3 +219,16 @@ void TileMap::buildVertices(){
     }
 }
 
+std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
+    std::vector<sf::Vector2i> positions;
+
+    for (std::size_t row = 0; row < m_grid.size(); ++row){
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+            if (m_grid[row][column] == symbol){
+                positions.emplace_back(static_cast<int>(column), static_cast<int>(row));
+            }
+        }
+    }
+
+    return positions;
+}

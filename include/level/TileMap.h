@@ -28,6 +28,8 @@ public:
     std::size_t getWidth() const;
     std::size_t getHeight() const;
     
+    std::vector<sf::Vector2i> findTiles(char symbol) const;
+    
 private:
     static constexpr unsigned int TILE_SIZE = 32;
     

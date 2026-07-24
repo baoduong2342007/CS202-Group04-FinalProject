@@ -6,6 +6,6 @@
 
 #include "entities/Enemy.h"
 
-Enemy::Enemy(const sf::Vector2f& position, const sf::Vector& size, int health)
+Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health)
 : Character(position, size, health){}
 

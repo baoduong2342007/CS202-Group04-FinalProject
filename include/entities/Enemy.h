@@ -13,7 +13,7 @@
  * PATTERN: Runtime Polymorphism
  * Reason: Enemy defines the common interface for enemy behavior,
  *         while specific enemies such as Goomba and Koopa implement
- *         their own patrol movement and stomp reaction.
+ *         their own patrol, stomp, and wall-collision behaviour.
  */
 
 class Enemy : public Character {
@@ -23,4 +23,5 @@ public:
     
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
+    virtual void onWallCollision() = 0;
 };

@@ -20,8 +20,8 @@ public:
     bool loadFromFile(const std::string& path);
     void render(sf::RenderWindow& window);
     
-    char getTileAt(int x, int y) const;
-    bool isSolid(int x, int y) const;
+    char getTileAt(int column, int row) const;
+    bool isSolid(int column, int row) const;
     
 private:
     std::vector<std::string> m_grid;

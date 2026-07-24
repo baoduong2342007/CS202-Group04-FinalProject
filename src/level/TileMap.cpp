@@ -113,3 +113,28 @@ bool TileMap::loadFromFile(const std::string& path){
     
     return true;
 }
+
+char TileMap::getTileAt(int column, int row) const {
+    if (column < 0 or row < 0){
+        return '.';
+    }
+    
+    const std::size_t gridRow = static_cast<std::size_t>(row);
+    const std::size_t gridColumn = static_cast<std::size_t>(column);
+    
+    if (gridRow >= m_grid.size()){
+        return '.';
+    }
+    
+    if (gridColumn >= m_grid[gridRow].size()){
+        return '.';
+    }
+    
+    return m_grid[gridRow][gridColumn];
+}
+
+bool TileMap::isSolid(int column, int row) const {
+    const char tile = getTileAt(column, row);
+    
+    return tile == '1' or tile == 'B' or tile == '?';
+}

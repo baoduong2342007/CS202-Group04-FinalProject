@@ -35,6 +35,35 @@ bool isRenderableTile(char symbol){
     return symbol == '1' or symbol == 'B' or symbol == '?' or symbol == 'F';
 }
 
+sf::Color getPlaceholderColor(char symbol){
+    switch (symbol){
+        case '1': // Ground
+            return sf::Color(120, 75, 40);
+        
+        case 'B': // Brick
+            return sf::Color(190, 80, 45);
+            
+        case '?': // Question block
+            return sf::Color(235, 180, 30);
+        
+        case 'F': // Finish flag
+            return sf::Color(50, 190, 70);
+            
+        default:
+            return sf::Color::Transparent;
+    }
+}
+
+void appendColoredVertex(sf::VertexArray& vertices,
+                         float x, float y,
+                         const sf::Color& color){
+    sf::Vertex vertex;
+    vertex.position = {x, y};
+    vertex.color = color;
+    
+    vertices.append(vertex);
+}
+
 }
 
 bool TileMap::loadFromFile(const std::string& path){
@@ -117,6 +146,10 @@ bool TileMap::loadFromFile(const std::string& path){
     return true;
 }
 
+void TileMap::render(sf::RenderWindow& window) const {
+    window.draw(m_vertices);
+}
+
 char TileMap::getTileAt(int column, int row) const {
     if (column < 0 or row < 0){
         return '.';
@@ -171,15 +204,18 @@ void TileMap::buildVertices(){
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
             
+            const sf::Color tileColor = getPlaceholderColor(symbol);
+            
             // First triangle: top-left, bottom-left, bottom-right.
-            m_vertices.append(sf::Vertex{{left, top}});
-            m_vertices.append(sf::Vertex{{left, bottom}});
-            m_vertices.append(sf::Vertex{{right, bottom}});
+            appendColoredVertex(m_vertices, left, top, tileColor);
+            appendColoredVertex(m_vertices, left, bottom, tileColor);
+            appendColoredVertex(m_vertices, right, bottom, tileColor);
 
             // Second triangle: top-left, bottom-right, top-right.
-            m_vertices.append(sf::Vertex{{left, top}});
-            m_vertices.append(sf::Vertex{{right, bottom}});
-            m_vertices.append(sf::Vertex{{right, top}});
+            appendColoredVertex(m_vertices, left, top, tileColor);
+            appendColoredVertex(m_vertices, right, bottom, tileColor);
+            appendColoredVertex(m_vertices, right, top, tileColor);
         }
     }
 }
+

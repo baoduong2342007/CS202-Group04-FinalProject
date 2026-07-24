@@ -31,8 +31,9 @@ public:
 private:
     static constexpr unsigned int TILE_SIZE = 32;
     
-    void rebuildVertices();
+    void buildVertices();
 
     std::vector<std::string> m_grid;
+    sf::VertexArray m_vertices{sf::PrimitiveType::Triangles};
     sf::Texture m_tileset;
 };

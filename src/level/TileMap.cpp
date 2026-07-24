@@ -9,10 +9,8 @@
 
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace {
 
@@ -31,6 +29,10 @@ bool isCommentLine(const std::string& line){
 
 bool isValidTileSymbol(char symbol){
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
+}
+
+bool isRenderableTile(char symbol){
+    return symbol == '1' or symbol == 'B' or symbol == '?' or symbol == 'F';
 }
 
 }
@@ -110,6 +112,7 @@ bool TileMap::loadFromFile(const std::string& path){
     }
     
     m_grid = std::move(loadedGrid);
+    buildVertices();
     
     return true;
 }
@@ -149,4 +152,34 @@ std::size_t TileMap::getWidth() const {
 
 std::size_t TileMap::getHeight() const {
     return m_grid.size();
+}
+
+void TileMap::buildVertices(){
+    m_vertices.clear();
+    
+    for (std::size_t row = 0; row < m_grid.size(); ++row){
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+            const char symbol = m_grid[row][column];
+            
+            if (!isRenderableTile(symbol)){
+                continue;
+            }
+            
+            const float left = static_cast<float>(column * TILE_SIZE);
+            const float top = static_cast<float>(row * TILE_SIZE);
+            
+            const float right = left + static_cast<float>(TILE_SIZE);
+            const float bottom = top + static_cast<float>(TILE_SIZE);
+            
+            // First triangle: top-left, bottom-left, bottom-right.
+            m_vertices.append(sf::Vertex{{left, top}});
+            m_vertices.append(sf::Vertex{{left, bottom}});
+            m_vertices.append(sf::Vertex{{right, bottom}});
+
+            // Second triangle: top-left, bottom-right, top-right.
+            m_vertices.append(sf::Vertex{{left, top}});
+            m_vertices.append(sf::Vertex{{right, bottom}});
+            m_vertices.append(sf::Vertex{{right, top}});
+        }
+    }
 }

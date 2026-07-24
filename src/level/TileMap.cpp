@@ -232,3 +232,11 @@ std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
 
     return positions;
 }
+
+sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
+    const float tileSize = static_cast<float>(TILE_SIZE);
+
+    return {static_cast<float>(gridPosition.x) * tileSize,
+        static_cast<float>(gridPosition.y) * tileSize
+    };
+}

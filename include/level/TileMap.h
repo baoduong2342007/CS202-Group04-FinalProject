@@ -30,6 +30,8 @@ public:
     
     std::vector<sf::Vector2i> findTiles(char symbol) const;
     
+    static sf::Vector2f gridToWorldPosition(const sf::Vector2i& gridPosition);
+    
 private:
     static constexpr unsigned int TILE_SIZE = 32;
     

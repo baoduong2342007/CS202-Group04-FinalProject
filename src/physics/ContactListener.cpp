@@ -5,10 +5,15 @@
  */
 
 #include "physics/ContactListener.h"
+#include <iostream>
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
 #include "physics/PhysicsEngine.h"
-#include <iostream>
+
+namespace {
+constexpr float STOMP_BOUNCE_SPEED = 300.f;
+constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
+} // namespace
 
 void ContactListener::BeginContact(b2Contact* contact) {
     b2Fixture* fixtureA = contact->GetFixtureA();
@@ -54,7 +59,7 @@ void ContactListener::BeginContact(b2Contact* contact) {
                 if (enemy) {
                     enemy->onStomp();
                     // Make Mario bounce
-                    float bounceVelocity = -PhysicsEngine::pixelsToMeters(marioBody->GetLinearVelocity().y > 0 ? 300.f : 200.f);
+                    float bounceVelocity = -PhysicsEngine::pixelsToMeters(marioBody->GetLinearVelocity().y > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
                     marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVelocity));
                 }
             }

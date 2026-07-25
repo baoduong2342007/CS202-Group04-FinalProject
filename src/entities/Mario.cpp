@@ -5,13 +5,14 @@
  */
 
 #include "entities/Mario.h"
-#include "physics/PhysicsEngine.h"
 #include <iostream>
+#include "physics/PhysicsEngine.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr float DEFAULT_JUMP_FORCE = 450.f;
 constexpr float DEFAULT_MOVE_SPEED = 200.f;
+constexpr int FATAL_DAMAGE = 100;
 } // namespace
 
 Mario::Mario()
@@ -77,7 +78,7 @@ void Mario::powerDown() {
   } else if (m_marioState == MarioState::SUPER) {
     m_marioState = MarioState::SMALL;
   } else {
-    takeDamage(100); // Small Mario dies
+    takeDamage(FATAL_DAMAGE); // Small Mario dies
   }
 }
 

@@ -15,6 +15,8 @@
 namespace {
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
 constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
+constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.7f;
+constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.7f;
 } // namespace
 
 void ContactListener::BeginContact(b2Contact* contact) {
@@ -51,8 +53,8 @@ void ContactListener::BeginContact(b2Contact* contact) {
             normal = -normal; // Flip so normal points from Mario to the other body
         }
 
-        // If otherBody is below Mario (normal points downward in SFML space, so normal.y > 0.7f)
-        if (normal.y > 0.7f) {
+        // If otherBody is below Mario (normal points downward in SFML space, so normal.y > TOP_STOMP_NORMAL_THRESHOLD)
+        if (normal.y > TOP_STOMP_NORMAL_THRESHOLD) {
             mario->setGrounded(true);
 
             // Check if stomping on an enemy
@@ -61,16 +63,22 @@ void ContactListener::BeginContact(b2Contact* contact) {
                 if (enemy) {
                     enemy->onStomp();
                     EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+#ifdef DEBUG
+                    std::cout << "[DEBUG][ContactListener] Mario stomped an enemy." << std::endl;
+#endif
                     // Make Mario bounce
                     float bounceVelocity = -PhysicsEngine::pixelsToMeters(marioBody->GetLinearVelocity().y > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
                     marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVelocity));
                 }
             }
         }
-        // If otherBody is above Mario (normal points upward in SFML space, so normal.y < -0.7f)
-        else if (normal.y < -0.7f) {
+        // If otherBody is above Mario (normal points upward in SFML space, so normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD)
+        else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
             // Mario hit block from below
             // TV3/TV4 can implement block hit triggers here!
+#ifdef DEBUG
+            std::cout << "[DEBUG][ContactListener] Mario hit block from below." << std::endl;
+#endif
         }
         // Horizontal contact
         else {
@@ -78,6 +86,9 @@ void ContactListener::BeginContact(b2Contact* contact) {
                 Enemy* enemy = dynamic_cast<Enemy*>(otherEntity);
                 if (enemy) {
                     mario->powerDown(); // Mario takes damage or shrinks
+#ifdef DEBUG
+                    std::cout << "[DEBUG][ContactListener] Mario collided with enemy laterally." << std::endl;
+#endif
                 }
             }
         }
@@ -115,7 +126,7 @@ void ContactListener::EndContact(b2Contact* contact) {
                 if (marioBody == c->GetFixtureB()->GetBody()) {
                     normal = -normal;
                 }
-                if (normal.y > 0.7f) {
+                if (normal.y > TOP_STOMP_NORMAL_THRESHOLD) {
                     stillGrounded = true;
                     break;
                 }

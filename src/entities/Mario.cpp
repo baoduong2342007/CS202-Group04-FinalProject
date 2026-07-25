@@ -16,11 +16,17 @@ constexpr float DEFAULT_JUMP_FORCE = 450.f;
 constexpr float DEFAULT_MOVE_SPEED = 200.f;
 constexpr float MAX_FALL_SPEED = 600.f;
 constexpr int FATAL_DAMAGE = 100;
+
+// Dimensions & Physics Constants
+const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
+const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
+const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
+constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
+constexpr float MARIO_FIXTURE_FRICTION = 0.0f; // Zero friction to prevent wall sticking
 } // namespace
 
 Mario::Mario()
-    : Character(sf::Vector2f(100.f, 100.f), sf::Vector2f(32.f, 32.f),
-                DEFAULT_MARIO_HEALTH),
+    : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(DEFAULT_MOVE_SPEED) {}
 
@@ -77,6 +83,10 @@ void Mario::handleInput() {
         b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
     setGrounded(false); // No longer grounded after jumping
 
+#ifdef DEBUG
+    std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocity << std::endl;
+#endif
+
     // Publish event for SoundManager/Audio listener
     EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
   }
@@ -84,8 +94,8 @@ void Mario::handleInput() {
 
 void Mario::rebuildFixture() {
   sf::Vector2f targetSize = (m_marioState == MarioState::SMALL)
-                                ? sf::Vector2f(32.f, 32.f)
-                                : sf::Vector2f(32.f, 64.f);
+                                ? SMALL_MARIO_SIZE
+                                : SUPER_MARIO_SIZE;
   m_size = targetSize;
 
   if (!m_body)
@@ -105,9 +115,14 @@ void Mario::rebuildFixture() {
 
   b2FixtureDef fixtureDef;
   fixtureDef.shape = &dynamicBox;
-  fixtureDef.density = 1.0f;
-  fixtureDef.friction = 0.0f; // Prevent wall sticking
+  fixtureDef.density = MARIO_FIXTURE_DENSITY;
+  fixtureDef.friction = MARIO_FIXTURE_FRICTION; // Prevent wall sticking
   m_body->CreateFixture(&fixtureDef);
+
+#ifdef DEBUG
+  std::cout << "[DEBUG][Mario] Rebuilt fixture for state size: (" 
+            << targetSize.x << ", " << targetSize.y << ")" << std::endl;
+#endif
 }
 
 void Mario::powerUp(MarioState state) {
@@ -136,4 +151,8 @@ MarioState Mario::getMarioState() const { return m_marioState; }
 void Mario::setMarioState(MarioState state) {
   m_marioState = state;
   rebuildFixture();
+}
+
+bool Mario::canShootFireBall() const {
+  return m_marioState == MarioState::FIRE;
 }

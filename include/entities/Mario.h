@@ -34,6 +34,7 @@ public:
     // 4. Getters / Setters
     MarioState getMarioState() const;
     void setMarioState(MarioState state);
+    bool canShootFireBall() const;
 
 protected:
     // 5. Protected members

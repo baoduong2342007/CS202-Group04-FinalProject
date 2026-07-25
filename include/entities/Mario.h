@@ -28,6 +28,10 @@ public:
 
     // 3. Public methods
     void handleInput();
+    void jump();
+    void moveLeft();
+    void moveRight();
+    void stopMoving();
     void powerUp(MarioState state);
     void powerDown();
 

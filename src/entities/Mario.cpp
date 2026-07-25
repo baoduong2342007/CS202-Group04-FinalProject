@@ -67,6 +67,44 @@ void Mario::handleInput() {
   }
 }
 
+void Mario::jump() {
+  if (!m_body || !isGrounded())
+    return;
+
+  float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
+  m_body->SetLinearVelocity(
+      b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
+  setGrounded(false);
+}
+
+void Mario::moveLeft() {
+  if (!m_body)
+    return;
+
+  float desiredXVelocity = -PhysicsEngine::pixelsToMeters(m_moveSpeed);
+  m_body->SetLinearVelocity(
+      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
+  setFacingDirection(Direction::LEFT);
+}
+
+void Mario::moveRight() {
+  if (!m_body)
+    return;
+
+  float desiredXVelocity = PhysicsEngine::pixelsToMeters(m_moveSpeed);
+  m_body->SetLinearVelocity(
+      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
+  setFacingDirection(Direction::RIGHT);
+}
+
+void Mario::stopMoving() {
+  if (!m_body)
+    return;
+
+  m_body->SetLinearVelocity(
+      b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+}
+
 void Mario::powerUp(MarioState state) {
   m_marioState = state;
   // TV3 can adjust bounding box size here for big/fire Mario if needed

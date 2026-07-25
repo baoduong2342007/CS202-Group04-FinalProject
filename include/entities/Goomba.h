@@ -15,15 +15,15 @@ class Goomba : public Enemy {
 public:
     explicit Goomba(const sf::Vector2f& position);
     ~Goomba() override = default;
-    
+
     void update(float dt) override;
-    
+
     void onStomp() override;
     void patrol() override;
     void onWallCollision() override;
-    
+
     bool isStomped() const;
-    
+
 private:
     void reverseDirection();
 

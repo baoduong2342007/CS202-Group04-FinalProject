@@ -20,7 +20,7 @@ class Enemy : public Character {
 public:
     Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health);
     ~Enemy() override = default;
-    
+
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;

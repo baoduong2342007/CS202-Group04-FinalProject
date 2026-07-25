@@ -41,10 +41,10 @@ void Goomba::onStomp(){
     if (m_isStomped){
         return;
     }
-    
+
     m_isStomped = true;
     setHealth(0);
-    
+
     const sf::Vector2f currentVelocity = getVelocity();
     setVelocity({0.f, currentVelocity.y});
 }
@@ -53,15 +53,15 @@ void Goomba::patrol(){
     if (m_isStomped or isDead()){
         return;
     }
-    
+
     sf::Vector2f velocity = getVelocity();
-    
+
     if (getFacingDirection() == Direction::LEFT){
         velocity.x = -m_patrolSpeed;
     } else {
         velocity.x = m_patrolSpeed;
     }
-    
+
     setVelocity(velocity);
 }
 
@@ -79,7 +79,7 @@ void Goomba::reverseDirection(){
     } else {
         setFacingDirection(Direction::LEFT);
     }
-    
+
     patrol();
 }
 

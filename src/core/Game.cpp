@@ -14,10 +14,14 @@ const unsigned int FRAMERATE_LIMIT = 60;
 const float CIRCLE_RADIUS = 100.f;
 
 Game::Game() 
-    : m_window(sf::VideoMode({SCREEN_WIDTH, SCREEN_HEIGHT}), "Super Mario - Test SFML", sf::Style::Titlebar | sf::Style::Close),
+    : m_window(sf::VideoMode({SCREEN_WIDTH, SCREEN_HEIGHT}), "Super Mario - Level 1 TileMap Test", sf::Style::Titlebar | sf::Style::Close),
       m_shape(CIRCLE_RADIUS) 
 {
     m_window.setFramerateLimit(FRAMERATE_LIMIT);
+
+    if (!m_tileMap.loadFromFile("levels/level1.txt")) {
+        std::cerr << "Failed to load levels/level1.txt!" << std::endl;
+    }
 
     m_shape.setFillColor(sf::Color(46, 204, 113)); 
     m_shape.setPosition({
@@ -62,12 +66,11 @@ void Game::processEvents() {
 }
 
 void Game::update(float dt) {
-    // Suppress "unused parameter" compiler warning until we add real logic
     (void)dt; 
 }
 
 void Game::render() {
-    m_window.clear(sf::Color(30, 30, 30));
-    m_window.draw(m_shape);
+    m_window.clear(sf::Color(100, 149, 237)); // Sky blue background
+    m_tileMap.render(m_window);
     m_window.display();
 }

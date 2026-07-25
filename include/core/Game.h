@@ -8,6 +8,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "level/TileMap.h"
 
 class Game {
 public:
@@ -21,4 +22,5 @@ private:
 
     sf::RenderWindow m_window;
     sf::CircleShape m_shape;
+    TileMap m_tileMap;
 };

@@ -1,3 +1,9 @@
+/**
+ * @file AnimationSystem.cpp
+ * @author TV2 (Nhật)
+ * @brief Implementation of sprite animation handling.
+ */
+
 #include "core/AnimationSystem.h"
 #include <iostream>
 

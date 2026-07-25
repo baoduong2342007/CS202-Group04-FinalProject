@@ -40,4 +40,6 @@ protected:
     MarioState m_marioState;
     float m_jumpForce;
     float m_moveSpeed;
+
+    void rebuildFixture();
 };

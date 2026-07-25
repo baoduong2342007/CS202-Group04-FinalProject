@@ -56,7 +56,6 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
 endif()
 
 # Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
-# On macOS/Linux, install SFML via package manager (e.g., brew install sfml)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()

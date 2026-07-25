@@ -7,11 +7,14 @@
 #include "entities/Mario.h"
 #include <iostream>
 #include "physics/PhysicsEngine.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr float DEFAULT_JUMP_FORCE = 450.f;
 constexpr float DEFAULT_MOVE_SPEED = 200.f;
+constexpr float MAX_FALL_SPEED = 600.f;
 constexpr int FATAL_DAMAGE = 100;
 } // namespace
 
@@ -28,6 +31,15 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
 
 void Mario::update(float dt) {
   (void)dt;
+
+  // Clamp terminal fall velocity to prevent AABB tunneling through floor tiles
+  if (m_body) {
+    b2Vec2 velocity = m_body->GetLinearVelocity();
+    float maxFallMeters = PhysicsEngine::pixelsToMeters(MAX_FALL_SPEED);
+    if (velocity.y > maxFallMeters) {
+      m_body->SetLinearVelocity(b2Vec2(velocity.x, maxFallMeters));
+    }
+  }
 
   // Sync the entity position and velocity with the Box2D body
   syncPhysics();
@@ -54,7 +66,7 @@ void Mario::handleInput() {
   // Set horizontal velocity, maintaining vertical velocity
   m_body->SetLinearVelocity(b2Vec2(desiredXVelocity, velocity.y));
 
-  // Jump (W or Space) - Can only jump if grounded
+  // Jump (W, Space, or Up) - Can only jump if grounded
   if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) &&
@@ -64,24 +76,64 @@ void Mario::handleInput() {
     m_body->SetLinearVelocity(
         b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
     setGrounded(false); // No longer grounded after jumping
+
+    // Publish event for SoundManager/Audio listener
+    EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
   }
+}
+
+void Mario::rebuildFixture() {
+  sf::Vector2f targetSize = (m_marioState == MarioState::SMALL)
+                                ? sf::Vector2f(32.f, 32.f)
+                                : sf::Vector2f(32.f, 64.f);
+  m_size = targetSize;
+
+  if (!m_body)
+    return;
+
+  // Remove existing fixtures
+  for (b2Fixture *f = m_body->GetFixtureList(); f;) {
+    b2Fixture *next = f->GetNext();
+    m_body->DestroyFixture(f);
+    f = next;
+  }
+
+  // Create new shape with 0.0f friction to prevent wall sticking
+  b2PolygonShape dynamicBox;
+  dynamicBox.SetAsBox(PhysicsEngine::pixelsToMeters(targetSize.x / 2.0f),
+                      PhysicsEngine::pixelsToMeters(targetSize.y / 2.0f));
+
+  b2FixtureDef fixtureDef;
+  fixtureDef.shape = &dynamicBox;
+  fixtureDef.density = 1.0f;
+  fixtureDef.friction = 0.0f; // Prevent wall sticking
+  m_body->CreateFixture(&fixtureDef);
 }
 
 void Mario::powerUp(MarioState state) {
   m_marioState = state;
-  // TV3 can adjust bounding box size here for big/fire Mario if needed
+  EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+  rebuildFixture();
 }
 
 void Mario::powerDown() {
   if (m_marioState == MarioState::FIRE) {
     m_marioState = MarioState::SUPER;
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
+    rebuildFixture();
   } else if (m_marioState == MarioState::SUPER) {
     m_marioState = MarioState::SMALL;
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
+    rebuildFixture();
   } else {
     takeDamage(FATAL_DAMAGE); // Small Mario dies
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
   }
 }
 
 MarioState Mario::getMarioState() const { return m_marioState; }
 
-void Mario::setMarioState(MarioState state) { m_marioState = state; }
+void Mario::setMarioState(MarioState state) {
+  m_marioState = state;
+  rebuildFixture();
+}

@@ -6,10 +6,11 @@
  */
 
 #include "core/SoundManager.h"
-#include "patterns/EventBus.h"
-#include "patterns/EventType.h"
 
 #include <iostream>
+
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 // ============================================================
 // PATTERN: Singleton & Observer (Subscriber)

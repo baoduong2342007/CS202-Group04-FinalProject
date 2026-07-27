@@ -20,22 +20,24 @@ constexpr float PIT_DEATH_Y_THRESHOLD = 800.f;
 constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
-constexpr float WALK_MAX_SPEED = 180.f;       // ~6.0 m/s
-constexpr float RUN_MAX_SPEED = 340.f;        // ~11.3 m/s
-constexpr float GROUND_ACCEL = 900.f;        // Walk acceleration
-constexpr float RUN_ACCEL = 1400.f;          // Sprint acceleration
-constexpr float GROUND_FRICTION = 1100.f;    // Deceleration when idle on ground
-constexpr float SKID_FRICTION = 2200.f;      // Deceleration when reversing direction
-constexpr float AIR_ACCEL = 450.f;           // Reduced horizontal control in air
-constexpr float AIR_FRICTION = 150.f;         // Low air drag preserving jump momentum
-constexpr float SHORT_HOP_CUTOFF = 0.5f;     // Velocity multiplier on early jump key release
+constexpr float WALK_MAX_SPEED = 180.f;            // ~6.0 m/s
+constexpr float RUN_MAX_SPEED = 340.f;             // ~11.3 m/s
+constexpr float GROUND_ACCEL = 900.f;             // Walk acceleration
+constexpr float RUN_ACCEL = 1400.f;               // Sprint acceleration
+constexpr float GROUND_FRICTION = 1100.f;         // Deceleration when idle on ground
+constexpr float SKID_FRICTION = 2200.f;           // Deceleration when reversing direction
+constexpr float AIR_ACCEL = 450.f;                // Reduced horizontal control in air
+constexpr float AIR_FRICTION = 150.f;              // Low air drag preserving jump momentum
+constexpr float SHORT_HOP_CUTOFF = 0.5f;          // Velocity multiplier on early jump key release
+constexpr float SKID_SPEED_THRESHOLD = 15.0f;     // Minimum speed required to trigger skidding
+constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;   // Threshold to detect upward jump ascent
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
 const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
 const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
-constexpr float MARIO_FIXTURE_FRICTION = 0.0f; // Zero friction to prevent wall sticking
+constexpr float MARIO_FIXTURE_FRICTION = 0.0f;     // Zero friction to prevent wall sticking
 } // namespace
 
 Mario::Mario()
@@ -129,8 +131,8 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
   // 1. GROUND PHYSICS
   if (isGrounded()) {
     if (inputDirX != 0.0f) {
-      // Check if skidding (reversing direction while moving)
-      if ((currentVx > 15.0f && inputDirX < 0.0f) || (currentVx < -15.0f && inputDirX > 0.0f)) {
+      // Check if skidding (reversing direction while moving faster than threshold)
+      if ((currentVx > SKID_SPEED_THRESHOLD && inputDirX < 0.0f) || (currentVx < -SKID_SPEED_THRESHOLD && inputDirX > 0.0f)) {
         m_isSkidding = true;
         float skidStep = SKID_FRICTION * dt;
         if (currentVx > 0.0f) {
@@ -195,7 +197,7 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
     }
 
     // Variable Jump Height: Short hop cutoff when jump key is released while ascending
-    if (jumpKeyReleased && currentVy < -0.5f) {
+    if (jumpKeyReleased && currentVy < ASCENDING_VEL_THRESHOLD) {
       currentVy *= SHORT_HOP_CUTOFF;
     }
   }

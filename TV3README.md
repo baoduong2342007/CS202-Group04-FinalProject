@@ -4,3 +4,4 @@
 - Build with CMake.
 - Make sure not to use magic numbers, use constants instead.
 - Use git for version control. 
+- Only commit when i require, commit in the format : [TV3] + brief of the changes since the last commit.

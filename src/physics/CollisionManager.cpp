@@ -1,7 +1,7 @@
 /**
  * @file CollisionManager.cpp
  * @author TV3
- * @brief Implementation of CollisionManager with safe pointer handling and wall-sticking prevention
+ * @brief Implementation of CollisionManager with safe pointer handling, wall-sticking prevention, and FireBall bounce resolution
  */
 
 #include "physics/CollisionManager.h"
@@ -46,23 +46,44 @@ void CollisionManager::resolve(b2Contact* contact) {
     Entity* entityA = (ptrA != 0) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
     Entity* entityB = (ptrB != 0) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
 
+    b2WorldManifold worldManifold;
+    contact->GetWorldManifold(&worldManifold);
+    b2Vec2 normal = worldManifold.normal;
+
     // Handle FireBall collisions if present
     FireBall* fireBall = nullptr;
     Entity* target = nullptr;
+    b2Body* fireBallBody = nullptr;
 
     if (entityA && (fireBall = dynamic_cast<FireBall*>(entityA))) {
         target = entityB;
+        fireBallBody = bodyA;
     } else if (entityB && (fireBall = dynamic_cast<FireBall*>(entityB))) {
         target = entityA;
+        fireBallBody = bodyB;
     }
 
-    if (fireBall) {
+    if (fireBall && fireBallBody) {
+        if (contact->GetFixtureB()->GetBody() == fireBallBody) {
+            normal = -normal; // Flip so normal points away from FireBall
+        }
+
         if (target) {
             Enemy* enemy = dynamic_cast<Enemy*>(target);
             if (enemy) {
                 enemy->takeDamage(100);
                 fireBall->deactivate();
+                return;
             }
+        }
+
+        // Floor contact: Bounce FireBall
+        if (normal.y > 0.5f) {
+            fireBall->bounce(sf::Vector2f(normal.x, normal.y));
+        }
+        // Wall contact: Deactivate FireBall
+        else if (std::abs(normal.x) > 0.5f) {
+            fireBall->deactivate();
         }
         return;
     }

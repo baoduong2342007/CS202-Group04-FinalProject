@@ -21,7 +21,7 @@ public:
     void update(float dt) override;
 
     // 3. Public methods
-    void bounce();
+    void bounce(const sf::Vector2f& surfaceNormal = sf::Vector2f(0.f, -1.f));
     void deactivate();
 
     // 4. Getters / Setters

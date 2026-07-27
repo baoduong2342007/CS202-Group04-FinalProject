@@ -1,7 +1,7 @@
 /**
  * @file Mario.h
  * @author TV3 (Bảo)
- * @brief Mario player character class with physics, power-up states, and lives management
+ * @brief Mario player character class with authentic NES movement physics and states
  * @note Week 7 update
  */
 
@@ -40,13 +40,21 @@ public:
     int getLives() const;
     void setLives(int lives);
 
+    bool isRunning() const;
+    bool isSkidding() const;
+
 protected:
     // 5. Protected methods
     void rebuildFixture();
+    void applyMovementPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, bool jumpKeyReleased);
 
     // 6. Protected / Private members
     MarioState m_marioState;
     float m_jumpForce;
     float m_moveSpeed;
     int m_lives;
+
+    bool m_isRunning;
+    bool m_isSkidding;
+    bool m_wasJumpPressed;
 };

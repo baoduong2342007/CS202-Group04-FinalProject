@@ -1,7 +1,7 @@
 /**
  * @file FireBall.cpp
  * @author TV3
- * @brief Fireball entity projectile implementation with Box2D physics scaling
+ * @brief Fireball entity projectile implementation with Box2D physics scaling and ground bouncing
  */
 
 #include "entities/FireBall.h"
@@ -10,8 +10,8 @@
 
 namespace {
 const sf::Vector2f FIREBALL_SIZE(12.f, 12.f);
-constexpr float FIREBALL_SPEED = 350.f;
-constexpr float FIREBALL_BOUNCE_SPEED = 200.f;
+constexpr float FIREBALL_SPEED = 360.f;
+constexpr float FIREBALL_BOUNCE_SPEED = 240.f;
 constexpr int MAX_BOUNCES = 3;
 constexpr float MAX_LIFETIME = 3.0f;
 } // namespace
@@ -34,7 +34,7 @@ FireBall::FireBall(const sf::Vector2f& position, Direction direction)
     if (m_body) {
         float dirMultiplier = (direction == Direction::RIGHT) ? 1.0f : -1.0f;
         float vxMeters = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
-        float vyMeters = PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED);
+        float vyMeters = PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED * 0.5f);
         m_body->SetLinearVelocity(b2Vec2(vxMeters, vyMeters));
     }
 }
@@ -53,15 +53,17 @@ void FireBall::update(float dt) {
         float dirMultiplier = (m_direction == Direction::RIGHT) ? 1.0f : -1.0f;
         float targetVx = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
 
-        // Maintain constant horizontal velocity while allowing Box2D gravity to drive Y velocity
+        // Maintain constant horizontal speed while allowing Box2D gravity to drive Y motion
         m_body->SetLinearVelocity(b2Vec2(targetVx, vel.y));
     }
 
     syncPhysics();
 }
 
-void FireBall::bounce() {
-    if (!m_body) return;
+void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
+    (void)surfaceNormal;
+
+    if (!m_body || !m_active) return;
 
     m_bounceCount++;
     if (m_bounceCount >= MAX_BOUNCES) {
@@ -70,8 +72,16 @@ void FireBall::bounce() {
     }
 
     b2Vec2 vel = m_body->GetLinearVelocity();
+    float dirMultiplier = (m_direction == Direction::RIGHT) ? 1.0f : -1.0f;
+    float targetVx = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
     float bounceVy = -PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED);
-    m_body->SetLinearVelocity(b2Vec2(vel.x, bounceVy));
+
+    // Apply upward bounce velocity and maintain horizontal travel speed
+    m_body->SetLinearVelocity(b2Vec2(targetVx, bounceVy));
+
+#ifdef DEBUG
+    std::cout << "[DEBUG][FireBall] Bounced! Bounce count: " << m_bounceCount << std::endl;
+#endif
 }
 
 void FireBall::deactivate() {

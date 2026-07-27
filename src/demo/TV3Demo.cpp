@@ -1,7 +1,7 @@
 /**
  * @file TV3Demo.cpp
  * @author TV3 (Bảo)
- * @brief Interactive test demo for TV3 features: Mario physics, states, lives, and FireBall bouncing
+ * @brief Interactive test demo for NES Mario-like movement physics, sprint, skid friction, and FireBall bouncing
  */
 
 #include "demo/TV3Demo.h"
@@ -28,7 +28,7 @@ const sf::Vector2f WALL_POS(1100.f, 320.f);
 
 int runTV3Demo() {
   sf::RenderWindow window(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}),
-                          "Super Mario - TV3 Physics & FireBall Test",
+                          "Super Mario - NES Movement Physics & FireBall Bounce Test",
                           sf::Style::Titlebar | sf::Style::Close);
   window.setFramerateLimit(60);
 
@@ -69,7 +69,6 @@ int runTV3Demo() {
   wallBox.SetAsBox(PhysicsEngine::pixelsToMeters(25.f), PhysicsEngine::pixelsToMeters(150.f));
   b2FixtureDef wallFixtureDef;
   wallFixtureDef.shape = &wallBox;
-  wallFixtureDef.friction = 0.5f;
   wallBody->CreateFixture(&wallFixtureDef);
 
   // Visual representation for Wall
@@ -90,15 +89,16 @@ int runTV3Demo() {
   std::vector<std::unique_ptr<FireBall>> fireballs;
 
   std::cout << "\n======================================================\n";
-  std::cout << "         SUPER MARIO - TV3 INTEGRATION DEMO          \n";
+  std::cout << "         SUPER MARIO - NES PHYSICS INTEGRATION DEMO   \n";
   std::cout << "======================================================\n";
   std::cout << " Controls:\n";
-  std::cout << "  - A / D or Left / Right : Move Left / Right\n";
-  std::cout << "  - W / Space / Up       : Jump\n";
-  std::cout << "  - 1 / 2 / 3           : Switch State (1: SMALL, 2: SUPER, 3: FIRE)\n";
-  std::cout << "  - F                   : Shoot FireBall (in FIRE state)\n";
-  std::cout << "  - K                   : Power Down / Take Damage\n";
-  std::cout << "  - ESC                 : Exit Demo\n";
+  std::cout << "  - A / D or Left / Right  : Walk Left / Right\n";
+  std::cout << "  - Hold LShift / J        : Sprint / Run (increases max speed)\n";
+  std::cout << "  - W / Space / Up        : Jump (Tap for short hop, Hold for high jump)\n";
+  std::cout << "  - 1 / 2 / 3            : Switch State (1: SMALL, 2: SUPER, 3: FIRE)\n";
+  std::cout << "  - F                    : Shoot FireBall (in FIRE state)\n";
+  std::cout << "  - K                    : Power Down / Take Damage\n";
+  std::cout << "  - ESC                  : Exit Demo\n";
   std::cout << "======================================================\n\n";
 
   sf::Clock clock;
@@ -153,11 +153,13 @@ int runTV3Demo() {
       }
     }
 
-    // Update Mario visual shape based on state and physics position
+    // Update Mario visual shape based on state, skidding, and physics position
     marioShape.setSize(mario.getBoundingBox().size);
     marioShape.setPosition(mario.getPosition());
 
-    if (mario.getMarioState() == MarioState::SMALL) {
+    if (mario.isSkidding()) {
+      marioShape.setFillColor(sf::Color(241, 196, 15)); // Skid Yellow indicator
+    } else if (mario.getMarioState() == MarioState::SMALL) {
       marioShape.setFillColor(sf::Color(231, 76, 60)); // Small Red
     } else if (mario.getMarioState() == MarioState::SUPER) {
       marioShape.setFillColor(sf::Color(155, 89, 182)); // Super Purple

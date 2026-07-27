@@ -1,11 +1,12 @@
 /**
  * @file Mario.cpp
  * @author TV3
- * @brief Mario character implementation with lives, power-down, and physics
+ * @brief Mario character implementation with authentic NES movement physics and states
  */
 
 #include "entities/Mario.h"
 #include <iostream>
+#include <cmath>
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -13,11 +14,21 @@
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr int DEFAULT_MARIO_LIVES = 3;
-constexpr float DEFAULT_JUMP_FORCE = 450.f;
-constexpr float DEFAULT_MOVE_SPEED = 200.f;
+constexpr float DEFAULT_JUMP_FORCE = 460.f;
 constexpr float MAX_FALL_SPEED = 600.f;
 constexpr float PIT_DEATH_Y_THRESHOLD = 800.f;
 constexpr int FATAL_DAMAGE = 100;
+
+// Authentic Mario Movement Physics Constants (in pixels/sec)
+constexpr float WALK_MAX_SPEED = 180.f;       // ~6.0 m/s
+constexpr float RUN_MAX_SPEED = 340.f;        // ~11.3 m/s
+constexpr float GROUND_ACCEL = 900.f;        // Walk acceleration
+constexpr float RUN_ACCEL = 1400.f;          // Sprint acceleration
+constexpr float GROUND_FRICTION = 1100.f;    // Deceleration when idle on ground
+constexpr float SKID_FRICTION = 2200.f;      // Deceleration when reversing direction
+constexpr float AIR_ACCEL = 450.f;           // Reduced horizontal control in air
+constexpr float AIR_FRICTION = 150.f;         // Low air drag preserving jump momentum
+constexpr float SHORT_HOP_CUTOFF = 0.5f;     // Velocity multiplier on early jump key release
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
@@ -31,19 +42,24 @@ Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
       m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED),
-      m_lives(DEFAULT_MARIO_LIVES) {}
+      m_moveSpeed(WALK_MAX_SPEED),
+      m_lives(DEFAULT_MARIO_LIVES),
+      m_isRunning(false),
+      m_isSkidding(false),
+      m_wasJumpPressed(false) {}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
       m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED),
-      m_lives(DEFAULT_MARIO_LIVES) {}
+      m_moveSpeed(WALK_MAX_SPEED),
+      m_lives(DEFAULT_MARIO_LIVES),
+      m_isRunning(false),
+      m_isSkidding(false),
+      m_wasJumpPressed(false) {}
 
 void Mario::update(float dt) {
   (void)dt;
-
   if (!m_active) return;
 
   // Clamp terminal fall velocity to prevent AABB tunneling through floor tiles
@@ -68,38 +84,125 @@ void Mario::handleInput() {
   if (!m_body || !m_active)
     return;
 
-  b2Vec2 velocity = m_body->GetLinearVelocity();
-  float desiredXVelocity = 0.0f;
+  float inputDirX = 0.0f;
 
-  // Horizontal Movement
+  // Horizontal Movement Input
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
-    desiredXVelocity = -PhysicsEngine::pixelsToMeters(m_moveSpeed);
+    inputDirX = -1.0f;
     setFacingDirection(Direction::LEFT);
   } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) ||
              sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
-    desiredXVelocity = PhysicsEngine::pixelsToMeters(m_moveSpeed);
+    inputDirX = 1.0f;
     setFacingDirection(Direction::RIGHT);
   }
 
-  // Set horizontal velocity, maintaining vertical velocity
-  m_body->SetLinearVelocity(b2Vec2(desiredXVelocity, velocity.y));
+  // Sprint Input (Left Shift or J)
+  bool isRunningInput = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::J);
 
-  // Jump (W, Space, or Up) - Can only jump if grounded
-  if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
-       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
-       sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) &&
-      isGrounded()) {
-    float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
-    m_body->SetLinearVelocity(b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
-    setGrounded(false);
+  // Jump Input (W, Space, or Up)
+  bool jumpKeyPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up);
+
+  bool jumpKeyReleased = m_wasJumpPressed && !jumpKeyPressed;
+  m_wasJumpPressed = jumpKeyPressed;
+
+  // Compute fixed 60FPS step delta for input physics calculation
+  constexpr float FIXED_DT = 1.0f / 60.0f;
+  applyMovementPhysics(FIXED_DT, inputDirX, isRunningInput, jumpKeyPressed, jumpKeyReleased);
+}
+
+void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, bool jumpKeyReleased) {
+  if (!m_body) return;
+
+  b2Vec2 currentVelMeters = m_body->GetLinearVelocity();
+  float currentVx = PhysicsEngine::metersToPixels(currentVelMeters.x);
+  float currentVy = currentVelMeters.y;
+
+  m_isRunning = isRunningInput;
+  float targetMaxSpeed = isRunningInput ? RUN_MAX_SPEED : WALK_MAX_SPEED;
+
+  float newVx = currentVx;
+
+  // 1. GROUND PHYSICS
+  if (isGrounded()) {
+    if (inputDirX != 0.0f) {
+      // Check if skidding (reversing direction while moving)
+      if ((currentVx > 15.0f && inputDirX < 0.0f) || (currentVx < -15.0f && inputDirX > 0.0f)) {
+        m_isSkidding = true;
+        float skidStep = SKID_FRICTION * dt;
+        if (currentVx > 0.0f) {
+          newVx = std::max(0.0f, currentVx - skidStep);
+        } else {
+          newVx = std::min(0.0f, currentVx + skidStep);
+        }
+      } else {
+        // Accelerating in current facing direction
+        m_isSkidding = false;
+        float accelRate = isRunningInput ? RUN_ACCEL : GROUND_ACCEL;
+        newVx += inputDirX * accelRate * dt;
+
+        // Clamp to max speed
+        if (newVx > targetMaxSpeed) newVx = targetMaxSpeed;
+        if (newVx < -targetMaxSpeed) newVx = -targetMaxSpeed;
+      }
+    } else {
+      // Idle on ground: Apply ground friction
+      m_isSkidding = false;
+      float frictionStep = GROUND_FRICTION * dt;
+      if (currentVx > 0.0f) {
+        newVx = std::max(0.0f, currentVx - frictionStep);
+      } else if (currentVx < 0.0f) {
+        newVx = std::min(0.0f, currentVx + frictionStep);
+      }
+    }
+
+    // Jump Initiation
+    if (jumpKeyPressed) {
+      float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
+      currentVy = jumpVelocityMeters;
+      setGrounded(false);
 
 #ifdef DEBUG
-    std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocity << std::endl;
+      std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocityMeters << std::endl;
 #endif
 
-    EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+      EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+    }
   }
+  // 2. AIR PHYSICS
+  else {
+    m_isSkidding = false;
+
+    if (inputDirX != 0.0f) {
+      // Reduced air acceleration
+      newVx += inputDirX * AIR_ACCEL * dt;
+
+      // Allow preserving higher sprint momentum in air if already sprinting, otherwise clamp
+      float maxAirSpeed = std::max(targetMaxSpeed, std::abs(currentVx));
+      if (newVx > maxAirSpeed) newVx = maxAirSpeed;
+      if (newVx < -maxAirSpeed) newVx = -maxAirSpeed;
+    } else {
+      // Low air friction to preserve horizontal jump momentum
+      float airFrictionStep = AIR_FRICTION * dt;
+      if (currentVx > 0.0f) {
+        newVx = std::max(0.0f, currentVx - airFrictionStep);
+      } else if (currentVx < 0.0f) {
+        newVx = std::min(0.0f, currentVx + airFrictionStep);
+      }
+    }
+
+    // Variable Jump Height: Short hop cutoff when jump key is released while ascending
+    if (jumpKeyReleased && currentVy < -0.5f) {
+      currentVy *= SHORT_HOP_CUTOFF;
+    }
+  }
+
+  // Apply final velocity to Box2D body
+  float newVxMeters = PhysicsEngine::pixelsToMeters(newVx);
+  m_body->SetLinearVelocity(b2Vec2(newVxMeters, currentVy));
 }
 
 void Mario::rebuildFixture() {
@@ -203,4 +306,12 @@ int Mario::getLives() const {
 
 void Mario::setLives(int lives) {
   m_lives = lives;
+}
+
+bool Mario::isRunning() const {
+  return m_isRunning;
+}
+
+bool Mario::isSkidding() const {
+  return m_isSkidding;
 }

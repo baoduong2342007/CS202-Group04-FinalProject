@@ -139,9 +139,11 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
             }
         }
     }
-    // Bottom collision (block above Mario)
+    // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
-
+#ifdef DEBUG
+        std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;
+#endif
     }
     // Lateral collision (wall contact)
     else {

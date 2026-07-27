@@ -7,13 +7,14 @@
 
 #include "level/TileMap.h"
 
-#include "physics/PhysicsEngine.h"
-
-#include <box2d/box2d.h>
 #include <fstream>
 #include <iostream>
 #include <string_view>
 #include <utility>
+
+#include <box2d/box2d.h>
+
+#include "physics/PhysicsEngine.h"
 
 namespace {
 
@@ -287,20 +288,21 @@ void TileMap::createPhysicsBodies(b2World* world){
                 continue;
             }
             
+            sf::Vector2f centerPixels(
+                static_cast<float>(column) * tileSize + tileSize / 2.f,
+                static_cast<float>(row) * tileSize + tileSize / 2.f
+            );
+            b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
+
             b2BodyDef bodyDefinition;
             bodyDefinition.type = b2_staticBody;
-            bodyDefinition.position.Set(
-                                        (static_cast<float>(column) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM,
-                                        (static_cast<float>(row) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM
-            );
+            bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
             
             b2Body* body = world->CreateBody(&bodyDefinition);
             
+            float halfSizeMeters = PhysicsEngine::pixelsToMeters(tileSize / 2.f);
             b2PolygonShape shape;
-            shape.SetAsBox(
-                           tileSize / 2.f / PhysicsEngine::PPM,
-                           tileSize / 2.f / PhysicsEngine::PPM
-            );
+            shape.SetAsBox(halfSizeMeters, halfSizeMeters);
             
             b2FixtureDef fixtureDefinition;
             fixtureDefinition.shape = &shape;

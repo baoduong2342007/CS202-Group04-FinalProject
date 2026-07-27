@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "patterns/EntityFactory.h"
+#include "physics/PhysicsEngine.h"
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
@@ -39,6 +40,13 @@ bool Level::loadFromFile(const std::string& path) {
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
+
+    // Create Box2D static bodies for solid tiles (ground, bricks, question blocks)
+    // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
+    b2World* world = PhysicsEngine::getInstance().getWorld();
+    if (world) {
+        m_tileMap.createPhysicsBodies(world);
+    }
 
     // Spawn Mario and all entities from tile codes
     spawnEntitiesFromTileMap();

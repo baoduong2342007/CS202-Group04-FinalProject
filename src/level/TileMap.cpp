@@ -7,6 +7,9 @@
 
 #include "level/TileMap.h"
 
+#include "physics/PhysicsEngine.h"
+
+#include <box2d/box2d.h>
 #include <fstream>
 #include <iostream>
 #include <string_view>
@@ -15,10 +18,10 @@
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMF";
+constexpr float TILE_FRICTION = 0.6f;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
-
 }
 
 bool isCommentLine(const std::string& line){
@@ -64,7 +67,64 @@ void appendColoredVertex(sf::VertexArray& vertices,
     vertices.append(vertex);
 }
 
+struct LevelValidationState {
+    std::size_t expectedWidth{0};
+    std::size_t marioSpawnCount{0};
+    std::size_t finishCount{0};
+};
+
+bool validateRow(const std::string& row,
+                 std::size_t lineNumber,
+                 const std::string& path,
+                 LevelValidationState& state){
+    if (state.expectedWidth == 0){
+        state.expectedWidth = row.size();
+    } else if (row.size() != state.expectedWidth){
+        std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
+        
+        return false;
+    }
+    
+    for (std::size_t column = 0; column < row.size(); ++column){
+        const char symbol = row[column];
+
+        if (!isValidTileSymbol(symbol)){
+            std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
+
+            return false;
+        }
+
+        if (symbol == 'M'){
+            ++state.marioSpawnCount;
+        } else if (symbol == 'F'){
+            ++state.finishCount;
+        }
+    }
+    
+    return true;
+}
+
+bool validateLevelMarkers(const LevelValidationState& state, const std::string& path){
+    if (state.marioSpawnCount != 1){
+        std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << state.marioSpawnCount << " in " << path << std::endl;
+
+        return false;
+    }
+
+    if (state.finishCount == 0){
+        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
+
+        return false;
+    }
+    
+    return true;
+}
+
 } // namespace
+
+TileMap::~TileMap(){
+    clearPhysicsBodies();
+}
 
 bool TileMap::loadFromFile(const std::string& path){
     std::ifstream inputFile(path);
@@ -75,13 +135,10 @@ bool TileMap::loadFromFile(const std::string& path){
     }
 
     std::vector<std::string> loadedGrid;
-
-    std::size_t expectedWidth = 0;
-    std::size_t finishCount = 0;
-    std::size_t lineNumber = 0;
-    std::size_t marioSpawnCount = 0;
+    LevelValidationState validationState;
 
     std::string line;
+    std::size_t lineNumber = 0;
 
     while(std::getline(inputFile, line)){
         ++lineNumber;
@@ -95,28 +152,8 @@ bool TileMap::loadFromFile(const std::string& path){
             continue;
         }
 
-        if (expectedWidth == 0){
-            expectedWidth = line.size();
-        } else if (line.size() != expectedWidth){
-            std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
-
+        if (!validateRow(line, lineNumber, path, validationState)){
             return false;
-        }
-
-        for (std::size_t column = 0; column < line.size(); ++ column){
-            const char symbol = line[column];
-
-            if (!isValidTileSymbol(symbol)){
-                std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
-
-                return false;
-            }
-
-            if (symbol == 'M'){
-                ++marioSpawnCount;
-            } else if (symbol == 'F'){
-                ++finishCount;
-            }
         }
 
         loadedGrid.push_back(line);
@@ -127,16 +164,8 @@ bool TileMap::loadFromFile(const std::string& path){
 
         return false;
     }
-
-    if (marioSpawnCount != 1){
-        std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << marioSpawnCount << " in " << path << std::endl;
-
-        return false;
-    }
-
-    if (finishCount == 0){
-        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
-
+    
+    if (!validateLevelMarkers(validationState, path)){
         return false;
     }
 
@@ -239,4 +268,62 @@ sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
     return {static_cast<float>(gridPosition.x) * tileSize,
         static_cast<float>(gridPosition.y) * tileSize
     };
+}
+
+void TileMap::createPhysicsBodies(b2World* world){
+    if (!world){
+        std::cerr << "Cannot create TileMap physics bodies: world is null" << std::endl;
+        return;
+    }
+    
+    clearPhysicsBodies();
+    m_physicsWorld = world;
+    
+    const float tileSize = static_cast<float>(TILE_SIZE);
+    
+    for (std::size_t row = 0; row < m_grid.size(); ++row){
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+            if (!isSolid(static_cast<int>(column), static_cast<int>(row))){
+                continue;
+            }
+            
+            b2BodyDef bodyDefinition;
+            bodyDefinition.type = b2_staticBody;
+            bodyDefinition.position.Set(
+                                        (static_cast<float>(column) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM,
+                                        (static_cast<float>(row) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM
+            );
+            
+            b2Body* body = world->CreateBody(&bodyDefinition);
+            
+            b2PolygonShape shape;
+            shape.SetAsBox(
+                           tileSize / 2.f / PhysicsEngine::PPM,
+                           tileSize / 2.f / PhysicsEngine::PPM
+            );
+            
+            b2FixtureDef fixtureDefinition;
+            fixtureDefinition.shape = &shape;
+            fixtureDefinition.friction = TILE_FRICTION;
+
+            body->CreateFixture(&fixtureDefinition);
+            m_physicsBodies.push_back(body);
+        }
+    }
+}
+
+void TileMap::clearPhysicsBodies(){
+    if (!m_physicsWorld){
+        m_physicsBodies.clear();
+        return;
+    }
+
+    for (b2Body* body : m_physicsBodies){
+        if (body){
+            m_physicsWorld->DestroyBody(body);
+        }
+    }
+
+    m_physicsBodies.clear();
+    m_physicsWorld = nullptr;
 }

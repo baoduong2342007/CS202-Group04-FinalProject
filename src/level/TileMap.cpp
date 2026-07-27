@@ -64,6 +64,59 @@ void appendColoredVertex(sf::VertexArray& vertices,
     vertices.append(vertex);
 }
 
+struct LevelValidationState {
+    std::size_t expectedWidth{0};
+    std::size_t marioSpawnCount{0};
+    std::size_t finishCount{0};
+};
+
+bool validateRow(const std::string& row,
+                 std::size_t lineNumber,
+                 const std::string& path,
+                 LevelValidationState& state){
+    if (state.expectedWidth == 0){
+        state.expectedWidth = row.size();
+    } else if (row.size() != state.expectedWidth){
+        std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
+        
+        return false;
+    }
+    
+    for (std::size_t column = 0; column < row.size(); ++column){
+        const char symbol = row[column];
+
+        if (!isValidTileSymbol(symbol)){
+            std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
+
+            return false;
+        }
+
+        if (symbol == 'M'){
+            ++state.marioSpawnCount;
+        } else if (symbol == 'F'){
+            ++state.finishCount;
+        }
+    }
+    
+    return true;
+}
+
+bool validateLevelMarkers(const LevelValidationState& state, const std::string& path){
+    if (state.marioSpawnCount != 1){
+        std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << state.marioSpawnCount << " in " << path << std::endl;
+
+        return false;
+    }
+
+    if (state.finishCount == 0){
+        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
+
+        return false;
+    }
+    
+    return true;
+}
+
 } // namespace
 
 bool TileMap::loadFromFile(const std::string& path){
@@ -75,13 +128,10 @@ bool TileMap::loadFromFile(const std::string& path){
     }
 
     std::vector<std::string> loadedGrid;
-
-    std::size_t expectedWidth = 0;
-    std::size_t finishCount = 0;
-    std::size_t lineNumber = 0;
-    std::size_t marioSpawnCount = 0;
+    LevelValidationState validationState;
 
     std::string line;
+    std::size_t lineNumber = 0;
 
     while(std::getline(inputFile, line)){
         ++lineNumber;
@@ -95,28 +145,8 @@ bool TileMap::loadFromFile(const std::string& path){
             continue;
         }
 
-        if (expectedWidth == 0){
-            expectedWidth = line.size();
-        } else if (line.size() != expectedWidth){
-            std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
-
+        if (!validateRow(line, lineNumber, path, validationState)){
             return false;
-        }
-
-        for (std::size_t column = 0; column < line.size(); ++ column){
-            const char symbol = line[column];
-
-            if (!isValidTileSymbol(symbol)){
-                std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
-
-                return false;
-            }
-
-            if (symbol == 'M'){
-                ++marioSpawnCount;
-            } else if (symbol == 'F'){
-                ++finishCount;
-            }
         }
 
         loadedGrid.push_back(line);
@@ -127,16 +157,8 @@ bool TileMap::loadFromFile(const std::string& path){
 
         return false;
     }
-
-    if (marioSpawnCount != 1){
-        std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << marioSpawnCount << " in " << path << std::endl;
-
-        return false;
-    }
-
-    if (finishCount == 0){
-        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
-
+    
+    if (!validateLevelMarkers(validationState, path)){
         return false;
     }
 

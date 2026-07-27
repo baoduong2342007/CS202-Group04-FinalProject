@@ -93,6 +93,9 @@ add_executable(main ${SOURCES})
 # Include directories
 target_include_directories(main PRIVATE include)
 
+# Define DEBUG macro for debug builds
+target_compile_definitions(main PRIVATE DEBUG)
+
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(main PRIVATE -Wall -Wextra -pedantic)

@@ -19,7 +19,7 @@ namespace {
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
 constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
 constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
-constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.8f;
+constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.7f;
 constexpr float MAX_WALL_NORMAL_X = 0.5f;
 } // namespace
 
@@ -141,9 +141,7 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     }
     // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
-#ifdef DEBUG
         std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;
-#endif
     }
     // Lateral collision (wall contact)
     else {

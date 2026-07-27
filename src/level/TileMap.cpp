@@ -7,6 +7,9 @@
 
 #include "level/TileMap.h"
 
+#include "physics/PhysicsEngine.h"
+
+#include <box2d/box2d.h>
 #include <fstream>
 #include <iostream>
 #include <string_view>
@@ -15,10 +18,10 @@
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMF";
+constexpr float TILE_FRICTION = 0.6f;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
-
 }
 
 bool isCommentLine(const std::string& line){
@@ -118,6 +121,10 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
 }
 
 } // namespace
+
+TileMap::~TileMap(){
+    clearPhysicsBodies();
+}
 
 bool TileMap::loadFromFile(const std::string& path){
     std::ifstream inputFile(path);
@@ -261,4 +268,62 @@ sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
     return {static_cast<float>(gridPosition.x) * tileSize,
         static_cast<float>(gridPosition.y) * tileSize
     };
+}
+
+void TileMap::createPhysicsBodies(b2World* world){
+    if (!world){
+        std::cerr << "Cannot create TileMap physics bodies: world is null" << std::endl;
+        return;
+    }
+    
+    clearPhysicsBodies();
+    m_physicsWorld = world;
+    
+    const float tileSize = static_cast<float>(TILE_SIZE);
+    
+    for (std::size_t row = 0; row < m_grid.size(); ++row){
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+            if (!isSolid(static_cast<int>(column), static_cast<int>(row))){
+                continue;
+            }
+            
+            b2BodyDef bodyDefinition;
+            bodyDefinition.type = b2_staticBody;
+            bodyDefinition.position.Set(
+                                        (static_cast<float>(column) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM,
+                                        (static_cast<float>(row) * tileSize + tileSize / 2.f) / PhysicsEngine::PPM
+            );
+            
+            b2Body* body = world->CreateBody(&bodyDefinition);
+            
+            b2PolygonShape shape;
+            shape.SetAsBox(
+                           tileSize / 2.f / PhysicsEngine::PPM,
+                           tileSize / 2.f / PhysicsEngine::PPM
+            );
+            
+            b2FixtureDef fixtureDefinition;
+            fixtureDefinition.shape = &shape;
+            fixtureDefinition.friction = TILE_FRICTION;
+
+            body->CreateFixture(&fixtureDefinition);
+            m_physicsBodies.push_back(body);
+        }
+    }
+}
+
+void TileMap::clearPhysicsBodies(){
+    if (!m_physicsWorld){
+        m_physicsBodies.clear();
+        return;
+    }
+
+    for (b2Body* body : m_physicsBodies){
+        if (body){
+            m_physicsWorld->DestroyBody(body);
+        }
+    }
+
+    m_physicsBodies.clear();
+    m_physicsWorld = nullptr;
 }

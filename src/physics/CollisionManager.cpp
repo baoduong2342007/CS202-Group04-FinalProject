@@ -64,6 +64,10 @@ void CollisionManager::resolve(b2Contact* contact) {
     }
 
     if (fireBall && fireBallBody) {
+        if (!fireBall->isActive() || fireBall->isPendingDestroy()) {
+            return;
+        }
+
         if (contact->GetFixtureB()->GetBody() == fireBallBody) {
             normal = -normal; // Flip so normal points away from FireBall
         }

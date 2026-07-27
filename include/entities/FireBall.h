@@ -33,4 +33,5 @@ private:
     Direction m_direction;
     int m_bounceCount;
     float m_lifetime;
+    float m_bounceCooldown;
 };

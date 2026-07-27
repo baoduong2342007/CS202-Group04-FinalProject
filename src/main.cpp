@@ -1,7 +1,11 @@
-#include "core/Game.h"
+/**
+ * @file main.cpp
+ * @author TV3
+ * @brief Main entry point calling TV3 physics & Mario mechanics integration demo
+ */
+
+#include "demo/TV3Demo.h"
 
 int main() {
-    Game game;
-    game.run();
-    return 0;
+    return runTV3Demo();
 }

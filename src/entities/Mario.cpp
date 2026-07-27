@@ -1,7 +1,7 @@
 /**
  * @file Mario.cpp
  * @author TV3
- * @brief Mario character implementation
+ * @brief Mario character implementation with lives, power-down, and physics
  */
 
 #include "entities/Mario.h"
@@ -12,9 +12,11 @@
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
+constexpr int DEFAULT_MARIO_LIVES = 3;
 constexpr float DEFAULT_JUMP_FORCE = 450.f;
 constexpr float DEFAULT_MOVE_SPEED = 200.f;
 constexpr float MAX_FALL_SPEED = 600.f;
+constexpr float PIT_DEATH_Y_THRESHOLD = 800.f;
 constexpr int FATAL_DAMAGE = 100;
 
 // Dimensions & Physics Constants
@@ -27,16 +29,22 @@ constexpr float MARIO_FIXTURE_FRICTION = 0.0f; // Zero friction to prevent wall 
 
 Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED) {}
+      m_marioState(MarioState::SMALL),
+      m_jumpForce(DEFAULT_JUMP_FORCE),
+      m_moveSpeed(DEFAULT_MOVE_SPEED),
+      m_lives(DEFAULT_MARIO_LIVES) {}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED) {}
+      m_marioState(MarioState::SMALL),
+      m_jumpForce(DEFAULT_JUMP_FORCE),
+      m_moveSpeed(DEFAULT_MOVE_SPEED),
+      m_lives(DEFAULT_MARIO_LIVES) {}
 
 void Mario::update(float dt) {
   (void)dt;
+
+  if (!m_active) return;
 
   // Clamp terminal fall velocity to prevent AABB tunneling through floor tiles
   if (m_body) {
@@ -47,12 +55,17 @@ void Mario::update(float dt) {
     }
   }
 
-  // Sync the entity position and velocity with the Box2D body
+  // Sync position with Box2D body
   syncPhysics();
+
+  // Pit fall check (death threshold)
+  if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
+    loseLife();
+  }
 }
 
 void Mario::handleInput() {
-  if (!m_body)
+  if (!m_body || !m_active)
     return;
 
   b2Vec2 velocity = m_body->GetLinearVelocity();
@@ -77,17 +90,14 @@ void Mario::handleInput() {
        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) &&
       isGrounded()) {
-    float jumpVelocity = -PhysicsEngine::pixelsToMeters(
-        m_jumpForce); // negative Y is UP in SFML coordinates
-    m_body->SetLinearVelocity(
-        b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
-    setGrounded(false); // No longer grounded after jumping
+    float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
+    m_body->SetLinearVelocity(b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
+    setGrounded(false);
 
 #ifdef DEBUG
     std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocity << std::endl;
 #endif
 
-    // Publish event for SoundManager/Audio listener
     EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
   }
 }
@@ -116,7 +126,7 @@ void Mario::rebuildFixture() {
   b2FixtureDef fixtureDef;
   fixtureDef.shape = &dynamicBox;
   fixtureDef.density = MARIO_FIXTURE_DENSITY;
-  fixtureDef.friction = MARIO_FIXTURE_FRICTION; // Prevent wall sticking
+  fixtureDef.friction = MARIO_FIXTURE_FRICTION;
   m_body->CreateFixture(&fixtureDef);
 
 #ifdef DEBUG
@@ -141,8 +151,38 @@ void Mario::powerDown() {
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
     rebuildFixture();
   } else {
-    takeDamage(FATAL_DAMAGE); // Small Mario dies
-    EventBus::getInstance().notify(EventType::PLAYER_DIED);
+    loseLife();
+  }
+}
+
+void Mario::loseLife() {
+  if (m_lives > 0) {
+    m_lives--;
+  }
+
+  EventBus::getInstance().notify(EventType::PLAYER_DIED);
+
+#ifdef DEBUG
+  std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
+#endif
+
+  if (m_lives > 0) {
+    respawn(DEFAULT_MARIO_POSITION);
+  } else {
+    takeDamage(FATAL_DAMAGE);
+    m_active = false;
+  }
+}
+
+void Mario::respawn(const sf::Vector2f& spawnPosition) {
+  m_marioState = MarioState::SMALL;
+  m_health = DEFAULT_MARIO_HEALTH;
+  m_active = true;
+  setPosition(spawnPosition);
+  rebuildFixture();
+
+  if (m_body) {
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
   }
 }
 
@@ -155,4 +195,12 @@ void Mario::setMarioState(MarioState state) {
 
 bool Mario::canShootFireBall() const {
   return m_marioState == MarioState::FIRE;
+}
+
+int Mario::getLives() const {
+  return m_lives;
+}
+
+void Mario::setLives(int lives) {
+  m_lives = lives;
 }

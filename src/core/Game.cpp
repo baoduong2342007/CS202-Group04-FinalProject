@@ -2,16 +2,19 @@
  * @file Game.cpp
  * @author TV2
  * @brief Game loop, window management and event handling
- * @note Week 2 — SFML 3.0.0 setup. Sprint 4 — integrated Level + PhysicsEngine
+ * @note Sprint 4 fix — delegates logic to GameManager (State Pattern)
  */
 #include "core/Game.h"
-#include "physics/PhysicsEngine.h"
 #include <iostream>
+#include "core/GameManager.h"
+#include "states/PlayState.h"
+#include "physics/PhysicsEngine.h"
 
-// --- No More Magic Numbers ---
-const unsigned int SCREEN_WIDTH = 1280;
-const unsigned int SCREEN_HEIGHT = 720;
-const unsigned int FRAMERATE_LIMIT = 60;
+namespace {
+constexpr unsigned int SCREEN_WIDTH = 1280;
+constexpr unsigned int SCREEN_HEIGHT = 720;
+constexpr unsigned int FRAMERATE_LIMIT = 60;
+} // namespace
 
 Game::Game()
     : m_window(sf::VideoMode({SCREEN_WIDTH, SCREEN_HEIGHT}),
@@ -20,15 +23,12 @@ Game::Game()
 {
     m_window.setFramerateLimit(FRAMERATE_LIMIT);
 
-    // Task 1.1: Initialize Box2D physics world with downward gravity
+    // Initialize Box2D physics world with downward gravity
     PhysicsEngine::getInstance().init(
         sf::Vector2f(0.f, 9.8f * PhysicsEngine::PPM));
 
-    // Load Level 1 (TileMap + spawn entities via Factory)
-    if (!m_level.loadFromFile("levels/level1.txt")) {
-        std::cerr << "FATAL: Failed to load levels/level1.txt!"
-                  << std::endl;
-    }
+    // Transition to PlayState as the initial state
+    GameManager::getInstance().changeState(std::make_unique<PlayState>());
 }
 
 void Game::run() {
@@ -64,30 +64,24 @@ void Game::processEvents() {
                 m_window.close();
             }
         }
+        
+        // Delegate event to current state
+        GameManager::getInstance().processEvents(*event);
     }
 }
 
 void Game::update(float dt) {
-    // Task 1.4: Game loop — the heart of the engine
-
-    // 1. Handle player input
-    //    (tạm thời gọi trực tiếp, TV5 sẽ refactor sang InputHandler — Task 3.2)
-    m_level.getMario().handleInput();
-
-    // 2. Step Box2D physics simulation
-    PhysicsEngine::getInstance().update(dt);
-
-    // 3. Update all entities (Mario, enemies, items) + camera follow
-    m_level.update(dt);
+    // Delegate update to GameManager
+    GameManager::getInstance().update(dt);
 }
 
 void Game::render() {
     m_window.clear(sf::Color(100, 149, 237)); // Sky blue background
 
-    // Level handles: camera setView → TileMap → entities → Mario
-    m_level.render(m_window);
-
-    // Reset view to default for HUD overlay (TV5 future — Task X.1)
+    // Delegate rendering to GameManager
+    GameManager::getInstance().render(m_window);
+    
+    // Reset view to default for HUD overlay (TV5 future)
     m_window.setView(m_window.getDefaultView());
 
     m_window.display();

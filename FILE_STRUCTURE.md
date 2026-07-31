@@ -11,8 +11,6 @@ SuperMario/
 │
 ├── CMakeLists.txt              ← TV1 (Dương) maintain (SFML configuration)
 ├── README.md
-├── ROLES.md
-├── WEEKLY_PLAN.md
 ├── FILE_STRUCTURE.md
 ├── CODING_RULES.md
 ├── .gitignore
@@ -26,7 +24,14 @@ SuperMario/
 ├── docs/                       ← TV1 (Dương) maintain
 │   ├── class_diagram.drawio    ← draw.io file for editing
 │   ├── class_diagram.png       ← exported PNG for submission
-│   └── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
+│   ├── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
+│   ├── management/             ← Sprint planning and task tracking
+│   │   ├── ROLES.md
+│   │   ├── WEEKLY_PLAN.md
+│   │   ├── need_to_do_W4.md
+│   │   └── fix_sprint_4_TV1.md
+│   └── specs/                  ← Project specifications
+│       └── CS202-FinalProject_SuperMario.md
 │
 ├── assets/                     ← TV5 (Truyền) maintain
 │   ├── textures/

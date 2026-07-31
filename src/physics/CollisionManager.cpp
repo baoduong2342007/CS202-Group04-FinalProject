@@ -11,6 +11,7 @@
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
 #include "entities/FireBall.h"
+#include "items/Item.h"
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -74,7 +75,7 @@ void CollisionManager::resolve(b2Contact* contact) {
 
         if (target) {
             Enemy* enemy = dynamic_cast<Enemy*>(target);
-            if (enemy) {
+            if (enemy && enemy->isActive() && !enemy->isPendingDestroy()) {
                 enemy->takeDamage(100);
                 fireBall->deactivate();
                 return;
@@ -107,6 +108,19 @@ void CollisionManager::resolve(b2Contact* contact) {
 
     if (mario && marioBody) {
         handleMarioCollision(mario, otherEntity, marioBody, contact);
+        return;
+    }
+
+    // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
+    Enemy* enemy = nullptr;
+    if (entityA && (enemy = dynamic_cast<Enemy*>(entityA))) {
+        if (std::abs(normal.x) > 0.5f) {
+            enemy->onWallCollision();
+        }
+    } else if (entityB && (enemy = dynamic_cast<Enemy*>(entityB))) {
+        if (std::abs(normal.x) > 0.5f) {
+            enemy->onWallCollision();
+        }
     }
 }
 
@@ -120,6 +134,14 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     }
 
     b2Vec2 marioVel = marioBody->GetLinearVelocity();
+
+    // Check collectible Item collection (Task 3.1)
+    if (other) {
+        Item* item = dynamic_cast<Item*>(other);
+        if (item && !item->isCollected()) {
+            item->onCollect(*mario);
+        }
+    }
 
     // Top stomp / Grounded check:
     // Requires normal to be predominantly pointing UP (normal.y > 0.8f), not a steep wall (|normal.x| < 0.5f),

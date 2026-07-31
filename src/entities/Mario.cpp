@@ -48,7 +48,9 @@ Mario::Mario()
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
-      m_wasJumpPressed(false) {}
+      m_wasJumpPressed(false) {
+    setSprite("assets/textures/mario/idle.png");
+}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
@@ -58,7 +60,9 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
-      m_wasJumpPressed(false) {}
+      m_wasJumpPressed(false) {
+    setSprite("assets/textures/mario/idle.png");
+}
 
 void Mario::update(float dt) {
   (void)dt;
@@ -86,34 +90,73 @@ void Mario::handleInput() {
   if (!m_body || !m_active)
     return;
 
-  float inputDirX = 0.0f;
+  // Input polling decoupled — actions are handled via InputHandler commands (Task 3.2).
+  constexpr float FIXED_DT = 1.0f / 60.0f;
+  applyMovementPhysics(FIXED_DT, 0.0f, m_isRunning, false, false);
+}
 
-  // Horizontal Movement Input
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) ||
-      sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
-    inputDirX = -1.0f;
-    setFacingDirection(Direction::LEFT);
-  } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) ||
-             sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
-    inputDirX = 1.0f;
-    setFacingDirection(Direction::RIGHT);
+void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, float& currentVy, float& newVx, float targetMaxSpeed) {
+  if (inputDirX != 0.0f) {
+    if ((newVx > SKID_SPEED_THRESHOLD && inputDirX < 0.0f) || (newVx < -SKID_SPEED_THRESHOLD && inputDirX > 0.0f)) {
+      m_isSkidding = true;
+      float skidStep = SKID_FRICTION * dt;
+      if (newVx > 0.0f) {
+        newVx = std::max(0.0f, newVx - skidStep);
+      } else {
+        newVx = std::min(0.0f, newVx + skidStep);
+      }
+    } else {
+      m_isSkidding = false;
+      float accelRate = isRunningInput ? RUN_ACCEL : GROUND_ACCEL;
+      newVx += inputDirX * accelRate * dt;
+
+      if (newVx > targetMaxSpeed) newVx = targetMaxSpeed;
+      if (newVx < -targetMaxSpeed) newVx = -targetMaxSpeed;
+    }
+  } else {
+    m_isSkidding = false;
+    float frictionStep = GROUND_FRICTION * dt;
+    if (newVx > 0.0f) {
+      newVx = std::max(0.0f, newVx - frictionStep);
+    } else if (newVx < 0.0f) {
+      newVx = std::min(0.0f, newVx + frictionStep);
+    }
   }
 
-  // Sprint Input (Left Shift or J)
-  bool isRunningInput = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
-                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::J);
+  if (jumpKeyPressed) {
+    float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
+    currentVy = jumpVelocityMeters;
+    setGrounded(false);
 
-  // Jump Input (W, Space, or Up)
-  bool jumpKeyPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
-                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
-                        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up);
+#ifdef DEBUG
+    std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocityMeters << std::endl;
+#endif
 
-  bool jumpKeyReleased = m_wasJumpPressed && !jumpKeyPressed;
-  m_wasJumpPressed = jumpKeyPressed;
+    EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+  }
+}
 
-  // Compute fixed 60FPS step delta for input physics calculation
-  constexpr float FIXED_DT = 1.0f / 60.0f;
-  applyMovementPhysics(FIXED_DT, inputDirX, isRunningInput, jumpKeyPressed, jumpKeyReleased);
+void Mario::applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, float& currentVy, float& newVx, float targetMaxSpeed) {
+  m_isSkidding = false;
+
+  if (inputDirX != 0.0f) {
+    newVx += inputDirX * AIR_ACCEL * dt;
+
+    float maxAirSpeed = std::max(targetMaxSpeed, std::abs(newVx));
+    if (newVx > maxAirSpeed) newVx = maxAirSpeed;
+    if (newVx < -maxAirSpeed) newVx = -maxAirSpeed;
+  } else {
+    float airFrictionStep = AIR_FRICTION * dt;
+    if (newVx > 0.0f) {
+      newVx = std::max(0.0f, newVx - airFrictionStep);
+    } else if (newVx < 0.0f) {
+      newVx = std::min(0.0f, newVx + airFrictionStep);
+    }
+  }
+
+  if (jumpKeyReleased && currentVy < ASCENDING_VEL_THRESHOLD) {
+    currentVy *= SHORT_HOP_CUTOFF;
+  }
 }
 
 void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, bool jumpKeyReleased) {
@@ -125,84 +168,14 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
 
   m_isRunning = isRunningInput;
   float targetMaxSpeed = isRunningInput ? RUN_MAX_SPEED : WALK_MAX_SPEED;
-
   float newVx = currentVx;
 
-  // 1. GROUND PHYSICS
   if (isGrounded()) {
-    if (inputDirX != 0.0f) {
-      // Check if skidding (reversing direction while moving faster than threshold)
-      if ((currentVx > SKID_SPEED_THRESHOLD && inputDirX < 0.0f) || (currentVx < -SKID_SPEED_THRESHOLD && inputDirX > 0.0f)) {
-        m_isSkidding = true;
-        float skidStep = SKID_FRICTION * dt;
-        if (currentVx > 0.0f) {
-          newVx = std::max(0.0f, currentVx - skidStep);
-        } else {
-          newVx = std::min(0.0f, currentVx + skidStep);
-        }
-      } else {
-        // Accelerating in current facing direction
-        m_isSkidding = false;
-        float accelRate = isRunningInput ? RUN_ACCEL : GROUND_ACCEL;
-        newVx += inputDirX * accelRate * dt;
-
-        // Clamp to max speed
-        if (newVx > targetMaxSpeed) newVx = targetMaxSpeed;
-        if (newVx < -targetMaxSpeed) newVx = -targetMaxSpeed;
-      }
-    } else {
-      // Idle on ground: Apply ground friction
-      m_isSkidding = false;
-      float frictionStep = GROUND_FRICTION * dt;
-      if (currentVx > 0.0f) {
-        newVx = std::max(0.0f, currentVx - frictionStep);
-      } else if (currentVx < 0.0f) {
-        newVx = std::min(0.0f, currentVx + frictionStep);
-      }
-    }
-
-    // Jump Initiation
-    if (jumpKeyPressed) {
-      float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
-      currentVy = jumpVelocityMeters;
-      setGrounded(false);
-
-#ifdef DEBUG
-      std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocityMeters << std::endl;
-#endif
-
-      EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
-    }
-  }
-  // 2. AIR PHYSICS
-  else {
-    m_isSkidding = false;
-
-    if (inputDirX != 0.0f) {
-      // Reduced air acceleration
-      newVx += inputDirX * AIR_ACCEL * dt;
-
-      // Allow preserving higher sprint momentum in air if already sprinting, otherwise clamp
-      float maxAirSpeed = std::max(targetMaxSpeed, std::abs(currentVx));
-      if (newVx > maxAirSpeed) newVx = maxAirSpeed;
-      if (newVx < -maxAirSpeed) newVx = -maxAirSpeed;
-    } else {
-      // Low air friction to preserve horizontal jump momentum
-      float airFrictionStep = AIR_FRICTION * dt;
-      if (currentVx > 0.0f) {
-        newVx = std::max(0.0f, currentVx - airFrictionStep);
-      } else if (currentVx < 0.0f) {
-        newVx = std::min(0.0f, currentVx + airFrictionStep);
-      }
-    }
-
-    // Variable Jump Height: Short hop cutoff when jump key is released while ascending
-    if (jumpKeyReleased && currentVy < ASCENDING_VEL_THRESHOLD) {
-      currentVy *= SHORT_HOP_CUTOFF;
-    }
+    applyGroundPhysics(dt, inputDirX, isRunningInput, jumpKeyPressed, currentVy, newVx, targetMaxSpeed);
+  } else {
+    applyAirPhysics(dt, inputDirX, jumpKeyReleased, currentVy, newVx, targetMaxSpeed);
   }
 
-  // Apply final velocity to Box2D body
   float newVxMeters = PhysicsEngine::pixelsToMeters(newVx);
   m_body->SetLinearVelocity(b2Vec2(newVxMeters, currentVy));
 }

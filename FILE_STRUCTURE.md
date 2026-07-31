@@ -44,10 +44,10 @@ SuperMario/
 │   │   │   ├── fire_idle.png
 │   │   │   └── death.png
 │   │   ├── enemies/
-│   │   │   ├── goomba.png      ← sprite sheet: walk + squish
+│   │   │   ├── goomba.png      ← 3-frame sheet: walk 1, walk 2, squished; 96×32
 │   │   │   └── koopa.png       ← sprite sheet: walk + shell
 │   │   ├── tiles/
-│   │   │   └── tileset.png     ← single file, using texture rect
+│   │   │   └── tileset.png     ← 10-tile sheet rendered using texture coordinates; 320×32
 │   │   ├── items/
 │   │   │   ├── coin.png
 │   │   │   ├── mushroom.png
@@ -226,20 +226,22 @@ texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
 ### Level files
 
 ```
-# Comments start with #, ignored when parsed
-# Each line = 1 row of tiles
-# Each character = 1 tile; characters are written without spaces
-#
 # Characters:
 # . = empty (air)
 # 1 = ground tile (solid)
-# B = brick block
-# ? = question block (contains item)
-# C = coin (airborne)
+# B = breakable brick block (solid)
+# ? = question block (solid)
+# S = unbreakable stone block (solid)
+# F = finish pole top and finish marker (non-solid)
+# | = finish pole body (non-solid)
+# [ = pipe top-left (solid)
+# ] = pipe top-right (solid)
+# { = pipe body-left (solid)
+# } = pipe body-right (solid)
+# C = coin spawn point
 # G = Goomba spawn point
 # K = Koopa spawn point
 # M = Mario spawn point (exactly 1 per level)
-# F = finish flag (end of level)
 ```
 
 ---

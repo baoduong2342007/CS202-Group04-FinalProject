@@ -5,7 +5,6 @@
  */
 
 #include "entities/Mario.h"
-#include <iostream>
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 
@@ -20,12 +19,12 @@ Mario::Mario()
     : Character(sf::Vector2f(100.f, 100.f), sf::Vector2f(32.f, 32.f),
                 DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
 
 void Mario::update(float dt) {
   (void)dt;
@@ -133,3 +132,11 @@ void Mario::powerDown() {
 MarioState Mario::getMarioState() const { return m_marioState; }
 
 void Mario::setMarioState(MarioState state) { m_marioState = state; }
+
+void Mario::addScore(int points) {
+  m_score += points;
+}
+
+int Mario::getScore() const {
+  return m_score;
+}

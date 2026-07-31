@@ -37,14 +37,17 @@ public:
     void stopMoving();
     void powerUp(MarioState state);
     void powerDown();
+    void addScore(int points);
 
     // 4. Getters / Setters
     MarioState getMarioState() const;
     void setMarioState(MarioState state);
+    int getScore() const;
 
 protected:
     // 5. Protected members
     MarioState m_marioState;
     float m_jumpForce;
     float m_moveSpeed;
+    int m_score;
 };

@@ -18,11 +18,13 @@ constexpr float COIN_HEIGHT = 16.f;
 Coin::Coin()
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {
     initPhysics(b2_staticBody, sf::Vector2f(16.f, 16.f), true);
+    setSprite("coin");
 }
 
 Coin::Coin(const sf::Vector2f& position)
     : Item(position, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {
     initPhysics(b2_staticBody, sf::Vector2f(16.f, 16.f), true);
+    setSprite("coin");
 }
 
 void Coin::update(float dt) {
@@ -37,7 +39,8 @@ void Coin::onCollect(Mario& mario) {
         return;
     }
 
-    (void)mario; // Score tracking will be added when Mario gains a score member
+    constexpr int COIN_SCORE_VALUE = 200;
+    mario.addScore(COIN_SCORE_VALUE);
 
     m_isCollected = true;
 

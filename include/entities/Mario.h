@@ -27,7 +27,7 @@ public:
     void update(float dt) override;
 
     // 3. Public methods
-    void handleInput();
+    void handleInput(); // DEPRECATED — use InputHandler instead
     void jump();
     void moveLeft();
     void moveRight();

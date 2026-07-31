@@ -33,11 +33,13 @@ void Goomba::update(float dt){
     // Patrol speed is constant, so dt is not directly needed here.
     (void)dt;
 
+    // TV4 Sprint 4 Fix: Sync physics FIRST to get the gravity-affected velocity
+    // before patrol() modifies it. Otherwise Goomba will float in the air!
+    syncPhysics();
+
     if (!m_isStomped && !isDead()){
         patrol();
     }
-
-    syncPhysics();
 }
 
 void Goomba::onStomp(){

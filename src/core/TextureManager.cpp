@@ -1,14 +1,20 @@
 /**
  * @file TextureManager.cpp
  * @author TV2 (Nhật)
- * @brief Implementation of TextureManager — fixed for SFML 3.0.0 API.
- * @note Sprint 4 fix: sf::Texture has NO loadFromFile() in SFML 3.
- *       Must use constructor sf::Texture(filename) which throws on failure.
+ * @brief Implementation of the TextureManager class.
+ * 
+ * @details Fixed for SFML 3.0.0 API. sf::Texture has no loadFromFile() in SFML 3, 
+ * utilizing the constructor sf::Texture(filename) which throws on failure.
+ * Refactored to implement the Singleton design pattern.
  */
 
 #include "core/TextureManager.h"
-
 #include <iostream>
+
+TextureManager& TextureManager::getInstance() {
+    static TextureManager instance;
+    return instance;
+}
 
 TextureManager::TextureManager() {
     constexpr unsigned int FALLBACK_TEXTURE_SIZE = 16;
@@ -29,8 +35,6 @@ TextureManager::TextureManager() {
                   << e.what() << "\n";
     }
 }
-
-
 
 bool TextureManager::loadTexture(const std::string& id, const std::string& filename) {
     // If it already exists, don't load it again

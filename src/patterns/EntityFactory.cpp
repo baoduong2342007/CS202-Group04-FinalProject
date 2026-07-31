@@ -15,9 +15,9 @@
 #include "entities/Goomba.h"          // TV4 (Sprint 4)
 // #include "entities/Koopa.h"       // TV4 (Sprint 5)
 #include "items/Coin.h"              // TV5 (Sprint 4)
-// #include "items/Mushroom.h"       // TV5 (Sprint 5)
-// #include "items/FireFlower.h"     // TV5 (Sprint 5)
-// #include "items/Star.h"           // TV5 (Sprint 5)
+#include "items/Mushroom.h"         // TV5 (Sprint 5)
+#include "items/FireFlower.h"       // TV5 (Sprint 5)
+#include "items/Star.h"             // TV5 (Sprint 5)
 
 // ============================================================
 // PATTERN: Factory Method Implementation
@@ -39,14 +39,11 @@ Entity* EntityFactory::createItem(ItemType type, const sf::Vector2f& position) {
         case ItemType::COIN:
             return new Coin(position);
         case ItemType::MUSHROOM:
-            // TODO (TV5): Sprint 5 - return new Mushroom(position);
-            return nullptr;
+            return new Mushroom(position);
         case ItemType::FIRE_FLOWER:
-            // TODO (TV5): Sprint 5 - return new FireFlower(position);
-            return nullptr;
+            return new FireFlower(position);
         case ItemType::STAR:
-            // TODO (TV5): Sprint 5 - return new Star(position);
-            return nullptr;
+            return new Star(position);
         default:
             return nullptr;
     }

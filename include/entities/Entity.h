@@ -1,16 +1,22 @@
 /**
  * @file Entity.h
- * @author TV3 (Bảo)
- * @brief Base Entity class
- * @note Week 1 skeleton setup
+ * @author TV1 (Dương)
+ * @brief Base Entity class — all game objects with physics and rendering
+ * @note Sprint 4 fix: wired TextureManager + AnimationSystem into base class
  */
 
 #pragma once
 
+#include <memory>
+#include <optional>
+#include <string>
+
 #include <SFML/Graphics.hpp>
 #include <box2d/box2d.h>
-#include <string>
-#include <optional>
+
+// Forward declarations — avoid heavy includes in header
+class TextureManager;
+class AnimationSystem;
 
 class Entity : public sf::Drawable {
 public:
@@ -24,10 +30,18 @@ public:
 
     // 3. Public methods
     virtual void update(float dt) = 0;
-    
-    // TV2 (Engine & Render) will implement these in Entity.cpp
+
+    /// Set the TextureManager reference for this entity to load textures from
+    void setTextureManager(TextureManager& textureManager);
+
+    /// Load and assign a texture to this entity's sprite using TextureManager
+    void setSprite(const std::string& textureId);
+
+    /// Play a named animation clip via the entity's AnimationSystem
     void playAnimation(const std::string& clipName);
-    void setSprite(const std::string& texturePath);
+
+    /// Update animation frame (call each frame in update())
+    void updateAnimation(float dt);
 
     // Box2D Physics Methods
     void initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
@@ -37,10 +51,15 @@ public:
     sf::FloatRect getBoundingBox() const;
     sf::Vector2f getPosition() const;
     sf::Vector2f getVelocity() const;
+    bool shouldRemove() const;
+
+    /// Virtual type check — avoids dynamic_cast RTTI overhead in hot loops
+    virtual bool isItem() const { return false; }
 
     void setPosition(const sf::Vector2f& position);
     void setVelocity(const sf::Vector2f& velocity);
-    
+    void markForRemoval();
+
     b2Body* getBody() const { return m_body; }
 
 protected:
@@ -53,7 +72,17 @@ protected:
     sf::Vector2f m_size;
     std::optional<sf::Sprite> m_sprite;
     sf::Vector2f m_velocity;
-    
+
     // Box2D Body
     b2Body* m_body = nullptr;
+
+    // Rendering (non-owning reference — Level owns the TextureManager)
+    TextureManager* m_textureManager = nullptr;
+    std::string m_textureId;
+
+    // Animation (Entity owns its animation state — unique_ptr ensures cleanup)
+    std::unique_ptr<AnimationSystem> m_animationSystem;
+
+    // Entity lifecycle
+    bool m_markedForRemoval = false;
 };

@@ -1,6 +1,3 @@
-
-#pragma once
-
 /**
  * @file TextureManager.h
  * @author TV2 (Nhật)
@@ -8,16 +5,19 @@
  * @note DANGER: Before calling deleteTexture(), you MUST ensure that no active sf::Sprite is holding a reference to the texture being deleted. Deleting a texture while a sprite still points to it will cause a segmentation fault!
  */
 
-#include <SFML/Graphics.hpp>
-#include <unordered_map>
+#pragma once
+
 #include <string>
+#include <unordered_map>
 #include <memory>
+
+#include <SFML/Graphics.hpp>
 
 class TextureManager {
 public:
     // 1. Constructor / Destructor
     TextureManager();
-    ~TextureManager();
+    ~TextureManager() = default;
 
     // Prevent copying to ensure only one manager instance handles resources
     TextureManager(const TextureManager&) = delete;
@@ -56,6 +56,13 @@ public:
      * @return const sf::Texture& reference to the texture (or fallback texture).
      */
     const sf::Texture& getTexture(const std::string& id) const;
+
+    /**
+     * @brief Checks if a texture with the given ID is already loaded.
+     * @param id The string ID to check.
+     * @return true if the texture exists in cache.
+     */
+    bool hasTexture(const std::string& id) const;
 
 private:
     // 5. Private methods

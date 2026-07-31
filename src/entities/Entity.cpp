@@ -1,11 +1,16 @@
 /**
  * @file Entity.cpp
- * @author TV3
- * @brief Base Entity class implementation with Box2D physics hooks
+ * @author TV1 (Dương)
+ * @brief Base Entity class implementation with Box2D physics and rendering hooks
+ * @note Sprint 4 fix: setSprite() and playAnimation() now functional
  */
 
 #include "entities/Entity.h"
+
 #include <iostream>
+
+#include "core/AnimationSystem.h"
+#include "core/TextureManager.h"
 #include "physics/PhysicsEngine.h"
 
 Entity::Entity()
@@ -37,6 +42,57 @@ void Entity::draw(sf::RenderTarget& target, sf::RenderStates states) const {
         target.draw(*m_sprite, states);
     }
 }
+
+// ── TextureManager + Sprite Integration ────────────────────────
+
+void Entity::setTextureManager(TextureManager& textureManager) {
+    m_textureManager = &textureManager;
+    if (!m_textureId.empty()) {
+        setSprite(m_textureId);
+    }
+}
+
+void Entity::setSprite(const std::string& textureId) {
+    m_textureId = textureId;
+
+    if (!m_textureManager) {
+        // TextureManager not set yet — will be loaded when setTextureManager() is called
+        return;
+    }
+
+    // Load texture into TextureManager if not already cached
+    if (!m_textureManager->hasTexture(textureId)) {
+        // Use the textureId as both the cache key and the file path
+        if (!m_textureManager->loadTexture(textureId, textureId)) {
+            std::cerr << "[Entity] ERROR: Failed to load texture '"
+                      << textureId << "'. Using fallback.\n";
+        }
+    }
+
+    // Create or update the sprite with the loaded texture
+    const sf::Texture& texture = m_textureManager->getTexture(textureId);
+    m_sprite.emplace(texture);
+    m_sprite->setPosition(m_position);
+}
+
+// ── Animation Integration ──────────────────────────────────────
+
+void Entity::playAnimation(const std::string& clipName) {
+    if (!m_animationSystem) {
+        // No animation system attached — silently ignore
+        return;
+    }
+    m_animationSystem->play(clipName);
+}
+
+void Entity::updateAnimation(float dt) {
+    if (!m_animationSystem || !m_sprite) {
+        return;
+    }
+    m_animationSystem->update(sf::seconds(dt), *m_sprite);
+}
+
+// ── Box2D Physics ──────────────────────────────────────────────
 
 void Entity::initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor) {
     b2World* world = PhysicsEngine::getInstance().getWorld();
@@ -91,6 +147,8 @@ void Entity::syncPhysics() {
     updateBoundingBox();
 }
 
+// ── Getters / Setters ──────────────────────────────────────────
+
 sf::FloatRect Entity::getBoundingBox() const {
     return sf::FloatRect(m_position, m_size);
 }
@@ -101,6 +159,10 @@ sf::Vector2f Entity::getPosition() const {
 
 sf::Vector2f Entity::getVelocity() const {
     return m_velocity;
+}
+
+bool Entity::shouldRemove() const {
+    return m_markedForRemoval;
 }
 
 void Entity::setPosition(const sf::Vector2f& position) {
@@ -121,15 +183,10 @@ void Entity::setVelocity(const sf::Vector2f& velocity) {
     }
 }
 
+void Entity::markForRemoval() {
+    m_markedForRemoval = true;
+}
+
 void Entity::updateBoundingBox() {
     m_boundingBox = sf::FloatRect(m_position, m_size);
-}
-
-// TV2 placeholders
-void Entity::playAnimation(const std::string& clipName) {
-    (void)clipName;
-}
-
-void Entity::setSprite(const std::string& texturePath) {
-    (void)texturePath;
 }

@@ -25,7 +25,23 @@ void Camera::init(const sf::Vector2f& viewSize, const sf::FloatRect& levelBounds
 }
 
 void Camera::update(const sf::Vector2f& targetPosition) {
-    m_view.setCenter(targetPosition);
+    sf::Vector2f currentCenter = m_view.getCenter();
+    sf::Vector2f newCenter = currentCenter;
+
+    // Strict horizontal tracking (1:1 lock)
+    newCenter.x = targetPosition.x;
+
+    // Vertical deadzone tracking
+    // Only adjust Y if the target moves beyond the center 50% of the screen vertically.
+    const float verticalDeadzone = m_view.getSize().y * 0.25f;
+
+    if (targetPosition.y < currentCenter.y - verticalDeadzone) {
+        newCenter.y = targetPosition.y + verticalDeadzone;
+    } else if (targetPosition.y > currentCenter.y + verticalDeadzone) {
+        newCenter.y = targetPosition.y - verticalDeadzone;
+    }
+
+    m_view.setCenter(newCenter);
     clampToBoundaries();
 }
 

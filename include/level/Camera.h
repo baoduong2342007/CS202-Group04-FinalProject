@@ -1,11 +1,11 @@
-#pragma once
-
 /**
  * @file Camera.h
  * @author TV2 (Nhật)
  * @brief Manages sf::View to track the player with boundary clamping against level limits.
  * @note Designed for SFML 3. Clamps camera center to prevent rendering out-of-bounds areas.
  */
+
+#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -32,6 +32,8 @@ public:
 
     /**
      * @brief Updates the camera's center position to follow a target.
+     * @details Tracks the X-axis continuously but utilizes a vertical deadzone for the Y-axis 
+     *          to prevent jittery camera movement when the target jumps.
      * @param targetPosition The current X and Y coordinates of the entity to track (e.g., Mario).
      */
     void update(const sf::Vector2f& targetPosition);

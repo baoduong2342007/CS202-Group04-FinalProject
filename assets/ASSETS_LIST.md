@@ -22,7 +22,7 @@ Tất cả các tệp hình ảnh nên sử dụng định dạng `.png` để h
 ### 1.2. Kẻ địch (`assets/textures/enemies/`)
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/enemies/goomba.png` | Sprite sheet của Goomba (Nấm độc), bao gồm 2 khung hình di chuyển và 1 khung hình bị giẫm bẹp (squished). | `[ ]` Cần tìm |
+| `assets/textures/enemies/goomba.png` | Sprite sheet của Goomba (Nấm độc), bao gồm 2 khung hình di chuyển và 1 khung hình bị giẫm bẹp (squished). | Asset Goomba tạm thời dùng làm nguồn tham khảo cho việc cắt sprite.<br/>File hiện chứa nhiều animation frame; bản cuối sẽ chỉ giữ<br/>2 frame di chuyển và 1 frame bị giẫm bẹp.<br/><br/>- Status: Temporary<br/>- Source: The Spriters Resource<br/>- Original sprite artist: Triforceriku<br/>- Usage: Non-commercial academic project<br/>- Planned final layout: 3 frames horizontally<br/>- Planned frame size: 32 × 32 pixels<br/>- Planned final size: 96 × 32 pixels |
 | `assets/textures/enemies/koopa.png` | Sprite sheet của Koopa Troopa (Rùa), bao gồm các khung hình di chuyển và khung hình khi rúc vào mai rùa (shell). | `[ ]` Cần tìm |
 
 ### 1.3. Ô bản đồ & Gạch đá (`assets/textures/tiles/`)

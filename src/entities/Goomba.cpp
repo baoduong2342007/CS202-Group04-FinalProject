@@ -14,6 +14,8 @@ namespace {
 constexpr int DEFAULT_GOOMBA_HEALTH = 1;
 constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
 
+constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/goomba.png";
+
 const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
 } // namespace
@@ -24,7 +26,7 @@ Goomba::Goomba(const sf::Vector2f& position)
   m_patrolSpeed(DEFAULT_GOOMBA_SPEED){
       setFacingDirection(Direction::LEFT);
       initPhysics(b2_dynamicBody, GOOMBA_SIZE);
-      setSprite("assets/textures/enemies/goomba.png");
+      setSprite(GOOMBA_TEXTURE_PATH);
 }
 
 void Goomba::update(float dt){

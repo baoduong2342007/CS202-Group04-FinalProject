@@ -1,8 +1,8 @@
 /**
  * @file TileMap.cpp
  * @author TV4 (Vy)
- * @brief Implementation of TileMap file loading and validation
- * @note Sprint 4 - validates ASCII level data before updating TileMap
+ * @brief Implementation of TileMap loading, rendering, queries, and physics
+ * @note Sprint 4 - validates level data and renders tiles from a tileset
  */
 
 #include "level/TileMap.h"
@@ -13,6 +13,7 @@
 #include <utility>
 
 #include <box2d/box2d.h>
+#include <SFML/System/Exception.hpp>
 
 #include "physics/PhysicsEngine.h"
 
@@ -20,6 +21,7 @@ namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMF";
 constexpr float TILE_FRICTION = 0.6f;
+constexpr unsigned int TILESET_TILE_COUNT = 4;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
@@ -28,7 +30,7 @@ bool isBlankLine(const std::string& line){
 bool isCommentLine(const std::string& line){
     const std::size_t firstCharacter = line.find_first_not_of(" \t");
 
-    return firstCharacter != std::string::npos and line[firstCharacter] == '#';
+    return firstCharacter != std::string::npos && line[firstCharacter] == '#';
 }
 
 bool isValidTileSymbol(char symbol){
@@ -36,34 +38,42 @@ bool isValidTileSymbol(char symbol){
 }
 
 bool isRenderableTile(char symbol){
-    return symbol == '1' or symbol == 'B' or symbol == '?' or symbol == 'F';
+    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F';
 }
 
-sf::Color getPlaceholderColor(char symbol){
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+
+constexpr unsigned int GROUND_TILE_INDEX = 0;
+constexpr unsigned int BRICK_TILE_INDEX = 1;
+constexpr unsigned int QUESTION_TILE_INDEX = 2;
+constexpr unsigned int FINISH_TILE_INDEX = 3;
+
+unsigned int getTilesetIndex(char symbol){
     switch (symbol){
-        case '1': // Ground
-            return sf::Color(120, 75, 40);
+        case '1':
+            return GROUND_TILE_INDEX;
 
-        case 'B': // Brick
-            return sf::Color(190, 80, 45);
+        case 'B':
+            return BRICK_TILE_INDEX;
 
-        case '?': // Question block
-            return sf::Color(235, 180, 30);
+        case '?':
+            return QUESTION_TILE_INDEX;
 
-        case 'F': // Finish flag
-            return sf::Color(50, 190, 70);
+        case 'F':
+            return FINISH_TILE_INDEX;
 
         default:
-            return sf::Color::Transparent;
+            return GROUND_TILE_INDEX;
     }
 }
 
-void appendColoredVertex(sf::VertexArray& vertices,
-                         float x, float y,
-                         const sf::Color& color){
+void appendTexturedVertex(sf::VertexArray& vertices,
+                          float x, float y,
+                          float textureX, float textureY){
     sf::Vertex vertex;
     vertex.position = {x, y};
-    vertex.color = color;
+    vertex.color = sf::Color::White;
+    vertex.texCoords = {textureX, textureY};
 
     vertices.append(vertex);
 }
@@ -129,7 +139,6 @@ TileMap::~TileMap(){
 
 bool TileMap::loadFromFile(const std::string& path){
     std::ifstream inputFile(path);
-
     if (!inputFile.is_open()){
         std::cerr << "Failed to open level file: " << path << std::endl;
         return false;
@@ -137,51 +146,62 @@ bool TileMap::loadFromFile(const std::string& path){
 
     std::vector<std::string> loadedGrid;
     LevelValidationState validationState;
-
     std::string line;
     std::size_t lineNumber = 0;
 
     while(std::getline(inputFile, line)){
         ++lineNumber;
-
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() and line.back() == '\r'){
-            line.pop_back();
-        }
-
-        if (isBlankLine(line) or isCommentLine(line)){
-            continue;
-        }
-
-        if (!validateRow(line, lineNumber, path, validationState)){
-            return false;
-        }
-
+        if (!line.empty() && line.back() == '\r'){line.pop_back();}
+        if (isBlankLine(line) || isCommentLine(line)){continue;}
+        if (!validateRow(line, lineNumber, path, validationState)){return false;}
+        
         loadedGrid.push_back(line);
     }
 
     if (loadedGrid.empty()){
         std::cerr << "Level file contains no map data: " << path << std::endl;
-
         return false;
     }
     
     if (!validateLevelMarkers(validationState, path)){
         return false;
     }
+    sf::Texture loadedTileset;
+    try {
+        loadedTileset = sf::Texture(std::string(TILESET_PATH));
+    } catch (const sf::Exception& exception){
+        std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
+        std::cerr << "Reason: " << exception.what() << std::endl;
+        return false;
+    }
+
+    loadedTileset.setSmooth(false);
+
+    const sf::Vector2u tilesetSize = loadedTileset.getSize();
+    const unsigned int expectedWidth = TILE_SIZE * TILESET_TILE_COUNT;
+    const unsigned int expectedHeight = TILE_SIZE;
+
+    if (tilesetSize.x != expectedWidth || tilesetSize.y != expectedHeight){
+        std::cerr << "Invalid TileMap tileset size: expected " << expectedWidth << 'x' << expectedHeight << ", but found " << tilesetSize.x << 'x' << tilesetSize.y<< std::endl;
+        return false;
+    }
 
     m_grid = std::move(loadedGrid);
+    m_tileset = std::move(loadedTileset);
     buildVertices();
-
     return true;
 }
 
 void TileMap::render(sf::RenderWindow& window) const {
-    window.draw(m_vertices);
+    sf::RenderStates states;
+    states.texture = &m_tileset;
+
+    window.draw(m_vertices, states);
 }
 
 char TileMap::getTileAt(int column, int row) const {
-    if (column < 0 or row < 0){
+    if (column < 0 || row < 0){
         return '.';
     }
 
@@ -202,7 +222,7 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1' or tile == 'B' or tile == '?';
+    return tile == '1' || tile == 'B' || tile == '?';
 }
 
 std::size_t TileMap::getWidth() const {
@@ -234,17 +254,33 @@ void TileMap::buildVertices(){
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const sf::Color tileColor = getPlaceholderColor(symbol);
+            const unsigned int tileIndex = getTilesetIndex(symbol);
+
+            const float textureLeft = static_cast<float>(tileIndex * TILE_SIZE);
+            const float textureTop = 0.f;
+
+            const float textureRight = textureLeft + static_cast<float>(TILE_SIZE);
+            const float textureBottom = static_cast<float>(TILE_SIZE);
 
             // First triangle: top-left, bottom-left, bottom-right.
-            appendColoredVertex(m_vertices, left, top, tileColor);
-            appendColoredVertex(m_vertices, left, bottom, tileColor);
-            appendColoredVertex(m_vertices, right, bottom, tileColor);
+            appendTexturedVertex(m_vertices, left, top,
+                                 textureLeft, textureTop);
+
+            appendTexturedVertex(m_vertices, left, bottom,
+                                 textureLeft, textureBottom);
+            
+            appendTexturedVertex(m_vertices, right, bottom,
+                                 textureRight, textureBottom);
 
             // Second triangle: top-left, bottom-right, top-right.
-            appendColoredVertex(m_vertices, left, top, tileColor);
-            appendColoredVertex(m_vertices, right, bottom, tileColor);
-            appendColoredVertex(m_vertices, right, top, tileColor);
+            appendTexturedVertex(m_vertices, left, top,
+                                 textureLeft, textureTop);
+            
+            appendTexturedVertex(m_vertices, right, bottom,
+                                 textureRight, textureBottom);
+            
+            appendTexturedVertex(m_vertices, right, top,
+                                 textureRight, textureTop);
         }
     }
 }

@@ -46,10 +46,11 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::GAME_PAUSED, this);
 
     // Preload sound effects
-    loadSound("jump",  "assets/sounds/effects/jump.wav");
-    loadSound("coin",  "assets/sounds/effects/coin.wav");
-    loadSound("stomp", "assets/sounds/effects/stompswim.wav");
-    loadSound("death", "assets/sounds/effects/death.wav");
+    loadSound("jump",    "assets/sounds/effects/jump.wav");
+    loadSound("coin",    "assets/sounds/effects/coin.wav");
+    loadSound("stomp",   "assets/sounds/effects/stompswim.wav");
+    loadSound("death",   "assets/sounds/effects/death.wav");
+    loadSound("powerup", "assets/sounds/effects/powerup.wav");
 
     // Preload background music
     loadMusic("assets/sounds/music/overworld.flac");

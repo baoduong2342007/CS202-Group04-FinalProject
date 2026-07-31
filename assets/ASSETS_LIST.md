@@ -22,13 +22,13 @@ Tất cả các tệp hình ảnh nên sử dụng định dạng `.png` để h
 ### 1.2. Kẻ địch (`assets/textures/enemies/`)
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/enemies/goomba.png` | Sprite sheet của Goomba (Nấm độc), bao gồm 2 khung hình di chuyển và 1 khung hình bị giẫm bẹp (squished). | Asset Goomba tạm thời dùng làm nguồn tham khảo cho việc cắt sprite.<br/>File hiện chứa nhiều animation frame; bản cuối sẽ chỉ giữ<br/>2 frame di chuyển và 1 frame bị giẫm bẹp.<br/><br/>- Status: Temporary<br/>- Source: The Spriters Resource<br/>- Original sprite artist: Triforceriku<br/>- Usage: Non-commercial academic project<br/>- Planned final layout: 3 frames horizontally<br/>- Planned frame size: 32 × 32 pixels<br/>- Planned final size: 96 × 32 pixels |
+| `assets/textures/enemies/goomba.png` | Sprite sheet Goomba gồm 2 frame di chuyển và 1 frame bị giẫm bẹp; mỗi frame 32×32 px, tổng kích thước 96×32 px. | `[x]` Đã thêm |
 | `assets/textures/enemies/koopa.png` | Sprite sheet của Koopa Troopa (Rùa), bao gồm các khung hình di chuyển và khung hình khi rúc vào mai rùa (shell). | `[ ]` Cần tìm |
 
 ### 1.3. Ô bản đồ & Gạch đá (`assets/textures/tiles/`)
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/tiles/tileset.png` | Tệp hình ảnh chứa toàn bộ các khối gạch nền đất, gạch phá hủy được, khối hỏi chấm (?), ống nước xanh, và cột cờ về đích. Lớp `TileMap` sẽ dùng TextureRect để cắt. | `[ ]` Cần tìm |
+| `assets/textures/tiles/tileset.png` | Tileset 10 tile theo thứ tự: ground, brick, question block, stone, finish pole top, finish pole body, pipe top-left, pipe body-left, pipe top-right và pipe body-right; mỗi tile 32×32 px, tổng kích thước 320×32 px. | `[x]` Đã thêm |
 
 ### 1.4. Vật phẩm (`assets/textures/items/`)
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |

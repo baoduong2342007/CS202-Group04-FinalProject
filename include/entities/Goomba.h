@@ -29,4 +29,5 @@ private:
 
     bool m_isStomped;
     float m_patrolSpeed;
+    float m_squishElapsedTime;
 };

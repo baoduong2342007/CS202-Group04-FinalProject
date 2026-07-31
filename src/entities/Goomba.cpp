@@ -32,12 +32,20 @@ constexpr float GOOMBA_WALK_FRAME_DURATION = 0.15f;
 
 constexpr const char* GOOMBA_WALK_ANIMATION = "walk";
 
+constexpr int GOOMBA_SQUISH_FRAME_START_X = 64;
+constexpr int GOOMBA_SQUISH_FRAME_COUNT = 1;
+
+constexpr float GOOMBA_SQUISH_DURATION = 0.5f;
+
+constexpr const char* GOOMBA_SQUISH_ANIMATION = "squish";
+
 } // namespace
 
 Goomba::Goomba(const sf::Vector2f& position)
 : Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),
   m_isStomped(false),
-  m_patrolSpeed(DEFAULT_GOOMBA_SPEED) {
+  m_patrolSpeed(DEFAULT_GOOMBA_SPEED),
+  m_squishElapsedTime(0.f) {
       setFacingDirection(Direction::LEFT);
       initPhysics(b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
@@ -53,8 +61,22 @@ Goomba::Goomba(const sf::Vector2f& position)
                                            true
                                            );
       
+      const Animation squishAnimation =
+      AnimationSystem::createGridAnimation(GOOMBA_SQUISH_FRAME_START_X,
+                                           GOOMBA_FRAME_START_Y,
+                                           GOOMBA_FRAME_WIDTH,
+                                           GOOMBA_FRAME_HEIGHT,
+                                           GOOMBA_SQUISH_FRAME_COUNT,
+                                           GOOMBA_SQUISH_DURATION,
+                                           false
+                                           );
+      
       m_animationSystem->addAnimation(GOOMBA_WALK_ANIMATION,
                                       walkAnimation
+                                      );
+      
+      m_animationSystem->addAnimation(GOOMBA_SQUISH_ANIMATION,
+                                      squishAnimation
                                       );
       
       playAnimation(GOOMBA_WALK_ANIMATION);
@@ -63,7 +85,23 @@ Goomba::Goomba(const sf::Vector2f& position)
 void Goomba::update(float dt) {
     syncPhysics();
 
-    if (!m_isStomped && !isDead()) {
+    if (m_isStomped) {
+        b2Body* body = getBody();
+        if (body && body->IsEnabled()) {
+            body->SetEnabled(false);
+        }
+
+        m_squishElapsedTime += dt;
+        updateAnimation(dt);
+
+        if (m_squishElapsedTime >= GOOMBA_SQUISH_DURATION) {
+            markForRemoval();
+        }
+
+        return;
+    }
+
+    if (!isDead()) {
         patrol();
     }
 
@@ -76,12 +114,22 @@ void Goomba::onStomp() {
     }
 
     m_isStomped = true;
+    m_squishElapsedTime = 0.f;
     setHealth(0);
+    setVelocity({0.f, 0.f});
 
-    const sf::Vector2f currentVelocity = getVelocity();
-    setVelocity({0.f, currentVelocity.y});
+    b2Body* body = getBody();
+    if (body) {
+        for (b2Fixture* fixture = body->GetFixtureList();
+             fixture != nullptr;
+             fixture = fixture->GetNext()) {
+            fixture->SetSensor(true);
+        }
+    }
 
-    markForRemoval();
+    playAnimation(GOOMBA_SQUISH_ANIMATION);
+
+    updateAnimation(0.f);
 }
 
 void Goomba::patrol() {

@@ -1,0 +1,27 @@
+/**
+ * @file FireFlower.h
+ * @author TV5 (Truyền)
+ * @brief Fire Flower — stationary item that turns Mario into FIRE state
+ * @note Week 5 — spawned by EntityFactory; power-up logic queries Mario's state
+ *       (no EventBus payload needed — the item decides the target state itself)
+ */
+
+#pragma once
+
+#include "items/Item.h"
+
+class FireFlower : public Item {
+public:
+    // 1. Constructor / Destructor
+    FireFlower();
+    explicit FireFlower(const sf::Vector2f& position);
+    ~FireFlower() override = default;
+
+    // 2. Override methods
+    void update(float dt) override;
+    void onCollect(Mario& mario) override;
+
+private:
+    // 6. Private members
+    static constexpr int FIRE_FLOWER_SCORE_VALUE = 1000;
+};

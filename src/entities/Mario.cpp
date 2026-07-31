@@ -19,15 +19,18 @@ Mario::Mario()
     : Character(sf::Vector2f(100.f, 100.f), sf::Vector2f(32.f, 32.f),
                 DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0),
+      m_isInvincible(false), m_invincibilityTimer(0.f) {}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0),
+      m_isInvincible(false), m_invincibilityTimer(0.f) {}
 
 void Mario::update(float dt) {
-  (void)dt;
+  // Tick invincibility timer
+  updateInvincibility(dt);
 
   // Sync the entity position and velocity with the Box2D body
   syncPhysics();
@@ -139,4 +142,24 @@ void Mario::addScore(int points) {
 
 int Mario::getScore() const {
   return m_score;
+}
+
+void Mario::setInvincible(float duration) {
+  m_isInvincible = true;
+  m_invincibilityTimer = duration;
+}
+
+void Mario::updateInvincibility(float dt) {
+  if (!m_isInvincible) {
+    return;
+  }
+  m_invincibilityTimer -= dt;
+  if (m_invincibilityTimer <= 0.f) {
+    m_isInvincible = false;
+    m_invincibilityTimer = 0.f;
+  }
+}
+
+bool Mario::isInvincible() const {
+  return m_isInvincible;
 }

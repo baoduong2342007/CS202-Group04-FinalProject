@@ -52,7 +52,7 @@ SoundManager::SoundManager()
     loadSound("death", "assets/sounds/effects/death.wav");
 
     // Preload background music
-    loadMusic("assets/sounds/music/01. Ground Theme.flac");
+    loadMusic("assets/sounds/music/overworld.flac");
 }
 
 SoundManager::~SoundManager() {

@@ -27,6 +27,9 @@ public:
     void update(float dt) override;
 
     // 3. Public methods
+    /// @deprecated Legacy input handler — replaced by Command pattern (InputHandler).
+    ///             Only used in Box2DDemo.cpp. Prefer jump()/moveLeft()/moveRight()/stopMoving().
+    [[deprecated("Use Command pattern via InputHandler instead")]]
     void handleInput();
     void jump();
     void moveLeft();

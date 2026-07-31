@@ -6,6 +6,7 @@
 
 #include "entities/Mario.h"
 #include <iostream>
+#include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 
 namespace {
@@ -75,6 +76,8 @@ void Mario::jump() {
   m_body->SetLinearVelocity(
       b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
   setGrounded(false);
+
+  EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
 }
 
 void Mario::moveLeft() {
@@ -113,10 +116,15 @@ void Mario::powerUp(MarioState state) {
 void Mario::powerDown() {
   if (m_marioState == MarioState::FIRE) {
     m_marioState = MarioState::SUPER;
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else if (m_marioState == MarioState::SUPER) {
     m_marioState = MarioState::SMALL;
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else {
-    takeDamage(FATAL_DAMAGE); // Small Mario dies
+    if (getHealth() > 0) {
+      takeDamage(FATAL_DAMAGE); // Small Mario dies
+      EventBus::getInstance().notify(EventType::PLAYER_DIED);
+    }
   }
 }
 

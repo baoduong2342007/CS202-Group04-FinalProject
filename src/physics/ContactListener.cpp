@@ -8,6 +8,7 @@
 #include <iostream>
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
+#include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 
 namespace {
@@ -58,6 +59,7 @@ void ContactListener::BeginContact(b2Contact* contact) {
                 Enemy* enemy = dynamic_cast<Enemy*>(otherEntity);
                 if (enemy) {
                     enemy->onStomp();
+                    EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
                     // Make Mario bounce
                     float bounceVelocity = -PhysicsEngine::pixelsToMeters(marioBody->GetLinearVelocity().y > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
                     marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVelocity));

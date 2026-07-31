@@ -50,6 +50,10 @@ void Goomba::onStomp(){
 
     const sf::Vector2f currentVelocity = getVelocity();
     setVelocity({0.f, currentVelocity.y});
+
+    // TV4 Sprint 4 Fix: Call markForRemoval to let Level clean it up
+    // (In Sprint 5, TV4 will refactor this to use a 0.5s despawn timer)
+    markForRemoval();
 }
 
 void Goomba::patrol(){

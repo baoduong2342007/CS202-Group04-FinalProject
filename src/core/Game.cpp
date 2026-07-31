@@ -5,6 +5,7 @@
  * @note Sprint 4 fix — delegates logic to GameManager (State Pattern)
  */
 #include "core/Game.h"
+
 #include <iostream>
 #include "core/GameManager.h"
 #include "states/PlayState.h"

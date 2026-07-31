@@ -34,6 +34,8 @@ void Mario::update(float dt) {
   syncPhysics();
 }
 
+// DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
+// Kept as fallback for debugging. Remove after team confirms InputHandler works.
 void Mario::handleInput() {
   if (!m_body)
     return;

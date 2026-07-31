@@ -26,8 +26,6 @@ void InputHandler::handleInput() const {
     for (const auto& [key, command] : m_keyBindings) {
         if (sf::Keyboard::isKeyPressed(key)) {
             command->execute();
-        } else {
-            command->undo();
         }
     }
 }

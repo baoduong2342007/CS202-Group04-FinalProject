@@ -2,7 +2,7 @@
  * @file Level.cpp
  * @author TV1 (Dương)
  * @brief Level implementation — loads map, spawns entities, orchestrates update/render
- * @note Sprint 4 — uses EntityFactory for spawning
+ * @note Sprint 4 fix: TextureManager wired to entities, item collision, dead entity cleanup
  */
 
 #include "level/Level.h"
@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include "items/Item.h"
 #include "patterns/EntityFactory.h"
 #include "physics/PhysicsEngine.h"
 
@@ -69,6 +70,9 @@ void Level::spawnEntitiesFromTileMap() {
         m_mario = std::make_unique<Mario>();
     }
 
+    // Wire TextureManager to Mario so setSprite() works
+    m_mario->setTextureManager(m_textureManager);
+
     // Initialize Mario physics body
     m_mario->initPhysics(b2_dynamicBody, sf::Vector2f(32.f, 32.f));
 
@@ -81,6 +85,8 @@ void Level::spawnEntitiesFromTileMap() {
             Entity* raw =
                 EntityFactory::createFromTileCode(code, worldPos);
             if (raw) {
+                // Wire TextureManager so entity sprites can load
+                raw->setTextureManager(m_textureManager);
                 m_entities.emplace_back(raw);
             }
         }
@@ -97,6 +103,9 @@ void Level::update(float dt) {
     for (auto& entity : m_entities) {
         entity->update(dt);
     }
+
+    // Check item-Mario collisions
+    checkItemCollisions();
 
     // Remove dead entities
     removeDeadEntities();
@@ -125,13 +134,28 @@ void Level::render(sf::RenderWindow& window) {
     }
 }
 
+void Level::checkItemCollisions() {
+    if (!m_mario) return;
+
+    for (auto& entity : m_entities) {
+        // Use virtual isItem() instead of dynamic_cast to avoid RTTI overhead
+        if (!entity->isItem()) continue;
+
+        Item* item = static_cast<Item*>(entity.get());
+        if (!item->isCollected()) {
+            if (item->checkOverlap(*m_mario)) {
+                item->onCollect(*m_mario);
+                item->markForRemoval();
+            }
+        }
+    }
+}
+
 void Level::removeDeadEntities() {
     m_entities.erase(
         std::remove_if(m_entities.begin(), m_entities.end(),
             [](const std::unique_ptr<Entity>& e) {
-                // TV3/TV4 will add isDead() or shouldRemove() later
-                (void)e;
-                return false;
+                return e->shouldRemove();
             }),
         m_entities.end()
     );
@@ -142,3 +166,4 @@ Mario& Level::getMario() { return *m_mario; }
 const Mario& Level::getMario() const { return *m_mario; }
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
+TextureManager& Level::getTextureManager() { return m_textureManager; }

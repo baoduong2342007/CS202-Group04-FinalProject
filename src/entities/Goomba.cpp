@@ -24,13 +24,14 @@ Goomba::Goomba(const sf::Vector2f& position)
   m_patrolSpeed(DEFAULT_GOOMBA_SPEED){
       setFacingDirection(Direction::LEFT);
       initPhysics(b2_dynamicBody, GOOMBA_SIZE);
+      setSprite("assets/textures/enemies/goomba.png");
 }
 
 void Goomba::update(float dt){
     // Patrol speed is constant, so dt is not directly needed here.
     (void)dt;
 
-    if (!m_isStomped and !isDead()){
+    if (!m_isStomped && !isDead()){
         patrol();
     }
 
@@ -50,7 +51,7 @@ void Goomba::onStomp(){
 }
 
 void Goomba::patrol(){
-    if (m_isStomped or isDead()){
+    if (m_isStomped || isDead()){
         return;
     }
 
@@ -66,7 +67,7 @@ void Goomba::patrol(){
 }
 
 void Goomba::onWallCollision(){
-    if (m_isStomped or isDead()){
+    if (m_isStomped || isDead()){
         return;
     }
 

@@ -31,6 +31,9 @@ public:
     // 4. Getters / Setters
     bool isCollected() const;
 
+    /// Identifies this entity as an Item for RTTI-free type checking
+    bool isItem() const override { return true; }
+
 protected:
     // 6. Protected members
     bool m_isCollected;

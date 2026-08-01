@@ -5,7 +5,7 @@
  */
 
 #include "states/PlayState.h"
-#include <iostream>
+
 #include "patterns/EventBus.h"
 #include "patterns/JumpCommand.h"
 #include "patterns/MoveLeftCommand.h"

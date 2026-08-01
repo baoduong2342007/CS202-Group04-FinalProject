@@ -23,7 +23,7 @@ Tất cả các tệp hình ảnh nên sử dụng định dạng `.png` để h
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |
 | :--- | :--- | :---: |
 | `assets/textures/enemies/goomba.png` | Sprite sheet Goomba gồm 2 frame di chuyển và 1 frame bị giẫm bẹp; mỗi frame 32×32 px, tổng kích thước 96×32 px. | `[x]` Đã thêm |
-| `assets/textures/enemies/koopa.png` | Sprite sheet của Koopa Troopa (Rùa), bao gồm các khung hình di chuyển và khung hình khi rúc vào mai rùa (shell). | `[ ]` Cần tìm |
+| `assets/textures/enemies/koopa.png` | oopa sprite sheet gồm 2 frame đi bộ, 1 frame mai đứng yên và 1 frame mai bắt đầu hồi phục; mỗi frame nằm trong canvas 32×48 px, tổng kích thước 128×48 px. Được cắt từ sprite sheet enemy hiện có. | `[x]` Đã thêm |
 
 ### 1.3. Ô bản đồ & Gạch đá (`assets/textures/tiles/`)
 | Đường dẫn tệp | Mô tả chi tiết | Trạng thái |

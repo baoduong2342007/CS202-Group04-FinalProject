@@ -38,11 +38,14 @@ public:
     void powerUp(MarioState state);
     void powerDown();
     void addScore(int points);
+    void setInvincible(float duration);
+    void updateInvincibility(float dt);
 
     // 4. Getters / Setters
     MarioState getMarioState() const;
     void setMarioState(MarioState state);
     int getScore() const;
+    bool isInvincible() const;
 
 protected:
     // 5. Protected members
@@ -50,4 +53,6 @@ protected:
     float m_jumpForce;
     float m_moveSpeed;
     int m_score;
+    bool m_isInvincible;
+    float m_invincibilityTimer;
 };

@@ -36,6 +36,13 @@ constexpr float KOOPA_WALK_FRAME_DURATION = 0.15f;
 
 constexpr const char* KOOPA_WALK_ANIMATION = "walk";
 
+constexpr int KOOPA_SHELL_FRAME_START_X = 64;
+constexpr int KOOPA_SHELL_FRAME_COUNT = 1;
+
+constexpr float KOOPA_SHELL_FRAME_DURATION = 0.15f;
+
+constexpr const char* KOOPA_SHELL_IDLE_ANIMATION = "shell_idle";
+
 sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
     return {position.x, position.y - KOOPA_VERTICAL_SPAWN_OFFSET};
 }
@@ -66,8 +73,22 @@ Koopa::Koopa(const sf::Vector2f& position)
                                            true
                                            );
 
+      const Animation shellIdleAnimation =
+      AnimationSystem::createGridAnimation(KOOPA_SHELL_FRAME_START_X,
+                                           KOOPA_FRAME_START_Y,
+                                           KOOPA_FRAME_WIDTH,
+                                           KOOPA_FRAME_HEIGHT,
+                                           KOOPA_SHELL_FRAME_COUNT,
+                                           KOOPA_SHELL_FRAME_DURATION,
+                                           false
+                                           );
+
       m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
                                       walkAnimation
+                                      );
+
+      m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION,
+                                      shellIdleAnimation
                                       );
 
       playAnimation(KOOPA_WALK_ANIMATION);
@@ -92,6 +113,10 @@ void Koopa::onStomp() {
 
     const sf::Vector2f currentVelocity = getVelocity();
     setVelocity({0.f, currentVelocity.y});
+
+    playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
+
+    updateAnimation(0.f);
 }
 
 void Koopa::onWallCollision() {

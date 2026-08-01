@@ -22,10 +22,10 @@
 // ============================================================
 // PATTERN: Factory Method Implementation
 // ============================================================
-Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position) {
+Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
     switch (type) {
         case EnemyType::GOOMBA:
-            return new Goomba(position);
+            return new Goomba(position, world);
         case EnemyType::KOOPA:
             // TODO (TV4): Sprint 5 - return new Koopa(position);
             return nullptr;
@@ -34,31 +34,31 @@ Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position)
     }
 }
 
-Entity* EntityFactory::createItem(ItemType type, const sf::Vector2f& position) {
+Entity* EntityFactory::createItem(ItemType type, const sf::Vector2f& position, b2World* world) {
     switch (type) {
         case ItemType::COIN:
-            return new Coin(position);
+            return new Coin(position, world);
         case ItemType::MUSHROOM:
-            return new Mushroom(position);
+            return new Mushroom(position, world);
         case ItemType::FIRE_FLOWER:
-            return new FireFlower(position);
+            return new FireFlower(position, world);
         case ItemType::STAR:
-            return new Star(position);
+            return new Star(position, world);
         default:
             return nullptr;
     }
 }
 
-Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position) {
+Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world) {
     switch (tileCode) {
         case 'G':
-            return createEnemy(EnemyType::GOOMBA, position);
+            return createEnemy(EnemyType::GOOMBA, position, world);
         case 'K':
-            return createEnemy(EnemyType::KOOPA, position);
+            return createEnemy(EnemyType::KOOPA, position, world);
         case 'C':
-            return createItem(ItemType::COIN, position);
+            return createItem(ItemType::COIN, position, world);
         case '?':
-            return createItem(ItemType::MUSHROOM, position);
+            return createItem(ItemType::MUSHROOM, position, world);
         default:
             return nullptr;
     }

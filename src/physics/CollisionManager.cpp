@@ -58,10 +58,12 @@ void CollisionManager::resolve(b2Contact* contact) {
     Entity* target = nullptr;
     b2Body* fireBallBody = nullptr;
 
-    if (entityA && (fireBall = dynamic_cast<FireBall*>(entityA))) {
+    if (entityA && entityA->isFireBall()) {
+        fireBall = static_cast<FireBall*>(entityA);
         target = entityB;
         fireBallBody = bodyA;
-    } else if (entityB && (fireBall = dynamic_cast<FireBall*>(entityB))) {
+    } else if (entityB && entityB->isFireBall()) {
+        fireBall = static_cast<FireBall*>(entityB);
         target = entityA;
         fireBallBody = bodyB;
     }
@@ -76,8 +78,8 @@ void CollisionManager::resolve(b2Contact* contact) {
         }
 
         if (target) {
-            Enemy* enemy = dynamic_cast<Enemy*>(target);
-            if (enemy && enemy->isActive() && !enemy->isPendingDestroy()) {
+            if (target->isEnemy()) {
+                Enemy* enemy = static_cast<Enemy*>(target);
                 enemy->takeDamage(100);
                 fireBall->deactivate();
                 return;
@@ -100,10 +102,12 @@ void CollisionManager::resolve(b2Contact* contact) {
     Entity* otherEntity = nullptr;
     b2Body* marioBody = nullptr;
 
-    if (entityA && (mario = dynamic_cast<Mario*>(entityA))) {
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
         otherEntity = entityB;
         marioBody = bodyA;
-    } else if (entityB && (mario = dynamic_cast<Mario*>(entityB))) {
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
         otherEntity = entityA;
         marioBody = bodyB;
     }
@@ -115,11 +119,13 @@ void CollisionManager::resolve(b2Contact* contact) {
 
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
     Enemy* enemy = nullptr;
-    if (entityA && (enemy = dynamic_cast<Enemy*>(entityA))) {
+    if (entityA && entityA->isEnemy()) {
+        enemy = static_cast<Enemy*>(entityA);
         if (std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
         }
-    } else if (entityB && (enemy = dynamic_cast<Enemy*>(entityB))) {
+    } else if (entityB && entityB->isEnemy()) {
+        enemy = static_cast<Enemy*>(entityB);
         if (std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
         }
@@ -171,8 +177,8 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
         mario->setGrounded(true);
 
         if (other) {
-            Enemy* enemy = dynamic_cast<Enemy*>(other);
-            if (enemy) {
+            if (other->isEnemy()) {
+                Enemy* enemy = static_cast<Enemy*>(other);
                 enemy->onStomp();
                 EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
@@ -189,8 +195,7 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     // Lateral collision (wall contact)
     else {
         if (other) {
-            Enemy* enemy = dynamic_cast<Enemy*>(other);
-            if (enemy) {
+            if (other->isEnemy()) {
                 mario->powerDown();
             }
         }
@@ -217,9 +222,11 @@ void CollisionManager::resolveEnd(b2Contact* contact) {
     Mario* mario = nullptr;
     b2Body* marioBody = nullptr;
 
-    if (entityA && (mario = dynamic_cast<Mario*>(entityA))) {
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
         marioBody = bodyA;
-    } else if (entityB && (mario = dynamic_cast<Mario*>(entityB))) {
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
         marioBody = bodyB;
     }
 

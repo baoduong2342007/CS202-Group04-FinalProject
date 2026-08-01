@@ -14,6 +14,7 @@
 #include "items/Item.h"
 #include "patterns/EntityFactory.h"
 #include "physics/PhysicsEngine.h"
+#include "physics/ContactListener.h"
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
@@ -25,6 +26,7 @@ constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
 } // namespace
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
+Level::~Level() = default;
 
 bool Level::loadFromFile(const std::string& path) {
     if (!m_tileMap.loadFromFile(path)) {
@@ -43,11 +45,13 @@ bool Level::loadFromFile(const std::string& path) {
                       sf::Vector2f(levelWidth, levelHeight))
     );
 
-    // Create Box2D static bodies for solid tiles (ground, bricks, question blocks)
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
-    b2World* world = PhysicsEngine::getInstance().getWorld();
-    if (world) {
-        m_tileMap.createPhysicsBodies(world);
+    m_world = std::make_unique<b2World>(b2Vec2(0.f, 9.8f));
+    m_contactListener = std::make_unique<ContactListener>();
+    m_world->SetContactListener(m_contactListener.get());
+
+    if (m_world) {
+        m_tileMap.createPhysicsBodies(m_world.get());
     }
 
     // Spawn Mario and all entities from tile codes
@@ -75,7 +79,7 @@ void Level::spawnEntitiesFromTileMap() {
     m_mario->setTextureManager(m_textureManager);
 
     // Initialize Mario physics body
-    m_mario->initPhysics(b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+    m_mario->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
 
     // --- Spawn enemies and items via Factory ---
     for (char code : SPAWN_CODES) {
@@ -84,7 +88,7 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             Entity* raw =
-                EntityFactory::createFromTileCode(code, worldPos);
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
             if (raw) {
                 // Wire TextureManager so entity sprites can load
                 raw->setTextureManager(m_textureManager);
@@ -95,6 +99,10 @@ void Level::spawnEntitiesFromTileMap() {
 }
 
 void Level::update(float dt) {
+    if (m_world) {
+        PhysicsEngine::update(*m_world, dt);
+    }
+
     // Update Mario
     if (m_mario) {
         m_mario->update(dt);

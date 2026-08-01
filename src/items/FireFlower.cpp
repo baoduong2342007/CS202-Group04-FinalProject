@@ -21,13 +21,13 @@ constexpr const char* FIRE_FLOWER_TEXTURE_PATH =
 
 FireFlower::FireFlower()
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT)) {
-    initPhysics(b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
+    initPhysics(nullptr, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
 }
 
-FireFlower::FireFlower(const sf::Vector2f& position)
+FireFlower::FireFlower(const sf::Vector2f& position, b2World* world)
     : Item(position, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT)) {
-    initPhysics(b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
+    initPhysics(world, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
 }
 

@@ -14,7 +14,7 @@ class FireFlower : public Item {
 public:
     // 1. Constructor / Destructor
     FireFlower();
-    explicit FireFlower(const sf::Vector2f& position);
+    FireFlower(const sf::Vector2f& position, b2World* world);
     ~FireFlower() override = default;
 
     // 2. Override methods

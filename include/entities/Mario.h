@@ -42,6 +42,7 @@ public:
     void updateInvincibility(float dt);
     void loseLife();
     void respawn(const sf::Vector2f& spawnPosition);
+    bool isMario() const override { return true; }
 
     // 4. Getters / Setters
     MarioState getMarioState() const;

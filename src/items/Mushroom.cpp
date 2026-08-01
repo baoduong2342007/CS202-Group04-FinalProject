@@ -25,15 +25,15 @@ Mushroom::Mushroom()
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
-    initPhysics(b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
+    initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
 }
 
-Mushroom::Mushroom(const sf::Vector2f& position)
+Mushroom::Mushroom(const sf::Vector2f& position, b2World* world)
     : Item(position, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
-    initPhysics(b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
+    initPhysics(world, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
 }
 

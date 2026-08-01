@@ -18,11 +18,14 @@
 #include "level/Camera.h"
 #include "level/TileMap.h"
 
+#include <box2d/box2d.h>
+class ContactListener;
+
 class Level {
 public:
     // 1. Constructor / Destructor
     Level();
-    ~Level() = default;
+    ~Level();
 
     // 2. Override methods
     // (None — Level does not inherit from a base class)
@@ -46,6 +49,8 @@ private:
     void checkItemCollisions();
 
     // 6. Private members
+    std::unique_ptr<b2World> m_world;
+    std::unique_ptr<ContactListener> m_contactListener;
     TileMap m_tileMap;
     Camera m_camera;
     TextureManager& m_textureManager;

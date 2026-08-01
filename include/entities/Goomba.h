@@ -13,7 +13,7 @@
 
 class Goomba : public Enemy {
 public:
-    explicit Goomba(const sf::Vector2f& position);
+    Goomba(const sf::Vector2f& position, b2World* world);
     ~Goomba() override = default;
 
     void update(float dt) override;

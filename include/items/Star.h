@@ -14,7 +14,7 @@ class Star : public Item {
 public:
     // 1. Constructor / Destructor
     Star();
-    explicit Star(const sf::Vector2f& position);
+    Star(const sf::Vector2f& position, b2World* world);
     ~Star() override = default;
 
     // 2. Override methods

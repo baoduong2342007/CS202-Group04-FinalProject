@@ -83,6 +83,9 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
 void Mario::update(float dt) {
   if (!m_active) return;
 
+  // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
+  syncPhysics();
+
   // Tick invincibility timer (develop)
   updateInvincibility(dt);
 
@@ -94,9 +97,6 @@ void Mario::update(float dt) {
       m_body->SetLinearVelocity(b2Vec2(velocity.x, maxFallMeters));
     }
   }
-
-  // Sync position with Box2D body
-  syncPhysics();
 
   // Animation state machine (develop)
   if (!isGrounded()) {

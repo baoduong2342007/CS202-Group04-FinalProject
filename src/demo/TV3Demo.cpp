@@ -36,14 +36,9 @@ int runTV3Demo() {
                           sf::Style::Titlebar | sf::Style::Close);
   window.setFramerateLimit(60);
 
-  // Initialize Box2D Physics Engine
-  PhysicsEngine::getInstance().init(sf::Vector2f(0.0f, GRAVITY_Y));
-  b2World *world = PhysicsEngine::getInstance().getWorld();
-
-  if (!world) {
-    std::cerr << "Error: Physics engine world failed to initialize!" << std::endl;
-    return -1;
-  }
+  // Initialize Box2D Physics World manually for demo
+  b2World worldInstance(b2Vec2(0.0f, GRAVITY_Y / PhysicsEngine::PPM));
+  b2World *world = &worldInstance;
 
   // 1. Create static floor body in Box2D
   b2BodyDef floorBodyDef;
@@ -104,7 +99,7 @@ int runTV3Demo() {
   sf::Vector2f startPos(100.f, 400.f);
   sf::Vector2f initialSize(32.f, 32.f);
   Mario mario(startPos, initialSize);
-  mario.initPhysics(b2_dynamicBody, initialSize);
+  mario.initPhysics(world, b2_dynamicBody, initialSize);
 
   // Visual Mario shape
   sf::RectangleShape marioShape(initialSize);
@@ -146,7 +141,7 @@ int runTV3Demo() {
         } else if (keyPressed->code == sf::Keyboard::Key::F) {
           if (mario.canShootFireBall()) {
             sf::Vector2f fbPos = mario.getPosition() + sf::Vector2f(mario.getFacingDirection() == Direction::RIGHT ? 35.f : -15.f, 10.f);
-            auto fb = std::make_unique<FireBall>(fbPos, mario.getFacingDirection());
+            auto fb = std::make_unique<FireBall>(fbPos, mario.getFacingDirection(), world);
             fireballs.push_back(std::move(fb));
             std::cout << "[TV3 Demo] FireBall shot! Active fireballs: " << fireballs.size() << std::endl;
           } else {
@@ -164,7 +159,7 @@ int runTV3Demo() {
 
     // Handle Mario input and physics update
     mario.handleInput();
-    PhysicsEngine::getInstance().update(dt);
+    PhysicsEngine::update(*world, dt);
     mario.update(dt);
 
     // Update FireBalls

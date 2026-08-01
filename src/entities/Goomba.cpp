@@ -21,12 +21,12 @@ const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
 } // namespace
 
-Goomba::Goomba(const sf::Vector2f& position)
+Goomba::Goomba(const sf::Vector2f& position, b2World* world)
 : Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),
   m_isStomped(false),
   m_patrolSpeed(DEFAULT_GOOMBA_SPEED){
       setFacingDirection(Direction::LEFT);
-      initPhysics(b2_dynamicBody, GOOMBA_SIZE);
+      initPhysics(world, b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
       
       m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 2, 0.15f));

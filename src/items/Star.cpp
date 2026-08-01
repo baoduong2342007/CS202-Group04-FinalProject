@@ -29,16 +29,16 @@ Star::Star()
       m_patrolSpeed(DEFAULT_STAR_SPEED),
       m_bounceVelocity(DEFAULT_STAR_BOUNCE_VELOCITY),
       m_patrolDirection(1) {
-    initPhysics(b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
+    initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
 }
 
-Star::Star(const sf::Vector2f& position)
+Star::Star(const sf::Vector2f& position, b2World* world)
     : Item(position, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT)),
       m_patrolSpeed(DEFAULT_STAR_SPEED),
       m_bounceVelocity(DEFAULT_STAR_BOUNCE_VELOCITY),
       m_patrolDirection(1) {
-    initPhysics(b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
+    initPhysics(world, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
 }
 

@@ -14,7 +14,7 @@ class Mushroom : public Item {
 public:
     // 1. Constructor / Destructor
     Mushroom();
-    explicit Mushroom(const sf::Vector2f& position);
+    Mushroom(const sf::Vector2f& position, b2World* world);
     ~Mushroom() override = default;
 
     // 2. Override methods

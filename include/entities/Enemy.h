@@ -24,4 +24,5 @@ public:
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
+    bool isEnemy() const override { return true; }
 };

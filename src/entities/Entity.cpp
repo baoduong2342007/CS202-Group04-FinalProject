@@ -110,8 +110,7 @@ void Entity::updateAnimation(float dt) {
 
 // ── Box2D Physics ──────────────────────────────────────────────
 
-void Entity::initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor) {
-    b2World* world = PhysicsEngine::getInstance().getWorld();
+void Entity::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor) {
     if (!world) {
         std::cerr << "Error: PhysicsEngine world not initialized!" << std::endl;
         return;

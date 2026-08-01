@@ -51,48 +51,49 @@ sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
 } // namespace
 
 Koopa::Koopa(const sf::Vector2f& position)
-: Enemy(alignKoopaToGround(position),
-        KOOPA_SIZE,
-        DEFAULT_KOOPA_HEALTH
-        ),
-  m_state(KoopaState::WALKING),
-  m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
-      setFacingDirection(Direction::LEFT);
-      initPhysics(b2_dynamicBody, KOOPA_SIZE);
+    : Enemy(alignKoopaToGround(position),
+            KOOPA_SIZE,
+            DEFAULT_KOOPA_HEALTH
+            ),
+      m_state(KoopaState::WALKING),
+      m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
       
-      setSprite(KOOPA_TEXTURE_PATH);
+    setFacingDirection(Direction::LEFT);
+    initPhysics(b2_dynamicBody, KOOPA_SIZE);
 
-      m_animationSystem = std::make_unique<AnimationSystem>();
+    setSprite(KOOPA_TEXTURE_PATH);
 
-      const Animation walkAnimation =
-      AnimationSystem::createGridAnimation(KOOPA_FRAME_START_X,
-                                           KOOPA_FRAME_START_Y,
-                                           KOOPA_FRAME_WIDTH,
-                                           KOOPA_FRAME_HEIGHT,
-                                           KOOPA_WALK_FRAME_COUNT,
-                                           KOOPA_WALK_FRAME_DURATION,
-                                           true
-                                           );
+    m_animationSystem = std::make_unique<AnimationSystem>();
 
-      const Animation shellIdleAnimation =
-      AnimationSystem::createGridAnimation(KOOPA_SHELL_FRAME_START_X,
-                                           KOOPA_FRAME_START_Y,
-                                           KOOPA_FRAME_WIDTH,
-                                           KOOPA_FRAME_HEIGHT,
-                                           KOOPA_SHELL_FRAME_COUNT,
-                                           KOOPA_SHELL_FRAME_DURATION,
-                                           false
-                                           );
+    const Animation walkAnimation =
+    AnimationSystem::createGridAnimation(KOOPA_FRAME_START_X,
+                                         KOOPA_FRAME_START_Y,
+                                         KOOPA_FRAME_WIDTH,
+                                         KOOPA_FRAME_HEIGHT,
+                                         KOOPA_WALK_FRAME_COUNT,
+                                         KOOPA_WALK_FRAME_DURATION,
+                                         true
+                                         );
 
-      m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
-                                      walkAnimation
-                                      );
+    const Animation shellIdleAnimation =
+    AnimationSystem::createGridAnimation(KOOPA_SHELL_FRAME_START_X,
+                                         KOOPA_FRAME_START_Y,
+                                         KOOPA_FRAME_WIDTH,
+                                         KOOPA_FRAME_HEIGHT,
+                                         KOOPA_SHELL_FRAME_COUNT,
+                                         KOOPA_SHELL_FRAME_DURATION,
+                                         false
+                                         );
 
-      m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION,
-                                      shellIdleAnimation
-                                      );
+    m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
+                                    walkAnimation
+                                    );
 
-      playAnimation(KOOPA_WALK_ANIMATION);
+    m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION,
+                                    shellIdleAnimation
+                                    );
+
+    playAnimation(KOOPA_WALK_ANIMATION);
 }
 
 void Koopa::update(float dt) {

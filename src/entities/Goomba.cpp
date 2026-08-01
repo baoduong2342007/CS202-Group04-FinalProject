@@ -42,44 +42,45 @@ constexpr const char* GOOMBA_SQUISH_ANIMATION = "squish";
 } // namespace
 
 Goomba::Goomba(const sf::Vector2f& position)
-: Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),
-  m_isStomped(false),
-  m_patrolSpeed(DEFAULT_GOOMBA_SPEED),
-  m_squishElapsedTime(0.f) {
-      setFacingDirection(Direction::LEFT);
-      initPhysics(b2_dynamicBody, GOOMBA_SIZE);
-      setSprite(GOOMBA_TEXTURE_PATH);
-      m_animationSystem = std::make_unique<AnimationSystem>();
-      
-      const Animation walkAnimation =
-      AnimationSystem::createGridAnimation(GOOMBA_FRAME_START_X,
-                                           GOOMBA_FRAME_START_Y,
-                                           GOOMBA_FRAME_WIDTH,
-                                           GOOMBA_FRAME_HEIGHT,
-                                           GOOMBA_WALK_FRAME_COUNT,
-                                           GOOMBA_WALK_FRAME_DURATION,
-                                           true
-                                           );
-      
-      const Animation squishAnimation =
-      AnimationSystem::createGridAnimation(GOOMBA_SQUISH_FRAME_START_X,
-                                           GOOMBA_FRAME_START_Y,
-                                           GOOMBA_FRAME_WIDTH,
-                                           GOOMBA_FRAME_HEIGHT,
-                                           GOOMBA_SQUISH_FRAME_COUNT,
-                                           GOOMBA_SQUISH_DURATION,
-                                           false
-                                           );
-      
-      m_animationSystem->addAnimation(GOOMBA_WALK_ANIMATION,
-                                      walkAnimation
-                                      );
-      
-      m_animationSystem->addAnimation(GOOMBA_SQUISH_ANIMATION,
-                                      squishAnimation
-                                      );
-      
-      playAnimation(GOOMBA_WALK_ANIMATION);
+    : Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),
+      m_isStomped(false),
+      m_patrolSpeed(DEFAULT_GOOMBA_SPEED),
+      m_squishElapsedTime(0.f) {
+          
+    setFacingDirection(Direction::LEFT);
+    initPhysics(b2_dynamicBody, GOOMBA_SIZE);
+    setSprite(GOOMBA_TEXTURE_PATH);
+    m_animationSystem = std::make_unique<AnimationSystem>();
+          
+    const Animation walkAnimation =
+    AnimationSystem::createGridAnimation(GOOMBA_FRAME_START_X,
+                                         GOOMBA_FRAME_START_Y,
+                                         GOOMBA_FRAME_WIDTH,
+                                         GOOMBA_FRAME_HEIGHT,
+                                         GOOMBA_WALK_FRAME_COUNT,
+                                         GOOMBA_WALK_FRAME_DURATION,
+                                         true
+                                         );
+
+    const Animation squishAnimation =
+    AnimationSystem::createGridAnimation(GOOMBA_SQUISH_FRAME_START_X,
+                                         GOOMBA_FRAME_START_Y,
+                                         GOOMBA_FRAME_WIDTH,
+                                         GOOMBA_FRAME_HEIGHT,
+                                         GOOMBA_SQUISH_FRAME_COUNT,
+                                         GOOMBA_SQUISH_DURATION,
+                                         false
+                                         );
+
+    m_animationSystem->addAnimation(GOOMBA_WALK_ANIMATION,
+                                    walkAnimation
+                                    );
+
+    m_animationSystem->addAnimation(GOOMBA_SQUISH_ANIMATION,
+                                    squishAnimation
+                                    );
+
+    playAnimation(GOOMBA_WALK_ANIMATION);
 }
 
 void Goomba::update(float dt) {

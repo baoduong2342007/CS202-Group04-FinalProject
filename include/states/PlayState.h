@@ -9,14 +9,14 @@
 #include "states/IGameState.h"
 #include "level/Level.h"
 #include "patterns/InputHandler.h"
-#include "physics/PhysicsEngine.h"
 #include "ui/HUD.h"
+#include "patterns/IObserver.h"
 
-class PlayState : public IGameState {
+class PlayState : public IGameState, public IObserver {
 public:
     // 1. Constructor / Destructor
     PlayState();
-    ~PlayState() override = default;
+    ~PlayState() override;
 
     // 2. Override methods
     void onEnter() override;
@@ -26,9 +26,13 @@ public:
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
 
+    void onNotify(EventType event) override;
+
 private:
+    void rebindCommands();
+
     // 6. Private members
-    Level m_level;
+    std::unique_ptr<Level> m_level;
     InputHandler m_inputHandler;
     std::unique_ptr<HUD> m_hud;
 };

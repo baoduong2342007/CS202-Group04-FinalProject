@@ -22,6 +22,10 @@ void InputHandler::unbindKey(sf::Keyboard::Key key) {
     m_keyBindings.erase(key);
 }
 
+void InputHandler::clear() {
+    m_keyBindings.clear();
+}
+
 void InputHandler::handleInput() const {
     for (const auto& [key, command] : m_keyBindings) {
         if (sf::Keyboard::isKeyPressed(key)) {

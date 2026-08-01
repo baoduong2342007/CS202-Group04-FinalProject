@@ -21,6 +21,8 @@ public:
     static GameManager& getInstance();
 
     void changeState(std::unique_ptr<IGameState> newState);
+    void pushState(std::unique_ptr<IGameState> newState);
+    void popState();
     
     void processEvents(const sf::Event& event);
     void update(float dt);
@@ -37,4 +39,6 @@ private:
     // 6. Private members
     std::unique_ptr<IGameState> m_currentState;
     std::unique_ptr<IGameState> m_nextState;
+    std::unique_ptr<IGameState> m_previousState;
+    bool m_isPopping = false;
 };

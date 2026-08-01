@@ -7,8 +7,7 @@
 #include "core/Game.h"
 #include <iostream>
 #include "core/GameManager.h"
-#include "states/PlayState.h"
-#include "physics/PhysicsEngine.h"
+#include "states/MenuState.h"
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
@@ -23,12 +22,10 @@ Game::Game()
 {
     m_window.setFramerateLimit(FRAMERATE_LIMIT);
 
-    // Initialize Box2D physics world with downward gravity
-    PhysicsEngine::getInstance().init(
-        sf::Vector2f(0.f, 9.8f * PhysicsEngine::PPM));
+    // Physics world is now owned and initialized by Level.
 
-    // Transition to PlayState as the initial state
-    GameManager::getInstance().changeState(std::make_unique<PlayState>());
+    // Transition to MenuState as the initial state
+    GameManager::getInstance().changeState(std::make_unique<MenuState>());
 }
 void Game::run() {
 #ifdef DEBUG
@@ -58,12 +55,6 @@ void Game::processEvents() {
         if (event->is<sf::Event::Closed>()) {
             m_window.close();
         }
-        else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-            if (keyPressed->code == sf::Keyboard::Key::Escape) {
-                m_window.close();
-            }
-        }
-        
         // Delegate event to current state
         GameManager::getInstance().processEvents(*event);
     }
@@ -79,8 +70,5 @@ void Game::render() {
     // Delegate rendering to GameManager
     GameManager::getInstance().render(m_window);
     
-    // Reset view to default for HUD overlay (TV5 future)
-    m_window.setView(m_window.getDefaultView());
-
     m_window.display();
 }

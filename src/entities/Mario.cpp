@@ -140,6 +140,9 @@ void Mario::powerUp(MarioState state) {
 }
 
 void Mario::powerDown() {
+  if (m_isInvincible) {
+    return;
+  }
   if (m_marioState == MarioState::FIRE) {
     m_marioState = MarioState::SUPER;
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);

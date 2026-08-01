@@ -27,6 +27,9 @@ PlayState::PlayState() {
     
     m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(&m_level.getMario()));
     m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(&m_level.getMario()));
+
+    // Create HUD after Level (and Mario) are initialized
+    m_hud = std::make_unique<HUD>(m_level.getMario());
 }
 
 void PlayState::onEnter() {
@@ -59,8 +62,18 @@ void PlayState::update(float dt) {
 
     // Update level entities
     m_level.update(dt);
+
+    if (m_hud) {
+        m_hud->update();
+    }
 }
 
 void PlayState::render(sf::RenderWindow& window) {
     m_level.render(window);
+
+    // Switch to default view for UI overlay
+    window.setView(window.getDefaultView());
+    if (m_hud) {
+        m_hud->draw(window);
+    }
 }

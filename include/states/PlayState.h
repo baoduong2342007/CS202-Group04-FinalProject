@@ -10,6 +10,7 @@
 #include "level/Level.h"
 #include "patterns/InputHandler.h"
 #include "physics/PhysicsEngine.h"
+#include "ui/HUD.h"
 
 class PlayState : public IGameState {
 public:
@@ -29,4 +30,5 @@ private:
     // 6. Private members
     Level m_level;
     InputHandler m_inputHandler;
+    std::unique_ptr<HUD> m_hud;
 };

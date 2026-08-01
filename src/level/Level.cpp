@@ -171,13 +171,11 @@ return !e || e->shouldRemove() || !e->isActive() || e->isPendingDestroy();
 }
 
 // --- Getters ---
-Mario& Level::getMario() { 
-    assert(m_mario && "getMario() called before Level::loadFromFile() or when Mario is null!");
-    return *m_mario; 
+Mario* Level::getMario() { 
+    return m_mario.get(); 
 }
-const Mario& Level::getMario() const { 
-    assert(m_mario && "getMario() called before Level::loadFromFile() or when Mario is null!");
-    return *m_mario; 
+const Mario* Level::getMario() const { 
+    return m_mario.get(); 
 }
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }

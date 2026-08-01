@@ -84,7 +84,6 @@ void Star::onCollect(Mario& mario) {
     }
 
     mario.addScore(STAR_SCORE_VALUE);
-    markForRemoval();
 
     // Notify observers (SoundManager plays powerup.wav, HUD updates score)
     EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);

@@ -38,8 +38,6 @@ void Coin::onCollect(Mario& mario) {
     if (m_isCollected) {
         return;
     }
-
-    constexpr int COIN_SCORE_VALUE = 200;
     mario.addScore(COIN_SCORE_VALUE);
 
     m_isCollected = true;

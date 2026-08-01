@@ -12,6 +12,8 @@
 #include "entities/Enemy.h"
 #include "entities/FireBall.h"
 #include "items/Item.h"
+#include "items/Mushroom.h"
+#include "items/Star.h"
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -120,6 +122,25 @@ void CollisionManager::resolve(b2Contact* contact) {
     } else if (entityB && (enemy = dynamic_cast<Enemy*>(entityB))) {
         if (std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
+        }
+    }
+
+    // Handle Item ↔ Wall / Static Body collisions
+    if (entityA && entityA->isItem()) {
+        b2Vec2 itemNormal = normal;
+        if (Mushroom* mushroom = dynamic_cast<Mushroom*>(entityA)) {
+            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+        } else if (Star* star = dynamic_cast<Star*>(entityA)) {
+            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (itemNormal.y > 0.8f) star->onGroundCollision();
+        }
+    } else if (entityB && entityB->isItem()) {
+        b2Vec2 itemNormal = -normal;
+        if (Mushroom* mushroom = dynamic_cast<Mushroom*>(entityB)) {
+            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+        } else if (Star* star = dynamic_cast<Star*>(entityB)) {
+            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     }
 }

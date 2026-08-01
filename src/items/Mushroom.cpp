@@ -70,7 +70,6 @@ void Mushroom::onCollect(Mario& mario) {
     }
 
     mario.addScore(MUSHROOM_SCORE_VALUE);
-    markForRemoval();
 
     // Notify observers (SoundManager plays powerup.wav, HUD updates score)
     EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);

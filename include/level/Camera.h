@@ -31,12 +31,20 @@ public:
     void init(const sf::Vector2f& viewSize, const sf::FloatRect& levelBounds);
 
     /**
+     * @brief Applies a shake effect to the camera.
+     * @param duration How long the shake should last in seconds.
+     * @param magnitude The maximum pixel offset for the shake.
+     */
+    void shake(float duration, float magnitude);
+
+    /**
      * @brief Updates the camera's center position to follow a target.
      * @details Tracks the X-axis continuously but utilizes a vertical deadzone for the Y-axis 
      *          to prevent jittery camera movement when the target jumps.
+     * @param dt The time elapsed since the last update.
      * @param targetPosition The current X and Y coordinates of the entity to track (e.g., Mario).
      */
-    void update(const sf::Vector2f& targetPosition);
+    void update(float dt, const sf::Vector2f& targetPosition);
 
     // 4. Getters / Setters
     /**
@@ -55,4 +63,7 @@ private:
     // 6. Private members
     sf::FloatRect m_levelBounds;
     sf::View m_view;
+
+    float m_shakeTimer = 0.f;
+    float m_shakeMagnitude = 0.f;
 };

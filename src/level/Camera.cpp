@@ -7,6 +7,13 @@
 
 #include "level/Camera.h"
 #include <algorithm>
+#include <cstdlib> // For std::rand()
+
+namespace {
+    constexpr int RANDOM_PERCENT = 100;
+    constexpr float HALF_PERCENT = 50.f;
+    constexpr float SHAKE_OFFSET = 1.f;
+}
 
 // ============================================================
 // 1. Constructor
@@ -24,7 +31,12 @@ void Camera::init(const sf::Vector2f& viewSize, const sf::FloatRect& levelBounds
     m_view.setCenter({viewSize.x / 2.0f, viewSize.y / 2.0f});
 }
 
-void Camera::update(const sf::Vector2f& targetPosition) {
+void Camera::shake(float duration, float magnitude) {
+    m_shakeTimer = duration;
+    m_shakeMagnitude = magnitude;
+}
+
+void Camera::update(float dt, const sf::Vector2f& targetPosition) {
     sf::Vector2f currentCenter = m_view.getCenter();
     sf::Vector2f newCenter = currentCenter;
 
@@ -43,6 +55,21 @@ void Camera::update(const sf::Vector2f& targetPosition) {
 
     m_view.setCenter(newCenter);
     clampToBoundaries();
+
+    // Apply screen shake if active
+    if (m_shakeTimer > 0.f) {
+        m_shakeTimer -= dt;
+        
+        // Generate random offsets between -m_shakeMagnitude and +m_shakeMagnitude
+        float offsetX = ((std::rand() % RANDOM_PERCENT) / HALF_PERCENT - SHAKE_OFFSET) * m_shakeMagnitude;
+        float offsetY = ((std::rand() % RANDOM_PERCENT) / HALF_PERCENT - SHAKE_OFFSET) * m_shakeMagnitude;
+        
+        sf::Vector2f shakenCenter = m_view.getCenter();
+        shakenCenter.x += offsetX;
+        shakenCenter.y += offsetY;
+        
+        m_view.setCenter(shakenCenter);
+    }
 }
 
 // ============================================================

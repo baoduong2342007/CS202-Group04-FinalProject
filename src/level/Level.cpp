@@ -121,7 +121,7 @@ void Level::update(float dt) {
 
     // Update camera to follow Mario
     if (m_mario) {
-        m_camera.update(m_mario->getPosition());
+        m_camera.update(dt, m_mario->getPosition());
     }
 }
 

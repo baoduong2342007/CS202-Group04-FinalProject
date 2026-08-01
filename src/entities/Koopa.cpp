@@ -17,6 +17,7 @@ namespace {
 
 constexpr int DEFAULT_KOOPA_HEALTH = 1;
 constexpr float DEFAULT_KOOPA_PATROL_SPEED = 50.f;
+constexpr float KOOPA_SLIDE_SPEED = 240.f;
 
 constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/koopa.png";
 
@@ -97,30 +98,58 @@ Koopa::Koopa(const sf::Vector2f& position)
 void Koopa::update(float dt) {
     syncPhysics();
 
-    if (m_state == KoopaState::WALKING && !isDead()) {
+    if (isDead()) {
+        updateAnimation(dt);
+        return;
+    }
+
+    if (m_state == KoopaState::WALKING) {
         patrol();
+    } else if (m_state == KoopaState::SHELL_SLIDING) {
+        sf::Vector2f velocity = getVelocity();
+
+        if (getFacingDirection() == Direction::LEFT) {
+            velocity.x = -KOOPA_SLIDE_SPEED;
+        } else {
+            velocity.x = KOOPA_SLIDE_SPEED;
+        }
+
+        setVelocity(velocity);
     }
 
     updateAnimation(dt);
 }
 
 void Koopa::onStomp() {
-    if (m_state != KoopaState::WALKING) {
+    if (m_state == KoopaState::WALKING) {
+        m_state = KoopaState::SHELL_IDLE;
+
+        const sf::Vector2f currentVelocity = getVelocity();
+        setVelocity({0.f, currentVelocity.y});
+
+        playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
+        updateAnimation(0.f);
         return;
     }
 
-    m_state = KoopaState::SHELL_IDLE;
+    if (m_state == KoopaState::SHELL_SLIDING) {
+        m_state = KoopaState::SHELL_IDLE;
 
-    const sf::Vector2f currentVelocity = getVelocity();
-    setVelocity({0.f, currentVelocity.y});
+        const sf::Vector2f currentVelocity = getVelocity();
+        setVelocity({0.f, currentVelocity.y});
 
-    playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
-
-    updateAnimation(0.f);
+        playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
+        updateAnimation(0.f);
+    }
 }
 
 void Koopa::onWallCollision() {
-    if (m_state != KoopaState::WALKING || isDead()) {
+    if (isDead()) {
+        return;
+    }
+
+    if (m_state != KoopaState::WALKING &&
+        m_state != KoopaState::SHELL_SLIDING) {
         return;
     }
 
@@ -143,8 +172,31 @@ void Koopa::patrol() {
     setVelocity(velocity);
 }
 
+void Koopa::kick(Direction direction) {
+    if (m_state != KoopaState::SHELL_IDLE) {
+        return;
+    }
+
+    m_state = KoopaState::SHELL_SLIDING;
+    setFacingDirection(direction);
+
+    sf::Vector2f velocity = getVelocity();
+
+    if (direction == Direction::LEFT) {
+        velocity.x = -KOOPA_SLIDE_SPEED;
+    } else {
+        velocity.x = KOOPA_SLIDE_SPEED;
+    }
+
+    setVelocity(velocity);
+}
+
 bool Koopa::isInShell() const {
     return m_state != KoopaState::WALKING;
+}
+
+bool Koopa::isShellSliding() const {
+    return m_state == KoopaState::SHELL_SLIDING;
 }
 
 KoopaState Koopa::getState() const {
@@ -156,6 +208,18 @@ void Koopa::reverseDirection() {
         setFacingDirection(Direction::RIGHT);
     } else {
         setFacingDirection(Direction::LEFT);
+    }
+
+    sf::Vector2f velocity = getVelocity();
+
+    if (m_state == KoopaState::SHELL_SLIDING) {
+        velocity.x =
+            getFacingDirection() == Direction::LEFT
+                ? -KOOPA_SLIDE_SPEED
+                : KOOPA_SLIDE_SPEED;
+
+        setVelocity(velocity);
+        return;
     }
 
     patrol();

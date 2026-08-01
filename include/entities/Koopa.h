@@ -28,7 +28,10 @@ public:
     void onWallCollision() override;
     void patrol() override;
 
+    void kick(Direction direction);
+
     bool isInShell() const;
+    bool isShellSliding() const;
     KoopaState getState() const;
 
 private:

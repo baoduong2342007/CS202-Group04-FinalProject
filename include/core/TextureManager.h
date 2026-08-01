@@ -1,73 +1,85 @@
 /**
  * @file TextureManager.h
  * @author TV2 (Nhật)
- * @brief Manages loading, caching, and retrieving sf::Texture objects to prevent redundant disk reads.
- * @note DANGER: Before calling deleteTexture(), you MUST ensure that no active sf::Sprite is holding a reference to the texture being deleted. Deleting a texture while a sprite still points to it will cause a segmentation fault!
+ * @brief Singleton class for managing textures in the engine.
+ * 
+ * @details Implements a centralized resource management strategy using the 
+ * Singleton design pattern. Ensures that textures are loaded only once and 
+ * provides global access to entities. Adheres to strict memory ownership via 
+ * smart pointers.
  */
 
 #pragma once
 
-#include <string>
+#include <SFML/Graphics.hpp>
 #include <unordered_map>
+#include <string>
 #include <memory>
 
-#include <SFML/Graphics.hpp>
-
+/**
+ * @class TextureManager
+ * @brief Manages the loading, storage, and retrieval of sf::Texture resources.
+ * 
+ * @note Design Pattern: Singleton (Meyer's implementation).
+ */
 class TextureManager {
 public:
-    // 1. Constructor / Destructor
-    TextureManager();
-    ~TextureManager() = default;
+    /**
+     * @brief Gets the global Singleton instance of the TextureManager.
+     * @return TextureManager& Reference to the static instance.
+     */
+    static TextureManager& getInstance();
 
-    // Prevent copying to ensure only one manager instance handles resources
+    // Delete copy constructor and assignment operator to enforce Singleton property
     TextureManager(const TextureManager&) = delete;
     TextureManager& operator=(const TextureManager&) = delete;
 
-    // 2. Overrides
-    // (None currently required for this class)
-
-    // 3. Public methods
     /**
-     * @brief Loads a texture from file and caches it with a string ID.
-     * @param id The string ID to associate with the texture.
-     * @param filename The file path to the texture.
-     * @return true if loading succeeds, false otherwise.
+     * @brief Loads a texture from a file and stores it with the given ID.
+     * 
+     * @param id The unique string identifier for the texture.
+     * @param filename The file path to the texture image.
+     * @return true If the texture was successfully loaded or already exists.
+     * @return false If the texture failed to load (e.g., file not found).
      */
     bool loadTexture(const std::string& id, const std::string& filename);
 
     /**
-     * @brief Deletes a texture from the manager to free up memory.
+     * @brief Retrieves a loaded texture by its ID.
      * 
-     * =====================================================================
-     * CRITICAL WARNING: sf::Sprite does NOT own its texture! It only holds 
-     * a raw pointer to it. You MUST destroy or reassign any sf::Sprite using 
-     * this texture BEFORE calling this function. Otherwise, the game will 
-     * crash instantly with a dangling pointer error (segmentation fault).
-     * =====================================================================
-     * 
-     * @param id The string ID of the texture to delete.
-     */
-    void deleteTexture(const std::string& id);
-
-    // 4. Getters / Setters
-    /**
-     * @brief Retrieves a reference to a cached texture by its ID.
-     * @param id The string ID of the texture.
-     * @return const sf::Texture& reference to the texture (or fallback texture).
+     * @param id The unique string identifier of the requested texture.
+     * @return const sf::Texture& Reference to the requested texture, or a fallback if missing.
      */
     const sf::Texture& getTexture(const std::string& id) const;
 
     /**
-     * @brief Checks if a texture with the given ID is already loaded.
-     * @param id The string ID to check.
-     * @return true if the texture exists in cache.
+     * @brief Checks if a texture with the given ID is currently loaded.
+     * 
+     * @param id The unique string identifier to check.
+     * @return true If the texture exists in the manager.
+     * @return false If the texture does not exist.
      */
     bool hasTexture(const std::string& id) const;
 
-private:
-    // 5. Private methods
-    // (None currently required for this class)
+    /**
+     * @brief Removes a texture from the manager and frees its memory.
+     * 
+     * @param id The unique string identifier of the texture to delete.
+     */
+    void deleteTexture(const std::string& id);
 
-    // 6. Private members
+private:
+    /**
+     * @brief Private constructor to enforce Singleton pattern.
+     * Initializes the fallback texture to prevent crashes on missing resources.
+     */
+    TextureManager(); 
+    
+    /**
+     * @brief Default private destructor.
+     */
+    ~TextureManager() = default;
+
+    /** @brief Hash map storing unique pointers to textures, keyed by string IDs. */
     std::unordered_map<std::string, std::unique_ptr<sf::Texture>> m_textures;
 };

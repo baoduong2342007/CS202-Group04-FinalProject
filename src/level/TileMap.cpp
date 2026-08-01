@@ -152,10 +152,18 @@ bool TileMap::loadFromFile(const std::string& path){
     while(std::getline(inputFile, line)){
         ++lineNumber;
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() && line.back() == '\r'){line.pop_back();}
-        if (isBlankLine(line) || isCommentLine(line)){continue;}
-        if (!validateRow(line, lineNumber, path, validationState)){return false;}
-        
+        if (!line.empty() && line.back() == '\r'){
+            line.pop_back();
+        }
+
+        if (isBlankLine(line) || isCommentLine(line)){
+            continue;
+        }
+
+        if (!validateRow(line, lineNumber, path, validationState)){
+            return false;
+        }
+
         loadedGrid.push_back(line);
     }
 

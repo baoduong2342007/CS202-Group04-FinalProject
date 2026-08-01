@@ -1,8 +1,8 @@
 /**
  * @file Entity.h
- * @author TV1 (Dương)
- * @brief Base Entity class — all game objects with physics and rendering
- * @note Sprint 4 fix: wired TextureManager + AnimationSystem into base class
+ * @author TV1 (Dương) & TV3 (Bảo)
+ * @brief Base Entity class — all game objects with physics, rendering, and lifecycle management
+ * @note Sprint 4: TextureManager + AnimationSystem wiring; Box2D safe destruction
  */
 
 #pragma once
@@ -23,7 +23,7 @@ public:
     // 1. Constructor / Destructor
     Entity();
     Entity(const sf::Vector2f& position, const sf::Vector2f& size);
-    ~Entity() override; // Destroy Box2D body
+    ~Entity() override; // Safely destroys Box2D body
 
     // 2. Override methods
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -46,6 +46,7 @@ public:
     // Box2D Physics Methods
     void initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
     virtual void syncPhysics();
+    void destroyPhysicsBody();
 
     // 4. Getters / Setters
     sf::FloatRect getBoundingBox() const;
@@ -61,6 +62,12 @@ public:
     void markForRemoval();
 
     b2Body* getBody() const { return m_body; }
+
+    bool isActive() const { return m_active; }
+    void setActive(bool active) { m_active = active; }
+
+    bool isPendingDestroy() const { return m_pendingDestroy; }
+    void markForDestroy() { m_pendingDestroy = true; m_active = false; }
 
 protected:
     // 5. Protected methods
@@ -85,4 +92,6 @@ protected:
 
     // Entity lifecycle
     bool m_markedForRemoval = false;
+    bool m_active = true;
+    bool m_pendingDestroy = false;
 };

@@ -9,7 +9,6 @@
 
 #include <SFML/Graphics.hpp>
 
-
 class Game {
 public:
     Game();
@@ -21,5 +20,4 @@ private:
     void render();
 
     sf::RenderWindow m_window;
-
 };

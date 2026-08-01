@@ -43,6 +43,7 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::ENEMY_STOMPED, this);
     bus.subscribe(EventType::PLAYER_DIED, this);
     bus.subscribe(EventType::PLAYER_POWER_UP, this);
+    bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.subscribe(EventType::GAME_PAUSED, this);
 
     // Preload sound effects
@@ -64,6 +65,7 @@ SoundManager::~SoundManager() {
     bus.unsubscribe(EventType::ENEMY_STOMPED, this);
     bus.unsubscribe(EventType::PLAYER_DIED, this);
     bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
+    bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.unsubscribe(EventType::GAME_PAUSED, this);
 }
 
@@ -85,6 +87,9 @@ void SoundManager::onNotify(EventType event) {
             break;
         case EventType::PLAYER_POWER_UP:
             playSound("powerup");
+            break;
+        case EventType::PLAYER_POWER_DOWN:
+            playSound("powerdown");
             break;
         case EventType::GAME_PAUSED:
             pauseMusic();

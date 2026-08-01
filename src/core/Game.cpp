@@ -5,7 +5,6 @@
  * @note Sprint 4 fix — delegates logic to GameManager (State Pattern)
  */
 #include "core/Game.h"
-
 #include <iostream>
 #include "core/GameManager.h"
 #include "states/PlayState.h"
@@ -31,7 +30,6 @@ Game::Game()
     // Transition to PlayState as the initial state
     GameManager::getInstance().changeState(std::make_unique<PlayState>());
 }
-
 void Game::run() {
 #ifdef DEBUG
     std::cout << "Starting SFML window. Press ESC or close the window to exit."
@@ -75,7 +73,6 @@ void Game::update(float dt) {
     // Delegate update to GameManager
     GameManager::getInstance().update(dt);
 }
-
 void Game::render() {
     m_window.clear(sf::Color(100, 149, 237)); // Sky blue background
 

@@ -52,6 +52,7 @@ SoundManager::SoundManager()
     loadSound("stomp",   "assets/sounds/effects/stompswim.wav");
     loadSound("death",   "assets/sounds/effects/death.wav");
     loadSound("powerup", "assets/sounds/effects/powerup.wav");
+    loadSound("powerdown", "assets/sounds/effects/pipepowerdown.wav");
 
     // Preload background music
     loadMusic("assets/sounds/music/overworld.flac");

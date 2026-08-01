@@ -22,6 +22,13 @@
 namespace {
 // ── Constants ────────────────────────────────────────────────
 constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
+// Fallback fonts (system paths) used when the pixel font is missing.
+// SFML 3.0.0 has no sf::Font::getDefaultFont(), so we try common system fonts.
+constexpr const char* FALLBACK_FONT_PATHS[] = {
+    "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+    "C:/Windows/Fonts/consola.ttf",
+};
 constexpr unsigned int FONT_SIZE = 24;
 constexpr int STARTING_LIVES = 3;
 constexpr float SCORE_X = 20.f;
@@ -126,12 +133,26 @@ void HUD::setLives(int lives) {
 
 bool HUD::loadFont(const std::string& filepath) {
     // SFML 3: sf::Font::openFromFile returns bool — check it explicitly.
-    if (!m_font.openFromFile(filepath)) {
-        std::cerr << "[HUD] WARNING: Failed to load font from '"
-                  << filepath << "'. HUD text will not be drawn.\n";
-        return false;
+    if (m_font.openFromFile(filepath)) {
+        return true;
     }
-    return true;
+
+    // Preferred pixel font missing — fall back to a system font so the HUD
+    // still renders instead of silently disappearing.
+    std::cerr << "[HUD] WARNING: Failed to load font from '"
+              << filepath << "'. Trying system fallback fonts...\n";
+    for (const char* fallback : FALLBACK_FONT_PATHS) {
+        if (m_font.openFromFile(fallback)) {
+            std::cerr << "[HUD] INFO: Using fallback font '"
+                      << fallback << "'\n";
+            return true;
+        }
+    }
+
+    // No font available at all — HUD text will not be drawn.
+    std::cerr << "[HUD] WARNING: All fallback fonts failed. "
+              << "HUD text will not be drawn.\n";
+    return false;
 }
 
 void HUD::refreshText() {

@@ -7,18 +7,34 @@
 
 #include "entities/Koopa.h"
 
+#include <memory>
+
 #include <box2d/box2d.h>
+
+#include "core/AnimationSystem.h"
 
 namespace {
 
 constexpr int DEFAULT_KOOPA_HEALTH = 1;
-
 constexpr float DEFAULT_KOOPA_PATROL_SPEED = 50.f;
+
+constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/koopa.png";
+
 constexpr float TILE_SIZE = 32.f;
 constexpr float KOOPA_HEIGHT = 48.f;
 constexpr float KOOPA_VERTICAL_SPAWN_OFFSET = KOOPA_HEIGHT - TILE_SIZE;
 
 const sf::Vector2f KOOPA_SIZE{32.f, KOOPA_HEIGHT};
+
+constexpr int KOOPA_FRAME_START_X = 0;
+constexpr int KOOPA_FRAME_START_Y = 0;
+constexpr int KOOPA_FRAME_WIDTH = 32;
+constexpr int KOOPA_FRAME_HEIGHT = 48;
+constexpr int KOOPA_WALK_FRAME_COUNT = 2;
+
+constexpr float KOOPA_WALK_FRAME_DURATION = 0.15f;
+
+constexpr const char* KOOPA_WALK_ANIMATION = "walk";
 
 sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
     return {position.x, position.y - KOOPA_VERTICAL_SPAWN_OFFSET};
@@ -33,18 +49,38 @@ Koopa::Koopa(const sf::Vector2f& position)
         ),
   m_state(KoopaState::WALKING),
   m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
-    setFacingDirection(Direction::LEFT);
-    initPhysics(b2_dynamicBody, KOOPA_SIZE);
+      setFacingDirection(Direction::LEFT);
+      initPhysics(b2_dynamicBody, KOOPA_SIZE);
+      
+      setSprite(KOOPA_TEXTURE_PATH);
+
+      m_animationSystem = std::make_unique<AnimationSystem>();
+
+      const Animation walkAnimation =
+      AnimationSystem::createGridAnimation(KOOPA_FRAME_START_X,
+                                           KOOPA_FRAME_START_Y,
+                                           KOOPA_FRAME_WIDTH,
+                                           KOOPA_FRAME_HEIGHT,
+                                           KOOPA_WALK_FRAME_COUNT,
+                                           KOOPA_WALK_FRAME_DURATION,
+                                           true
+                                           );
+
+      m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
+                                      walkAnimation
+                                      );
+
+      playAnimation(KOOPA_WALK_ANIMATION);
 }
 
 void Koopa::update(float dt) {
-    (void)dt;
-
     syncPhysics();
 
     if (m_state == KoopaState::WALKING && !isDead()) {
         patrol();
     }
+
+    updateAnimation(dt);
 }
 
 void Koopa::onStomp() {

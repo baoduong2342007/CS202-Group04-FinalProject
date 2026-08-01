@@ -67,14 +67,9 @@ const sf::Texture& TextureManager::getTexture(const std::string& id) const {
             return *(fallbackIt->second);
         }
         // CRITICAL: If even the fallback is missing, the TextureManager is in an
-        // unrecoverable state. Create a last-resort Magenta texture so the game
-        // does not crash, but makes the problem highly visible on screen.
-        std::cerr << "[TextureManager] FATAL: No fallback texture! "
-                  << "Creating emergency 16x16 Magenta texture.\n";
-        constexpr unsigned int EMERGENCY_SIZE = 16;
-        static const sf::Texture emergencyFallback(sf::Image(
-            {EMERGENCY_SIZE, EMERGENCY_SIZE}, sf::Color::Magenta));
-        return emergencyFallback;
+        // unrecoverable state. Throw an exception instead of using a static sf::Texture
+        // to prevent silent OpenGL segmentation faults on exit.
+        throw std::runtime_error("[TextureManager] FATAL: No fallback texture available!");
     }
 
     return *(it->second);

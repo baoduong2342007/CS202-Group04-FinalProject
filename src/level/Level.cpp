@@ -23,7 +23,7 @@ constexpr unsigned int TILE_SIZE = 32;
 constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
 } // namespace
 
-Level::Level() = default;
+Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 
 bool Level::loadFromFile(const std::string& path) {
     if (!m_tileMap.loadFromFile(path)) {

@@ -48,7 +48,7 @@ private:
     // 6. Private members
     TileMap m_tileMap;
     Camera m_camera;
-    TextureManager m_textureManager;
+    TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
     std::vector<std::unique_ptr<Entity>> m_entities;
 };

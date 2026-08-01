@@ -18,14 +18,18 @@ Entity::Entity()
       m_position(0.f, 0.f),
       m_size(0.f, 0.f),
       m_velocity(0.f, 0.f),
-      m_body(nullptr) {}
+      m_body(nullptr) {
+    m_animationSystem = std::make_unique<AnimationSystem>();
+}
 
 Entity::Entity(const sf::Vector2f& position, const sf::Vector2f& size)
     : m_boundingBox(position, size),
       m_position(position),
       m_size(size),
       m_velocity(0.f, 0.f),
-      m_body(nullptr) {}
+      m_body(nullptr) {
+    m_animationSystem = std::make_unique<AnimationSystem>();
+}
 
 Entity::~Entity() {
     if (m_body) {
@@ -89,7 +93,7 @@ void Entity::updateAnimation(float dt) {
     if (!m_animationSystem || !m_sprite) {
         return;
     }
-    m_animationSystem->update(sf::seconds(dt), *m_sprite);
+    m_animationSystem->update(dt, *m_sprite);
 }
 
 // ── Box2D Physics ──────────────────────────────────────────────

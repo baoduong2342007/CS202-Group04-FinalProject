@@ -7,6 +7,7 @@
 #include "entities/Mario.h"
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
+#include "core/AnimationSystem.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
@@ -19,18 +20,37 @@ Mario::Mario()
     : Character(sf::Vector2f(100.f, 100.f), sf::Vector2f(32.f, 32.f),
                 DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    playAnimation("idle");
+}
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_jumpForce(DEFAULT_JUMP_FORCE),
-      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {}
+      m_moveSpeed(DEFAULT_MOVE_SPEED), m_score(0) {
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    playAnimation("idle");
+}
 
 void Mario::update(float dt) {
-  (void)dt;
-
   // Sync the entity position and velocity with the Box2D body
   syncPhysics();
+  
+  // Basic animation state machine
+  if (!isGrounded()) {
+      playAnimation("jump");
+  } else if (std::abs(getVelocity().x) > 5.f) {
+      playAnimation("walk");
+  } else {
+      playAnimation("idle");
+  }
+
+  updateAnimation(dt);
 }
 
 // DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().

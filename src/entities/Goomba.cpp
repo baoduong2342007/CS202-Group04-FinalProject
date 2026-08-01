@@ -8,6 +8,7 @@
 #include "entities/Goomba.h"
 
 #include <box2d/box2d.h>
+#include "core/AnimationSystem.h"
 
 namespace {
 
@@ -27,12 +28,13 @@ Goomba::Goomba(const sf::Vector2f& position)
       setFacingDirection(Direction::LEFT);
       initPhysics(b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
+      
+      m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 2, 0.15f));
+      m_animationSystem->addAnimation("squish", AnimationSystem::createGridAnimation(64, 0, 32, 32, 1, 1.f));
+      playAnimation("walk");
 }
 
 void Goomba::update(float dt){
-    // Patrol speed is constant, so dt is not directly needed here.
-    (void)dt;
-
     // TV4 Sprint 4 Fix: Sync physics FIRST to get the gravity-affected velocity
     // before patrol() modifies it. Otherwise Goomba will float in the air!
     syncPhysics();
@@ -40,6 +42,8 @@ void Goomba::update(float dt){
     if (!m_isStomped && !isDead()){
         patrol();
     }
+    
+    updateAnimation(dt);
 }
 
 void Goomba::onStomp(){
@@ -52,6 +56,8 @@ void Goomba::onStomp(){
 
     const sf::Vector2f currentVelocity = getVelocity();
     setVelocity({0.f, currentVelocity.y});
+    
+    playAnimation("squish");
 
     // TV4 Sprint 4 Fix: Call markForRemoval to let Level clean it up
     // (In Sprint 5, TV4 will refactor this to use a 0.5s despawn timer)

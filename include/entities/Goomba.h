@@ -2,7 +2,7 @@
  * @file Goomba.h
  * @author TV4 (Vy)
  * @brief Goomba enemy with horizontal patrol and stomp behaviour
- * @note Sprint 4 - basic patrol AI and wall-direction reversal
+ * @note Sprint 5 - walking animation, squish state, and delayed removal
  */
 
 #pragma once

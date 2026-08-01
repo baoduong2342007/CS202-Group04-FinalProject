@@ -2,7 +2,7 @@
  * @file Koopa.cpp
  * @author TV4 (Vy)
  * @brief Implementation of Koopa walking and patrol foundation
- * @note Sprint 5 - establishes Koopa states and horizontal patrol
+ * @note Sprint 5 - walking, stationary shell, and sliding shell states
  */
 
 #include "entities/Koopa.h"
@@ -57,7 +57,7 @@ Koopa::Koopa(const sf::Vector2f& position)
             ),
       m_state(KoopaState::WALKING),
       m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
-      
+
     setFacingDirection(Direction::LEFT);
     initPhysics(b2_dynamicBody, KOOPA_SIZE);
 

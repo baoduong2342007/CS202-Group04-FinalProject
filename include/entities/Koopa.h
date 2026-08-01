@@ -2,7 +2,7 @@
  * @file Koopa.h
  * @author TV4 (Vy)
  * @brief Koopa enemy with patrol and shell-based states
- * @note Sprint 5 - walking state and patrol foundation
+ * @note Sprint 5 - walking, stationary shell, and sliding shell states
  */
 
 #pragma once

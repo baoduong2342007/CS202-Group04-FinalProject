@@ -2,7 +2,7 @@
  * @file Goomba.cpp
  * @author TV4 (Vy)
  * @brief Implementation of Goomba patrol and stomp behaviour
- * @note Sprint 4 - basic patrol AI and wall-direction reversal
+ * @note Sprint 5 - walking animation, squish state, and delayed removal
  */
 
 #include "entities/Goomba.h"
@@ -46,12 +46,12 @@ Goomba::Goomba(const sf::Vector2f& position)
       m_isStomped(false),
       m_patrolSpeed(DEFAULT_GOOMBA_SPEED),
       m_squishElapsedTime(0.f) {
-          
+
     setFacingDirection(Direction::LEFT);
     initPhysics(b2_dynamicBody, GOOMBA_SIZE);
     setSprite(GOOMBA_TEXTURE_PATH);
     m_animationSystem = std::make_unique<AnimationSystem>();
-          
+
     const Animation walkAnimation =
     AnimationSystem::createGridAnimation(GOOMBA_FRAME_START_X,
                                          GOOMBA_FRAME_START_Y,

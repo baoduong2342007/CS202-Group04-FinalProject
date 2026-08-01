@@ -36,8 +36,8 @@ public:
     void render(sf::RenderWindow& window);
 
     // 4. Getters / Setters
-    Mario& getMario();
-    const Mario& getMario() const;
+    Mario* getMario();
+    const Mario* getMario() const;
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();

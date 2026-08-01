@@ -19,15 +19,15 @@
 PlayState::PlayState() {
     m_level = std::make_unique<Level>();
     // Load Level 1
-    if (!m_level->loadFromFile("levels/level1.txt")) {
-        std::cerr << "FATAL: Failed to load levels/level1.txt!\n";
-    }
+    m_level->loadFromFile("levels/level1.txt");
 
     // Bind commands to InputHandler
     rebindCommands();
 
     // Create HUD after Level (and Mario) are initialized
-    m_hud = std::make_unique<HUD>(m_level->getMario());
+    if (m_level->getMario()) {
+        m_hud = std::make_unique<HUD>(*(m_level->getMario()));
+    }
 }
 
 PlayState::~PlayState() {
@@ -39,29 +39,29 @@ PlayState::~PlayState() {
 void PlayState::rebindCommands() {
     m_inputHandler.clear(); // Reset handlers
 
-    m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<JumpCommand>(&m_level->getMario()));
-    m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<JumpCommand>(&m_level->getMario()));
-    m_inputHandler.bindKey(sf::Keyboard::Key::Space, std::make_unique<JumpCommand>(&m_level->getMario()));
-    
-    m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(&m_level->getMario()));
-    m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(&m_level->getMario()));
-    
-    m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(&m_level->getMario()));
-    m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(&m_level->getMario()));
+    if (m_level->getMario()) {
+        m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<JumpCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<JumpCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::Space, std::make_unique<JumpCommand>(m_level->getMario()));
+        
+        m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(m_level->getMario()));
+        
+        m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(m_level->getMario()));
+    }
 
     // Pause command
     m_inputHandler.bindKey(sf::Keyboard::Key::Escape, std::make_unique<PauseCommand>(&GameManager::getInstance()));
 }
 
 void PlayState::onEnter() {
-    std::cout << "Entering PlayState...\n";
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
 }
 
 void PlayState::onExit() {
-    std::cout << "Exiting PlayState...\n";
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
@@ -69,16 +69,16 @@ void PlayState::onExit() {
 
 void PlayState::onNotify(EventType event) {
     if (event == EventType::PLAYER_DIED) {
-        if (m_level->getMario().getLives() <= 0) {
+        if (m_level->getMario() && m_level->getMario()->getLives() <= 0) {
             GameManager::getInstance().changeState(std::make_unique<GameOverState>());
         } else {
             // Reload level
             m_level = std::make_unique<Level>();
-            if (!m_level->loadFromFile("levels/level1.txt")) {
-                std::cerr << "FATAL: Failed to reload levels/level1.txt!\n";
-            }
+            m_level->loadFromFile("levels/level1.txt");
             rebindCommands();
-            m_hud = std::make_unique<HUD>(m_level->getMario());
+            if (m_level->getMario()) {
+                m_hud = std::make_unique<HUD>(*(m_level->getMario()));
+            }
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
         GameManager::getInstance().changeState(std::make_unique<WinState>());
@@ -88,19 +88,19 @@ void PlayState::onNotify(EventType event) {
 }
 
 void PlayState::processEvents(const sf::Event& event) {
-    // Can process single-press events here if needed
-    (void)event;
+    if (const auto* keyReleased = event.getIf<sf::Event::KeyReleased>()) {
+        if (keyReleased->code == sf::Keyboard::Key::A || 
+            keyReleased->code == sf::Keyboard::Key::Left ||
+            keyReleased->code == sf::Keyboard::Key::D || 
+            keyReleased->code == sf::Keyboard::Key::Right) {
+            if (m_level->getMario()) {
+                m_level->getMario()->stopMoving();
+            }
+        }
+    }
 }
 
 void PlayState::update(float dt) {
-    // Stop Mario if no left/right keys are pressed
-    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) &&
-        !sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) &&
-        !sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) &&
-        !sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
-        m_level->getMario().stopMoving();
-    }
-
     // Process continuous inputs via InputHandler
     m_inputHandler.handleInput();
 

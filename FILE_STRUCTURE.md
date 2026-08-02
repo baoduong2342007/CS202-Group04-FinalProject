@@ -223,17 +223,17 @@ texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
 ```
 # Comments start with #, ignored when parsed
 # Each line = 1 row of tiles
-# Each character separated by a space
+# Each character = 1 tile; characters are written without spaces
 #
 # Characters:
-# 0 = empty (air)
+# . = empty (air)
 # 1 = ground tile (solid)
-# 2 = brick block
-# 3 = question block (contains item)
+# B = brick block
+# ? = question block (contains item)
 # C = coin (airborne)
 # G = Goomba spawn point
 # K = Koopa spawn point
-# P = Mario spawn point (exactly 1 per level)
+# M = Mario spawn point (exactly 1 per level)
 # F = finish flag (end of level)
 ```
 

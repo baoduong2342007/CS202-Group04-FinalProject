@@ -12,9 +12,9 @@
 // When your concrete entity classes (Goomba.h, Coin.h, etc.) are merged into develop,
 // uncomment the includes below and update the return statements inside createEnemy/createItem!
 // ============================================================
-// #include "entities/Goomba.h"      // TV4 (Sprint 4)
+#include "entities/Goomba.h"          // TV4 (Sprint 4)
 // #include "entities/Koopa.h"       // TV4 (Sprint 5)
-// #include "items/Coin.h"           // TV5 (Sprint 4)
+#include "items/Coin.h"              // TV5 (Sprint 4)
 // #include "items/Mushroom.h"       // TV5 (Sprint 5)
 // #include "items/FireFlower.h"     // TV5 (Sprint 5)
 // #include "items/Star.h"           // TV5 (Sprint 5)
@@ -23,12 +23,9 @@
 // PATTERN: Factory Method Implementation
 // ============================================================
 Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position) {
-    (void)position; // Suppress unused parameter warning until concrete classes are linked
     switch (type) {
         case EnemyType::GOOMBA:
-            // TODO (TV4): Uncomment when Goomba.h is merged into develop:
-            // return new Goomba(position);
-            return nullptr;
+            return new Goomba(position);
         case EnemyType::KOOPA:
             // TODO (TV4): Sprint 5 - return new Koopa(position);
             return nullptr;
@@ -38,12 +35,9 @@ Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position)
 }
 
 Entity* EntityFactory::createItem(ItemType type, const sf::Vector2f& position) {
-    (void)position; // Suppress unused parameter warning until concrete classes are linked
     switch (type) {
         case ItemType::COIN:
-            // TODO (TV5): Uncomment when Coin.h is merged into develop:
-            // return new Coin(position);
-            return nullptr;
+            return new Coin(position);
         case ItemType::MUSHROOM:
             // TODO (TV5): Sprint 5 - return new Mushroom(position);
             return nullptr;

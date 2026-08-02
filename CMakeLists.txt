@@ -94,13 +94,13 @@ add_executable(main ${SOURCES})
 target_include_directories(main PRIVATE include)
 
 # Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE DEBUG)
+target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
 elseif(MSVC)
-    target_compile_options(main PRIVATE /W4)
+    target_compile_options(main PRIVATE /W4 /permissive- /FS)
 endif()
 
 # Link SFML and Box2D libraries

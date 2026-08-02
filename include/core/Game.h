@@ -9,6 +9,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "level/Level.h"
+#include "patterns/InputHandler.h"
 
 class Game {
 public:
@@ -19,7 +20,9 @@ private:
     void processEvents();
     void update(float dt);
     void render();
+    void setupInputBindings();
 
     sf::RenderWindow m_window;
     Level m_level;
+    InputHandler m_inputHandler;
 };

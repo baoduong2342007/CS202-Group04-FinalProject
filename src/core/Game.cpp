@@ -6,7 +6,11 @@
  */
 #include "core/Game.h"
 #include "physics/PhysicsEngine.h"
+#include "patterns/MoveLeftCommand.h"
+#include "patterns/MoveRightCommand.h"
+#include "patterns/JumpCommand.h"
 #include <iostream>
+#include <memory>
 
 // --- No More Magic Numbers ---
 const unsigned int SCREEN_WIDTH = 1280;
@@ -29,6 +33,21 @@ Game::Game()
         std::cerr << "FATAL: Failed to load levels/level1.txt!"
                   << std::endl;
     }
+
+    setupInputBindings();
+}
+
+void Game::setupInputBindings() {
+    Mario* mario = &m_level.getMario();
+    m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(mario));
+    m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(mario));
+
+    m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(mario));
+    m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(mario));
+
+    m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<JumpCommand>(mario));
+    m_inputHandler.bindKey(sf::Keyboard::Key::Space, std::make_unique<JumpCommand>(mario));
+    m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<JumpCommand>(mario));
 }
 
 void Game::run() {
@@ -70,8 +89,8 @@ void Game::processEvents() {
 void Game::update(float dt) {
     // Task 1.4: Game loop — the heart of the engine
 
-    // 1. Handle player input
-    //    (tạm thời gọi trực tiếp, TV5 sẽ refactor sang InputHandler — Task 3.2)
+    // 1. Handle player input via InputHandler Command pattern (Task 3.2)
+    m_inputHandler.handleInput();
     m_level.getMario().handleInput();
 
     // 2. Step Box2D physics simulation

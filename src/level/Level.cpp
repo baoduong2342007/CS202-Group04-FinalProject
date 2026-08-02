@@ -129,9 +129,7 @@ void Level::removeDeadEntities() {
     m_entities.erase(
         std::remove_if(m_entities.begin(), m_entities.end(),
             [](const std::unique_ptr<Entity>& e) {
-                // TV3/TV4 will add isDead() or shouldRemove() later
-                (void)e;
-                return false;
+                return !e || !e->isActive() || e->isPendingDestroy();
             }),
         m_entities.end()
     );

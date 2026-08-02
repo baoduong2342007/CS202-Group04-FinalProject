@@ -28,7 +28,7 @@ bool isBlankLine(const std::string& line){
 bool isCommentLine(const std::string& line){
     const std::size_t firstCharacter = line.find_first_not_of(" \t");
 
-    return firstCharacter != std::string::npos and line[firstCharacter] == '#';
+    return firstCharacter != std::string::npos && line[firstCharacter] == '#';
 }
 
 bool isValidTileSymbol(char symbol){
@@ -36,7 +36,7 @@ bool isValidTileSymbol(char symbol){
 }
 
 bool isRenderableTile(char symbol){
-    return symbol == '1' or symbol == 'B' or symbol == '?' or symbol == 'F';
+    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F';
 }
 
 sf::Color getPlaceholderColor(char symbol){
@@ -145,11 +145,11 @@ bool TileMap::loadFromFile(const std::string& path){
         ++lineNumber;
 
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() and line.back() == '\r'){
+        if (!line.empty() && line.back() == '\r'){
             line.pop_back();
         }
 
-        if (isBlankLine(line) or isCommentLine(line)){
+        if (isBlankLine(line) || isCommentLine(line)){
             continue;
         }
 
@@ -181,7 +181,7 @@ void TileMap::render(sf::RenderWindow& window) const {
 }
 
 char TileMap::getTileAt(int column, int row) const {
-    if (column < 0 or row < 0){
+    if (column < 0 || row < 0){
         return '.';
     }
 
@@ -202,7 +202,7 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1' or tile == 'B' or tile == '?';
+    return tile == '1' || tile == 'B' || tile == '?';
 }
 
 std::size_t TileMap::getWidth() const {

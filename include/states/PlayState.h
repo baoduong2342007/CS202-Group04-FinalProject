@@ -35,4 +35,9 @@ private:
     std::unique_ptr<Level> m_level;
     InputHandler m_inputHandler;
     std::unique_ptr<HUD> m_hud;
+
+    sf::RectangleShape m_fadeOverlay;
+    float m_fadeAlpha = 0.f;
+    bool m_isFading = false;
+    float m_fadeDuration = 0.5f;
 };

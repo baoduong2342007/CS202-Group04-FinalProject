@@ -57,6 +57,8 @@ Mario::Mario()
     m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
     m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
     m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
     playAnimation("idle");
     setSprite("assets/textures/mario/idle.png");
 }
@@ -76,6 +78,8 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
     m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
     m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
     playAnimation("idle");
     setSprite("assets/textures/mario/idle.png");
 }

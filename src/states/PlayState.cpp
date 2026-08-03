@@ -15,6 +15,11 @@
 #include "states/WinState.h"
 #include "states/PauseState.h"
 #include "core/GameManager.h"
+#include <cstdint>
+
+namespace {
+    const sf::Color FADE_START_COLOR(0, 0, 0, 0);
+}
 
 PlayState::PlayState() {
     m_level = std::make_unique<Level>();
@@ -28,6 +33,8 @@ PlayState::PlayState() {
     if (m_level->getMario()) {
         m_hud = std::make_unique<HUD>(*(m_level->getMario()));
     }
+
+    m_fadeOverlay.setFillColor(FADE_START_COLOR);
 }
 
 PlayState::~PlayState() {
@@ -81,7 +88,7 @@ void PlayState::onNotify(EventType event) {
             }
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
-        GameManager::getInstance().changeState(std::make_unique<WinState>());
+        m_isFading = true;
     } else if (event == EventType::GAME_PAUSED) {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
     }
@@ -112,6 +119,17 @@ void PlayState::update(float dt) {
     if (m_hud) {
         m_hud->update();
     }
+
+    if (m_isFading) {
+        m_fadeAlpha += (255.f / m_fadeDuration) * dt;
+        if (m_fadeAlpha >= 255.f) {
+            m_fadeAlpha = 255.f;
+            m_fadeOverlay.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(m_fadeAlpha)));
+            GameManager::getInstance().changeState(std::make_unique<WinState>());
+            return;
+        }
+        m_fadeOverlay.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(m_fadeAlpha)));
+    }
 }
 
 void PlayState::render(sf::RenderWindow& window) {
@@ -121,5 +139,10 @@ void PlayState::render(sf::RenderWindow& window) {
     window.setView(window.getDefaultView());
     if (m_hud) {
         m_hud->draw(window);
+    }
+
+    if (m_isFading || m_fadeAlpha > 0.f) {
+        m_fadeOverlay.setSize(sf::Vector2f(window.getSize()));
+        window.draw(m_fadeOverlay);
     }
 }

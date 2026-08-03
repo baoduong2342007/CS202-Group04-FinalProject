@@ -7,8 +7,9 @@
 
 #include "core/SoundManager.h"
 
+#ifdef DEBUG
 #include <iostream>
-
+#endif
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 
@@ -126,12 +127,16 @@ bool SoundManager::loadSound(const std::string& id,
         m_sounds.at(id).setVolume(m_soundVolume);
         return true;
     } catch (const sf::Exception& e) {
+#ifdef DEBUG
         std::cerr << "[SoundManager] Failed to load sound '" << id
                   << "' from " << filepath << ": " << e.what() << "\n";
+#endif
         return false;
     } catch (const std::exception& e) {
+#ifdef DEBUG
         std::cerr << "[SoundManager] Failed to load sound '" << id
                   << "' from " << filepath << ": " << e.what() << "\n";
+#endif
         return false;
     }
 }
@@ -149,8 +154,10 @@ void SoundManager::playSound(const std::string& id) {
 
 bool SoundManager::loadMusic(const std::string& filepath) {
     if (!m_music.openFromFile(filepath)) {
+#ifdef DEBUG
         std::cerr << "[SoundManager] Failed to load music from "
                   << filepath << "\n";
+#endif
         return false;
     }
     m_music.setVolume(m_musicVolume);

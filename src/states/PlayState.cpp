@@ -15,6 +15,7 @@
 #include "states/WinState.h"
 #include "states/PauseState.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include <cstdint>
 
 namespace {
@@ -66,12 +67,14 @@ void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
+    SoundManager::getInstance().playMusic();
 }
 
 void PlayState::onExit() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
+    SoundManager::getInstance().stopMusic();
 }
 
 void PlayState::onNotify(EventType event) {

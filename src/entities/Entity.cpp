@@ -112,7 +112,9 @@ void Entity::updateAnimation(float dt) {
 
 void Entity::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor) {
     if (!world) {
-        std::cerr << "Error: PhysicsEngine world not initialized!" << std::endl;
+#ifdef DEBUG
+        std::cerr << "[DEBUG][Entity] PhysicsEngine world not initialized!" << std::endl;
+#endif
         return;
     }
 

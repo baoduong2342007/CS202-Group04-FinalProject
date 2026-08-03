@@ -1,11 +1,10 @@
 /**
  * @file HUD.h
  * @author TV5 (Truyền)
- * @brief Heads-Up Display showing score and lives using pixel fonts.
+ * @brief Heads-Up Display showing score, lives, coin count, and world indicator.
  * @note Subscribes to EventBus (COIN_COLLECTED, PLAYER_DIED, PLAYER_POWER_UP)
  *       and queries Mario::getScore() directly, since EventBus::notify carries
- *       no payload. Lives are tracked locally because no lives field exists
- *       elsewhere in the codebase yet.
+ *       no payload. Coin count is tracked locally via COIN_COLLECTED events.
  */
 
 #pragma once
@@ -32,13 +31,15 @@
 // ============================================================
 
 /**
- * @brief On-screen HUD rendering score and lives with a pixel font.
+ * @brief On-screen HUD rendering score, lives, coin count, and world indicator.
  */
 class HUD : public IObserver {
 public:
     // 1. Constructor / Destructor
     /// @param mario Reference to the player whose score is displayed.
-    explicit HUD(const Mario& mario);
+    /// @param worldNumber The world number to display (e.g., 1).
+    /// @param levelNumber The level number within the world (e.g., 1).
+    explicit HUD(const Mario& mario, int worldNumber = 1, int levelNumber = 1);
     ~HUD() override;
 
     // 2. Override methods (IObserver)
@@ -55,20 +56,27 @@ public:
     // 4. Getters / Setters
     int getLives() const;
     void setLives(int lives);
+    int getCoinCount() const;
+    void setWorldLevel(int world, int level);
 
 private:
     // 5. Private methods
     /// @brief Loads the pixel font; returns true on success.
     bool loadFont(const std::string& filepath);
 
-    /// @brief Builds the score/lives text strings from current state.
+    /// @brief Builds all HUD text strings from current state.
     void refreshText();
 
     // 6. Private members
     const Mario& m_mario;       ///< Player reference for score queries.
     sf::Font m_font;            ///< Pixel font (openFromFile returns bool).
-    std::optional<sf::Text> m_scoreText; ///< "SCORE 000000" (nullopt if no font)
-    std::optional<sf::Text> m_livesText; ///< "LIVES x 3" (nullopt if no font)
+    std::optional<sf::Text> m_scoreText;  ///< "SCORE 000000"
+    std::optional<sf::Text> m_livesText;  ///< "LIVES x 3"
+    std::optional<sf::Text> m_coinText;   ///< "COINS x 05"
+    std::optional<sf::Text> m_worldText;  ///< "WORLD 1-1"
     int m_lives;                ///< Lives counter tracked by the HUD.
+    int m_coinCount;            ///< Coin counter incremented on COIN_COLLECTED.
+    int m_worldNumber;          ///< Current world number.
+    int m_levelNumber;          ///< Current level number.
     bool m_fontLoaded;          ///< Whether the font loaded successfully.
 };

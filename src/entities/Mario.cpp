@@ -362,12 +362,30 @@ void Mario::setInvincible(float duration) {
 
 void Mario::updateInvincibility(float dt) {
   if (!m_isInvincible) {
+    if (m_sprite) {
+      m_sprite->setColor(sf::Color::White); // Ensure visible
+    }
     return;
   }
+  
   m_invincibilityTimer -= dt;
+  
+  // Flashing effect: toggle opacity every 0.1 seconds
+  if (m_sprite) {
+    int ms = static_cast<int>(m_invincibilityTimer * 1000);
+    if ((ms / 100) % 2 == 0) {
+      m_sprite->setColor(sf::Color::Transparent);
+    } else {
+      m_sprite->setColor(sf::Color::White);
+    }
+  }
+
   if (m_invincibilityTimer <= 0.f) {
     m_isInvincible = false;
     m_invincibilityTimer = 0.f;
+    if (m_sprite) {
+      m_sprite->setColor(sf::Color::White);
+    }
   }
 }
 

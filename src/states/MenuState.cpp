@@ -1,9 +1,20 @@
+/**
+ * @file MenuState.cpp
+ * @author TV2 (Nhật)
+ * @brief Sprite-based main menu with bitmap text from HUD spritesheet
+ * @note Sprint 5 — replaces text-only MenuState with retro NES-style menu
+ */
+
 #include "states/MenuState.h"
 #include "states/PlayState.h"
 #include "core/GameManager.h"
-#include <iostream>
+
 #include <iomanip>
 #include <sstream>
+
+#ifdef DEBUG
+#include <iostream>
+#endif
 
 namespace {
     const float SCALE = 720.f / 224.f; // Scale to fit vertical screen height perfectly
@@ -52,7 +63,10 @@ MenuState::MenuState(int score, int coins, int world, int level, int topScore)
 
 void MenuState::onEnter() {
     if (!m_hudTexture.loadFromFile("assets/textures/ui/hud.png")) {
-        std::cerr << "Failed to load hud.png in MenuState\n";
+#ifdef DEBUG
+        std::cerr << "[DEBUG][MenuState] Failed to load hud.png\n";
+#endif
+        return; // Cannot render menu without texture
     }
     
     // Background

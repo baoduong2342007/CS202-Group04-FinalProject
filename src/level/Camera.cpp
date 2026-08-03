@@ -6,13 +6,15 @@
  */
 
 #include "level/Camera.h"
+
 #include <algorithm>
-#include <cstdlib> // For std::rand()
+#include <random>
 
 namespace {
-    constexpr int RANDOM_PERCENT = 100;
-    constexpr float HALF_PERCENT = 50.f;
-    constexpr float SHAKE_OFFSET = 1.f;
+    std::mt19937& getShakeRng() {
+        static std::mt19937 rng(std::random_device{}());
+        return rng;
+    }
 }
 
 // ============================================================
@@ -61,8 +63,9 @@ void Camera::update(float dt, const sf::Vector2f& targetPosition) {
         m_shakeTimer -= dt;
         
         // Generate random offsets between -m_shakeMagnitude and +m_shakeMagnitude
-        float offsetX = ((std::rand() % RANDOM_PERCENT) / HALF_PERCENT - SHAKE_OFFSET) * m_shakeMagnitude;
-        float offsetY = ((std::rand() % RANDOM_PERCENT) / HALF_PERCENT - SHAKE_OFFSET) * m_shakeMagnitude;
+        std::uniform_real_distribution<float> dist(-m_shakeMagnitude, m_shakeMagnitude);
+        float offsetX = dist(getShakeRng());
+        float offsetY = dist(getShakeRng());
         
         sf::Vector2f shakenCenter = m_view.getCenter();
         shakenCenter.x += offsetX;

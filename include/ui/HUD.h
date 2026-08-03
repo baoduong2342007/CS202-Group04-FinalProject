@@ -18,7 +18,6 @@
 
 // 3. Project headers
 #include "entities/Mario.h"
-#include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "patterns/IObserver.h"
 

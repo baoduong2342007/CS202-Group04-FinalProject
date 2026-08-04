@@ -42,21 +42,35 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
 
 void Goomba::update(float dt) {
     syncPhysics();
-    
+
     if (m_position.y > 800.f) {
         markForRemoval();
         return;
     }
 
-    if (!m_isStomped && !isDead()) {
-        patrol();
-    } else if (m_isStomped) {
+    if (m_isStomped) {
+        // Disable the body after the Box2D physics step.
+        // This lets the squish sprite remain visible without blocking Mario.
+        b2Body* body = getBody();
+
+        if (body && body->IsEnabled()) {
+            body->SetEnabled(false);
+        }
+
         m_squishTimer += dt;
+        updateAnimation(dt);
+
         if (m_squishTimer >= SQUISH_DURATION) {
             markForRemoval();
         }
+
+        return;
     }
-    
+
+    if (!isDead()) {
+        patrol();
+    }
+
     updateAnimation(dt);
 }
 
@@ -66,15 +80,20 @@ void Goomba::onStomp() {
     }
 
     m_isStomped = true;
+    m_squishTimer = 0.f;
     setHealth(0);
+    setVelocity({0.f, 0.f});
 
-    const sf::Vector2f currentVelocity = getVelocity();
-    setVelocity({0.f, currentVelocity.y});
-    
+    b2Body* body = getBody();
+
+    if (body) {
+        for (b2Fixture* fixture = body->GetFixtureList(); fixture != nullptr; fixture = fixture->GetNext()) {
+            fixture->SetSensor(true);
+        }
+    }
+
     playAnimation("squish");
-
-    // TV4 Sprint 5 Fix: Use a 0.5s despawn timer in update() instead of instant removal
-    // markForRemoval();
+    updateAnimation(0.f);
 }
 
 void Goomba::patrol() {

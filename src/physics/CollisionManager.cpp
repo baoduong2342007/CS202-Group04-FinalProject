@@ -118,6 +118,30 @@ void CollisionManager::resolve(b2Contact* contact) {
         return;
     }
 
+    // Handle sliding Koopa shell hitting another enemy
+    if (entityA && entityA->isEnemy() && entityB && entityB->isEnemy()) {
+        Enemy* enemyA = static_cast<Enemy*>(entityA);
+        Enemy* enemyB = static_cast<Enemy*>(entityB);
+
+        auto tryShellKill = [](Enemy* attacker, Enemy* victim) {
+            if (!attacker->isKoopa() || victim->isKoopa()) {
+                return;
+            }
+
+            Koopa* koopa = static_cast<Koopa*>(attacker);
+
+            if (koopa->isShellSliding()) {
+                victim->takeDamage(100);
+                victim->markForRemoval();
+            }
+        };
+
+        tryShellKill(enemyA, enemyB);
+        tryShellKill(enemyB, enemyA);
+
+        return;
+    }
+    
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
     Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {

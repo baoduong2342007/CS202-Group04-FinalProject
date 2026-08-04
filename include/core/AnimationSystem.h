@@ -1,13 +1,12 @@
-#pragma once
-
 /**
  * @file AnimationSystem.h
  * @author TV2 (Nhật)
  * @brief Manages animation states and handles the logic for updating sprite texture rectangles over time.
  */
 
+#pragma once
+
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Time.hpp>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -89,10 +88,10 @@ public:
 
     /**
      * @brief Updates the animation timer and modifies the sprite's texture rectangle if a frame advances.
-     * @param dt The time elapsed since the last engine update.
+     * @param dt The time elapsed since the last engine update, in seconds.
      * @param sprite A reference to the sf::Sprite that will be animated.
      */
-    void update(sf::Time dt, sf::Sprite& sprite);
+    void update(float dt, sf::Sprite& sprite);
 
     // 4. Getters / Setters
     // (None currently required for this class)

@@ -19,23 +19,9 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?SF|[]{}CGKM";
-
-constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
-
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}";
 constexpr float TILE_FRICTION = 0.6f;
-constexpr unsigned int TILESET_TILE_COUNT = 10;
-
-constexpr unsigned int GROUND_TILE_INDEX = 0;
-constexpr unsigned int BRICK_TILE_INDEX = 1;
-constexpr unsigned int QUESTION_TILE_INDEX = 2;
-constexpr unsigned int STONE_TILE_INDEX = 3;
-constexpr unsigned int FLAG_TOP_TILE_INDEX = 4;
-constexpr unsigned int FLAG_POLE_TILE_INDEX = 5;
-constexpr unsigned int PIPE_TOP_LEFT_TILE_INDEX = 6;
-constexpr unsigned int PIPE_BODY_LEFT_TILE_INDEX = 7;
-constexpr unsigned int PIPE_TOP_RIGHT_TILE_INDEX = 8;
-constexpr unsigned int PIPE_BODY_RIGHT_TILE_INDEX = 9;
+constexpr unsigned int TILESET_TILE_COUNT = 4;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
@@ -51,50 +37,37 @@ bool isValidTileSymbol(char symbol){
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
 }
 
-bool isRenderableTile(char symbol) {
-    return symbol == '1'
-    || symbol == 'B'
-    || symbol == '?'
-    || symbol == 'S'
-    || symbol == 'F'
-    || symbol == '|'
-    || symbol == '['
-    || symbol == '{'
-    || symbol == ']'
-    || symbol == '}';
+bool isRenderableTile(char symbol){
+    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F' ||
+           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|';
 }
+
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+
+constexpr unsigned int GROUND_TILE_INDEX = 0;
+constexpr unsigned int BRICK_TILE_INDEX = 1;
+constexpr unsigned int QUESTION_TILE_INDEX = 2;
+constexpr unsigned int FINISH_TILE_INDEX = 3;
 
 unsigned int getTilesetIndex(char symbol){
     switch (symbol){
         case '1':
+        case 'S':
             return GROUND_TILE_INDEX;
 
         case 'B':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
             return BRICK_TILE_INDEX;
 
         case '?':
             return QUESTION_TILE_INDEX;
 
-        case 'S':
-            return STONE_TILE_INDEX;
-
         case 'F':
-            return FLAG_TOP_TILE_INDEX;
-
         case '|':
-            return FLAG_POLE_TILE_INDEX;
-
-        case '[':
-            return PIPE_TOP_LEFT_TILE_INDEX;
-
-        case '{':
-            return PIPE_BODY_LEFT_TILE_INDEX;
-
-        case ']':
-            return PIPE_TOP_RIGHT_TILE_INDEX;
-
-        case '}':
-            return PIPE_BODY_RIGHT_TILE_INDEX;
+            return FINISH_TILE_INDEX;
 
         default:
             return GROUND_TILE_INDEX;
@@ -186,10 +159,18 @@ bool TileMap::loadFromFile(const std::string& path){
     while(std::getline(inputFile, line)){
         ++lineNumber;
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() && line.back() == '\r'){line.pop_back();}
-        if (isBlankLine(line) || isCommentLine(line)){continue;}
-        if (!validateRow(line, lineNumber, path, validationState)){return false;}
-        
+        if (!line.empty() && line.back() == '\r'){
+            line.pop_back();
+        }
+
+        if (isBlankLine(line) || isCommentLine(line)){
+            continue;
+        }
+
+        if (!validateRow(line, lineNumber, path, validationState)){
+            return false;
+        }
+
         loadedGrid.push_back(line);
     }
 
@@ -217,7 +198,7 @@ bool TileMap::loadFromFile(const std::string& path){
     const unsigned int expectedHeight = TILE_SIZE;
 
     if (tilesetSize.x != expectedWidth || tilesetSize.y != expectedHeight){
-        std::cerr << "Invalid TileMap tileset size: expected " << expectedWidth << 'x' << expectedHeight << ", but found " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
+        std::cerr << "Invalid TileMap tileset size: expected " << expectedWidth << 'x' << expectedHeight << ", but found " << tilesetSize.x << 'x' << tilesetSize.y<< std::endl;
         return false;
     }
 
@@ -256,14 +237,8 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1'
-    || tile == 'B'
-    || tile == '?'
-    || tile == 'S'
-    || tile == '['
-    || tile == '{'
-    || tile == ']'
-    || tile == '}';
+    return tile == '1' || tile == 'B' || tile == '?' ||
+           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
 std::size_t TileMap::getWidth() const {

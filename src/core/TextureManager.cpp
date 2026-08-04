@@ -1,14 +1,20 @@
 /**
  * @file TextureManager.cpp
  * @author TV2 (Nhật)
- * @brief Implementation of TextureManager — fixed for SFML 3.0.0 API.
- * @note Sprint 4 fix: sf::Texture has NO loadFromFile() in SFML 3.
- *       Must use constructor sf::Texture(filename) which throws on failure.
+ * @brief Implementation of the TextureManager class.
+ * 
+ * @details Fixed for SFML 3.0.0 API. sf::Texture has no loadFromFile() in SFML 3, 
+ * utilizing the constructor sf::Texture(filename) which throws on failure.
+ * Refactored to implement the Singleton design pattern.
  */
 
 #include "core/TextureManager.h"
-
 #include <iostream>
+
+TextureManager& TextureManager::getInstance() {
+    static TextureManager instance;
+    return instance;
+}
 
 TextureManager::TextureManager() {
     constexpr unsigned int FALLBACK_TEXTURE_SIZE = 16;
@@ -29,8 +35,6 @@ TextureManager::TextureManager() {
                   << e.what() << "\n";
     }
 }
-
-
 
 bool TextureManager::loadTexture(const std::string& id, const std::string& filename) {
     // If it already exists, don't load it again
@@ -63,14 +67,9 @@ const sf::Texture& TextureManager::getTexture(const std::string& id) const {
             return *(fallbackIt->second);
         }
         // CRITICAL: If even the fallback is missing, the TextureManager is in an
-        // unrecoverable state. Create a last-resort Magenta texture so the game
-        // does not crash, but makes the problem highly visible on screen.
-        std::cerr << "[TextureManager] FATAL: No fallback texture! "
-                  << "Creating emergency 16x16 Magenta texture.\n";
-        constexpr unsigned int EMERGENCY_SIZE = 16;
-        static const sf::Texture emergencyFallback(sf::Image(
-            {EMERGENCY_SIZE, EMERGENCY_SIZE}, sf::Color::Magenta));
-        return emergencyFallback;
+        // unrecoverable state. Throw an exception instead of using a static sf::Texture
+        // to prevent silent OpenGL segmentation faults on exit.
+        throw std::runtime_error("[TextureManager] FATAL: No fallback texture available!");
     }
 
     return *(it->second);

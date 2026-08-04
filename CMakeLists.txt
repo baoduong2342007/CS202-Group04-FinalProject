@@ -56,7 +56,6 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
 endif()
 
 # Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
-# On macOS/Linux, install SFML via package manager (e.g., brew install sfml)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
@@ -94,11 +93,14 @@ add_executable(main ${SOURCES})
 # Include directories
 target_include_directories(main PRIVATE include)
 
+# Define DEBUG macro for debug builds
+target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
 elseif(MSVC)
-    target_compile_options(main PRIVATE /W4)
+    target_compile_options(main PRIVATE /W4 /permissive- /FS)
 endif()
 
 # Link SFML and Box2D libraries

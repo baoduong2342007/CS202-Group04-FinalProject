@@ -36,54 +36,53 @@ SuperMario/
 ├── assets/                     ← TV5 (Truyền) maintain
 │   ├── textures/
 │   │   ├── mario/
-│   │   │   ├── idle.png
-│   │   │   ├── walk.png        ← sprite sheet (horizontal frames)
-│   │   │   ├── jump.png
-│   │   │   ├── big_idle.png
-│   │   │   ├── big_walk.png
-│   │   │   ├── fire_idle.png
-│   │   │   └── death.png
+│   │   │   └── NES - Super Mario Bros. - Playable Characters - Mario & Luigi.png
 │   │   ├── enemies/
-│   │   │   ├── goomba.png      ← 3-frame sheet: walk 1, walk 2, squished; 96×32
+│   │   │   ├── goomba.png      ← sprite sheet: walk + squish
 │   │   │   └── koopa.png       ← sprite sheet: walk + shell
 │   │   ├── tiles/
-│   │   │   └── tileset.png     ← 10-tile sheet rendered using texture coordinates; 320×32
+│   │   │   └── tileset.png     ← single file, using texture rect
 │   │   ├── items/
-│   │   │   ├── coin.png
-│   │   │   ├── mushroom.png
-│   │   │   ├── fireflower.png
-│   │   │   └── star.png
+│   │   │   ├── items_blocks.png
+│   │   │   └── items_objects.png
 │   │   └── ui/
-│   │       ├── hud_icons.png
-│   │       └── menu_bg.png
+│   │       ├── bg_clouds.png
+│   │       ├── bg_mountains.png
+│   │       ├── bg_trees.png
+│   │       └── hud.png
 │   ├── sounds/
 │   │   ├── effects/
 │   │   │   ├── jump.wav
 │   │   │   ├── coin.wav
-│   │   │   ├── die.wav
+│   │   │   ├── death.wav
 │   │   │   ├── powerup.wav
-│   │   │   ├── kick.wav
-│   │   │   └── fireball.wav
+│   │   │   ├── kickkill.wav
+│   │   │   ├── fireball.wav
+│   │   │   └── ... (additional sound effects)
 │   │   └── music/
-│   │       ├── overworld.ogg   ← main music (ogg for SFML streaming)
-│   │       ├── underground.ogg
-│   │       └── gameover.ogg
+│   │       ├── overworld.flac   ← main music (FLAC audio format)
+│   │       ├── underground.flac
+│   │       ├── gameover.flac
+│   │       ├── castle.flac
+│   │       └── ... (additional audio tracks)
 │   └── fonts/
 │       └── mario.ttf           ← or any free pixel font
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level1.txt
 │   ├── level2.txt
-│   └── level3.txt
+│   └── level3.txt              ← (planned for upcoming release)
 │
 ├── saves/                      ← auto-generated, do not commit
 │   └── .gitkeep                ← empty file to force Git to track the directory
 │
 ├── include/                    ← all .h header files
 │   ├── core/
+│   │   ├── AnimationSystem.h   ← TV2 (Nhật): sprite animation management
 │   │   ├── Game.h              ← TV2 (Nhật): main loop, window, delta time
 │   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host
-│   │   └── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
+│   │   ├── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
+│   │   └── TextureManager.h    ← TV1 (Dương): centralized texture cache
 │   │
 │   ├── states/                 ← TV1 (Dương) + TV2 (Nhật)
 │   │   ├── IGameState.h        ← TV1 (Dương): interface (init/update/render/exit)
@@ -116,25 +115,35 @@ SuperMario/
 │   │
 │   ├── patterns/               ← TV1 (Dương) + TV5 (Truyền)
 │   │   ├── EntityFactory.h     ← TV1 (Dương): Factory pattern
+│   │   ├── EventBus.h          ← TV1 (Dương): global event bus (Singleton)
+│   │   ├── EventType.h         ← TV1 (Dương): event type definitions
+│   │   ├── ICommand.h          ← TV5 (Truyền): Command interface
 │   │   ├── IObserver.h         ← TV1 (Dương): Observer interface
 │   │   ├── ISubject.h          ← TV1 (Dương)
-│   │   ├── EventBus.h          ← TV1 (Dương): global event bus (Singleton)
-│   │   ├── ICommand.h          ← TV5 (Truyền): Command interface
-│   │   └── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── JumpCommand.h       ← concrete Command
+│   │   ├── MoveLeftCommand.h   ← concrete Command
+│   │   ├── MoveRightCommand.h  ← concrete Command
+│   │   └── PauseCommand.h      ← concrete Command
 │   │
 │   ├── physics/                ← TV3 (Bảo)
-│   │   ├── PhysicsEngine.h
-│   │   └── CollisionManager.h
+│   │   ├── CollisionManager.h
+│   │   ├── ContactListener.h   ← Box2D contact callback listener
+│   │   └── PhysicsEngine.h
 │   │
 │   └── ui/                     ← TV5 (Truyền)
 │       ├── HUD.h
-│       └── Button.h
+│       └── Button.h            ← (planned for interactive UI menus)
 │
 └── src/                        ← all .cpp source files, mirroring include/ structure
     ├── core/
+    │   ├── AnimationSystem.cpp
     │   ├── Game.cpp
     │   ├── GameManager.cpp
-    │   └── SoundManager.cpp
+    │   ├── SoundManager.cpp
+    │   └── TextureManager.cpp
+    ├── demo/
+    │   └── TV3Demo.cpp         ← physical movement testing demo
     ├── states/
     │   ├── MenuState.cpp
     │   ├── PlayState.cpp
@@ -162,14 +171,19 @@ SuperMario/
     ├── patterns/
     │   ├── EntityFactory.cpp
     │   ├── EventBus.cpp
-    │   └── InputHandler.cpp
+    │   ├── InputHandler.cpp
+    │   ├── JumpCommand.cpp
+    │   ├── MoveLeftCommand.cpp
+    │   ├── MoveRightCommand.cpp
+    │   └── PauseCommand.cpp
     ├── physics/
-    │   ├── PhysicsEngine.cpp
-    │   └── CollisionManager.cpp
+    │   ├── CollisionManager.cpp
+    │   ├── ContactListener.cpp
+    │   └── PhysicsEngine.cpp
     ├── ui/
     │   ├── HUD.cpp
-    │   └── Button.cpp
-    └── main.cpp                ← only contains: Game game; game.run(); return 0;
+    │   └── Button.cpp          ← (planned for interactive UI menus)
+    └── main.cpp                ← entry point
 ```
 
 ---
@@ -217,31 +231,32 @@ Always use relative paths from the executable (since CMake copies assets to the 
 
 ```cpp
 // CORRECT
-texture.loadFromFile("assets/textures/mario/walk.png");
+texture.loadFromFile("assets/textures/tiles/tileset.png");
 
 // INCORRECT — hardcoded absolute path, will not run on others' machines
-texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
+texture.loadFromFile("C:/project/SuperMario/assets/textures/tiles/tileset.png");
 ```
 
 ### Level files
 
 ```
+# Comments start with #, ignored when parsed
+# Each line = 1 row of tiles
+# Each character = 1 tile; characters are written consecutively without spaces
+#
 # Characters:
 # . = empty (air)
 # 1 = ground tile (solid)
-# B = breakable brick block (solid)
-# ? = question block (solid)
-# S = unbreakable stone block (solid)
-# F = finish pole top and finish marker (non-solid)
-# | = finish pole body (non-solid)
-# [ = pipe top-left (solid)
-# ] = pipe top-right (solid)
-# { = pipe body-left (solid)
-# } = pipe body-right (solid)
-# C = coin spawn point
+# S = ground tile variant
+# B = brick block
+# ? = question block (contains item)
+# C = coin (airborne)
 # G = Goomba spawn point
 # K = Koopa spawn point
 # M = Mario spawn point (exactly 1 per level)
+# F = finish flag (end of level)
+# | = finish flagpole
+# [ ] { } = pipe top/body tiles
 ```
 
 ---

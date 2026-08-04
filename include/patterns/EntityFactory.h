@@ -8,7 +8,6 @@
 #pragma once
 
 // 1. Standard library
-#include <memory>
 
 // 2. SFML
 #include <SFML/Graphics.hpp>
@@ -43,11 +42,11 @@ public:
 
     // 3. Public static methods
     /// Create an enemy by type (caller owns returned memory via unique_ptr)
-    static Entity* createEnemy(EnemyType type, const sf::Vector2f& position);
+    static Entity* createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world);
 
     /// Create an item by type (caller owns returned memory via unique_ptr)
-    static Entity* createItem(ItemType type, const sf::Vector2f& position);
+    static Entity* createItem(ItemType type, const sf::Vector2f& position, b2World* world);
 
     /// Helper for TV4's TileMap parser: maps character code ('G', 'K', 'C', '?') to exact entity
-    static Entity* createFromTileCode(char tileCode, const sf::Vector2f& position);
+    static Entity* createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world);
 };

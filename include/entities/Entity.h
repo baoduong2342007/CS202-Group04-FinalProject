@@ -1,8 +1,8 @@
 /**
  * @file Entity.h
- * @author TV1 (Dương)
- * @brief Base Entity class — all game objects with physics and rendering
- * @note Sprint 4 fix: wired TextureManager + AnimationSystem into base class
+ * @author TV1 (Dương) & TV3 (Bảo)
+ * @brief Base Entity class — all game objects with physics, rendering, and lifecycle management
+ * @note Sprint 4: TextureManager + AnimationSystem wiring; Box2D safe destruction
  */
 
 #pragma once
@@ -23,7 +23,7 @@ public:
     // 1. Constructor / Destructor
     Entity();
     Entity(const sf::Vector2f& position, const sf::Vector2f& size);
-    ~Entity() override; // Destroy Box2D body
+    ~Entity() override; // Safely destroys Box2D body
 
     // 2. Override methods
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
@@ -44,8 +44,9 @@ public:
     void updateAnimation(float dt);
 
     // Box2D Physics Methods
-    void initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
+    void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
     virtual void syncPhysics();
+    void destroyPhysicsBody();
 
     // 4. Getters / Setters
     sf::FloatRect getBoundingBox() const;
@@ -55,12 +56,24 @@ public:
 
     /// Virtual type check — avoids dynamic_cast RTTI overhead in hot loops
     virtual bool isItem() const { return false; }
+    virtual bool isMario() const { return false; }
+    virtual bool isEnemy() const { return false; }
+    virtual bool isFireBall() const { return false; }
+    virtual bool isKoopa() const { return false; }
+    virtual bool isMushroom() const { return false; }
+    virtual bool isStar() const { return false; }
 
     void setPosition(const sf::Vector2f& position);
     void setVelocity(const sf::Vector2f& velocity);
     void markForRemoval();
 
     b2Body* getBody() const { return m_body; }
+
+    bool isActive() const { return m_active; }
+    void setActive(bool active) { m_active = active; }
+
+    bool isPendingDestroy() const { return m_pendingDestroy; }
+    void markForDestroy() { m_pendingDestroy = true; m_active = false; }
 
 protected:
     // 5. Protected methods
@@ -85,4 +98,6 @@ protected:
 
     // Entity lifecycle
     bool m_markedForRemoval = false;
+    bool m_active = true;
+    bool m_pendingDestroy = false;
 };

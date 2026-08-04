@@ -9,21 +9,10 @@
 
 #include <box2d/box2d.h>
 #include <SFML/System/Vector2.hpp>
-#include <memory>
-
-class ContactListener;
 
 class PhysicsEngine {
 public:
-    static PhysicsEngine& getInstance();
-
-    PhysicsEngine(const PhysicsEngine&) = delete;
-    PhysicsEngine& operator=(const PhysicsEngine&) = delete;
-
-    void init(const sf::Vector2f& gravity);
-    void update(float dt);
-    
-    b2World* getWorld() const { return m_world.get(); }
+    static void update(b2World& world, float dt);
 
     // Pixel to Meter conversions (e.g. 30 pixels = 1 meter)
     static constexpr float PPM = 30.0f;
@@ -37,9 +26,7 @@ private:
     PhysicsEngine() = default;
     ~PhysicsEngine() = default;
 
-    std::unique_ptr<b2World> m_world;
-    std::unique_ptr<ContactListener> m_contactListener;
-    float m_timeAccumulator = 0.0f;
+    static float s_timeAccumulator;
     static constexpr float TIME_STEP = 1.0f / 60.0f;
     static constexpr int VELOCITY_ITERATIONS = 8;
     static constexpr int POSITION_ITERATIONS = 3;

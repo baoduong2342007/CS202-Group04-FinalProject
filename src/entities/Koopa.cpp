@@ -50,7 +50,7 @@ sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
 
 } // namespace
 
-Koopa::Koopa(const sf::Vector2f& position)
+Koopa::Koopa(const sf::Vector2f& position, b2World* world)
     : Enemy(alignKoopaToGround(position),
             KOOPA_SIZE,
             DEFAULT_KOOPA_HEALTH
@@ -59,7 +59,7 @@ Koopa::Koopa(const sf::Vector2f& position)
       m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
 
     setFacingDirection(Direction::LEFT);
-    initPhysics(b2_dynamicBody, KOOPA_SIZE);
+    initPhysics(world, b2_dynamicBody, KOOPA_SIZE);
 
     setSprite(KOOPA_TEXTURE_PATH);
 

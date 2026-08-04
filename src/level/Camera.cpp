@@ -6,7 +6,16 @@
  */
 
 #include "level/Camera.h"
+
 #include <algorithm>
+#include <random>
+
+namespace {
+    std::mt19937& getShakeRng() {
+        static std::mt19937 rng(std::random_device{}());
+        return rng;
+    }
+}
 
 // ============================================================
 // 1. Constructor
@@ -24,9 +33,46 @@ void Camera::init(const sf::Vector2f& viewSize, const sf::FloatRect& levelBounds
     m_view.setCenter({viewSize.x / 2.0f, viewSize.y / 2.0f});
 }
 
-void Camera::update(const sf::Vector2f& targetPosition) {
-    m_view.setCenter(targetPosition);
+void Camera::shake(float duration, float magnitude) {
+    m_shakeTimer = duration;
+    m_shakeMagnitude = magnitude;
+}
+
+void Camera::update(float dt, const sf::Vector2f& targetPosition) {
+    sf::Vector2f currentCenter = m_view.getCenter();
+    sf::Vector2f newCenter = currentCenter;
+
+    // Strict horizontal tracking (1:1 lock)
+    newCenter.x = targetPosition.x;
+
+    // Vertical deadzone tracking
+    // Only adjust Y if the target moves beyond the center 50% of the screen vertically.
+    const float verticalDeadzone = m_view.getSize().y * 0.25f;
+
+    if (targetPosition.y < currentCenter.y - verticalDeadzone) {
+        newCenter.y = targetPosition.y + verticalDeadzone;
+    } else if (targetPosition.y > currentCenter.y + verticalDeadzone) {
+        newCenter.y = targetPosition.y - verticalDeadzone;
+    }
+
+    m_view.setCenter(newCenter);
     clampToBoundaries();
+
+    // Apply screen shake if active
+    if (m_shakeTimer > 0.f) {
+        m_shakeTimer -= dt;
+        
+        // Generate random offsets between -m_shakeMagnitude and +m_shakeMagnitude
+        std::uniform_real_distribution<float> dist(-m_shakeMagnitude, m_shakeMagnitude);
+        float offsetX = dist(getShakeRng());
+        float offsetY = dist(getShakeRng());
+        
+        sf::Vector2f shakenCenter = m_view.getCenter();
+        shakenCenter.x += offsetX;
+        shakenCenter.y += offsetY;
+        
+        m_view.setCenter(shakenCenter);
+    }
 }
 
 // ============================================================

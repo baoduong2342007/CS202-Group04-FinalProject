@@ -18,11 +18,14 @@
 #include "level/Camera.h"
 #include "level/TileMap.h"
 
+#include <box2d/box2d.h>
+class ContactListener;
+
 class Level {
 public:
     // 1. Constructor / Destructor
     Level();
-    ~Level() = default;
+    ~Level();
 
     // 2. Override methods
     // (None — Level does not inherit from a base class)
@@ -33,8 +36,8 @@ public:
     void render(sf::RenderWindow& window);
 
     // 4. Getters / Setters
-    Mario& getMario();
-    const Mario& getMario() const;
+    Mario* getMario();
+    const Mario* getMario() const;
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();
@@ -44,11 +47,15 @@ private:
     void spawnEntitiesFromTileMap();
     void removeDeadEntities();
     void checkItemCollisions();
+    void checkFinishFlag();
 
     // 6. Private members
+    std::unique_ptr<b2World> m_world;
+    std::unique_ptr<ContactListener> m_contactListener;
     TileMap m_tileMap;
     Camera m_camera;
-    TextureManager m_textureManager;
+    TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
     std::vector<std::unique_ptr<Entity>> m_entities;
+    bool m_levelCompleted = false;
 };

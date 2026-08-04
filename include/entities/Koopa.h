@@ -19,7 +19,7 @@ enum class KoopaState {
 
 class Koopa : public Enemy {
 public:
-    explicit Koopa(const sf::Vector2f& position);
+    explicit Koopa(const sf::Vector2f& position, b2World* world);
     ~Koopa() override = default;
 
     void update(float dt) override;
@@ -33,6 +33,7 @@ public:
     bool isInShell() const;
     bool isShellSliding() const;
     KoopaState getState() const;
+    bool isKoopa() const override { return true; }
 
 private:
     void reverseDirection();
@@ -40,3 +41,4 @@ private:
     KoopaState m_state;
     float m_patrolSpeed;
 };
+

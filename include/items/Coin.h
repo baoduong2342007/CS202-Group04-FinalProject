@@ -13,7 +13,7 @@ class Coin : public Item {
 public:
     // 1. Constructor / Destructor
     Coin();
-    explicit Coin(const sf::Vector2f& position);
+    Coin(const sf::Vector2f& position, b2World* world);
     ~Coin() override = default;
 
     // 2. Override methods

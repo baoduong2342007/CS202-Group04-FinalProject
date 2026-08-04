@@ -1,8 +1,8 @@
 /**
  * @file Entity.cpp
- * @author TV1 (Dương)
- * @brief Base Entity class implementation with Box2D physics and rendering hooks
- * @note Sprint 4 fix: setSprite() and playAnimation() now functional
+ * @author TV1 (Dương) & TV3 (Bảo)
+ * @brief Base Entity class implementation with Box2D physics, rendering, and safe lifecycle management
+ * @note Sprint 4: TextureManager + AnimationSystem functional; safe Box2D body destruction
  */
 
 #include "entities/Entity.h"
@@ -18,19 +18,35 @@ Entity::Entity()
       m_position(0.f, 0.f),
       m_size(0.f, 0.f),
       m_velocity(0.f, 0.f),
-      m_body(nullptr) {}
+      m_body(nullptr),
+      m_markedForRemoval(false),
+      m_active(true),
+      m_pendingDestroy(false) {
+    m_animationSystem = std::make_unique<AnimationSystem>();
+}
 
 Entity::Entity(const sf::Vector2f& position, const sf::Vector2f& size)
     : m_boundingBox(position, size),
       m_position(position),
       m_size(size),
       m_velocity(0.f, 0.f),
-      m_body(nullptr) {}
+      m_body(nullptr),
+      m_markedForRemoval(false),
+      m_active(true),
+      m_pendingDestroy(false) {
+    m_animationSystem = std::make_unique<AnimationSystem>();
+}
 
 Entity::~Entity() {
+    destroyPhysicsBody();
+}
+
+void Entity::destroyPhysicsBody() {
     if (m_body) {
         b2World* world = m_body->GetWorld();
         if (world) {
+            // Nullify user data pointer before destroying to prevent dangling reference
+            m_body->GetUserData().pointer = 0;
             world->DestroyBody(m_body);
         }
         m_body = nullptr;
@@ -38,7 +54,7 @@ Entity::~Entity() {
 }
 
 void Entity::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-    if (m_sprite) {
+    if (m_active && m_sprite) {
         target.draw(*m_sprite, states);
     }
 }
@@ -89,27 +105,30 @@ void Entity::updateAnimation(float dt) {
     if (!m_animationSystem || !m_sprite) {
         return;
     }
-    m_animationSystem->update(sf::seconds(dt), *m_sprite);
+    m_animationSystem->update(dt, *m_sprite);
 }
 
 // ── Box2D Physics ──────────────────────────────────────────────
 
-void Entity::initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSensor) {
-    b2World* world = PhysicsEngine::getInstance().getWorld();
+void Entity::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor) {
     if (!world) {
-        std::cerr << "Error: PhysicsEngine world not initialized!" << std::endl;
+#ifdef DEBUG
+        std::cerr << "[DEBUG][Entity] PhysicsEngine world not initialized!" << std::endl;
+#endif
         return;
     }
+
+    // Clear previous physics body if exists
+    destroyPhysicsBody();
 
     m_size = size;
 
     // 1. Define the body
     b2BodyDef bodyDef;
     bodyDef.type = type;
-    // Set position to the center of the entity in Box2D meters
     bodyDef.position = PhysicsEngine::pixelsToMeters(m_position + size / 2.0f);
-    bodyDef.fixedRotation = true; // Mario and enemies don't rotate
-    bodyDef.userData.pointer = reinterpret_cast<uintptr_t>(this); // Store entity pointer in user data
+    bodyDef.fixedRotation = true;
+    bodyDef.userData.pointer = reinterpret_cast<uintptr_t>(this);
 
     // 2. Create the body
     m_body = world->CreateBody(&bodyDef);
@@ -120,11 +139,11 @@ void Entity::initPhysics(b2BodyType type, const sf::Vector2f& size, bool isSenso
     float halfHeight = PhysicsEngine::pixelsToMeters(size.y / 2.0f);
     boxShape.SetAsBox(halfWidth, halfHeight);
 
-    // 4. Define the fixture
+    // 4. Define the fixture (Zero friction for dynamic bodies to prevent wall-sticking)
     b2FixtureDef fixtureDef;
     fixtureDef.shape = &boxShape;
     fixtureDef.density = (type == b2_dynamicBody) ? 1.0f : 0.0f;
-    fixtureDef.friction = 0.2f;
+    fixtureDef.friction = (type == b2_dynamicBody) ? 0.0f : 0.2f;
     fixtureDef.isSensor = isSensor;
 
     // 5. Create the fixture
@@ -137,7 +156,6 @@ void Entity::syncPhysics() {
     b2Vec2 pos = m_body->GetPosition();
     b2Vec2 vel = m_body->GetLinearVelocity();
 
-    // Box2D position is center of body. Convert back to top-left for SFML
     m_position = PhysicsEngine::metersToPixels(pos) - m_size / 2.0f;
     m_velocity = PhysicsEngine::metersToPixels(vel);
 
@@ -190,3 +208,4 @@ void Entity::markForRemoval() {
 void Entity::updateBoundingBox() {
     m_boundingBox = sf::FloatRect(m_position, m_size);
 }
+

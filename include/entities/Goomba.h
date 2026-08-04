@@ -2,7 +2,7 @@
  * @file Goomba.h
  * @author TV4 (Vy)
  * @brief Goomba enemy with horizontal patrol and stomp behaviour
- * @note Sprint 5 - walking animation, squish state, and delayed removal
+ * @note Sprint 4 - basic patrol AI and wall-direction reversal
  */
 
 #pragma once
@@ -13,7 +13,7 @@
 
 class Goomba : public Enemy {
 public:
-    explicit Goomba(const sf::Vector2f& position);
+    Goomba(const sf::Vector2f& position, b2World* world);
     ~Goomba() override = default;
 
     void update(float dt) override;
@@ -29,5 +29,6 @@ private:
 
     bool m_isStomped;
     float m_patrolSpeed;
-    float m_squishElapsedTime;
+    float m_squishTimer = 0.f;
+    static constexpr float SQUISH_DURATION = 0.5f;
 };

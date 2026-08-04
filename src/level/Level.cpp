@@ -9,10 +9,13 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 
 #include "items/Item.h"
 #include "patterns/EntityFactory.h"
+#include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
+#include "physics/ContactListener.h"
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
@@ -23,7 +26,8 @@ constexpr unsigned int TILE_SIZE = 32;
 constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
 } // namespace
 
-Level::Level() = default;
+Level::Level() : m_textureManager(TextureManager::getInstance()) {}
+Level::~Level() = default;
 
 bool Level::loadFromFile(const std::string& path) {
     if (!m_tileMap.loadFromFile(path)) {
@@ -42,11 +46,13 @@ bool Level::loadFromFile(const std::string& path) {
                       sf::Vector2f(levelWidth, levelHeight))
     );
 
-    // Create Box2D static bodies for solid tiles (ground, bricks, question blocks)
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
-    b2World* world = PhysicsEngine::getInstance().getWorld();
-    if (world) {
-        m_tileMap.createPhysicsBodies(world);
+    m_world = std::make_unique<b2World>(b2Vec2(0.f, 9.8f));
+    m_contactListener = std::make_unique<ContactListener>();
+    m_world->SetContactListener(m_contactListener.get());
+
+    if (m_world) {
+        m_tileMap.createPhysicsBodies(m_world.get());
     }
 
     // Spawn Mario and all entities from tile codes
@@ -74,7 +80,7 @@ void Level::spawnEntitiesFromTileMap() {
     m_mario->setTextureManager(m_textureManager);
 
     // Initialize Mario physics body
-    m_mario->initPhysics(b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+    m_mario->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
 
     // --- Spawn enemies and items via Factory ---
     for (char code : SPAWN_CODES) {
@@ -83,7 +89,7 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             Entity* raw =
-                EntityFactory::createFromTileCode(code, worldPos);
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
             if (raw) {
                 // Wire TextureManager so entity sprites can load
                 raw->setTextureManager(m_textureManager);
@@ -94,6 +100,10 @@ void Level::spawnEntitiesFromTileMap() {
 }
 
 void Level::update(float dt) {
+    if (m_world) {
+        PhysicsEngine::update(*m_world, dt);
+    }
+
     // Update Mario
     if (m_mario) {
         m_mario->update(dt);
@@ -106,13 +116,14 @@ void Level::update(float dt) {
 
     // Check item-Mario collisions
     checkItemCollisions();
+    checkFinishFlag();
 
     // Remove dead entities
     removeDeadEntities();
 
     // Update camera to follow Mario
     if (m_mario) {
-        m_camera.update(m_mario->getPosition());
+        m_camera.update(dt, m_mario->getPosition());
     }
 }
 
@@ -151,19 +162,41 @@ void Level::checkItemCollisions() {
     }
 }
 
+void Level::checkFinishFlag() {
+    if (!m_mario || m_levelCompleted) return;
+
+    auto flags = m_tileMap.findTiles('F');
+    sf::FloatRect marioBounds = m_mario->getBoundingBox();
+
+    for (const auto& gridPos : flags) {
+        sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
+        sf::FloatRect flagBounds(worldPos, sf::Vector2f(32.f, 32.f));
+
+        if (marioBounds.findIntersection(flagBounds)) {
+            m_levelCompleted = true;
+            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+            break;
+        }
+    }
+}
+
 void Level::removeDeadEntities() {
     m_entities.erase(
         std::remove_if(m_entities.begin(), m_entities.end(),
             [](const std::unique_ptr<Entity>& e) {
-                return e->shouldRemove();
+return !e || e->shouldRemove() || !e->isActive() || e->isPendingDestroy();
             }),
         m_entities.end()
     );
 }
 
 // --- Getters ---
-Mario& Level::getMario() { return *m_mario; }
-const Mario& Level::getMario() const { return *m_mario; }
+Mario* Level::getMario() { 
+    return m_mario.get(); 
+}
+const Mario* Level::getMario() const { 
+    return m_mario.get(); 
+}
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
 TextureManager& Level::getTextureManager() { return m_textureManager; }

@@ -55,7 +55,9 @@ public:
         int frameHeight, 
         int frameCount, 
         float frameDuration, 
-        bool isLooping = true
+        bool isLooping = true,
+        int spacingX = 0,
+        int spacingY = 0
     );
 
     /**

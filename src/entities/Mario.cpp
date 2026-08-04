@@ -54,13 +54,13 @@ Mario::Mario()
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 1.f, true, 1, 0));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(17, 8, 16, 16, 3, 0.1f, true, 1, 0));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(85, 8, 16, 16, 1, 1.f, true, 1, 0));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(102, 8, 16, 16, 1, 1.f, true, 1, 0));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 0.15f, true, 1, 0));
     playAnimation("idle");
-    setSprite("assets/textures/mario/idle.png");
+    setSprite("assets/textures/mario/MarioLuigi.png");
 }
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
@@ -75,13 +75,13 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 1.f));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(16, 8, 16, 16, 3, 0.1f));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(80, 8, 16, 16, 1, 1.f));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(96, 8, 16, 16, 1, 1.f));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 0.15f));
     playAnimation("idle");
-    setSprite("assets/textures/mario/idle.png");
+    setSprite("assets/textures/mario/MarioLuigi.png");
 }
 
 void Mario::update(float dt) {
@@ -115,6 +115,17 @@ void Mario::update(float dt) {
   // Pit fall check (TV3)
   if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
     loseLife();
+  }
+
+  // Handle scaling and flipping manually in update for now
+  if (m_sprite) {
+      float scaleX = (m_facingDirection == Direction::LEFT) ? -2.f : 2.f;
+      m_sprite->setScale({scaleX, 2.f});
+      if (m_facingDirection == Direction::LEFT) {
+          m_sprite->setOrigin({16.f, 0.f});
+      } else {
+          m_sprite->setOrigin({0.f, 0.f});
+      }
   }
 }
 

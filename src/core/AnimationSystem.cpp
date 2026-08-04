@@ -8,13 +8,9 @@
 #include <iostream>
 
 Animation AnimationSystem::createGridAnimation(
-    int startX, 
-    int startY, 
-    int frameWidth, 
-    int frameHeight, 
-    int frameCount, 
-    float frameDuration, 
-    bool isLooping) 
+    int startX, int startY, int frameWidth, int frameHeight, 
+    int frameCount, float frameDuration, bool isLooping,
+    int spacingX, int spacingY) 
 {
     Animation anim;
     anim.frameDuration = frameDuration;
@@ -33,8 +29,8 @@ Animation AnimationSystem::createGridAnimation(
     }
 
     for (int i = 0; i < frameCount; ++i) {
-        int x = startX + (i * frameWidth);
-        int y = startY;
+        int x = startX + i * (frameWidth + spacingX);
+        int y = startY + i * spacingY;
         
         anim.frames.push_back(sf::IntRect({x, y}, {frameWidth, frameHeight}));
     }

@@ -56,6 +56,8 @@ private:
     sf::Sprite m_bgSprite;
     sf::Sprite m_cursorSprite;
     std::vector<sf::Sprite> m_dynamicTextSprites;
+    sf::Font m_font;
+    sf::Text m_pressToPlayText;
 
     int m_score;
     int m_coins;

@@ -121,9 +121,10 @@ void Level::update(float dt) {
     // Remove dead entities
     removeDeadEntities();
 
-    // Update camera to follow Mario
+    // Update camera to follow Mario's center
     if (m_mario) {
-        m_camera.update(dt, m_mario->getPosition());
+        sf::Vector2f centerPos = m_mario->getPosition() + (m_mario->getSize() / 2.0f);
+        m_camera.update(dt, centerPos);
     }
 }
 

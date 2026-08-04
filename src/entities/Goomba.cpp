@@ -34,12 +34,17 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
       playAnimation("walk");
 }
 
-void Goomba::update(float dt){
+void Goomba::update(float dt) {
     // TV4 Sprint 4 Fix: Sync physics FIRST to get the gravity-affected velocity
     // before patrol() modifies it. Otherwise Goomba will float in the air!
     syncPhysics();
+    
+    if (m_position.y > 800.f) {
+        markForRemoval();
+        return;
+    }
 
-    if (!m_isStomped && !isDead()){
+    if (!m_isStomped && !isDead()) {
         patrol();
     } else if (m_isStomped) {
         m_squishTimer += dt;
@@ -51,8 +56,8 @@ void Goomba::update(float dt){
     updateAnimation(dt);
 }
 
-void Goomba::onStomp(){
-    if (m_isStomped){
+void Goomba::onStomp() {
+    if (m_isStomped) {
         return;
     }
 

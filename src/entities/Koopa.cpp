@@ -98,6 +98,11 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
 
 void Koopa::update(float dt) {
     syncPhysics();
+    
+    if (m_position.y > 800.f) {
+        markForRemoval();
+        return;
+    }
 
     if (isDead()) {
         updateAnimation(dt);

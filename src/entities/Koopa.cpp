@@ -18,6 +18,7 @@ namespace {
 constexpr int DEFAULT_KOOPA_HEALTH = 1;
 constexpr float DEFAULT_KOOPA_PATROL_SPEED = 50.f;
 constexpr float KOOPA_SLIDE_SPEED = 240.f;
+constexpr float PIT_CLEANUP_Y = 800.f;
 
 constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/koopa.png";
 
@@ -98,8 +99,8 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
 
 void Koopa::update(float dt) {
     syncPhysics();
-    
-    if (m_position.y > 800.f) {
+
+    if (m_position.y > PIT_CLEANUP_Y) {
         markForRemoval();
         return;
     }

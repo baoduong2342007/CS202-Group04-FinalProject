@@ -1,8 +1,8 @@
 /**
  * @file Goomba.cpp
  * @author TV4 (Vy)
- * @brief Implementation of Goomba patrol and stomp behaviour
- * @note Sprint 4 - basic patrol AI and wall-direction reversal
+ * @brief Goomba enemy with patrol, ledge detection, and stomp behaviour
+ * @note Sprint 5 - adds ledge detection and delayed removal after stomp
  */
 
 #include <cmath>
@@ -17,6 +17,7 @@ namespace {
 
 constexpr int DEFAULT_GOOMBA_HEALTH = 1;
 constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
+constexpr float PIT_CLEANUP_Y = 800.f;
 
 constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/goomba.png";
 
@@ -24,6 +25,7 @@ const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
 constexpr float TILE_SIZE = 32.f;
 constexpr float EDGE_PROBE_OFFSET = 2.f;
+
 
 } // namespace
 
@@ -43,7 +45,7 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
 void Goomba::update(float dt) {
     syncPhysics();
 
-    if (m_position.y > 800.f) {
+    if (m_position.y > PIT_CLEANUP_Y) {
         markForRemoval();
         return;
     }

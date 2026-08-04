@@ -134,7 +134,7 @@ void CollisionManager::resolve(b2Contact* contact) {
                 return false;
             }
 
-            victim->takeDamage(100);
+            victim->takeDamage(victim->getHealth());
             victim->markForRemoval();
             return true;
         };
@@ -149,7 +149,7 @@ void CollisionManager::resolve(b2Contact* contact) {
 
         return;
     }
-    
+
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
     Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {

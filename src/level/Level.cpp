@@ -185,7 +185,7 @@ void Level::removeDeadEntities() {
     m_entities.erase(
         std::remove_if(m_entities.begin(), m_entities.end(),
             [](const std::unique_ptr<Entity>& e) {
-return !e || e->shouldRemove() || !e->isActive() || e->isPendingDestroy();
+                return !e || e->shouldRemove() || !e->isActive() || e->isPendingDestroy();
             }),
         m_entities.end()
     );

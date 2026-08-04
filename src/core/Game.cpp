@@ -9,6 +9,7 @@
 #include "core/SoundManager.h"
 #include "states/MenuState.h"
 #include <iostream>
+#include <memory>
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;

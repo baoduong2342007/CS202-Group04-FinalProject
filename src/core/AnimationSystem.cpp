@@ -38,6 +38,24 @@ Animation AnimationSystem::createGridAnimation(
     return anim;
 }
 
+Animation AnimationSystem::createManualAnimation(
+    const std::vector<sf::IntRect>& frames,
+    float frameDuration,
+    bool isLooping)
+{
+    Animation anim;
+    anim.frameDuration = frameDuration;
+    anim.isLooping = isLooping;
+    anim.frames = frames;
+
+    if (frameDuration <= RESET_TIME) {
+        std::cerr << "[AnimationSystem] Warning: Frame duration must be > 0. Clamping to default." << std::endl;
+        anim.frameDuration = Animation::DEFAULT_FRAME_DURATION;
+    }
+
+    return anim;
+}
+
 void AnimationSystem::addAnimation(const std::string& name, const Animation& animation) {
     // INVARIANT CHECK: Prevent adding completely empty or invalid animations
     if (animation.frames.empty() || animation.frameDuration <= RESET_TIME) {

@@ -18,6 +18,7 @@ private:
     void processEvents();
     void update(float dt);
     void render();
+    void setupInputBindings();
 
     sf::RenderWindow m_window;
 };

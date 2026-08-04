@@ -161,6 +161,13 @@ void Entity::syncPhysics() {
 
     if (m_sprite) {
         m_sprite->setPosition(m_position);
+
+        // Auto-scale sprite to match entity size if textureRect is set
+        sf::IntRect texRect = m_sprite->getTextureRect();
+        if (texRect.size.x > 0 && texRect.size.y > 0) {
+            m_sprite->setScale({m_size.x / static_cast<float>(texRect.size.x),
+                                m_size.y / static_cast<float>(texRect.size.y)});
+        }
     }
     updateBoundingBox();
 }

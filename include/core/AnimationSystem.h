@@ -59,6 +59,20 @@ public:
     );
 
     /**
+     * @brief Creates an Animation from an explicit list of frame rects.
+     * Use this when sprites have irregular spacing and cannot be sliced from a uniform grid.
+     * @param frames The list of texture rects, one per frame.
+     * @param frameDuration The time in seconds each frame should be displayed.
+     * @param isLooping True if the animation should loop; false otherwise.
+     * @return A fully populated Animation struct ready to be added to the system.
+     */
+    static Animation createManualAnimation(
+        const std::vector<sf::IntRect>& frames,
+        float frameDuration,
+        bool isLooping = true
+    );
+
+    /**
      * @brief Registers a new animation state to the system.
      * @param name The unique string identifier for the animation (e.g., "Run").
      * @param animation The Animation struct containing frame data and settings.

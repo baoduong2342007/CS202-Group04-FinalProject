@@ -10,6 +10,8 @@
 #include "entities/Mario.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 constexpr float MUSHROOM_WIDTH  = 32.f;
@@ -18,7 +20,7 @@ constexpr float DEFAULT_MUSHROOM_SPEED = 60.f;
 constexpr int   MUSHROOM_SCORE_VALUE  = 1000;
 
 constexpr const char* MUSHROOM_TEXTURE_PATH =
-    "assets/textures/items/mushroom.png";
+    "assets/textures/items/items_objects.png";
 } // namespace
 
 Mushroom::Mushroom()
@@ -27,6 +29,9 @@ Mushroom::Mushroom()
       m_patrolDirection(1) {
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
+    m_animationSystem->addAnimation("idle",
+        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Items::MUSHROOM}, 1.f));
+    playAnimation("idle");
 }
 
 Mushroom::Mushroom(const sf::Vector2f& position, b2World* world)
@@ -35,6 +40,9 @@ Mushroom::Mushroom(const sf::Vector2f& position, b2World* world)
       m_patrolDirection(1) {
     initPhysics(world, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
+    m_animationSystem->addAnimation("idle",
+        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Items::MUSHROOM}, 1.f));
+    playAnimation("idle");
 }
 
 void Mushroom::update(float dt) {

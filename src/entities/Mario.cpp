@@ -12,6 +12,7 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
@@ -40,6 +41,41 @@ const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
 const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
 constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
+
+constexpr const char* MARIO_TEXTURE_PATH = "assets/textures/mario/MarioLuigi.png";
+
+// Helper: register animation clips for the current MarioState
+void setupAnimationsForState(AnimationSystem& animSys, MarioState state) {
+    switch (state) {
+    case MarioState::SMALL: {
+        namespace F = SpriteFrames::SmallMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+        break;
+    }
+    case MarioState::SUPER: {
+        namespace F = SpriteFrames::BigMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+        break;
+    }
+    case MarioState::FIRE: {
+        namespace F = SpriteFrames::FireBigMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+        break;
+    }
+    }
+}
 } // namespace
 
 Mario::Mario()
@@ -54,13 +90,9 @@ Mario::Mario()
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/idle.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
@@ -75,13 +107,9 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/idle.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 void Mario::update(float dt) {
@@ -289,6 +317,8 @@ void Mario::stopMoving() {
 
 void Mario::powerUp(MarioState state) {
   m_marioState = state;
+  setupAnimationsForState(*m_animationSystem, m_marioState);
+  playAnimation("idle");
   EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
   rebuildFixture();
 }
@@ -333,6 +363,8 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   setPosition(spawnPosition);
+  setupAnimationsForState(*m_animationSystem, m_marioState);
+  playAnimation("idle");
   rebuildFixture();
 
   if (m_body) {

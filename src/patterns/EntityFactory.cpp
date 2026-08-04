@@ -13,7 +13,7 @@
 // uncomment the includes below and update the return statements inside createEnemy/createItem!
 // ============================================================
 #include "entities/Goomba.h"          // TV4 (Sprint 4)
-// #include "entities/Koopa.h"       // TV4 (Sprint 5)
+#include "entities/Koopa.h"           // TV4 (Sprint 5)
 #include "items/Coin.h"              // TV5 (Sprint 4)
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
@@ -27,8 +27,7 @@ Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position,
         case EnemyType::GOOMBA:
             return new Goomba(position, world);
         case EnemyType::KOOPA:
-            // TODO (TV4): Sprint 5 - return new Koopa(position);
-            return nullptr;
+            return new Koopa(position);
         default:
             return nullptr;
     }

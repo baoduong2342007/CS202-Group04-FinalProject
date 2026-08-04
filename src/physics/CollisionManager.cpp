@@ -10,6 +10,7 @@
 #include "entities/Entity.h"
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
+#include "entities/Koopa.h"
 #include "entities/FireBall.h"
 #include "items/Item.h"
 #include "items/Mushroom.h"
@@ -179,6 +180,21 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
         if (other) {
             if (other->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(other);
+
+                // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
+                if (Koopa* koopa = dynamic_cast<Koopa*>(enemy)) {
+                    if (koopa->isInShell() && !koopa->isShellSliding()) {
+                        Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->kick(kickDir);
+                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+
+                        float currentY = marioBody->GetLinearVelocity().y;
+                        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
+                        marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+                        return;
+                    }
+                }
+
                 enemy->onStomp();
                 EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
@@ -198,7 +214,27 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     else {
         if (other) {
             if (other->isEnemy()) {
-                mario->powerDown();
+                Enemy* enemy = static_cast<Enemy*>(other);
+                
+                // Koopa Kick Logic
+                if (Koopa* koopa = dynamic_cast<Koopa*>(enemy)) {
+                    // If shell is sliding, Mario gets hit
+                    if (koopa->isShellSliding()) {
+                        mario->powerDown();
+                    } 
+                    // If shell is idle, Mario kicks it
+                    else if (koopa->isInShell()) {
+                        Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->kick(kickDir);
+                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+                    } 
+                    // If walking, Mario gets hit
+                    else {
+                        mario->powerDown();
+                    }
+                } else {
+                    mario->powerDown();
+                }
             }
         }
     }

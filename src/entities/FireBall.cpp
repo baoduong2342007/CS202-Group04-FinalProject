@@ -23,16 +23,16 @@ FireBall::FireBall()
       m_bounceCount(0),
       m_lifetime(0.f),
       m_bounceCooldown(0.f) {
-    initPhysics(b2_dynamicBody, FIREBALL_SIZE, false);
+    initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
 }
 
-FireBall::FireBall(const sf::Vector2f& position, Direction direction)
+FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
     : Entity(position, FIREBALL_SIZE),
       m_direction(direction),
       m_bounceCount(0),
       m_lifetime(0.f),
       m_bounceCooldown(0.f) {
-    initPhysics(b2_dynamicBody, FIREBALL_SIZE, false);
+    initPhysics(world, b2_dynamicBody, FIREBALL_SIZE, false);
 
     if (m_body) {
         float dirMultiplier = (direction == Direction::RIGHT) ? 1.0f : -1.0f;
@@ -44,6 +44,8 @@ FireBall::FireBall(const sf::Vector2f& position, Direction direction)
 
 void FireBall::update(float dt) {
     if (!m_active || m_pendingDestroy) return;
+
+    syncPhysics(); // CRITICAL: Sync first!
 
     m_lifetime += dt;
     if (m_bounceCooldown > 0.0f) {
@@ -63,8 +65,6 @@ void FireBall::update(float dt) {
         // Maintain constant horizontal speed while allowing Box2D gravity to drive Y motion
         m_body->SetLinearVelocity(b2Vec2(targetVx, vel.y));
     }
-
-    syncPhysics();
 }
 
 void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
@@ -80,7 +80,6 @@ void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
         return;
     }
 
-    b2Vec2 vel = m_body->GetLinearVelocity();
     float dirMultiplier = (m_direction == Direction::RIGHT) ? 1.0f : -1.0f;
     float targetVx = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
     float bounceVy = -PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED);

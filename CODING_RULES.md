@@ -98,7 +98,7 @@ private:
 const int TILE_SIZE = 32;
 const int MAX_LIVES = 3;
 
-enum class MarioState { SMALL, BIG, FIRE };
+enum class MarioState { SMALL, SUPER, FIRE };
 // use scoped enum (enum class), do not use plain enum
 
 // File → class name (1-1)
@@ -157,7 +157,7 @@ Enemy* e = new Goomba(pos);  // who deletes it?
 
 // EXCEPTION: EntityFactory returns raw pointer — caller owns it
 // → Factory method: caller wraps into unique_ptr immediately
-auto enemy = std::unique_ptr<Enemy>(EntityFactory::create(EnemyType::GOOMBA, pos));
+auto enemy = std::unique_ptr<Entity>(EntityFactory::createEnemy(EnemyType::GOOMBA, pos, world));
 ```
 
 ### Functions
@@ -228,10 +228,10 @@ Each pattern must be clearly documented in the code with a comment block:
 // Reason: avoids hardcoded new Goomba(), new Koopa() in multiple places;
 //         allows adding new enemy types without modifying Level.cpp
 // ============================================================
-Enemy* EntityFactory::create(EnemyType type, sf::Vector2f pos) {
+Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& pos, b2World* world) {
     switch (type) {
-        case EnemyType::GOOMBA: return new Goomba(pos);
-        case EnemyType::KOOPA:  return new Koopa(pos);
+        case EnemyType::GOOMBA: return new Goomba(pos, world);
+        case EnemyType::KOOPA:  return new Koopa(pos, world);
         default: return nullptr;
     }
 }

@@ -2,14 +2,12 @@
  * @file Game.h
  * @author TV2
  * @brief Game loop, window management and event handling
- * @note Week 2 — SFML 3.0.0 setup. Sprint 4 — integrated Level + PhysicsEngine
+ * @note Sprint 4 fix — delegates update and render to GameManager
  */
 
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include "level/Level.h"
-#include "patterns/InputHandler.h"
 
 class Game {
 public:
@@ -23,6 +21,4 @@ private:
     void setupInputBindings();
 
     sf::RenderWindow m_window;
-    Level m_level;
-    InputHandler m_inputHandler;
 };

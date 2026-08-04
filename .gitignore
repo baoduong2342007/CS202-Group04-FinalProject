@@ -55,3 +55,6 @@ saves/*
 # Third-party libraries
 thirdparty/*
 !thirdparty/.gitkeep
+
+# Temporary workspace files
+tmp_folder/

@@ -83,7 +83,7 @@ void AnimationSystem::resume() {
     }
 }
 
-void AnimationSystem::update(sf::Time dt, sf::Sprite& sprite) {
+void AnimationSystem::update(float dt, sf::Sprite& sprite) {
     if (!m_isPlaying || m_currentAnimation.empty()) {
         return;
     }
@@ -100,7 +100,7 @@ void AnimationSystem::update(sf::Time dt, sf::Sprite& sprite) {
         return;
     }
 
-    m_elapsedTime += dt.asSeconds();
+    m_elapsedTime += dt;
 
     // Advance frames if enough time has passed. 
     // The previous checks ensure anim.frameDuration > RESET_TIME, preventing an infinite loop here.

@@ -10,8 +10,11 @@
 #include "entities/Entity.h"
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
+#include "entities/Koopa.h"
 #include "entities/FireBall.h"
 #include "items/Item.h"
+#include "items/Mushroom.h"
+#include "items/Star.h"
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -56,10 +59,12 @@ void CollisionManager::resolve(b2Contact* contact) {
     Entity* target = nullptr;
     b2Body* fireBallBody = nullptr;
 
-    if (entityA && (fireBall = dynamic_cast<FireBall*>(entityA))) {
+    if (entityA && entityA->isFireBall()) {
+        fireBall = static_cast<FireBall*>(entityA);
         target = entityB;
         fireBallBody = bodyA;
-    } else if (entityB && (fireBall = dynamic_cast<FireBall*>(entityB))) {
+    } else if (entityB && entityB->isFireBall()) {
+        fireBall = static_cast<FireBall*>(entityB);
         target = entityA;
         fireBallBody = bodyB;
     }
@@ -74,8 +79,8 @@ void CollisionManager::resolve(b2Contact* contact) {
         }
 
         if (target) {
-            Enemy* enemy = dynamic_cast<Enemy*>(target);
-            if (enemy && enemy->isActive() && !enemy->isPendingDestroy()) {
+            if (target->isEnemy()) {
+                Enemy* enemy = static_cast<Enemy*>(target);
                 enemy->takeDamage(100);
                 fireBall->deactivate();
                 return;
@@ -98,10 +103,12 @@ void CollisionManager::resolve(b2Contact* contact) {
     Entity* otherEntity = nullptr;
     b2Body* marioBody = nullptr;
 
-    if (entityA && (mario = dynamic_cast<Mario*>(entityA))) {
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
         otherEntity = entityB;
         marioBody = bodyA;
-    } else if (entityB && (mario = dynamic_cast<Mario*>(entityB))) {
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
         otherEntity = entityA;
         marioBody = bodyB;
     }
@@ -113,13 +120,38 @@ void CollisionManager::resolve(b2Contact* contact) {
 
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
     Enemy* enemy = nullptr;
-    if (entityA && (enemy = dynamic_cast<Enemy*>(entityA))) {
+    if (entityA && entityA->isEnemy()) {
+        enemy = static_cast<Enemy*>(entityA);
         if (std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
         }
-    } else if (entityB && (enemy = dynamic_cast<Enemy*>(entityB))) {
+    } else if (entityB && entityB->isEnemy()) {
+        enemy = static_cast<Enemy*>(entityB);
         if (std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
+        }
+    }
+
+    // Handle Item ↔ Wall / Static Body collisions
+    if (entityA && entityA->isItem()) {
+        b2Vec2 itemNormal = normal;
+        if (entityA->isMushroom()) {
+            Mushroom* mushroom = static_cast<Mushroom*>(entityA);
+            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+        } else if (entityA->isStar()) {
+            Star* star = static_cast<Star*>(entityA);
+            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (itemNormal.y > 0.8f) star->onGroundCollision();
+        }
+    } else if (entityB && entityB->isItem()) {
+        b2Vec2 itemNormal = -normal;
+        if (entityB->isMushroom()) {
+            Mushroom* mushroom = static_cast<Mushroom*>(entityB);
+            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+        } else if (entityB->isStar()) {
+            Star* star = static_cast<Star*>(entityB);
+            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     }
 }
@@ -137,9 +169,11 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
 
     // Check collectible Item collection (Task 3.1)
     if (other) {
-        Item* item = dynamic_cast<Item*>(other);
-        if (item && !item->isCollected()) {
-            item->onCollect(*mario);
+        if (other->isItem()) {
+            Item* item = static_cast<Item*>(other);
+            if (!item->isCollected()) {
+                item->onCollect(*mario);
+            }
         }
     }
 
@@ -150,8 +184,24 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
         mario->setGrounded(true);
 
         if (other) {
-            Enemy* enemy = dynamic_cast<Enemy*>(other);
-            if (enemy) {
+            if (other->isEnemy()) {
+                Enemy* enemy = static_cast<Enemy*>(other);
+
+                // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
+                if (enemy->isKoopa()) {
+                    Koopa* koopa = static_cast<Koopa*>(enemy);
+                    if (koopa->isInShell() && !koopa->isShellSliding()) {
+                        Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->kick(kickDir);
+                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+
+                        float currentY = marioBody->GetLinearVelocity().y;
+                        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
+                        marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+                        return;
+                    }
+                }
+
                 enemy->onStomp();
                 EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
@@ -163,14 +213,36 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     }
     // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
+#ifdef DEBUG
         std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;
+#endif
     }
     // Lateral collision (wall contact)
     else {
         if (other) {
-            Enemy* enemy = dynamic_cast<Enemy*>(other);
-            if (enemy) {
-                mario->powerDown();
+            if (other->isEnemy()) {
+                Enemy* enemy = static_cast<Enemy*>(other);
+                
+                // Koopa Kick Logic
+                if (enemy->isKoopa()) {
+                    Koopa* koopa = static_cast<Koopa*>(enemy);
+                    // If shell is sliding, Mario gets hit
+                    if (koopa->isShellSliding()) {
+                        mario->powerDown();
+                    } 
+                    // If shell is idle, Mario kicks it
+                    else if (koopa->isInShell()) {
+                        Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->kick(kickDir);
+                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+                    } 
+                    // If walking, Mario gets hit
+                    else {
+                        mario->powerDown();
+                    }
+                } else {
+                    mario->powerDown();
+                }
             }
         }
     }
@@ -196,9 +268,11 @@ void CollisionManager::resolveEnd(b2Contact* contact) {
     Mario* mario = nullptr;
     b2Body* marioBody = nullptr;
 
-    if (entityA && (mario = dynamic_cast<Mario*>(entityA))) {
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
         marioBody = bodyA;
-    } else if (entityB && (mario = dynamic_cast<Mario*>(entityB))) {
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
         marioBody = bodyB;
     }
 

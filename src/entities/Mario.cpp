@@ -1,7 +1,8 @@
 /**
  * @file Mario.cpp
- * @author TV3
+ * @author TV3 (Bảo)
  * @brief Mario character implementation with authentic NES movement physics and states
+ * @note Sprint 4 merge: lives, skidding, FireBall (TV3) + score, invincibility (develop)
  */
 
 #include "entities/Mario.h"
@@ -10,6 +11,7 @@
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/AnimationSystem.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
@@ -20,24 +22,24 @@ constexpr float PIT_DEATH_Y_THRESHOLD = 800.f;
 constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
-constexpr float WALK_MAX_SPEED = 180.f;            // ~6.0 m/s
-constexpr float RUN_MAX_SPEED = 340.f;             // ~11.3 m/s
-constexpr float GROUND_ACCEL = 900.f;             // Walk acceleration
-constexpr float RUN_ACCEL = 1400.f;               // Sprint acceleration
-constexpr float GROUND_FRICTION = 1100.f;         // Deceleration when idle on ground
-constexpr float SKID_FRICTION = 2200.f;           // Deceleration when reversing direction
-constexpr float AIR_ACCEL = 450.f;                // Reduced horizontal control in air
-constexpr float AIR_FRICTION = 150.f;              // Low air drag preserving jump momentum
-constexpr float SHORT_HOP_CUTOFF = 0.5f;          // Velocity multiplier on early jump key release
-constexpr float SKID_SPEED_THRESHOLD = 15.0f;     // Minimum speed required to trigger skidding
-constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;   // Threshold to detect upward jump ascent
+constexpr float WALK_MAX_SPEED = 180.f;
+constexpr float RUN_MAX_SPEED = 340.f;
+constexpr float GROUND_ACCEL = 900.f;
+constexpr float RUN_ACCEL = 1400.f;
+constexpr float GROUND_FRICTION = 1100.f;
+constexpr float SKID_FRICTION = 2200.f;
+constexpr float AIR_ACCEL = 450.f;
+constexpr float AIR_FRICTION = 150.f;
+constexpr float SHORT_HOP_CUTOFF = 0.5f;
+constexpr float SKID_SPEED_THRESHOLD = 15.0f;
+constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
 const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
 const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
-constexpr float MARIO_FIXTURE_FRICTION = 0.0f;     // Zero friction to prevent wall sticking
+constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
 } // namespace
 
 Mario::Mario()
@@ -45,10 +47,19 @@ Mario::Mario()
       m_marioState(MarioState::SMALL),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
+      m_score(0),
+      m_isInvincible(false),
+      m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    playAnimation("idle");
     setSprite("assets/textures/mario/idle.png");
 }
 
@@ -57,18 +68,32 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_marioState(MarioState::SMALL),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
+      m_score(0),
+      m_isInvincible(false),
+      m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
+    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
+    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
+    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+    playAnimation("idle");
     setSprite("assets/textures/mario/idle.png");
 }
 
 void Mario::update(float dt) {
-  (void)dt;
   if (!m_active) return;
 
-  // Clamp terminal fall velocity to prevent AABB tunneling through floor tiles
+  // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
+  syncPhysics();
+
+  // Tick invincibility timer (develop)
+  updateInvincibility(dt);
+
+  // Clamp terminal fall velocity to prevent AABB tunneling (TV3)
   if (m_body) {
     b2Vec2 velocity = m_body->GetLinearVelocity();
     float maxFallMeters = PhysicsEngine::pixelsToMeters(MAX_FALL_SPEED);
@@ -77,15 +102,24 @@ void Mario::update(float dt) {
     }
   }
 
-  // Sync position with Box2D body
-  syncPhysics();
+  // Animation state machine (develop)
+  if (!isGrounded()) {
+      playAnimation("jump");
+  } else if (std::abs(getVelocity().x) > 5.f) {
+      playAnimation("walk");
+  } else {
+      playAnimation("idle");
+  }
+  updateAnimation(dt);
 
-  // Pit fall check (death threshold)
+  // Pit fall check (TV3)
   if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
     loseLife();
   }
 }
 
+// DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
+// Kept as fallback for debugging. Remove after team confirms InputHandler works.
 void Mario::handleInput() {
   if (!m_body || !m_active)
     return;
@@ -208,7 +242,7 @@ void Mario::rebuildFixture() {
   m_body->CreateFixture(&fixtureDef);
 
 #ifdef DEBUG
-  std::cout << "[DEBUG][Mario] Rebuilt fixture for state size: (" 
+  std::cout << "[DEBUG][Mario] Rebuilt fixture for state size: ("
             << targetSize.x << ", " << targetSize.y << ")" << std::endl;
 #endif
 }
@@ -221,6 +255,8 @@ void Mario::jump() {
   m_body->SetLinearVelocity(
       b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
   setGrounded(false);
+
+  EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
 }
 
 void Mario::moveLeft() {
@@ -258,6 +294,9 @@ void Mario::powerUp(MarioState state) {
 }
 
 void Mario::powerDown() {
+  if (m_isInvincible) {
+    return;
+  }
   if (m_marioState == MarioState::FIRE) {
     m_marioState = MarioState::SUPER;
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
@@ -275,7 +314,6 @@ void Mario::loseLife() {
   if (m_lives > 0) {
     m_lives--;
   }
-
   EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
 #ifdef DEBUG
@@ -307,6 +345,52 @@ MarioState Mario::getMarioState() const { return m_marioState; }
 void Mario::setMarioState(MarioState state) {
   m_marioState = state;
   rebuildFixture();
+}
+
+void Mario::addScore(int points) {
+  m_score += points;
+}
+
+int Mario::getScore() const {
+  return m_score;
+}
+
+void Mario::setInvincible(float duration) {
+  m_isInvincible = true;
+  m_invincibilityTimer = duration;
+}
+
+void Mario::updateInvincibility(float dt) {
+  if (!m_isInvincible) {
+    if (m_sprite) {
+      m_sprite->setColor(sf::Color::White); // Ensure visible
+    }
+    return;
+  }
+  
+  m_invincibilityTimer -= dt;
+  
+  // Flashing effect: toggle opacity every 0.1 seconds
+  if (m_sprite) {
+    int ms = static_cast<int>(m_invincibilityTimer * 1000);
+    if ((ms / 100) % 2 == 0) {
+      m_sprite->setColor(sf::Color::Transparent);
+    } else {
+      m_sprite->setColor(sf::Color::White);
+    }
+  }
+
+  if (m_invincibilityTimer <= 0.f) {
+    m_isInvincible = false;
+    m_invincibilityTimer = 0.f;
+    if (m_sprite) {
+      m_sprite->setColor(sf::Color::White);
+    }
+  }
+}
+
+bool Mario::isInvincible() const {
+  return m_isInvincible;
 }
 
 bool Mario::canShootFireBall() const {

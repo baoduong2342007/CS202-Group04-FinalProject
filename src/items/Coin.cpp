@@ -16,10 +16,16 @@ constexpr float COIN_HEIGHT = 16.f;
 } // namespace
 
 Coin::Coin()
-    : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {}
+    : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {
+    initPhysics(nullptr, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT), true);
+    setSprite("assets/textures/items/coin.png");
+}
 
-Coin::Coin(const sf::Vector2f& position)
-    : Item(position, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {}
+Coin::Coin(const sf::Vector2f& position, b2World* world)
+    : Item(position, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)) {
+    initPhysics(world, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT), true);
+    setSprite("assets/textures/items/coin.png");
+}
 
 void Coin::update(float dt) {
     (void)dt;
@@ -32,8 +38,7 @@ void Coin::onCollect(Mario& mario) {
     if (m_isCollected) {
         return;
     }
-
-    (void)mario; // Score tracking will be added when Mario gains a score member
+    mario.addScore(COIN_SCORE_VALUE);
 
     m_isCollected = true;
 

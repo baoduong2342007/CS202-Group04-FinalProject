@@ -36,6 +36,9 @@ public:
     /// Remove the binding for a key
     void unbindKey(sf::Keyboard::Key key);
 
+    /// Clear all bound keys
+    void clear();
+
     /// Poll all bound keys and execute commands for pressed keys
     void handleInput() const;
 

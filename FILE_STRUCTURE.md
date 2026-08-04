@@ -11,8 +11,6 @@ SuperMario/
 │
 ├── CMakeLists.txt              ← TV1 (Dương) maintain (SFML configuration)
 ├── README.md
-├── ROLES.md
-├── WEEKLY_PLAN.md
 ├── FILE_STRUCTURE.md
 ├── CODING_RULES.md
 ├── .gitignore
@@ -26,59 +24,70 @@ SuperMario/
 ├── docs/                       ← TV1 (Dương) maintain
 │   ├── class_diagram.drawio    ← draw.io file for editing
 │   ├── class_diagram.png       ← exported PNG for submission
-│   └── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
+│   ├── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
+│   ├── management/             ← Sprint planning and task tracking
+│   │   ├── ROLES.md
+│   │   ├── WEEKLY_PLAN.md
+│   │   ├── need_to_do_W4.md
+│   │   └── fix_sprint_4_TV1.md
+│   └── specs/                  ← Project specifications
+│       └── CS202-FinalProject_SuperMario.md
 │
 ├── assets/                     ← TV5 (Truyền) maintain
+│   ├── ASSETS_LIST.md          ← chi tiết quy ước cắt frame từ sheet
 │   ├── textures/
 │   │   ├── mario/
-│   │   │   ├── idle.png
-│   │   │   ├── walk.png        ← sprite sheet (horizontal frames)
-│   │   │   ├── jump.png
-│   │   │   ├── big_idle.png
-│   │   │   ├── big_walk.png
-│   │   │   ├── fire_idle.png
-│   │   │   └── death.png
+│   │   │   └── MarioLuigi.png  ← SPRITESHEET CHUNG: mọi trạng thái Mario & Luigi
+│   │   │                          (SMALL/SUPER/FIRE × idle/walk/jump/death)
+│   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   ├── enemies/
-│   │   │   ├── goomba.png      ← sprite sheet: walk + squish
-│   │   │   └── koopa.png       ← sprite sheet: walk + shell
+│   │   │   ├── goomba.png      ← spritesheet: walk + squish
+│   │   │   └── enemies.png     ← spritesheet chung nhiều enemy (Koopa, v.v.)
 │   │   ├── tiles/
-│   │   │   └── tileset.png     ← single file, using texture rect
+│   │   │   └── tileset.png     ← tileset 4 tile (ground/brick/?/flag), dùng texture rect
 │   │   ├── items/
-│   │   │   ├── coin.png
-│   │   │   ├── mushroom.png
-│   │   │   ├── fireflower.png
-│   │   │   └── star.png
+│   │   │   ├── items_objects.png ← SPRITESHEET: Coin, FireFlower, Star...
+│   │   │   └── items_blocks.png ← SPRITESHEET: Mushroom, block items...
+│   │   │                          KHÔNG có file riêng coin.png/mushroom.png/...
+│   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   └── ui/
-│   │       ├── hud_icons.png
-│   │       └── menu_bg.png
+│   │       ├── hud.png
+│   │       ├── bg_clouds.png
+│   │       ├── bg_mountains.png
+│   │       └── bg_trees.png
 │   ├── sounds/
 │   │   ├── effects/
 │   │   │   ├── jump.wav
 │   │   │   ├── coin.wav
-│   │   │   ├── die.wav
+│   │   │   ├── death.wav
 │   │   │   ├── powerup.wav
-│   │   │   ├── kick.wav
-│   │   │   └── fireball.wav
+│   │   │   ├── kickkill.wav
+│   │   │   ├── fireball.wav
+│   │   │   └── ... (additional sound effects)
 │   │   └── music/
-│   │       ├── overworld.ogg   ← main music (ogg for SFML streaming)
-│   │       ├── underground.ogg
-│   │       └── gameover.ogg
+│   │       ├── overworld.flac   ← main music (FLAC audio format)
+│   │       ├── underground.flac
+│   │       ├── gameover.flac
+│   │       ├── castle.flac
+│   │       └── ... (additional audio tracks)
 │   └── fonts/
-│       └── mario.ttf           ← or any free pixel font
+│       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level1.txt
 │   ├── level2.txt
-│   └── level3.txt
+│   └── level3.txt              ← (planned for upcoming release)
 │
 ├── saves/                      ← auto-generated, do not commit
 │   └── .gitkeep                ← empty file to force Git to track the directory
 │
 ├── include/                    ← all .h header files
 │   ├── core/
+│   │   ├── AnimationSystem.h   ← TV2 (Nhật): sprite animation management
 │   │   ├── Game.h              ← TV2 (Nhật): main loop, window, delta time
 │   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host
-│   │   └── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
+│   │   ├── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
+│   │   └── TextureManager.h    ← TV1 (Dương): centralized texture cache
 │   │
 │   ├── states/                 ← TV1 (Dương) + TV2 (Nhật)
 │   │   ├── IGameState.h        ← TV1 (Dương): interface (init/update/render/exit)
@@ -111,25 +120,35 @@ SuperMario/
 │   │
 │   ├── patterns/               ← TV1 (Dương) + TV5 (Truyền)
 │   │   ├── EntityFactory.h     ← TV1 (Dương): Factory pattern
+│   │   ├── EventBus.h          ← TV1 (Dương): global event bus (Singleton)
+│   │   ├── EventType.h         ← TV1 (Dương): event type definitions
+│   │   ├── ICommand.h          ← TV5 (Truyền): Command interface
 │   │   ├── IObserver.h         ← TV1 (Dương): Observer interface
 │   │   ├── ISubject.h          ← TV1 (Dương)
-│   │   ├── EventBus.h          ← TV1 (Dương): global event bus (Singleton)
-│   │   ├── ICommand.h          ← TV5 (Truyền): Command interface
-│   │   └── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── JumpCommand.h       ← concrete Command
+│   │   ├── MoveLeftCommand.h   ← concrete Command
+│   │   ├── MoveRightCommand.h  ← concrete Command
+│   │   └── PauseCommand.h      ← concrete Command
 │   │
 │   ├── physics/                ← TV3 (Bảo)
-│   │   ├── PhysicsEngine.h
-│   │   └── CollisionManager.h
+│   │   ├── CollisionManager.h
+│   │   ├── ContactListener.h   ← Box2D contact callback listener
+│   │   └── PhysicsEngine.h
 │   │
 │   └── ui/                     ← TV5 (Truyền)
 │       ├── HUD.h
-│       └── Button.h
+│       └── Button.h            ← (planned for interactive UI menus)
 │
 └── src/                        ← all .cpp source files, mirroring include/ structure
     ├── core/
+    │   ├── AnimationSystem.cpp
     │   ├── Game.cpp
     │   ├── GameManager.cpp
-    │   └── SoundManager.cpp
+    │   ├── SoundManager.cpp
+    │   └── TextureManager.cpp
+    ├── demo/
+    │   └── TV3Demo.cpp         ← physical movement testing demo
     ├── states/
     │   ├── MenuState.cpp
     │   ├── PlayState.cpp
@@ -157,14 +176,19 @@ SuperMario/
     ├── patterns/
     │   ├── EntityFactory.cpp
     │   ├── EventBus.cpp
-    │   └── InputHandler.cpp
+    │   ├── InputHandler.cpp
+    │   ├── JumpCommand.cpp
+    │   ├── MoveLeftCommand.cpp
+    │   ├── MoveRightCommand.cpp
+    │   └── PauseCommand.cpp
     ├── physics/
-    │   ├── PhysicsEngine.cpp
-    │   └── CollisionManager.cpp
+    │   ├── CollisionManager.cpp
+    │   ├── ContactListener.cpp
+    │   └── PhysicsEngine.cpp
     ├── ui/
     │   ├── HUD.cpp
-    │   └── Button.cpp
-    └── main.cpp                ← only contains: Game game; game.run(); return 0;
+    │   └── Button.cpp          ← (planned for interactive UI menus)
+    └── main.cpp                ← entry point
 ```
 
 ---
@@ -208,14 +232,26 @@ SuperMario/
 
 ### Asset paths
 
+Assets dùng **spritesheet chung** — KHÔNG tách file riêng. Load sheet 1 lần qua `TextureManager`,
+cắt frame bằng `setTextureRect()` hoặc `AnimationSystem`.
+
 Always use relative paths from the executable (since CMake copies assets to the `build/` output folder):
 
 ```cpp
-// CORRECT
-texture.loadFromFile("assets/textures/mario/walk.png");
+// CORRECT — simple texture loading (e.g. tileset)
+texture.loadFromFile("assets/textures/tiles/tileset.png");
+
+// CORRECT — load spritesheet chung, cắt frame bằng code
+auto& tex = TextureManager::getInstance().getTexture("assets/textures/mario/MarioLuigi.png");
+sprite.setTexture(tex);
+sprite.setTextureRect(sf::IntRect({FRAME_X, FRAME_Y}, {FRAME_W, FRAME_H}));
+
+// INCORRECT — file riêng KHÔNG TỒN TẠI, sẽ hiện khối magenta
+texture.loadFromFile("assets/textures/mario/idle.png");   // ❌ file này không có!
+texture.loadFromFile("assets/textures/items/coin.png");   // ❌ file này không có!
 
 // INCORRECT — hardcoded absolute path, will not run on others' machines
-texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
+texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/MarioLuigi.png");
 ```
 
 ### Level files
@@ -223,11 +259,12 @@ texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
 ```
 # Comments start with #, ignored when parsed
 # Each line = 1 row of tiles
-# Each character = 1 tile; characters are written without spaces
+# Each character = 1 tile; characters are written consecutively without spaces
 #
 # Characters:
 # . = empty (air)
 # 1 = ground tile (solid)
+# S = ground tile variant
 # B = brick block
 # ? = question block (contains item)
 # C = coin (airborne)
@@ -235,6 +272,8 @@ texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
 # K = Koopa spawn point
 # M = Mario spawn point (exactly 1 per level)
 # F = finish flag (end of level)
+# | = finish flagpole
+# [ ] { } = pipe top/body tiles
 ```
 
 ---

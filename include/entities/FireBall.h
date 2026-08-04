@@ -14,7 +14,7 @@ class FireBall : public Entity {
 public:
     // 1. Constructor / Destructor
     FireBall();
-    FireBall(const sf::Vector2f& position, Direction direction);
+    FireBall(const sf::Vector2f& position, Direction direction, b2World* world);
     ~FireBall() override = default;
 
     // 2. Override methods
@@ -23,6 +23,7 @@ public:
     // 3. Public methods
     void bounce(const sf::Vector2f& surfaceNormal = sf::Vector2f(0.f, -1.f));
     void deactivate();
+    bool isFireBall() const override { return true; }
 
     // 4. Getters / Setters
     int getBounceCount() const;

@@ -19,7 +19,7 @@ Tất cả tệp hình ảnh dùng định dạng `.png` (hỗ trợ kênh Alpha
 ### 1.1. Nhân vật Mario (`assets/textures/mario/`)
 | Sheet | Mô tả & Quy ước cắt | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/mario/NES - Super Mario Bros. - Playable Characters - Mario & Luigi.png` | **Sheet chung duy nhất cho Mario & Luigi.** Chứa mọi trạng thái: SMALL/SUPER/FIRE × idle/walk/jump/death, mọi hướng (trái/phải). Cắt frame theo grid NES (frame gốc 16×16, scale lên 32×32 trong game). | ✅ Có sẵn |
+| `assets/textures/mario/MarioLuigi.png` | **Sheet chung duy nhất cho Mario & Luigi.** Chứa mọi trạng thái: SMALL/SUPER/FIRE × idle/walk/jump/death, mọi hướng (trái/phải). Cắt frame theo grid NES (frame gốc 16×16, scale lên 32×32 trong game). Code dùng `setTextureRect()` để cắt frame — **KHÔNG tách file riêng**. | ✅ Có sẵn |
 
 > ⚠️ **Nhắc code:** `Mario.cpp` hiện gọi `setSprite("assets/textures/mario/idle.png")` — path KHÔNG tồn tại → Mario hiện là khối magenta. Cần sửa thành load sheet trên + `setTextureRect` frame đúng (phối hợp TV2 - AnimationSystem).
 
@@ -134,7 +134,7 @@ Tất cả **ĐÃ CÓ SẴN** — định dạng **`.flac`** (SFML `sf::Music` s
 
 | Loại | Bản cũ (`ASSETS_LIST.md`) | Bản mới (file này) |
 | :--- | :--- | :--- |
-| Mario | 7 file riêng (`idle.png`, `walk.png`...) | 1 sheet chung `...Mario & Luigi.png` ✅ |
+| Mario | 7 file riêng (`idle.png`, `walk.png`...) | 1 sheet chung `MarioLuigi.png` ✅ |
 | Goomba | `goomba.png` | `goomba.png` ✅ (dùng luôn) |
 | Koopa | `koopa.png` (❌ cần tìm) | `enemies.png` ✅ sheet chung (cắt frame Koopa) |
 | Items | 4 file riêng (`coin.png`, `mushroom.png`...) | 2 sheet chung `items_objects.png` + `items_blocks.png` ✅ |

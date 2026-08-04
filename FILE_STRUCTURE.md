@@ -34,42 +34,32 @@ SuperMario/
 │       └── CS202-FinalProject_SuperMario.md
 │
 ├── assets/                     ← TV5 (Truyền) maintain
+│   ├── ASSETS_LIST.md          ← chi tiết quy ước cắt frame từ sheet
 │   ├── textures/
 │   │   ├── mario/
-│   │   │   ├── idle.png
-│   │   │   ├── walk.png        ← sprite sheet (horizontal frames)
-│   │   │   ├── jump.png
-│   │   │   ├── big_idle.png
-│   │   │   ├── big_walk.png
-│   │   │   ├── fire_idle.png
-│   │   │   └── death.png
+│   │   │   └── MarioLuigi.png  ← SPRITESHEET CHUNG: mọi trạng thái Mario & Luigi
+│   │   │                          (SMALL/SUPER/FIRE × idle/walk/jump/death)
+│   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   ├── enemies/
-│   │   │   ├── goomba.png      ← sprite sheet: walk + squish
-│   │   │   └── koopa.png       ← sprite sheet: walk + shell
+│   │   │   ├── goomba.png      ← spritesheet: walk + squish
+│   │   │   └── enemies.png     ← spritesheet chung nhiều enemy (Koopa, v.v.)
 │   │   ├── tiles/
-│   │   │   └── tileset.png     ← single file, using texture rect
+│   │   │   └── tileset.png     ← tileset 4 tile (ground/brick/?/flag), dùng texture rect
 │   │   ├── items/
-│   │   │   ├── coin.png
-│   │   │   ├── mushroom.png
-│   │   │   ├── fireflower.png
-│   │   │   └── star.png
+│   │   │   ├── items_objects.png ← SPRITESHEET: Coin, FireFlower, Star...
+│   │   │   └── items_blocks.png ← SPRITESHEET: Mushroom, block items...
+│   │   │                          KHÔNG có file riêng coin.png/mushroom.png/...
+│   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   └── ui/
-│   │       ├── hud_icons.png
-│   │       └── menu_bg.png
+│   │       ├── hud.png
+│   │       ├── bg_clouds.png
+│   │       ├── bg_mountains.png
+│   │       └── bg_trees.png
 │   ├── sounds/
-│   │   ├── effects/
-│   │   │   ├── jump.wav
-│   │   │   ├── coin.wav
-│   │   │   ├── die.wav
-│   │   │   ├── powerup.wav
-│   │   │   ├── kick.wav
-│   │   │   └── fireball.wav
-│   │   └── music/
-│   │       ├── overworld.ogg   ← main music (ogg for SFML streaming)
-│   │       ├── underground.ogg
-│   │       └── gameover.ogg
+│   │   ├── effects/            ← ~23 file .wav (jump, coin, death, powerup...)
+│   │   └── music/              ← ~10 file .flac (overworld, underground, castle...)
 │   └── fonts/
-│       └── mario.ttf           ← or any free pixel font
+│       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level1.txt
@@ -213,14 +203,23 @@ SuperMario/
 
 ### Asset paths
 
+Assets dùng **spritesheet chung** — KHÔNG tách file riêng. Load sheet 1 lần qua `TextureManager`,
+cắt frame bằng `setTextureRect()` hoặc `AnimationSystem`.
+
 Always use relative paths from the executable (since CMake copies assets to the `build/` output folder):
 
 ```cpp
-// CORRECT
-texture.loadFromFile("assets/textures/mario/walk.png");
+// CORRECT — load spritesheet chung, cắt frame bằng code
+auto& tex = TextureManager::getInstance().getTexture("assets/textures/mario/MarioLuigi.png");
+sprite.setTexture(tex);
+sprite.setTextureRect(sf::IntRect({FRAME_X, FRAME_Y}, {FRAME_W, FRAME_H}));
+
+// INCORRECT — file riêng KHÔNG TỒN TẠI, sẽ hiện khối magenta
+texture.loadFromFile("assets/textures/mario/idle.png");   // ❌ file này không có!
+texture.loadFromFile("assets/textures/items/coin.png");   // ❌ file này không có!
 
 // INCORRECT — hardcoded absolute path, will not run on others' machines
-texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/walk.png");
+texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/MarioLuigi.png");
 ```
 
 ### Level files

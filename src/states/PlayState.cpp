@@ -24,8 +24,7 @@ namespace {
 
 PlayState::PlayState() {
     m_level = std::make_unique<Level>();
-    // Load Level 1
-    m_level->loadFromFile("levels/level1.txt");
+    m_level->loadFromFile(getCurrentLevelPath());
 
     // Bind commands to InputHandler
     rebindCommands();
@@ -84,14 +83,25 @@ void PlayState::onNotify(EventType event) {
         } else {
             // Reload level
             m_level = std::make_unique<Level>();
-            m_level->loadFromFile("levels/level1.txt");
+            m_level->loadFromFile(getCurrentLevelPath());
             rebindCommands();
             if (m_level->getMario()) {
                 m_hud = std::make_unique<HUD>(*(m_level->getMario()));
             }
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
-        m_isFading = true;
+        m_currentLevel++;
+        if (m_currentLevel > MAX_LEVELS) {
+            m_isFading = true;
+        } else {
+            // Load next level
+            m_level = std::make_unique<Level>();
+            m_level->loadFromFile(getCurrentLevelPath());
+            rebindCommands();
+            if (m_level->getMario()) {
+                m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, m_currentLevel);
+            }
+        }
     } else if (event == EventType::GAME_PAUSED) {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
     }
@@ -148,4 +158,8 @@ void PlayState::render(sf::RenderWindow& window) {
         m_fadeOverlay.setSize(sf::Vector2f(window.getSize()));
         window.draw(m_fadeOverlay);
     }
+}
+
+std::string PlayState::getCurrentLevelPath() const {
+    return "levels/level" + std::to_string(m_currentLevel) + ".txt";
 }

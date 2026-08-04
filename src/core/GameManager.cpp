@@ -5,7 +5,6 @@
  */
 
 #include "core/GameManager.h"
-#include "states/PauseState.h"
 
 GameManager& GameManager::getInstance() {
     static GameManager instance;
@@ -59,8 +58,8 @@ void GameManager::processEvents(const sf::Event& event) {
 
 void GameManager::render(sf::RenderWindow& window) {
     if (m_currentState) {
-        // If the current state is PauseState, render the previous state first
-        if (dynamic_cast<PauseState*>(m_currentState.get()) && m_previousState) {
+        // If the current state is an overlay (e.g., PauseState), render the previous state first
+        if (m_currentState->isOverlay() && m_previousState) {
             m_previousState->render(window);
         }
         m_currentState->render(window);

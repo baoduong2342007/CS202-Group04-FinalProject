@@ -11,6 +11,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include "patterns/EventBus.h"
 
 #ifdef DEBUG
 #include <iostream>
@@ -26,7 +27,6 @@ namespace {
 // ── Constants ────────────────────────────────────────────────
 constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
 constexpr unsigned int FONT_SIZE = 24;
-constexpr int STARTING_LIVES = 3;
 constexpr int STARTING_COINS = 0;
 
 // HUD layout positions (screen-space, drawn on default view)
@@ -44,7 +44,6 @@ constexpr float LIVES_Y = 10.f;
 
 HUD::HUD(const Mario& mario, int worldNumber, int levelNumber)
     : m_mario(mario),
-      m_lives(STARTING_LIVES),
       m_coinCount(STARTING_COINS),
       m_worldNumber(worldNumber),
       m_levelNumber(levelNumber),
@@ -105,10 +104,7 @@ void HUD::onNotify(EventType event) {
             refreshText();
             break;
         case EventType::PLAYER_DIED:
-            // Decrement lives and refresh the display.
-            if (m_lives > 0) {
-                --m_lives;
-            }
+            // Refresh the display.
             refreshText();
             break;
         case EventType::PLAYER_POWER_UP:
@@ -138,15 +134,6 @@ void HUD::draw(sf::RenderTarget& target) const {
 }
 
 // ── Getters / Setters ────────────────────────────────────────
-
-int HUD::getLives() const {
-    return m_lives;
-}
-
-void HUD::setLives(int lives) {
-    m_lives = lives;
-    refreshText();
-}
 
 int HUD::getCoinCount() const {
     return m_coinCount;
@@ -185,7 +172,7 @@ void HUD::refreshText() {
 
     // Format lives as "LIVES x N".
     std::ostringstream livesStream;
-    livesStream << "LIVES x " << m_lives;
+    livesStream << "LIVES x " << m_mario.getLives();
     m_livesText->setString(livesStream.str());
 
     // Format coin count as "COINS x NN".

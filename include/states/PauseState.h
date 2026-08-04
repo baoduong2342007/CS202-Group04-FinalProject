@@ -17,6 +17,7 @@ public:
     void processEvents(const sf::Event& event) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
+    bool isOverlay() const override { return true; }
 
 private:
     sf::Font m_font;

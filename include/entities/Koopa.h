@@ -33,6 +33,7 @@ public:
     bool isInShell() const;
     bool isShellSliding() const;
     KoopaState getState() const;
+    bool isKoopa() const override { return true; }
 
 private:
     void reverseDirection();

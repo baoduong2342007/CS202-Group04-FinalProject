@@ -19,7 +19,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMF";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}";
 constexpr float TILE_FRICTION = 0.6f;
 constexpr unsigned int TILESET_TILE_COUNT = 4;
 
@@ -38,7 +38,8 @@ bool isValidTileSymbol(char symbol){
 }
 
 bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F';
+    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F' ||
+           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
@@ -51,15 +52,21 @@ constexpr unsigned int FINISH_TILE_INDEX = 3;
 unsigned int getTilesetIndex(char symbol){
     switch (symbol){
         case '1':
+        case 'S':
             return GROUND_TILE_INDEX;
 
         case 'B':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
             return BRICK_TILE_INDEX;
 
         case '?':
             return QUESTION_TILE_INDEX;
 
         case 'F':
+        case '|':
             return FINISH_TILE_INDEX;
 
         default:
@@ -230,7 +237,8 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1' || tile == 'B' || tile == '?';
+    return tile == '1' || tile == 'B' || tile == '?' ||
+           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
 std::size_t TileMap::getWidth() const {

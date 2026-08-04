@@ -40,4 +40,8 @@ private:
     float m_fadeAlpha = 0.f;
     bool m_isFading = false;
     float m_fadeDuration = 0.5f;
+
+    int m_currentLevel = 1;
+    static constexpr int MAX_LEVELS = 2;
+    std::string getCurrentLevelPath() const;
 };

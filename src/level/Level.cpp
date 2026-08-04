@@ -13,6 +13,7 @@
 
 #include "items/Item.h"
 #include "patterns/EntityFactory.h"
+#include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 
@@ -115,6 +116,7 @@ void Level::update(float dt) {
 
     // Check item-Mario collisions
     checkItemCollisions();
+    checkFinishFlag();
 
     // Remove dead entities
     removeDeadEntities();
@@ -156,6 +158,24 @@ void Level::checkItemCollisions() {
                 item->onCollect(*m_mario);
                 item->markForRemoval();
             }
+        }
+    }
+}
+
+void Level::checkFinishFlag() {
+    if (!m_mario || m_levelCompleted) return;
+
+    auto flags = m_tileMap.findTiles('F');
+    sf::FloatRect marioBounds = m_mario->getBoundingBox();
+
+    for (const auto& gridPos : flags) {
+        sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
+        sf::FloatRect flagBounds(worldPos, sf::Vector2f(32.f, 32.f));
+
+        if (marioBounds.findIntersection(flagBounds)) {
+            m_levelCompleted = true;
+            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+            break;
         }
     }
 }

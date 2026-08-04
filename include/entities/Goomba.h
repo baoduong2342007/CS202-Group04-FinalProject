@@ -29,4 +29,6 @@ private:
 
     bool m_isStomped;
     float m_patrolSpeed;
+    float m_squishTimer = 0.f;
+    static constexpr float SQUISH_DURATION = 0.5f;
 };

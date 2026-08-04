@@ -27,7 +27,7 @@ Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position,
         case EnemyType::GOOMBA:
             return new Goomba(position, world);
         case EnemyType::KOOPA:
-            return new Koopa(position);
+            return new Koopa(position, world);
         default:
             return nullptr;
     }

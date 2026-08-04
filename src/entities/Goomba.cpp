@@ -41,6 +41,11 @@ void Goomba::update(float dt){
 
     if (!m_isStomped && !isDead()){
         patrol();
+    } else if (m_isStomped) {
+        m_squishTimer += dt;
+        if (m_squishTimer >= SQUISH_DURATION) {
+            markForRemoval();
+        }
     }
     
     updateAnimation(dt);
@@ -59,9 +64,8 @@ void Goomba::onStomp(){
     
     playAnimation("squish");
 
-    // TV4 Sprint 4 Fix: Call markForRemoval to let Level clean it up
-    // (In Sprint 5, TV4 will refactor this to use a 0.5s despawn timer)
-    markForRemoval();
+    // TV4 Sprint 5 Fix: Use a 0.5s despawn timer in update() instead of instant removal
+    // markForRemoval();
 }
 
 void Goomba::patrol(){

@@ -15,8 +15,8 @@
 | TV4 | Vy | Level & Enemy | Tilemap, enemy AI, level design |
 | TV5 | Truyền | UI, Sound & Items | HUD, menu, sound, power-up |
 
-→ Detailed roles: see [`ROLES.md`](ROLES.md)  
-→ Weekly plan: see [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md)
+→ Detailed roles: see [`docs/management/ROLES.md`](docs/management/ROLES.md)  
+→ Weekly plan: see [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md)
 
 ---
 

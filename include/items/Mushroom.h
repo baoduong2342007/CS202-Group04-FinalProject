@@ -20,6 +20,7 @@ public:
     // 2. Override methods
     void update(float dt) override;
     void onCollect(Mario& mario) override;
+    bool isMushroom() const override { return true; }
 
     // 3. Public methods
     /// Reverse horizontal direction when hitting a wall

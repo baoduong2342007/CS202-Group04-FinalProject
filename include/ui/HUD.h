@@ -53,8 +53,6 @@ public:
     void draw(sf::RenderTarget& target) const;
 
     // 4. Getters / Setters
-    int getLives() const;
-    void setLives(int lives);
     int getCoinCount() const;
     void setWorldLevel(int world, int level);
 
@@ -73,7 +71,6 @@ private:
     std::optional<sf::Text> m_livesText;  ///< "LIVES x 3"
     std::optional<sf::Text> m_coinText;   ///< "COINS x 05"
     std::optional<sf::Text> m_worldText;  ///< "WORLD 1-1"
-    int m_lives;                ///< Lives counter tracked by the HUD.
     int m_coinCount;            ///< Coin counter incremented on COIN_COLLECTED.
     int m_worldNumber;          ///< Current world number.
     int m_levelNumber;          ///< Current level number.

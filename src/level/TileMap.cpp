@@ -20,8 +20,22 @@
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}";
+
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+
 constexpr float TILE_FRICTION = 0.6f;
-constexpr unsigned int TILESET_TILE_COUNT = 4;
+constexpr unsigned int TILESET_TILE_COUNT = 10;
+
+constexpr unsigned int GROUND_TILE_INDEX = 0;
+constexpr unsigned int BRICK_TILE_INDEX = 1;
+constexpr unsigned int QUESTION_TILE_INDEX = 2;
+constexpr unsigned int STONE_TILE_INDEX = 3;
+constexpr unsigned int FLAG_TOP_TILE_INDEX = 4;
+constexpr unsigned int FLAG_POLE_TILE_INDEX = 5;
+constexpr unsigned int PIPE_TOP_LEFT_TILE_INDEX = 6;
+constexpr unsigned int PIPE_BODY_LEFT_TILE_INDEX = 7;
+constexpr unsigned int PIPE_TOP_RIGHT_TILE_INDEX = 8;
+constexpr unsigned int PIPE_BODY_RIGHT_TILE_INDEX = 9;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
@@ -42,32 +56,37 @@ bool isRenderableTile(char symbol){
            symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|';
 }
 
-constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
-
-constexpr unsigned int GROUND_TILE_INDEX = 0;
-constexpr unsigned int BRICK_TILE_INDEX = 1;
-constexpr unsigned int QUESTION_TILE_INDEX = 2;
-constexpr unsigned int FINISH_TILE_INDEX = 3;
-
-unsigned int getTilesetIndex(char symbol){
-    switch (symbol){
+unsigned int getTilesetIndex(char symbol) {
+    switch (symbol) {
         case '1':
-        case 'S':
             return GROUND_TILE_INDEX;
 
         case 'B':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
             return BRICK_TILE_INDEX;
 
         case '?':
             return QUESTION_TILE_INDEX;
 
+        case 'S':
+            return STONE_TILE_INDEX;
+
         case 'F':
+            return FLAG_TOP_TILE_INDEX;
+
         case '|':
-            return FINISH_TILE_INDEX;
+            return FLAG_POLE_TILE_INDEX;
+
+        case '[':
+            return PIPE_TOP_LEFT_TILE_INDEX;
+
+        case '{':
+            return PIPE_BODY_LEFT_TILE_INDEX;
+
+        case ']':
+            return PIPE_TOP_RIGHT_TILE_INDEX;
+
+        case '}':
+            return PIPE_BODY_RIGHT_TILE_INDEX;
 
         default:
             return GROUND_TILE_INDEX;

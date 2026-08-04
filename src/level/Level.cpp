@@ -6,6 +6,7 @@
  */
 
 #include "level/Level.h"
+#include "entities/Goomba.h"
 
 #include <algorithm>
 #include <iostream>
@@ -92,8 +93,13 @@ void Level::spawnEntitiesFromTileMap() {
             }
             Entity* raw = EntityFactory::createFromTileCode(code, worldPos, m_world.get());
             if (raw) {
-                // Wire TextureManager so entity sprites can load
                 raw->setTextureManager(m_textureManager);
+
+                if (code == 'G') {
+                    Goomba* goomba = static_cast<Goomba*>(raw);
+                    goomba->setTileMap(&m_tileMap);
+                }
+
                 m_entities.emplace_back(raw);
             }
         }

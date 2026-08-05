@@ -34,7 +34,6 @@ constexpr const char* FALLBACK_FONT_PATHS[] = {
     "C:/Windows/Fonts/consola.ttf",
 };
 constexpr unsigned int FONT_SIZE = 24;
-constexpr int STARTING_COINS = 0;
 
 // HUD layout positions (screen-space, drawn on default view)
 constexpr float SCORE_X = 20.f;
@@ -51,7 +50,6 @@ constexpr float LIVES_Y = 10.f;
 
 HUD::HUD(const Mario& mario, int worldNumber, int levelNumber)
     : m_mario(mario),
-      m_coinCount(STARTING_COINS),
       m_worldNumber(worldNumber),
       m_levelNumber(levelNumber),
       m_fontLoaded(false) {
@@ -106,8 +104,6 @@ HUD::~HUD() {
 void HUD::onNotify(EventType event) {
     switch (event) {
         case EventType::COIN_COLLECTED:
-            // Increment coin count and refresh display.
-            ++m_coinCount;
             refreshText();
             break;
         case EventType::PLAYER_DIED:
@@ -143,7 +139,7 @@ void HUD::draw(sf::RenderTarget& target) const {
 // ── Getters / Setters ────────────────────────────────────────
 
 int HUD::getCoinCount() const {
-    return m_coinCount;
+    return m_mario.getCoinCount();
 }
 
 void HUD::setWorldLevel(int world, int level) {
@@ -203,7 +199,7 @@ void HUD::refreshText() {
     // Format coin count as "COINS x NN".
     std::ostringstream coinStream;
     coinStream << "COINS x " << std::setw(2) << std::setfill('0')
-               << m_coinCount;
+               << m_mario.getCoinCount();
     m_coinText->setString(coinStream.str());
 
     // Format world indicator as "WORLD W-L".

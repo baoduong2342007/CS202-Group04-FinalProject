@@ -5,6 +5,7 @@
  */
 
 #include "physics/CollisionManager.h"
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "entities/Entity.h"
@@ -15,7 +16,10 @@
 #include "items/Item.h"
 #include "items/Mushroom.h"
 #include "items/Star.h"
+#include "level/TileMap.h"
+#include "entities/QuestionBlock.h"
 #include "physics/PhysicsEngine.h"
+#include "physics/TileContactResolver.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 
@@ -25,13 +29,134 @@ constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
 constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
 constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.7f;
 constexpr float MAX_WALL_NORMAL_X = 0.5f;
+constexpr float BLOCK_SIZE_PIXELS = 32.f;
+
+Entity* entityFromBody(b2Body* body) {
+    if (!body) {
+        return nullptr;
+    }
+
+    uintptr_t ptr = body->GetUserData().pointer;
+    if (ptr == 0 || TileMap::isTileUserData(ptr)) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<Entity*>(ptr);
+}
+
+float calculateMarioBlockOverlap(const Mario* mario,
+                                 b2Body* marioBody,
+                                 float blockLeft,
+                                 float blockWidth) {
+    if (!mario || !marioBody || blockWidth <= 0.f) {
+        return 0.f;
+    }
+
+    sf::Vector2f marioPosition =
+        PhysicsEngine::metersToPixels(marioBody->GetPosition()) -
+        mario->getSize() / 2.0f;
+    float marioLeft = marioPosition.x;
+    float marioRight = marioLeft + mario->getSize().x;
+    float blockRight = blockLeft + blockWidth;
+
+    return std::max(0.f, std::min(marioRight, blockRight) - std::max(marioLeft, blockLeft));
+}
+
+void queueTileBlockHit(Mario* mario, b2Body* marioBody, int column, int row) {
+    float overlap = calculateMarioBlockOverlap(
+        mario,
+        marioBody,
+        static_cast<float>(column) * BLOCK_SIZE_PIXELS,
+        BLOCK_SIZE_PIXELS
+    );
+
+    if (overlap > 0.f) {
+        TileMap::queueTileHit(column, row, overlap);
+    }
+}
+
+int worldToTileIndex(float coordinate) {
+    return static_cast<int>(std::lround(coordinate / BLOCK_SIZE_PIXELS));
+}
+
+void queueTileBlockHitFromContact(Mario* mario,
+                                  b2Body* marioBody,
+                                  b2Contact* contact,
+                                  const b2WorldManifold& worldManifold) {
+    if (!mario || !marioBody || !contact) {
+        return;
+    }
+
+    b2Fixture* fixtureA = contact->GetFixtureA();
+    b2Fixture* fixtureB = contact->GetFixtureB();
+    b2Fixture* tileFixture = (fixtureA && fixtureA->GetBody() == marioBody) ? fixtureB : fixtureA;
+    if (!tileFixture) {
+        return;
+    }
+
+    // A merged span is a single body. Clamp a boundary contact into that span
+    // before resolving its individual tile, so an adjacent empty tile is never queued.
+    const b2AABB spanBounds = tileFixture->GetAABB(0);
+    const float spanMinX = PhysicsEngine::metersToPixels(spanBounds.lowerBound.x);
+    const float spanMaxX = PhysicsEngine::metersToPixels(spanBounds.upperBound.x);
+    const float spanMinY = PhysicsEngine::metersToPixels(spanBounds.lowerBound.y);
+    const float spanMaxY = PhysicsEngine::metersToPixels(spanBounds.upperBound.y);
+    // Box2D expands fixture AABBs by its polygon skin. One pixel is enough
+    // to move a boundary point into the actual tile span before the resolver
+    // applies its own contact-edge bias.
+    constexpr float SPAN_EDGE_EPSILON_PIXELS = 1.0f;
+
+    const int pointCount = contact->GetManifold()->pointCount;
+    for (int pointIndex = 0; pointIndex < pointCount; ++pointIndex) {
+        const sf::Vector2f contactPointPixels =
+            PhysicsEngine::metersToPixels(worldManifold.points[pointIndex]);
+        const float clampedX = std::clamp(contactPointPixels.x,
+                                          spanMinX + SPAN_EDGE_EPSILON_PIXELS,
+                                          spanMaxX - SPAN_EDGE_EPSILON_PIXELS);
+        const float clampedY = std::clamp(contactPointPixels.y,
+                                          spanMinY + SPAN_EDGE_EPSILON_PIXELS,
+                                          spanMaxY - SPAN_EDGE_EPSILON_PIXELS);
+        const TileContactCoordinate tile = resolveCeilingTileContact(
+            clampedX,
+            clampedY,
+            BLOCK_SIZE_PIXELS
+        );
+        queueTileBlockHit(
+            mario,
+            marioBody,
+            tile.column,
+            tile.row
+        );
+    }
+}
+
+void queueEntityBlockHit(Mario* mario, b2Body* marioBody, const Entity& block) {
+    sf::Vector2f position = block.getPosition();
+    float overlap = calculateMarioBlockOverlap(mario, marioBody, position.x, block.getSize().x);
+
+    if (overlap > 0.f) {
+        TileMap::queueTileHit(worldToTileIndex(position.x), worldToTileIndex(position.y), overlap);
+    }
+}
 } // namespace
+
+void CollisionManager::preSolve(b2Contact* contact) {
+    if (!contact) return;
+
+    b2Fixture* fixtureA = contact->GetFixtureA();
+    b2Fixture* fixtureB = contact->GetFixtureB();
+    if (!fixtureA || !fixtureB) return;
+
+    Entity* entityA = entityFromBody(fixtureA->GetBody());
+    Entity* entityB = entityFromBody(fixtureB->GetBody());
+
+    if ((entityA && entityA->isMario()) || (entityB && entityB->isMario())) {
+        contact->SetFriction(0.0f);
+    }
+}
 
 void CollisionManager::resolve(b2Contact* contact) {
     if (!contact) return;
-
-    // Zero out friction on contacts to prevent wall-sticking mid-air
-    contact->SetFriction(0.0f);
 
     b2Fixture* fixtureA = contact->GetFixtureA();
     b2Fixture* fixtureB = contact->GetFixtureB();
@@ -44,11 +169,8 @@ void CollisionManager::resolve(b2Contact* contact) {
     if (!bodyA || !bodyB) return;
 
     // Safely extract raw pointer from Box2D user data
-    uintptr_t ptrA = bodyA->GetUserData().pointer;
-    uintptr_t ptrB = bodyB->GetUserData().pointer;
-
-    Entity* entityA = (ptrA != 0) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
-    Entity* entityB = (ptrB != 0) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
+    Entity* entityA = entityFromBody(bodyA);
+    Entity* entityB = entityFromBody(bodyB);
 
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
@@ -118,7 +240,7 @@ void CollisionManager::resolve(b2Contact* contact) {
         return;
     }
 
-    // Handle collisions between enemies
+    // Handle collisions between enemies (TV5 - Koopa shell kills Goomba/Enemies)
     if (entityA && entityA->isEnemy() && entityB && entityB->isEnemy()) {
         Enemy* enemyA = static_cast<Enemy*>(entityA);
         Enemy* enemyB = static_cast<Enemy*>(entityB);
@@ -199,56 +321,60 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
 
     b2Vec2 marioVel = marioBody->GetLinearVelocity();
 
-    // Check collectible Item collection (Task 3.1)
-    if (other) {
-        if (other->isItem()) {
-            Item* item = static_cast<Item*>(other);
-            if (!item->isCollected()) {
-                item->onCollect(*mario);
+    if (!other) {
+        // Head bump check against TileMap blocks from below
+        b2Body* otherBody = (contact->GetFixtureA()->GetBody() == marioBody)
+                            ? contact->GetFixtureB()->GetBody()
+                            : contact->GetFixtureA()->GetBody();
+        const uintptr_t otherPtr = otherBody ? otherBody->GetUserData().pointer : 0;
+
+        if (TileMap::isTileUserData(otherPtr)) {
+            if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
+                queueTileBlockHitFromContact(mario, marioBody, contact, worldManifold);
             }
         }
     }
 
-    // Top stomp / Grounded check:
-    // Requires normal to be predominantly pointing UP (normal.y > 0.8f), not a steep wall (|normal.x| < 0.5f),
-    // and Mario is not actively moving upward (marioVel.y >= -0.1f)
-    if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X && marioVel.y >= -0.1f) {
-        mario->setGrounded(true);
+    // Top stomp check. Grounded state itself is refreshed from all active
+    // Box2D contacts after each completed physics step.
+    if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X &&
+        marioVel.y >= -0.1f && other && other->isEnemy()) {
+        Enemy* enemy = static_cast<Enemy*>(other);
 
-        if (other) {
-            if (other->isEnemy()) {
-                Enemy* enemy = static_cast<Enemy*>(other);
-
-                // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
-                if (enemy->isKoopa()) {
-                    Koopa* koopa = static_cast<Koopa*>(enemy);
-                    if (koopa->isInShell() && !koopa->isShellSliding()) {
-                        Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
-                        koopa->kick(kickDir);
-                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-
-                        float currentY = marioBody->GetLinearVelocity().y;
-                        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
-                        marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
-                        return;
-                    }
-                }
-
-                enemy->onStomp();
+        // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
+        if (enemy->isKoopa()) {
+            Koopa* koopa = static_cast<Koopa*>(enemy);
+            if (koopa->isInShell() && !koopa->isShellSliding()) {
+                Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                koopa->kick(kickDir);
                 EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
                 float currentY = marioBody->GetLinearVelocity().y;
                 float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
                 marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+                mario->clearGroundedState();
+                return;
             }
         }
+
+        enemy->onStomp();
+        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+
+        float currentY = marioBody->GetLinearVelocity().y;
+        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
+        marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+        mario->clearGroundedState();
     }
     // Bottom collision (block above Mario hit from below)
-    else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
+    else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
+        if (other && other->isQuestionBlock()) {
+            queueEntityBlockHit(mario, marioBody, *other);
+        }
 #ifdef DEBUG
         std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;
 #endif
     }
+
     // Lateral collision (wall contact)
     else {
         if (other) {
@@ -260,7 +386,7 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
                     Koopa* koopa = static_cast<Koopa*>(enemy);
                     // If shell is sliding, Mario gets hit
                     if (koopa->isShellSliding()) {
-                        mario->powerDown();
+                        mario->queuePowerDown();
                     } 
                     // If shell is idle, Mario kicks it
                     else if (koopa->isInShell()) {
@@ -270,62 +396,12 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
                     } 
                     // If walking, Mario gets hit
                     else {
-                        mario->powerDown();
+                        mario->queuePowerDown();
                     }
                 } else {
-                    mario->powerDown();
+                    mario->queuePowerDown();
                 }
             }
         }
-    }
-}
-
-void CollisionManager::resolveEnd(b2Contact* contact) {
-    if (!contact) return;
-
-    b2Fixture* fixtureA = contact->GetFixtureA();
-    b2Fixture* fixtureB = contact->GetFixtureB();
-    if (!fixtureA || !fixtureB) return;
-
-    b2Body* bodyA = fixtureA->GetBody();
-    b2Body* bodyB = fixtureB->GetBody();
-    if (!bodyA || !bodyB) return;
-
-    uintptr_t ptrA = bodyA->GetUserData().pointer;
-    uintptr_t ptrB = bodyB->GetUserData().pointer;
-
-    Entity* entityA = (ptrA != 0) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
-    Entity* entityB = (ptrB != 0) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
-
-    Mario* mario = nullptr;
-    b2Body* marioBody = nullptr;
-
-    if (entityA && entityA->isMario()) {
-        mario = static_cast<Mario*>(entityA);
-        marioBody = bodyA;
-    } else if (entityB && entityB->isMario()) {
-        mario = static_cast<Mario*>(entityB);
-        marioBody = bodyB;
-    }
-
-    if (mario && marioBody) {
-        bool stillGrounded = false;
-        for (b2ContactEdge* ce = marioBody->GetContactList(); ce; ce = ce->next) {
-            b2Contact* c = ce->contact;
-            if (c && c->IsTouching()) {
-                b2WorldManifold worldManifold;
-                c->GetWorldManifold(&worldManifold);
-                b2Vec2 normal = worldManifold.normal;
-                if (marioBody == c->GetFixtureB()->GetBody()) {
-                    normal = -normal;
-                }
-                b2Vec2 marioVel = marioBody->GetLinearVelocity();
-                if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X && marioVel.y >= -0.1f) {
-                    stillGrounded = true;
-                    break;
-                }
-            }
-        }
-        mario->setGrounded(stillGrounded);
     }
 }

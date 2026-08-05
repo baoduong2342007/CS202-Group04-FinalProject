@@ -57,6 +57,11 @@ endif()
 
 # Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+    if(MSVC AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/libsfml-system.a")
+        message(FATAL_ERROR
+            "thirdparty/SFML contains MinGW libraries, but this configure is using MSVC. "
+            "Regenerate with: cmake -S . -B build -G \"MinGW Makefiles\"")
+    endif()
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
@@ -112,6 +117,41 @@ target_link_libraries(main PRIVATE
     box2d
 )
 
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(input_state_tests
+        tests/InputStateTests.cpp
+        src/patterns/InputHandler.cpp
+        src/patterns/InputState.cpp
+    )
+    target_include_directories(input_state_tests PRIVATE include)
+    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    add_test(NAME input_state_tests COMMAND input_state_tests)
+
+    add_executable(tile_collision_span_tests
+        tests/TileCollisionSpanTests.cpp
+        src/level/TileCollisionSpans.cpp
+        src/physics/TileContactResolver.cpp
+    )
+    target_include_directories(tile_collision_span_tests PRIVATE include)
+    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
+
+    add_executable(mario_physics_tests
+        tests/MarioPhysicsTests.cpp
+        src/core/AnimationSystem.cpp
+        src/core/TextureManager.cpp
+        src/entities/Character.cpp
+        src/entities/Entity.cpp
+        src/entities/Mario.cpp
+        src/patterns/EventBus.cpp
+        src/physics/PhysicsEngine.cpp
+    )
+    target_include_directories(mario_physics_tests PRIVATE include)
+    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+    add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+endif()
+
 # Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(WIN32)
@@ -125,15 +165,12 @@ endif()
 # 5. POST-BUILD ACTIONS
 # ==============================================================================
 
-# 5.1. Copy assets and levels directories to the executable output folder
-foreach(DIR "assets" "levels")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${DIR}")
-        add_custom_command(TARGET main POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/${DIR}" "$<TARGET_FILE_DIR:main>/${DIR}"
-            COMMENT "Copying directory '${DIR}' to build output folder..."
-        )
-    endif()
-endforeach()
+# 5.1. Auto-sync assets and levels directories to the build folder on EVERY build
+add_custom_target(CopyAssets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
+    COMMENT "Auto-syncing assets and level maps to build directory..."
+)
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)

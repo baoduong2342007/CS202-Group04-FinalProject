@@ -15,6 +15,7 @@
 
 class b2Body;
 class b2World;
+class Mario;
 
 class TileMap {
 public:
@@ -41,8 +42,32 @@ public:
     
     void createPhysicsBodies(b2World* world);
     
+    // UserData packing constants for Box2D tile bodies
+    static constexpr uintptr_t TILE_USERDATA_FLAG = 0x8000000000000000ULL;
+    static bool isTileUserData(uintptr_t ptr) { return (ptr & TILE_USERDATA_FLAG) != 0; }
+    static void unpackTileCoords(uintptr_t ptr, int& outCol, int& outRow) {
+        outRow = static_cast<int>((ptr >> 16) & 0xFFFF);
+        outCol = static_cast<int>(ptr & 0xFFFF);
+    }
+
+    static void queueTileHit(int column, int row, float overlap = 0.f);
+    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, Mario* mario = nullptr);
+
+    bool hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager);
+    
+    void update(float dt);
+    void triggerTileBump(int column, int row);
+
 private:
     static constexpr unsigned int TILE_SIZE = 32;
+
+    struct TileBump {
+        int column;
+        int row;
+        float timer{0.f};
+        float maxDuration{0.16f};
+        float maxOffset{-12.f};
+    };
 
     void buildVertices();
     void clearPhysicsBodies();
@@ -52,4 +77,5 @@ private:
     sf::Texture m_tileset;
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;
+    std::vector<TileBump> m_bumpAnimations;
 };

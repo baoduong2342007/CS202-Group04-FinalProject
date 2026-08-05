@@ -51,10 +51,9 @@ Star::Star(const sf::Vector2f& position, b2World* world)
 }
 
 void Star::update(float dt) {
-    (void)dt;
-
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
+    updateAnimation(dt);
     patrol();
 }
 

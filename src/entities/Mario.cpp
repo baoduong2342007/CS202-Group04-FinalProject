@@ -6,9 +6,11 @@
  */
 
 #include "entities/Mario.h"
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "physics/PhysicsEngine.h"
+#include "level/TileMap.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
@@ -34,6 +36,9 @@ constexpr float AIR_FRICTION = 150.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
+constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.0f;
+constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
+constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
@@ -84,12 +89,15 @@ Mario::Mario()
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
       m_score(0),
+      m_coinCount(0),
       m_isInvincible(false),
       m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
-      m_wasJumpPressed(false) {
+      m_wasJumpPressed(false),
+      m_pendingPowerDown(false),
+      m_respawnPosition(DEFAULT_MARIO_POSITION) {
     setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
     setSprite(MARIO_TEXTURE_PATH);
@@ -101,12 +109,15 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
       m_score(0),
+      m_coinCount(0),
       m_isInvincible(false),
       m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
       m_isSkidding(false),
-      m_wasJumpPressed(false) {
+      m_wasJumpPressed(false),
+      m_pendingPowerDown(false),
+      m_respawnPosition(position) {
     setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
     setSprite(MARIO_TEXTURE_PATH);
@@ -115,8 +126,17 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
 void Mario::update(float dt) {
   if (!m_active) return;
 
+  if (m_pendingFixtureRebuild) {
+    rebuildFixture();
+  }
+
   // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
   syncPhysics();
+
+  if (m_pendingPowerDown) {
+    m_pendingPowerDown = false;
+    powerDown();
+  }
 
   // Tick invincibility timer (develop)
   updateInvincibility(dt);
@@ -133,6 +153,8 @@ void Mario::update(float dt) {
   // Animation state machine (develop)
   if (!isGrounded()) {
       playAnimation("jump");
+  } else if (m_isSkidding) {
+      playAnimation("skid");
   } else if (std::abs(getVelocity().x) > 5.f) {
       playAnimation("walk");
   } else {
@@ -144,6 +166,27 @@ void Mario::update(float dt) {
   if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
     loseLife();
   }
+
+  // Handle scaling and flipping manually in update for now
+  if (m_sprite) {
+      float scaleX = (m_facingDirection == Direction::LEFT) ? -2.f : 2.f;
+      m_sprite->setScale({scaleX, 2.f});
+      if (m_facingDirection == Direction::LEFT) {
+          m_sprite->setOrigin({16.f, 0.f});
+      } else {
+          m_sprite->setOrigin({0.f, 0.f});
+      }
+  }
+}
+
+void Mario::preparePhysics(float dt) {
+  if (!m_active || !m_body) {
+    return;
+  }
+
+  // Apply player input before Box2D advances so the current frame reacts immediately.
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, false);
+  m_jumpRequested = false;
 }
 
 // DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
@@ -183,12 +226,15 @@ void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, b
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + frictionStep);
     }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
+    }
   }
 
   if (jumpKeyPressed) {
     float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
     currentVy = jumpVelocityMeters;
-    setGrounded(false);
+    clearGroundedState();
 
 #ifdef DEBUG
     std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocityMeters << std::endl;
@@ -203,16 +249,16 @@ void Mario::applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, flo
 
   if (inputDirX != 0.0f) {
     newVx += inputDirX * AIR_ACCEL * dt;
-
-    float maxAirSpeed = std::max(targetMaxSpeed, std::abs(newVx));
-    if (newVx > maxAirSpeed) newVx = maxAirSpeed;
-    if (newVx < -maxAirSpeed) newVx = -maxAirSpeed;
+    newVx = std::clamp(newVx, -targetMaxSpeed, targetMaxSpeed);
   } else {
     float airFrictionStep = AIR_FRICTION * dt;
     if (newVx > 0.0f) {
       newVx = std::max(0.0f, newVx - airFrictionStep);
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + airFrictionStep);
+    }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
     }
   }
 
@@ -251,6 +297,12 @@ void Mario::rebuildFixture() {
   if (!m_body)
     return;
 
+  if (m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    m_pendingFixtureRebuild = true;
+    return;
+  }
+  m_pendingFixtureRebuild = false;
+
   // Remove existing fixtures
   for (b2Fixture *f = m_body->GetFixtureList(); f;) {
     b2Fixture *next = f->GetNext();
@@ -279,41 +331,30 @@ void Mario::jump() {
   if (!m_body || !isGrounded())
     return;
 
-  float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
-  m_body->SetLinearVelocity(
-      b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
-  setGrounded(false);
-
-  EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+  m_jumpRequested = true;
 }
 
 void Mario::moveLeft() {
-  if (!m_body)
-    return;
-
-  float desiredXVelocity = -PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
-  setFacingDirection(Direction::LEFT);
+  setMoveIntent(-1.0f);
 }
 
 void Mario::moveRight() {
-  if (!m_body)
-    return;
-
-  float desiredXVelocity = PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
-  setFacingDirection(Direction::RIGHT);
+  setMoveIntent(1.0f);
 }
 
 void Mario::stopMoving() {
-  if (!m_body)
-    return;
-
-  m_body->SetLinearVelocity(
-      b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+  setMoveIntent(0.0f);
 }
+
+void Mario::setMoveIntent(float inputDirection) {
+  m_inputDirX = std::clamp(inputDirection, -1.0f, 1.0f);
+  if (m_inputDirX < 0.0f) {
+    setFacingDirection(Direction::LEFT);
+  } else if (m_inputDirX > 0.0f) {
+    setFacingDirection(Direction::RIGHT);
+  }
+}
+
 
 void Mario::powerUp(MarioState state) {
   m_marioState = state;
@@ -327,16 +368,29 @@ void Mario::powerDown() {
   if (m_isInvincible) {
     return;
   }
+  if (m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    queuePowerDown();
+    return;
+  }
+
   if (m_marioState == MarioState::FIRE) {
     m_marioState = MarioState::SUPER;
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
     rebuildFixture();
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
   } else if (m_marioState == MarioState::SUPER) {
     m_marioState = MarioState::SMALL;
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
     rebuildFixture();
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
   } else {
     loseLife();
+  }
+}
+
+void Mario::queuePowerDown() {
+  if (!m_isInvincible) {
+    m_pendingPowerDown = true;
   }
 }
 
@@ -344,32 +398,40 @@ void Mario::loseLife() {
   if (m_lives > 0) {
     m_lives--;
   }
-  EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
 #ifdef DEBUG
   std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
 #endif
 
   if (m_lives > 0) {
-    respawn(DEFAULT_MARIO_POSITION);
+    respawn(m_respawnPosition);
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
   } else {
     takeDamage(FATAL_DAMAGE);
     m_active = false;
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
   }
 }
 
 void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_marioState = MarioState::SMALL;
+  m_size = SMALL_MARIO_SIZE;
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
+  clearGroundedState();
   setPosition(spawnPosition);
+  if (m_body) {
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    m_body->SetAngularVelocity(0.f);
+    m_body->SetAwake(true);
+  }
   setupAnimationsForState(*m_animationSystem, m_marioState);
   playAnimation("idle");
   rebuildFixture();
+}
 
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-  }
+void Mario::setRespawnPosition(const sf::Vector2f& spawnPosition) {
+  m_respawnPosition = spawnPosition;
 }
 
 MarioState Mario::getMarioState() const { return m_marioState; }
@@ -383,8 +445,18 @@ void Mario::addScore(int points) {
   m_score += points;
 }
 
+void Mario::collectCoin(int scoreValue) {
+  ++m_coinCount;
+  addScore(scoreValue);
+  EventBus::getInstance().notify(EventType::COIN_COLLECTED);
+}
+
 int Mario::getScore() const {
   return m_score;
+}
+
+int Mario::getCoinCount() const {
+  return m_coinCount;
 }
 
 void Mario::setInvincible(float duration) {
@@ -443,4 +515,53 @@ bool Mario::isRunning() const {
 
 bool Mario::isSkidding() const {
   return m_isSkidding;
+}
+
+void Mario::refreshGroundedState() {
+  if (!m_body) {
+    setGrounded(false);
+    return;
+  }
+
+  bool grounded = false;
+  for (b2ContactEdge* edge = m_body->GetContactList(); edge; edge = edge->next) {
+    b2Contact* contact = edge->contact;
+    if (!contact || !contact->IsTouching()) {
+      continue;
+    }
+
+    b2Body* bodyA = contact->GetFixtureA()->GetBody();
+    b2Body* bodyB = contact->GetFixtureB()->GetBody();
+    b2Body* otherBody = (bodyA == m_body) ? bodyB : bodyA;
+    if (!otherBody) {
+      continue;
+    }
+
+    const uintptr_t userData = otherBody->GetUserData().pointer;
+    Entity* otherEntity = (userData != 0 && !TileMap::isTileUserData(userData))
+                              ? reinterpret_cast<Entity*>(userData)
+                              : nullptr;
+    if (otherEntity && (otherEntity->isEnemy() || otherEntity->isItem())) {
+      continue;
+    }
+
+    b2WorldManifold manifold;
+    contact->GetWorldManifold(&manifold);
+    b2Vec2 normal = manifold.normal;
+    if (bodyB == m_body) {
+      normal = -normal;
+    }
+
+    if (normal.y > GROUND_NORMAL_Y_THRESHOLD &&
+        std::abs(normal.x) < MAX_GROUND_NORMAL_X) {
+      grounded = true;
+      break;
+    }
+  }
+
+  setGrounded(grounded);
+}
+
+void Mario::clearGroundedState() {
+  setGrounded(false);
 }

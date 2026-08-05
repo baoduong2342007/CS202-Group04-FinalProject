@@ -7,10 +7,12 @@
 #include "states/PlayState.h"
 
 #include "patterns/EventBus.h"
+
 #include "patterns/JumpCommand.h"
 #include "patterns/MoveLeftCommand.h"
 #include "patterns/MoveRightCommand.h"
 #include "patterns/PauseCommand.h"
+
 #include "states/GameOverState.h"
 #include "states/WinState.h"
 #include "states/PauseState.h"
@@ -47,19 +49,37 @@ void PlayState::rebindCommands() {
     m_inputHandler.clear(); // Reset handlers
 
     if (m_level->getMario()) {
-        m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<JumpCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<JumpCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Space, std::make_unique<JumpCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::A,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Left,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
         
-        m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(m_level->getMario()));
-        
-        m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(m_level->getMario()));
-    }
+        m_inputHandler.bindKey(sf::Keyboard::Key::D,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Right,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
 
-    // Pause command
-    m_inputHandler.bindKey(sf::Keyboard::Key::Escape, std::make_unique<PauseCommand>(&GameManager::getInstance()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::W,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Up,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Space,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
+                               std::make_unique<PauseCommand>(&GameManager::getInstance()),
+                               InputTrigger::Pressed);
+    }
 }
 
 void PlayState::onEnter() {
@@ -79,28 +99,17 @@ void PlayState::onExit() {
 void PlayState::onNotify(EventType event) {
     if (event == EventType::PLAYER_DIED) {
         if (m_level->getMario() && m_level->getMario()->getLives() <= 0) {
-            GameManager::getInstance().changeState(std::make_unique<GameOverState>());
+            m_needsGameOver = true;
         } else {
-            // Reload level
-            m_level = std::make_unique<Level>();
-            m_level->loadFromFile(getCurrentLevelPath());
-            rebindCommands();
-            if (m_level->getMario()) {
-                m_hud = std::make_unique<HUD>(*(m_level->getMario()));
-            }
+            // Defer reload to next frame — may be called during Box2D step
+            m_needsReload = true;
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
         m_currentLevel++;
         if (m_currentLevel > MAX_LEVELS) {
             m_isFading = true;
         } else {
-            // Load next level
-            m_level = std::make_unique<Level>();
-            m_level->loadFromFile(getCurrentLevelPath());
-            rebindCommands();
-            if (m_level->getMario()) {
-                m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, m_currentLevel);
-            }
+            m_needsReload = true;
         }
     } else if (event == EventType::GAME_PAUSED) {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
@@ -108,23 +117,35 @@ void PlayState::onNotify(EventType event) {
 }
 
 void PlayState::processEvents(const sf::Event& event) {
-    if (const auto* keyReleased = event.getIf<sf::Event::KeyReleased>()) {
-        if (keyReleased->code == sf::Keyboard::Key::A || 
-            keyReleased->code == sf::Keyboard::Key::Left ||
-            keyReleased->code == sf::Keyboard::Key::D || 
-            keyReleased->code == sf::Keyboard::Key::Right) {
-            if (m_level->getMario()) {
-                m_level->getMario()->stopMoving();
-            }
-        }
+    (void)event;
+}
+
+void PlayState::processInput(const InputState& inputState) {
+    if (!m_level || !m_level->getMario()) {
+        return;
     }
+
+    m_level->getMario()->setMoveIntent(0.0f);
+    m_inputHandler.handleInput(inputState);
 }
 
 void PlayState::update(float dt) {
-    // Process continuous inputs via InputHandler
-    m_inputHandler.handleInput();
-
-    // Physics is now updated inside Level::update()
+    // Handle deferred state changes (safe: outside Box2D step)
+    if (m_needsGameOver) {
+        m_needsGameOver = false;
+        GameManager::getInstance().changeState(std::make_unique<GameOverState>());
+        return;
+    }
+    if (m_needsReload) {
+        m_needsReload = false;
+        m_level = std::make_unique<Level>();
+        m_level->loadFromFile(getCurrentLevelPath());
+        rebindCommands();
+        if (m_level->getMario()) {
+            m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, m_currentLevel);
+        }
+        return;
+    }
 
     // Update level entities
     m_level->update(dt);

@@ -8,6 +8,8 @@
 
 #include <SFML/Graphics.hpp>
 
+class InputState;
+
 // ============================================================
 // PATTERN: State
 // Reason: Allows the game to switch between Menu, Play, Pause, etc. without monolithic conditionals
@@ -23,6 +25,7 @@ public:
     virtual void onExit() = 0;
     
     virtual void processEvents(const sf::Event& event) = 0;
+    virtual void processInput(const InputState& inputState) = 0;
     virtual void update(float dt) = 0;
     virtual void render(sf::RenderWindow& window) = 0;
     virtual bool isOverlay() const { return false; }

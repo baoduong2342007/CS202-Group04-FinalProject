@@ -9,6 +9,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "patterns/InputState.h"
+
 class Game {
 public:
     Game();
@@ -18,7 +20,6 @@ private:
     void processEvents();
     void update(float dt);
     void render();
-    void setupInputBindings();
-
     sf::RenderWindow m_window;
+    InputState m_inputState;
 };

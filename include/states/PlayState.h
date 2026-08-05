@@ -23,6 +23,7 @@ public:
     void onExit() override;
     
     void processEvents(const sf::Event& event) override;
+    void processInput(const InputState& inputState) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
 
@@ -41,7 +42,10 @@ private:
     bool m_isFading = false;
     float m_fadeDuration = 0.5f;
 
-    int m_currentLevel = 1;
+    int m_currentLevel = 0;
     static constexpr int MAX_LEVELS = 2;
     std::string getCurrentLevelPath() const;
+
+    bool m_needsReload = false;
+    bool m_needsGameOver = false;
 };

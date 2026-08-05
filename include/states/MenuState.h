@@ -37,6 +37,7 @@ public:
      * @param event The SFML event to process.
      */
     void processEvents(const sf::Event& event) override;
+    void processInput(const InputState& inputState) override;
 
     /**
      * @brief Updates the Menu logic, including the coin animation.
@@ -56,6 +57,8 @@ private:
     sf::Sprite m_bgSprite;
     sf::Sprite m_cursorSprite;
     std::vector<sf::Sprite> m_dynamicTextSprites;
+    sf::Font m_font;
+    sf::Text m_pressToPlayText;
 
     int m_score;
     int m_coins;
@@ -66,4 +69,7 @@ private:
     sf::Sprite m_coinSprite;
     float m_coinAnimTimer = 0.f;
     int m_coinCurrentFrame = 0;
+    float m_blinkTimer = 0.f;
+    bool m_showPressToPlay = true;
+    bool m_transitioning = false;
 };

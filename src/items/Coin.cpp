@@ -7,8 +7,6 @@
 
 #include "items/Coin.h"
 #include "entities/Mario.h"
-#include "patterns/EventBus.h"
-#include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
 
@@ -45,7 +43,6 @@ Coin::Coin(const sf::Vector2f& position, b2World* world, CoinType type)
 
     if (m_type == CoinType::QUESTION_POPUP) {
         m_isCollected = true;
-        EventBus::getInstance().notify(EventType::COIN_COLLECTED);
     }
 }
 
@@ -73,10 +70,7 @@ void Coin::onCollect(Mario& mario) {
     if (m_isCollected) {
         return;
     }
-    mario.addScore(COIN_SCORE_VALUE);
+    mario.collectCoin(COIN_SCORE_VALUE);
 
     m_isCollected = true;
-
-    // Notify all observers (SoundManager plays coin.wav, HUD updates score)
-    EventBus::getInstance().notify(EventType::COIN_COLLECTED);
 }

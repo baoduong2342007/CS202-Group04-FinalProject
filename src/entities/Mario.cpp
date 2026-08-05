@@ -89,6 +89,7 @@ Mario::Mario()
       m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isRunning(false),
+      m_coinCount(0),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
     setupAnimationsForState(*m_animationSystem, m_marioState);
@@ -108,6 +109,7 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
+      m_coinCount(0),
     setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
     setSprite(MARIO_TEXTURE_PATH);
@@ -443,10 +445,20 @@ void Mario::updateInvincibility(float dt) {
     if (m_sprite) {
       m_sprite->setColor(sf::Color::White);
     }
+void Mario::collectCoin(int scoreValue) {
+  ++m_coinCount;
+  addScore(scoreValue);
+  EventBus::getInstance().notify(EventType::COIN_COLLECTED);
+}
+
   }
 }
 
 bool Mario::isInvincible() const {
+int Mario::getCoinCount() const {
+  return m_coinCount;
+}
+
   return m_isInvincible;
 }
 

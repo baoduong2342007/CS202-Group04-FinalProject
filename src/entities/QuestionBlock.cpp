@@ -60,7 +60,6 @@ void QuestionBlock::update(float dt) {
 }
 
 void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities, TextureManager* textureManager) {
-    (void)mario;
     if (m_isHit) return;
 
     m_isHit = true;
@@ -75,6 +74,7 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
         b2World* world = getBody() ? getBody()->GetWorld() : nullptr;
 
         if (m_content == QuestionBlockContent::COIN) {
+            mario.collectCoin();
             auto popupCoin = std::make_unique<Coin>(spawnPos, world, CoinType::QUESTION_POPUP);
             popupCoin->setTextureManager(texMgr);
             entities->push_back(std::move(popupCoin));
@@ -89,4 +89,3 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
         }
     }
 }
-

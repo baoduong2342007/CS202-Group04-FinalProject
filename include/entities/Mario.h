@@ -41,6 +41,7 @@ public:
     void addScore(int points);
     void setInvincible(float duration);
     void updateInvincibility(float dt);
+    void collectCoin(int scoreValue = 200);
     void loseLife();
     void addLife(int lives = 1) { m_lives += lives; }
     void respawn(const sf::Vector2f& spawnPosition);
@@ -57,6 +58,7 @@ public:
 
     bool isRunning() const;
     bool isSkidding() const;
+    int getCoinCount() const;
 
 protected:
     // 5. Protected methods
@@ -77,6 +79,7 @@ protected:
     bool m_isRunning;
     bool m_isSkidding;
     bool m_wasJumpPressed;
+    int m_coinCount;
     bool m_pendingFixtureRebuild = false;
 
     float m_inputDirX = 0.0f;

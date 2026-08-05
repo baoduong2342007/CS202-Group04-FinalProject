@@ -57,7 +57,11 @@ void Game::run() {
 }
 
 void Game::processEvents() {
+  m_inputState.beginFrame();
+
   while (const std::optional event = m_window.pollEvent()) {
+    m_inputState.handleEvent(*event);
+
     if (event->is<sf::Event::Closed>()) {
       m_window.close();
     }
@@ -67,7 +71,7 @@ void Game::processEvents() {
 }
 
 void Game::update(float dt) {
-  // Delegate update to GameManager
+  GameManager::getInstance().processInput(m_inputState);
   GameManager::getInstance().update(dt);
 }
 void Game::render() {

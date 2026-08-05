@@ -35,6 +35,7 @@ public:
     void moveLeft();
     void moveRight();
     void stopMoving();
+    void setMoveIntent(float inputDirection);
     void powerUp(MarioState state);
     void powerDown();
     void addScore(int points);

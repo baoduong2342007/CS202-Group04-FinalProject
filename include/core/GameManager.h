@@ -10,6 +10,8 @@
 #include <SFML/Graphics.hpp>
 #include "states/IGameState.h"
 
+class InputState;
+
 // ============================================================
 // PATTERN: Singleton
 // Reason: Ensures only one Game state manager controls the application flow
@@ -25,6 +27,7 @@ public:
     void popState();
     
     void processEvents(const sf::Event& event);
+    void processInput(const InputState& inputState);
     void update(float dt);
     void render(sf::RenderWindow& window);
 

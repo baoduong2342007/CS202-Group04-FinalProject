@@ -6,6 +6,7 @@
 #include "states/GameOverState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "patterns/InputState.h"
 #include <iostream>
 
 GameOverState::GameOverState() : m_font(), m_text(m_font) {
@@ -25,15 +26,16 @@ void GameOverState::onEnter() {}
 void GameOverState::onExit() {}
 
 void GameOverState::processEvents(const sf::Event& event) {
-    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
-        if (key->code == sf::Keyboard::Key::Enter) {
-            GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        }
-    }
     if (const auto* mouse = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouse->button == sf::Mouse::Button::Left) {
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         }
+    }
+}
+
+void GameOverState::processInput(const InputState& inputState) {
+    if (inputState.wasPressed(sf::Keyboard::Key::Enter)) {
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
     }
 }
 

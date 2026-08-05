@@ -8,8 +8,10 @@
 
 #include "patterns/EventBus.h"
 
+#include "patterns/JumpCommand.h"
 #include "patterns/MoveLeftCommand.h"
 #include "patterns/MoveRightCommand.h"
+#include "patterns/PauseCommand.h"
 
 #include "states/GameOverState.h"
 #include "states/WinState.h"
@@ -47,13 +49,36 @@ void PlayState::rebindCommands() {
     m_inputHandler.clear(); // Reset handlers
 
     if (m_level->getMario()) {
-        // Only continuous-poll commands (movement) go through InputHandler.
-        // Jump and Pause are edge-triggered via processEvents().
-        m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::A,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Left,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
         
-        m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(m_level->getMario()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::D,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Right,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+
+        m_inputHandler.bindKey(sf::Keyboard::Key::W,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Up,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Space,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
+                               std::make_unique<PauseCommand>(&GameManager::getInstance()),
+                               InputTrigger::Pressed);
     }
 }
 
@@ -93,7 +118,15 @@ void PlayState::onNotify(EventType event) {
 
 void PlayState::processEvents(const sf::Event& event) {
     (void)event;
-    // Movement and continuous inputs are polled cleanly by m_inputHandler in update(dt).
+}
+
+void PlayState::processInput(const InputState& inputState) {
+    if (!m_level || !m_level->getMario()) {
+        return;
+    }
+
+    m_level->getMario()->setMoveIntent(0.0f);
+    m_inputHandler.handleInput(inputState);
 }
 
 void PlayState::update(float dt) {
@@ -113,11 +146,6 @@ void PlayState::update(float dt) {
         }
         return;
     }
-
-    // Process continuous inputs via InputHandler
-    m_inputHandler.handleInput();
-
-    // Physics is now updated inside Level::update()
 
     // Update level entities
     m_level->update(dt);

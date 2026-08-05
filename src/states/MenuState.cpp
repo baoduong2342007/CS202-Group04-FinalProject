@@ -8,6 +8,7 @@
 #include "states/MenuState.h"
 #include "states/PlayState.h"
 #include "core/GameManager.h"
+#include "patterns/InputState.h"
 
 #include <iomanip>
 #include <sstream>
@@ -140,16 +141,18 @@ void MenuState::onExit() {}
 void MenuState::processEvents(const sf::Event& event) {
     if (m_transitioning) return;
 
-    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
-        if (key->code == sf::Keyboard::Key::Enter) {
-            m_transitioning = true;
-            GameManager::getInstance().changeState(std::make_unique<PlayState>());
-        }
-    } else if (const auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>()) {
+    if (const auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseBtn->button == sf::Mouse::Button::Left) {
             m_transitioning = true;
             GameManager::getInstance().changeState(std::make_unique<PlayState>());
         }
+    }
+}
+
+void MenuState::processInput(const InputState& inputState) {
+    if (!m_transitioning && inputState.wasPressed(sf::Keyboard::Key::Enter)) {
+        m_transitioning = true;
+        GameManager::getInstance().changeState(std::make_unique<PlayState>());
     }
 }
 

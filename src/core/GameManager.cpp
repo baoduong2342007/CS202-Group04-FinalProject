@@ -56,6 +56,12 @@ void GameManager::processEvents(const sf::Event& event) {
     }
 }
 
+void GameManager::processInput(const InputState& inputState) {
+    if (m_currentState) {
+        m_currentState->processInput(inputState);
+    }
+}
+
 void GameManager::render(sf::RenderWindow& window) {
     if (m_currentState) {
         // If the current state is an overlay (e.g., PauseState), render the previous state first

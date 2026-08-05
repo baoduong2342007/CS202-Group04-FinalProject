@@ -6,6 +6,7 @@
  */
 
 #include "entities/Mario.h"
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "physics/PhysicsEngine.h"
@@ -315,27 +316,23 @@ void Mario::jump() {
 }
 
 void Mario::moveLeft() {
-  if (!m_body)
-    return;
-
-  m_inputDirX -= 1.0f;
-  if (m_inputDirX < -1.0f) m_inputDirX = -1.0f;
-  setFacingDirection(Direction::LEFT);
+  setMoveIntent(-1.0f);
 }
 
 void Mario::moveRight() {
-  if (!m_body)
-    return;
-
-  m_inputDirX += 1.0f;
-  if (m_inputDirX > 1.0f) m_inputDirX = 1.0f;
-  setFacingDirection(Direction::RIGHT);
+  setMoveIntent(1.0f);
 }
 
 void Mario::stopMoving() {
-  m_inputDirX = 0.0f;
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+  setMoveIntent(0.0f);
+}
+
+void Mario::setMoveIntent(float inputDirection) {
+  m_inputDirX = std::clamp(inputDirection, -1.0f, 1.0f);
+  if (m_inputDirX < 0.0f) {
+    setFacingDirection(Direction::LEFT);
+  } else if (m_inputDirX > 0.0f) {
+    setFacingDirection(Direction::RIGHT);
   }
 }
 

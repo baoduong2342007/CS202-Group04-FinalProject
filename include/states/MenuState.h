@@ -37,6 +37,7 @@ public:
      * @param event The SFML event to process.
      */
     void processEvents(const sf::Event& event) override;
+    void processInput(const InputState& inputState) override;
 
     /**
      * @brief Updates the Menu logic, including the coin animation.

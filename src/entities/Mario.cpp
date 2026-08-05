@@ -122,6 +122,11 @@ void Mario::update(float dt) {
   // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
   syncPhysics();
 
+  // Apply continuous physics (acceleration, friction, skidding)
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, false);
+  m_inputDirX = 0.0f;
+  m_jumpRequested = false;
+
   // Tick invincibility timer (develop)
   updateInvincibility(dt);
 
@@ -198,6 +203,9 @@ void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, b
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + frictionStep);
     }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
+    }
   }
 
   if (jumpKeyPressed) {
@@ -228,6 +236,9 @@ void Mario::applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, flo
       newVx = std::max(0.0f, newVx - airFrictionStep);
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + airFrictionStep);
+    }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
     }
   }
 
@@ -300,21 +311,15 @@ void Mario::jump() {
   if (!m_body || !isGrounded())
     return;
 
-  float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
-  m_body->SetLinearVelocity(
-      b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
-  setGrounded(false);
-
-  EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+  m_jumpRequested = true;
 }
 
 void Mario::moveLeft() {
   if (!m_body)
     return;
 
-  float desiredXVelocity = -PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
+  m_inputDirX -= 1.0f;
+  if (m_inputDirX < -1.0f) m_inputDirX = -1.0f;
   setFacingDirection(Direction::LEFT);
 }
 
@@ -322,19 +327,18 @@ void Mario::moveRight() {
   if (!m_body)
     return;
 
-  float desiredXVelocity = PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
+  m_inputDirX += 1.0f;
+  if (m_inputDirX > 1.0f) m_inputDirX = 1.0f;
   setFacingDirection(Direction::RIGHT);
 }
 
 void Mario::stopMoving() {
-  if (!m_body)
-    return;
-
-  m_body->SetLinearVelocity(
-      b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+  m_inputDirX = 0.0f;
+  if (m_body) {
+    m_body->SetLinearVelocity(b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+  }
 }
+
 
 void Mario::powerUp(MarioState state) {
   m_marioState = state;

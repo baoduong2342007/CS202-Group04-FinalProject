@@ -108,16 +108,8 @@ void PlayState::onNotify(EventType event) {
 }
 
 void PlayState::processEvents(const sf::Event& event) {
-    if (const auto* keyReleased = event.getIf<sf::Event::KeyReleased>()) {
-        if (keyReleased->code == sf::Keyboard::Key::A || 
-            keyReleased->code == sf::Keyboard::Key::Left ||
-            keyReleased->code == sf::Keyboard::Key::D || 
-            keyReleased->code == sf::Keyboard::Key::Right) {
-            if (m_level->getMario()) {
-                m_level->getMario()->stopMoving();
-            }
-        }
-    }
+    (void)event;
+    // Movement and continuous inputs are polled cleanly by m_inputHandler in update(dt).
 }
 
 void PlayState::update(float dt) {

@@ -50,7 +50,7 @@ public:
     }
 
     static void queueTileHit(int column, int row);
-    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario);
+    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, const sf::Vector2f& marioPos = {0.f, 0.f}, float marioWidth = 32.f);
 
     bool hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager);
     

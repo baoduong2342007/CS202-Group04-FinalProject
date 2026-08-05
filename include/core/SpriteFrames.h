@@ -164,11 +164,12 @@ namespace Items {
         return frames;
     }
 
-    // Coin — 4-frame animation from items_objects.png (180, 8) to (249, 23)
-    inline const sf::IntRect COIN1({180, Y}, {W, H});
-    inline const sf::IntRect COIN2({198, Y}, {W, H});
-    inline const sf::IntRect COIN3({216, Y}, {W, H});
-    inline const sf::IntRect COIN4({234, Y}, {W, H});
+    // Coin — 4-frame animation from items_objects.png (180, 36) to (217, 51)
+    // Each frame is 8x16 px, separated by 2px dark blue background columns (x=188..189, 198..199, 208..209)
+    inline const sf::IntRect COIN1({180, 36}, {8, 16});
+    inline const sf::IntRect COIN2({190, 36}, {8, 16});
+    inline const sf::IntRect COIN3({200, 36}, {8, 16});
+    inline const sf::IntRect COIN4({210, 36}, {8, 16});
 
     inline const std::vector<sf::IntRect>& coinFrames() {
         static const std::vector<sf::IntRect> frames = {COIN1, COIN2, COIN3, COIN4};

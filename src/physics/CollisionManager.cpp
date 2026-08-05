@@ -16,6 +16,7 @@
 #include "items/Mushroom.h"
 #include "items/Star.h"
 #include "level/TileMap.h"
+#include "entities/QuestionBlock.h"
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -116,6 +117,38 @@ void CollisionManager::resolve(b2Contact* contact) {
 
     if (mario && marioBody) {
         handleMarioCollision(mario, otherEntity, marioBody, contact);
+        return;
+    }
+
+    // Handle collisions between enemies (TV5 - Koopa shell kills Goomba/Enemies)
+    if (entityA && entityA->isEnemy() && entityB && entityB->isEnemy()) {
+        Enemy* enemyA = static_cast<Enemy*>(entityA);
+        Enemy* enemyB = static_cast<Enemy*>(entityB);
+
+        auto tryShellKill = [](Enemy* attacker, Enemy* victim) -> bool {
+            if (!attacker->isKoopa() || victim->isKoopa()) {
+                return false;
+            }
+
+            Koopa* koopa = static_cast<Koopa*>(attacker);
+
+            if (!koopa->isShellSliding()) {
+                return false;
+            }
+
+            victim->takeDamage(victim->getHealth());
+            victim->markForRemoval();
+            return true;
+        };
+
+        const bool shellCollisionHandled = tryShellKill(enemyA, enemyB) || tryShellKill(enemyB, enemyA);
+
+        // Ordinary enemies reverse when they collide laterally.
+        if (!shellCollisionHandled && std::abs(normal.x) > 0.5f) {
+            enemyA->onWallCollision();
+            enemyB->onWallCollision();
+        }
+
         return;
     }
 
@@ -227,11 +260,24 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
         }
     }
     // Bottom collision (block above Mario hit from below)
-    else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD) {
+    else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
+        if (other && other->isQuestionBlock()) {
+            QuestionBlock* qb = static_cast<QuestionBlock*>(other);
+            float marioLeft = mario->getPosition().x;
+            float marioRight = marioLeft + mario->getSize().x;
+            float qbLeft = qb->getPosition().x;
+            float qbRight = qbLeft + qb->getSize().x;
+
+            float overlap = std::max(0.f, std::min(marioRight, qbRight) - std::max(marioLeft, qbLeft));
+            if (overlap >= 12.f) {
+                qb->onHit(*mario);
+            }
+        }
 #ifdef DEBUG
         std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;
 #endif
     }
+
     // Lateral collision (wall contact)
     else {
         if (other) {

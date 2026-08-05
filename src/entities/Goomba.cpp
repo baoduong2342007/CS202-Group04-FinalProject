@@ -1,10 +1,13 @@
 /**
  * @file Goomba.cpp
  * @author TV4 (Vy)
- * @brief Implementation of Goomba patrol and stomp behaviour
- * @note Sprint 4 - basic patrol AI and wall-direction reversal
+ * @brief Goomba enemy with patrol, ledge detection, and stomp behaviour
+ * @note Sprint 5 - adds ledge detection and delayed removal after stomp
  */
 
+#include <cmath>
+
+#include "level/TileMap.h"
 #include "entities/Goomba.h"
 
 #include <box2d/box2d.h>
@@ -14,10 +17,14 @@ namespace {
 
 constexpr int DEFAULT_GOOMBA_HEALTH = 1;
 constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
+constexpr float PIT_CLEANUP_Y = 800.f;
 
 constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/goomba.png";
 
 const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
+
+constexpr float TILE_SIZE = 32.f;
+constexpr float EDGE_PROBE_OFFSET = 2.f;
 
 } // namespace
 
@@ -34,48 +41,74 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
       playAnimation("walk");
 }
 
-void Goomba::update(float dt){
-    // TV4 Sprint 4 Fix: Sync physics FIRST to get the gravity-affected velocity
-    // before patrol() modifies it. Otherwise Goomba will float in the air!
+void Goomba::update(float dt) {
     syncPhysics();
 
-    if (!m_isStomped && !isDead()){
-        patrol();
-    } else if (m_isStomped) {
+    if (m_position.y > PIT_CLEANUP_Y) {
+        markForRemoval();
+        return;
+    }
+
+    if (m_isStomped) {
+        // Disable the body after the Box2D physics step.
+        // This lets the squish sprite remain visible without blocking Mario.
+        b2Body* body = getBody();
+
+        if (body && body->IsEnabled()) {
+            body->SetEnabled(false);
+        }
+
         m_squishTimer += dt;
+        updateAnimation(dt);
+
         if (m_squishTimer >= SQUISH_DURATION) {
             markForRemoval();
         }
+
+        return;
     }
-    
+
+    if (!isDead()) {
+        patrol();
+    }
+
     updateAnimation(dt);
 }
 
-void Goomba::onStomp(){
-    if (m_isStomped){
+void Goomba::onStomp() {
+    if (m_isStomped) {
         return;
     }
 
     m_isStomped = true;
+    m_squishTimer = 0.f;
     setHealth(0);
+    setVelocity({0.f, 0.f});
 
-    const sf::Vector2f currentVelocity = getVelocity();
-    setVelocity({0.f, currentVelocity.y});
-    
+    b2Body* body = getBody();
+
+    if (body) {
+        for (b2Fixture* fixture = body->GetFixtureList(); fixture != nullptr; fixture = fixture->GetNext()) {
+            fixture->SetSensor(true);
+        }
+    }
+
     playAnimation("squish");
-
-    // TV4 Sprint 5 Fix: Use a 0.5s despawn timer in update() instead of instant removal
-    // markForRemoval();
+    updateAnimation(0.f);
 }
 
-void Goomba::patrol(){
-    if (m_isStomped || isDead()){
+void Goomba::patrol() {
+    if (m_isStomped || isDead()) {
         return;
+    }
+
+    if (isApproachingLedge()) {
+        reverseDirection();
     }
 
     sf::Vector2f velocity = getVelocity();
 
-    if (getFacingDirection() == Direction::LEFT){
+    if (getFacingDirection() == Direction::LEFT) {
         velocity.x = -m_patrolSpeed;
     } else {
         velocity.x = m_patrolSpeed;
@@ -84,24 +117,48 @@ void Goomba::patrol(){
     setVelocity(velocity);
 }
 
-void Goomba::onWallCollision(){
-    if (m_isStomped || isDead()){
+void Goomba::onWallCollision() {
+    if (m_isStomped || isDead()) {
         return;
     }
 
     reverseDirection();
 }
 
-void Goomba::reverseDirection(){
-    if (getFacingDirection() == Direction::LEFT){
+void Goomba::reverseDirection() {
+    if (getFacingDirection() == Direction::LEFT) {
         setFacingDirection(Direction::RIGHT);
     } else {
         setFacingDirection(Direction::LEFT);
     }
-
-    patrol();
 }
 
 bool Goomba::isStomped() const {
     return m_isStomped;
+}
+
+void Goomba::setTileMap(const TileMap* tileMap) {
+    m_tileMap = tileMap;
+}
+
+bool Goomba::isApproachingLedge() const {
+    if (!m_tileMap) {
+        return false;
+    }
+
+    const float footY = m_position.y + m_size.y + EDGE_PROBE_OFFSET;
+
+    const float currentX = m_position.x + m_size.x / 2.f;
+    const float frontX = getFacingDirection() == Direction::LEFT
+    ? m_position.x - EDGE_PROBE_OFFSET : m_position.x + m_size.x + EDGE_PROBE_OFFSET;
+
+    const int row = static_cast<int>(std::floor(footY / TILE_SIZE));
+
+    const int currentColumn = static_cast<int>(std::floor(currentX / TILE_SIZE));
+    const int frontColumn = static_cast<int>(std::floor(frontX / TILE_SIZE));
+
+    const bool hasCurrentGround = m_tileMap->isSolid(currentColumn, row);
+    const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
+
+    return hasCurrentGround && !hasFrontGround;
 }

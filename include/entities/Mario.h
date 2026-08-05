@@ -77,4 +77,8 @@ protected:
     bool m_isSkidding;
     bool m_wasJumpPressed;
     bool m_pendingFixtureRebuild = false;
+
+    float m_inputDirX = 0.0f;
+    bool m_jumpRequested = false;
 };
+

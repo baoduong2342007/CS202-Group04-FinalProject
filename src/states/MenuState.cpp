@@ -58,6 +58,7 @@ namespace {
 
 MenuState::MenuState(int score, int coins, int world, int level, int topScore) 
     : m_bgSprite(m_hudTexture), m_cursorSprite(m_hudTexture),
+      m_font(), m_pressToPlayText(m_font),
       m_score(score), m_coins(coins), m_world(world), m_level(level), m_topScore(topScore),
       m_coinSprite(m_hudTexture) {}
 
@@ -116,14 +117,37 @@ void MenuState::onEnter() {
     m_coinSprite.setTextureRect(sf::IntRect({COIN_BASE_X, COIN_BASE_Y}, {8, 8}));
     m_coinSprite.setScale(sf::Vector2f(SCALE, SCALE));
     m_coinSprite.setPosition(m_bgSprite.getPosition() + sf::Vector2f(COIN_ICON_POS_X * SCALE, COIN_ICON_POS_Y * SCALE));
+
+    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG][MenuState] Failed to load mario.ttf\n";
+#endif
+    } else {
+        m_pressToPlayText.setString("PRESS ENTER OR CLICK TO PLAY");
+        m_pressToPlayText.setCharacterSize(22);
+        m_pressToPlayText.setFillColor(sf::Color(255, 215, 0)); // Retro arcade gold
+        m_pressToPlayText.setOutlineColor(sf::Color::Black);
+        m_pressToPlayText.setOutlineThickness(2.f);
+        
+        sf::FloatRect bounds = m_pressToPlayText.getLocalBounds();
+        m_pressToPlayText.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+        m_pressToPlayText.setPosition({SCREEN_WIDTH / 2.f, SCREEN_HEIGHT - 45.f});
+    }
 }
 
 void MenuState::onExit() {}
 
 void MenuState::processEvents(const sf::Event& event) {
+    if (m_transitioning) return;
+
     if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
         if (key->code == sf::Keyboard::Key::Enter) {
-            // SoundManager::getInstance().playSound("select"); // Pending TV5 integration
+            m_transitioning = true;
+            GameManager::getInstance().changeState(std::make_unique<PlayState>());
+        }
+    } else if (const auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (mouseBtn->button == sf::Mouse::Button::Left) {
+            m_transitioning = true;
             GameManager::getInstance().changeState(std::make_unique<PlayState>());
         }
     }
@@ -141,6 +165,13 @@ void MenuState::update(float dt) {
             {8, 8}
         ));
     }
+
+    // Blinking effect for PRESS TO PLAY text
+    m_blinkTimer += dt;
+    if (m_blinkTimer >= 0.5f) {
+        m_blinkTimer = 0.f;
+        m_showPressToPlay = !m_showPressToPlay;
+    }
 }
 
 void MenuState::render(sf::RenderWindow& window) {
@@ -155,4 +186,7 @@ void MenuState::render(sf::RenderWindow& window) {
     
     window.draw(m_cursorSprite);
     window.draw(m_coinSprite);
+    if (m_showPressToPlay) {
+        window.draw(m_pressToPlayText);
+    }
 }

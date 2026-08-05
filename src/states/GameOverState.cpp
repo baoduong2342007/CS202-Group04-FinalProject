@@ -12,9 +12,13 @@ GameOverState::GameOverState() : m_font(), m_text(m_font) {
     if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
         std::cerr << "Failed to load font in GameOverState\n";
     }
-    m_text.setString("GAME OVER\nPress ENTER to Menu");
-    m_text.setCharacterSize(40);
-    m_text.setPosition({400.f, 300.f});
+    m_text.setString("GAME OVER\n\nPRESS ENTER OR CLICK TO MENU");
+    m_text.setCharacterSize(32);
+    m_text.setFillColor(sf::Color::White);
+    
+    sf::FloatRect bounds = m_text.getLocalBounds();
+    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+    m_text.setPosition({640.f, 360.f});
 }
 
 void GameOverState::onEnter() {}
@@ -23,6 +27,11 @@ void GameOverState::onExit() {}
 void GameOverState::processEvents(const sf::Event& event) {
     if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
         if (key->code == sf::Keyboard::Key::Enter) {
+            GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        }
+    }
+    if (const auto* mouse = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (mouse->button == sf::Mouse::Button::Left) {
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         }
     }

@@ -125,15 +125,12 @@ endif()
 # 5. POST-BUILD ACTIONS
 # ==============================================================================
 
-# 5.1. Copy assets and levels directories to the executable output folder
-foreach(DIR "assets" "levels")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${DIR}")
-        add_custom_command(TARGET main POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/${DIR}" "$<TARGET_FILE_DIR:main>/${DIR}"
-            COMMENT "Copying directory '${DIR}' to build output folder..."
-        )
-    endif()
-endforeach()
+# 5.1. Auto-sync assets and levels directories to the build folder on EVERY build
+add_custom_target(CopyAssets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
+    COMMENT "Auto-syncing assets and level maps to build directory..."
+)
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)

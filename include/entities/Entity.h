@@ -51,6 +51,7 @@ public:
     // 4. Getters / Setters
     sf::FloatRect getBoundingBox() const;
     sf::Vector2f getPosition() const;
+    sf::Vector2f getSize() const { return m_size; }
     sf::Vector2f getVelocity() const;
     bool shouldRemove() const;
 

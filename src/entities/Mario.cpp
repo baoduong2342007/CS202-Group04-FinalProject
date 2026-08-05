@@ -115,6 +115,10 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
 void Mario::update(float dt) {
   if (!m_active) return;
 
+  if (m_pendingFixtureRebuild) {
+    rebuildFixture();
+  }
+
   // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
   syncPhysics();
 
@@ -143,6 +147,17 @@ void Mario::update(float dt) {
   // Pit fall check (TV3)
   if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
     loseLife();
+  }
+
+  // Handle scaling and flipping manually in update for now
+  if (m_sprite) {
+      float scaleX = (m_facingDirection == Direction::LEFT) ? -2.f : 2.f;
+      m_sprite->setScale({scaleX, 2.f});
+      if (m_facingDirection == Direction::LEFT) {
+          m_sprite->setOrigin({16.f, 0.f});
+      } else {
+          m_sprite->setOrigin({0.f, 0.f});
+      }
   }
 }
 
@@ -251,6 +266,12 @@ void Mario::rebuildFixture() {
   if (!m_body)
     return;
 
+  if (m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    m_pendingFixtureRebuild = true;
+    return;
+  }
+  m_pendingFixtureRebuild = false;
+
   // Remove existing fixtures
   for (b2Fixture *f = m_body->GetFixtureList(); f;) {
     b2Fixture *next = f->GetNext();
@@ -344,7 +365,6 @@ void Mario::loseLife() {
   if (m_lives > 0) {
     m_lives--;
   }
-  EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
 #ifdef DEBUG
   std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
@@ -355,6 +375,7 @@ void Mario::loseLife() {
   } else {
     takeDamage(FATAL_DAMAGE);
     m_active = false;
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
   }
 }
 
@@ -363,13 +384,16 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   setPosition(spawnPosition);
+  if (m_body) {
+    b2Vec2 metersPos = PhysicsEngine::pixelsToMeters(spawnPosition);
+    m_body->SetTransform(metersPos, 0.f);
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    m_body->SetAngularVelocity(0.f);
+    m_body->SetAwake(true);
+  }
   setupAnimationsForState(*m_animationSystem, m_marioState);
   playAnimation("idle");
   rebuildFixture();
-
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-  }
 }
 
 MarioState Mario::getMarioState() const { return m_marioState; }

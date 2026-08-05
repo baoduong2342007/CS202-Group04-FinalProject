@@ -55,20 +55,19 @@ QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entitie
                                    int column,
                                    int row) {
     for (auto& entity : entities) {
-        if (!entity || !entity->isQuestionBlock() ||
-            !entity->isActive() || entity->isPendingDestroy()) {
+        if (!entity || !entity->isQuestionBlock() || !entity->isActive() || entity->isPendingDestroy()) {
             continue;
         }
 
         sf::Vector2f position = entity->getPosition();
-        if (worldToGridCoordinate(position.x) == column &&
-            worldToGridCoordinate(position.y) == row) {
+        if (worldToGridCoordinate(position.x) == column && worldToGridCoordinate(position.y) == row) {
             return static_cast<QuestionBlock*>(entity.get());
         }
     }
 
     return nullptr;
 }
+
 } // namespace
 
 void TileMap::queueTileHit(int column, int row, float overlap) {
@@ -83,7 +82,9 @@ void TileMap::queueTileHit(int column, int row, float overlap) {
 }
 
 void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, Mario* mario) {
-    if (s_pendingTileHits.empty()) return;
+    if (s_pendingTileHits.empty()) {
+        return;
+    }
 
     PendingTileHit bestHit = s_pendingTileHits.front();
     for (const auto& pendingHit : s_pendingTileHits) {
@@ -108,17 +109,17 @@ void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities,
 
 namespace {
 
-bool isBlankLine(const std::string& line){
+bool isBlankLine(const std::string& line) {
     return line.find_first_not_of(" \t") == std::string::npos;
 }
 
-bool isCommentLine(const std::string& line){
+bool isCommentLine(const std::string& line) {
     const std::size_t firstCharacter = line.find_first_not_of(" \t");
 
     return firstCharacter != std::string::npos && line[firstCharacter] == '#';
 }
 
-bool isValidTileSymbol(char symbol){
+bool isValidTileSymbol(char symbol) {
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
 }
 
@@ -130,7 +131,7 @@ bool isRenderableTile(char symbol){
 
 constexpr std::string_view TILESET_PATH = "assets/textures/items/items_blocks.png";
 
-sf::IntRect getTilesetRect(char symbol){
+sf::IntRect getTilesetRect(char symbol) {
     switch (symbol){
         case '1':
         case 'S':
@@ -180,27 +181,27 @@ struct LevelValidationState {
 bool validateRow(const std::string& row,
                  std::size_t lineNumber,
                  const std::string& path,
-                 LevelValidationState& state){
-    if (state.expectedWidth == 0){
+                 LevelValidationState& state) {
+    if (state.expectedWidth == 0) {
         state.expectedWidth = row.size();
-    } else if (row.size() != state.expectedWidth){
+    } else if (row.size() != state.expectedWidth) {
         std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
         
         return false;
     }
     
-    for (std::size_t column = 0; column < row.size(); ++column){
+    for (std::size_t column = 0; column < row.size(); ++column) {
         const char symbol = row[column];
 
-        if (!isValidTileSymbol(symbol)){
+        if (!isValidTileSymbol(symbol)) {
             std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
 
             return false;
         }
 
-        if (symbol == 'M'){
+        if (symbol == 'M') {
             ++state.marioSpawnCount;
-        } else if (symbol == 'F'){
+        } else if (symbol == 'F') {
             ++state.finishCount;
         }
     }
@@ -208,15 +209,15 @@ bool validateRow(const std::string& row,
     return true;
 }
 
-bool validateLevelMarkers(const LevelValidationState& state, const std::string& path){
-    if (state.marioSpawnCount != 1){
+bool validateLevelMarkers(const LevelValidationState& state, const std::string& path) {
+    if (state.marioSpawnCount != 1) {
         std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << state.marioSpawnCount << " in " << path << std::endl;
 
         return false;
     }
 
-    if (state.finishCount == 0){
-        std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
+    if (state.finishCount != 1) {
+        std::cerr << "Invalid level file: expected exactly one finish point but found " << state.finishCount << " in " << path << std::endl;
 
         return false;
     }
@@ -226,13 +227,13 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
 
 } // namespace
 
-TileMap::~TileMap(){
+TileMap::~TileMap() {
     clearPhysicsBodies();
 }
 
-bool TileMap::loadFromFile(const std::string& path){
+bool TileMap::loadFromFile(const std::string& path) {
     std::ifstream inputFile(path);
-    if (!inputFile.is_open()){
+    if (!inputFile.is_open()) {
         std::cerr << "Failed to open level file: " << path << std::endl;
         return false;
     }
@@ -242,36 +243,36 @@ bool TileMap::loadFromFile(const std::string& path){
     std::string line;
     std::size_t lineNumber = 0;
 
-    while(std::getline(inputFile, line)){
+    while(std::getline(inputFile, line)) {
         ++lineNumber;
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() && line.back() == '\r'){
+        if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
 
-        if (isBlankLine(line) || isCommentLine(line)){
+        if (isBlankLine(line) || isCommentLine(line)) {
             continue;
         }
 
-        if (!validateRow(line, lineNumber, path, validationState)){
+        if (!validateRow(line, lineNumber, path, validationState)) {
             return false;
         }
 
         loadedGrid.push_back(line);
     }
 
-    if (loadedGrid.empty()){
+    if (loadedGrid.empty()) {
         std::cerr << "Level file contains no map data: " << path << std::endl;
         return false;
     }
     
-    if (!validateLevelMarkers(validationState, path)){
+    if (!validateLevelMarkers(validationState, path)) {
         return false;
     }
     sf::Texture loadedTileset;
     try {
         loadedTileset = sf::Texture(std::string(TILESET_PATH));
-    } catch (const sf::Exception& exception){
+    } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;
         return false;
@@ -283,7 +284,7 @@ bool TileMap::loadFromFile(const std::string& path){
     const unsigned int expectedWidth = TILE_SIZE * TILESET_TILE_COUNT;
     const unsigned int expectedHeight = TILE_SIZE;
 
-    if (tilesetSize.x < expectedWidth || tilesetSize.y < expectedHeight){
+    if (tilesetSize.x < expectedWidth || tilesetSize.y < expectedHeight) {
 #ifdef DEBUG
         std::cerr << "[TileMap] Warning: Tileset image size is " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
 #endif
@@ -364,14 +365,14 @@ void TileMap::update(float dt) {
     }
 }
 
-void TileMap::buildVertices(){
+void TileMap::buildVertices() {
     m_vertices.clear();
 
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
             const char symbol = m_grid[row][column];
 
-            if (!isRenderableTile(symbol)){
+            if (!isRenderableTile(symbol)) {
                 continue;
             }
 
@@ -424,9 +425,9 @@ void TileMap::buildVertices(){
 std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
     std::vector<sf::Vector2i> positions;
 
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
-            if (m_grid[row][column] == symbol){
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+            if (m_grid[row][column] == symbol) {
                 positions.emplace_back(static_cast<int>(column), static_cast<int>(row));
             }
         }
@@ -435,7 +436,7 @@ std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
     return positions;
 }
 
-sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
+sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition) {
     const float tileSize = static_cast<float>(TILE_SIZE);
 
     return {static_cast<float>(gridPosition.x) * tileSize,
@@ -443,8 +444,8 @@ sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
     };
 }
 
-void TileMap::createPhysicsBodies(b2World* world){
-    if (!world){
+void TileMap::createPhysicsBodies(b2World* world) {
+    if (!world) {
         std::cerr << "Cannot create TileMap physics bodies: world is null" << std::endl;
         return;
     }
@@ -489,14 +490,14 @@ void TileMap::createPhysicsBodies(b2World* world){
     }
 }
 
-void TileMap::clearPhysicsBodies(){
-    if (!m_physicsWorld){
+void TileMap::clearPhysicsBodies() {
+    if (!m_physicsWorld) {
         m_physicsBodies.clear();
         return;
     }
 
-    for (b2Body* body : m_physicsBodies){
-        if (body){
+    for (b2Body* body : m_physicsBodies) {
+        if (body) {
             m_physicsWorld->DestroyBody(body);
         }
     }
@@ -506,8 +507,12 @@ void TileMap::clearPhysicsBodies(){
 }
 
 bool TileMap::hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager) {
-    if (row < 0 || row >= static_cast<int>(m_grid.size())) return false;
-    if (column < 0 || column >= static_cast<int>(m_grid[row].size())) return false;
+    if (row < 0 || row >= static_cast<int>(m_grid.size())) {
+        return false;
+    }
+    if (column < 0 || column >= static_cast<int>(m_grid[row].size())) {
+        return false;
+    }
 
     char symbol = m_grid[row][column];
 

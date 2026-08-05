@@ -57,6 +57,11 @@ endif()
 
 # Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+    if(MSVC AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/libsfml-system.a")
+        message(FATAL_ERROR
+            "thirdparty/SFML contains MinGW libraries, but this configure is using MSVC. "
+            "Regenerate with: cmake -S . -B build -G \"MinGW Makefiles\"")
+    endif()
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
@@ -111,6 +116,41 @@ target_link_libraries(main PRIVATE
     SFML::Audio
     box2d
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(input_state_tests
+        tests/InputStateTests.cpp
+        src/patterns/InputHandler.cpp
+        src/patterns/InputState.cpp
+    )
+    target_include_directories(input_state_tests PRIVATE include)
+    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    add_test(NAME input_state_tests COMMAND input_state_tests)
+
+    add_executable(tile_collision_span_tests
+        tests/TileCollisionSpanTests.cpp
+        src/level/TileCollisionSpans.cpp
+        src/physics/TileContactResolver.cpp
+    )
+    target_include_directories(tile_collision_span_tests PRIVATE include)
+    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
+
+    add_executable(mario_physics_tests
+        tests/MarioPhysicsTests.cpp
+        src/core/AnimationSystem.cpp
+        src/core/TextureManager.cpp
+        src/entities/Character.cpp
+        src/entities/Entity.cpp
+        src/entities/Mario.cpp
+        src/patterns/EventBus.cpp
+        src/physics/PhysicsEngine.cpp
+    )
+    target_include_directories(mario_physics_tests PRIVATE include)
+    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+    add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+endif()
 
 # Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

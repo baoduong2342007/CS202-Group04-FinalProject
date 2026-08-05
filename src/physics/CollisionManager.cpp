@@ -118,6 +118,38 @@ void CollisionManager::resolve(b2Contact* contact) {
         return;
     }
 
+    // Handle collisions between enemies
+    if (entityA && entityA->isEnemy() && entityB && entityB->isEnemy()) {
+        Enemy* enemyA = static_cast<Enemy*>(entityA);
+        Enemy* enemyB = static_cast<Enemy*>(entityB);
+
+        auto tryShellKill = [](Enemy* attacker, Enemy* victim) -> bool {
+            if (!attacker->isKoopa() || victim->isKoopa()) {
+                return false;
+            }
+
+            Koopa* koopa = static_cast<Koopa*>(attacker);
+
+            if (!koopa->isShellSliding()) {
+                return false;
+            }
+
+            victim->takeDamage(victim->getHealth());
+            victim->markForRemoval();
+            return true;
+        };
+
+        const bool shellCollisionHandled = tryShellKill(enemyA, enemyB) || tryShellKill(enemyB, enemyA);
+
+        // Ordinary enemies reverse when they collide laterally.
+        if (!shellCollisionHandled && std::abs(normal.x) > 0.5f) {
+            enemyA->onWallCollision();
+            enemyB->onWallCollision();
+        }
+
+        return;
+    }
+
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
     Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {

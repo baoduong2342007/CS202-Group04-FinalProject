@@ -6,6 +6,7 @@
  */
 
 #include "level/Level.h"
+#include "entities/Goomba.h"
 
 #include <algorithm>
 #include <iostream>
@@ -23,7 +24,7 @@ constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable entities
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
+constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?'};
 } // namespace
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
@@ -86,13 +87,19 @@ void Level::spawnEntitiesFromTileMap() {
     for (char code : SPAWN_CODES) {
         auto positions = m_tileMap.findTiles(code);
         for (const auto& gridPos : positions) {
-            sf::Vector2f worldPos =
-                TileMap::gridToWorldPosition(gridPos);
-            Entity* raw =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
+            sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
+            if (code == '?') {
+                worldPos.y -= static_cast<float>(TILE_SIZE);
+            }
+            Entity* raw = EntityFactory::createFromTileCode(code, worldPos, m_world.get());
             if (raw) {
-                // Wire TextureManager so entity sprites can load
                 raw->setTextureManager(m_textureManager);
+
+                if (code == 'G') {
+                    Goomba* goomba = static_cast<Goomba*>(raw);
+                    goomba->setTileMap(&m_tileMap);
+                }
+
                 m_entities.emplace_back(raw);
             }
         }

@@ -68,4 +68,7 @@ private:
     sf::Sprite m_coinSprite;
     float m_coinAnimTimer = 0.f;
     int m_coinCurrentFrame = 0;
+    float m_blinkTimer = 0.f;
+    bool m_showPressToPlay = true;
+    bool m_transitioning = false;
 };

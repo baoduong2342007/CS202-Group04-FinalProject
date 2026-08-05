@@ -90,13 +90,9 @@ Mario::Mario()
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(17, 8, 16, 16, 3, 0.1f, true, 1, 0));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(85, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(102, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 0.15f, true, 1, 0));
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/MarioLuigi.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
@@ -111,17 +107,17 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(17, 8, 16, 16, 3, 0.1f, true, 1, 0));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(85, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(102, 8, 16, 16, 1, 1.f, true, 1, 0));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(0, 8, 16, 16, 1, 0.15f, true, 1, 0));
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/MarioLuigi.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 void Mario::update(float dt) {
   if (!m_active) return;
+
+  if (m_pendingFixtureRebuild) {
+    rebuildFixture();
+  }
 
   // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
   syncPhysics();
@@ -270,6 +266,12 @@ void Mario::rebuildFixture() {
   if (!m_body)
     return;
 
+  if (m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    m_pendingFixtureRebuild = true;
+    return;
+  }
+  m_pendingFixtureRebuild = false;
+
   // Remove existing fixtures
   for (b2Fixture *f = m_body->GetFixtureList(); f;) {
     b2Fixture *next = f->GetNext();
@@ -363,7 +365,6 @@ void Mario::loseLife() {
   if (m_lives > 0) {
     m_lives--;
   }
-  EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
 #ifdef DEBUG
   std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
@@ -374,6 +375,7 @@ void Mario::loseLife() {
   } else {
     takeDamage(FATAL_DAMAGE);
     m_active = false;
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
   }
 }
 
@@ -382,13 +384,16 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   setPosition(spawnPosition);
+  if (m_body) {
+    b2Vec2 metersPos = PhysicsEngine::pixelsToMeters(spawnPosition);
+    m_body->SetTransform(metersPos, 0.f);
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    m_body->SetAngularVelocity(0.f);
+    m_body->SetAwake(true);
+  }
   setupAnimationsForState(*m_animationSystem, m_marioState);
   playAnimation("idle");
   rebuildFixture();
-
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-  }
 }
 
 MarioState Mario::getMarioState() const { return m_marioState; }

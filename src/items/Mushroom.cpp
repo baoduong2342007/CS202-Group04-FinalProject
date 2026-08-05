@@ -23,33 +23,36 @@ constexpr const char* MUSHROOM_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
 } // namespace
 
-Mushroom::Mushroom()
+Mushroom::Mushroom(MushroomType type)
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
+      m_type(type),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
+    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::Items::ONE_UP_MUSHROOM : SpriteFrames::Items::SUPER_MUSHROOM;
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Items::MUSHROOM}, 1.f));
+        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");
 }
 
-Mushroom::Mushroom(const sf::Vector2f& position, b2World* world)
+Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType type)
     : Item(position, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
+      m_type(type),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
     initPhysics(world, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
+    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::Items::ONE_UP_MUSHROOM : SpriteFrames::Items::SUPER_MUSHROOM;
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Items::MUSHROOM}, 1.f));
+        AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");
 }
 
 void Mushroom::update(float dt) {
-    (void)dt;
-
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
+    updateAnimation(dt);
     patrol();
 }
 
@@ -71,14 +74,15 @@ void Mushroom::onCollect(Mario& mario) {
 
     m_isCollected = true;
 
-    // Query Mario's current state directly — no EventBus payload required.
-    // Only SMALL Mario benefits from the mushroom; SUPER/FIRE Mario just gets score.
-    if (mario.getMarioState() == MarioState::SMALL) {
-        mario.powerUp(MarioState::SUPER);
+    if (m_type == MushroomType::ONE_UP) {
+        mario.addLife(1);
+        mario.addScore(1000);
+        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    } else {
+        if (mario.getMarioState() == MarioState::SMALL) {
+            mario.powerUp(MarioState::SUPER);
+        }
+        mario.addScore(MUSHROOM_SCORE_VALUE);
+        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
     }
-
-    mario.addScore(MUSHROOM_SCORE_VALUE);
-
-    // Notify observers (SoundManager plays powerup.wav, HUD updates score)
-    EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
 }

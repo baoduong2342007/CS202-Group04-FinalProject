@@ -40,10 +40,9 @@ FireFlower::FireFlower(const sf::Vector2f& position, b2World* world)
 }
 
 void FireFlower::update(float dt) {
-    (void)dt;
-
-    // Stationary item — only sync physics position for rendering
+    // Stationary item — sync physics position and update animation clip
     syncPhysics();
+    updateAnimation(dt);
 }
 
 void FireFlower::onCollect(Mario& mario) {

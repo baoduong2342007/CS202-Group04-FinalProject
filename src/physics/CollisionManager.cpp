@@ -15,6 +15,7 @@
 #include "items/Item.h"
 #include "items/Mushroom.h"
 #include "items/Star.h"
+#include "level/TileMap.h"
 #include "physics/PhysicsEngine.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -47,8 +48,8 @@ void CollisionManager::resolve(b2Contact* contact) {
     uintptr_t ptrA = bodyA->GetUserData().pointer;
     uintptr_t ptrB = bodyB->GetUserData().pointer;
 
-    Entity* entityA = (ptrA != 0) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
-    Entity* entityB = (ptrB != 0) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
+    Entity* entityA = (ptrA != 0 && !TileMap::isTileUserData(ptrA)) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
+    Entity* entityB = (ptrB != 0 && !TileMap::isTileUserData(ptrB)) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
 
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
@@ -175,6 +176,20 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
                 item->onCollect(*mario);
             }
         }
+    } else {
+        // Head bump check against TileMap blocks from below
+        b2Body* otherBody = (contact->GetFixtureA()->GetBody() == marioBody)
+                            ? contact->GetFixtureB()->GetBody()
+                            : contact->GetFixtureA()->GetBody();
+        uintptr_t otherPtr = otherBody ? otherBody->GetUserData().pointer : 0;
+
+        if (TileMap::isTileUserData(otherPtr)) {
+            if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
+                int col, row;
+                TileMap::unpackTileCoords(otherPtr, col, row);
+                TileMap::queueTileHit(col, row);
+            }
+        }
     }
 
     // Top stomp / Grounded check:
@@ -262,8 +277,8 @@ void CollisionManager::resolveEnd(b2Contact* contact) {
     uintptr_t ptrA = bodyA->GetUserData().pointer;
     uintptr_t ptrB = bodyB->GetUserData().pointer;
 
-    Entity* entityA = (ptrA != 0) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
-    Entity* entityB = (ptrB != 0) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
+    Entity* entityA = (ptrA != 0 && !TileMap::isTileUserData(ptrA)) ? reinterpret_cast<Entity*>(ptrA) : nullptr;
+    Entity* entityB = (ptrB != 0 && !TileMap::isTileUserData(ptrB)) ? reinterpret_cast<Entity*>(ptrB) : nullptr;
 
     Mario* mario = nullptr;
     b2Body* marioBody = nullptr;

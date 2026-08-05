@@ -57,6 +57,7 @@ Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& pos
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
+        case 'U':
             return createItem(ItemType::MUSHROOM, position, world);
         default:
             return nullptr;

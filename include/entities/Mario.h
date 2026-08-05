@@ -41,6 +41,7 @@ public:
     void setInvincible(float duration);
     void updateInvincibility(float dt);
     void loseLife();
+    void addLife(int lives = 1) { m_lives += lives; }
     void respawn(const sf::Vector2f& spawnPosition);
     bool isMario() const override { return true; }
 
@@ -75,4 +76,5 @@ protected:
     bool m_isRunning;
     bool m_isSkidding;
     bool m_wasJumpPressed;
+    bool m_pendingFixtureRebuild = false;
 };

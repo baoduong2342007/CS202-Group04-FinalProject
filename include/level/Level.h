@@ -41,6 +41,7 @@ public:
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();
+    bool isLevelCompleted() const;
 
 private:
     // 5. Private methods

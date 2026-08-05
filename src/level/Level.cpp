@@ -23,7 +23,7 @@ constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable entities
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
+constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?'};
 } // namespace
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}

@@ -140,16 +140,50 @@ namespace Items {
         return frames;
     }
 
-    // Coin — in-block coin from items_objects.png (score text area)
-    // Coins are at x=180, 198, 216 — 16×16 each, row Y=8
-    inline const sf::IntRect COIN1({180, Y}, {W, H});
-    inline const sf::IntRect COIN2({198, Y}, {W, H});
-    inline const sf::IntRect COIN3({216, Y}, {W, H});
+    // Coin — animated 3 frames from tileset.png: (298,95) to (332,95) with 1px gap
+    inline const sf::IntRect COIN1({298, 95}, {W, H});
+    inline const sf::IntRect COIN2({315, 95}, {W, H});
+    inline const sf::IntRect COIN3({332, 95}, {W, H});
 
     inline const std::vector<sf::IntRect>& coinFrames() {
         static const std::vector<sf::IntRect> frames = {COIN1, COIN2, COIN3};
         return frames;
     }
 } // namespace Items
+
+// ── Blocks (from items_blocks.png) ─────────────────────────
+
+namespace Blocks {
+    constexpr int W = 16;
+    constexpr int H = 16;
+
+    // Question block — 3-frame animation from items_blocks.png: (80,112) to (112,112)
+    inline const sf::IntRect QUESTION1({80,  112}, {W, H});
+    inline const sf::IntRect QUESTION2({96,  112}, {W, H});
+    inline const sf::IntRect QUESTION3({112, 112}, {W, H});
+
+    inline const std::vector<sf::IntRect>& questionBlockFrames() {
+        static const std::vector<sf::IntRect> frames = {
+            QUESTION1, QUESTION2, QUESTION3
+        };
+        return frames;
+    }
+} // namespace Blocks
+
+// ── Tiles (from tileset.png) ──────────────────────────────
+
+namespace Tiles {
+    constexpr int W = 16;
+    constexpr int H = 16;
+
+    // Ground block — (0,16) to (15,31)
+    inline const sf::IntRect GROUND({0, 16}, {W, H});
+
+    // Brick block — (17,16) to (32,31)
+    inline const sf::IntRect BRICK({17, 16}, {W, H});
+
+    // Question block (static tile from tileset.png) — (34,16) to (49,31)
+    inline const sf::IntRect QUESTION({34, 16}, {W, H});
+} // namespace Tiles
 
 } // namespace SpriteFrames

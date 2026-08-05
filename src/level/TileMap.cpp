@@ -15,13 +15,14 @@
 #include <box2d/box2d.h>
 #include <SFML/System/Exception.hpp>
 
+#include "core/SpriteFrames.h"
 #include "physics/PhysicsEngine.h"
+
 
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}";
 constexpr float TILE_FRICTION = 0.6f;
-constexpr unsigned int TILESET_TILE_COUNT = 4;
 
 bool isBlankLine(const std::string& line){
     return line.find_first_not_of(" \t") == std::string::npos;
@@ -38,39 +39,30 @@ bool isValidTileSymbol(char symbol){
 }
 
 bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F' ||
+    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
            symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 
-constexpr unsigned int GROUND_TILE_INDEX = 0;
-constexpr unsigned int BRICK_TILE_INDEX = 1;
-constexpr unsigned int QUESTION_TILE_INDEX = 2;
-constexpr unsigned int FINISH_TILE_INDEX = 3;
-
-unsigned int getTilesetIndex(char symbol){
+const sf::IntRect& getTileTextureRect(char symbol){
+    using namespace SpriteFrames::Tiles;
     switch (symbol){
-        case '1':
-        case 'S':
-            return GROUND_TILE_INDEX;
-
         case 'B':
         case '[':
         case ']':
         case '{':
         case '}':
-            return BRICK_TILE_INDEX;
-
-        case '?':
-            return QUESTION_TILE_INDEX;
+            return BRICK;
 
         case 'F':
         case '|':
-            return FINISH_TILE_INDEX;
+            return BRICK; // placeholder until finish spec provided
 
+        case '1':
+        case 'S':
         default:
-            return GROUND_TILE_INDEX;
+            return GROUND;
     }
 }
 
@@ -193,20 +185,13 @@ bool TileMap::loadFromFile(const std::string& path){
 
     loadedTileset.setSmooth(false);
 
-    const sf::Vector2u tilesetSize = loadedTileset.getSize();
-    const unsigned int expectedWidth = TILE_SIZE * TILESET_TILE_COUNT;
-    const unsigned int expectedHeight = TILE_SIZE;
-
-    if (tilesetSize.x != expectedWidth || tilesetSize.y != expectedHeight){
-        std::cerr << "Invalid TileMap tileset size: expected " << expectedWidth << 'x' << expectedHeight << ", but found " << tilesetSize.x << 'x' << tilesetSize.y<< std::endl;
-        return false;
-    }
-
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);
     buildVertices();
     return true;
 }
+
+
 
 void TileMap::render(sf::RenderWindow& window) const {
     sf::RenderStates states;
@@ -237,7 +222,7 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1' || tile == 'B' || tile == '?' ||
+    return tile == '1' || tile == 'B' ||
            tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
@@ -270,13 +255,13 @@ void TileMap::buildVertices(){
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const unsigned int tileIndex = getTilesetIndex(symbol);
+            const sf::IntRect& texRect = getTileTextureRect(symbol);
 
-            const float textureLeft = static_cast<float>(tileIndex * TILE_SIZE);
-            const float textureTop = 0.f;
+            const float textureLeft = static_cast<float>(texRect.position.x);
+            const float textureTop = static_cast<float>(texRect.position.y);
 
-            const float textureRight = textureLeft + static_cast<float>(TILE_SIZE);
-            const float textureBottom = static_cast<float>(TILE_SIZE);
+            const float textureRight = textureLeft + static_cast<float>(texRect.size.x);
+            const float textureBottom = textureTop + static_cast<float>(texRect.size.y);
 
             // First triangle: top-left, bottom-left, bottom-right.
             appendTexturedVertex(m_vertices, left, top,
@@ -284,17 +269,17 @@ void TileMap::buildVertices(){
 
             appendTexturedVertex(m_vertices, left, bottom,
                                  textureLeft, textureBottom);
-            
+
             appendTexturedVertex(m_vertices, right, bottom,
                                  textureRight, textureBottom);
 
             // Second triangle: top-left, bottom-right, top-right.
             appendTexturedVertex(m_vertices, left, top,
                                  textureLeft, textureTop);
-            
+
             appendTexturedVertex(m_vertices, right, bottom,
                                  textureRight, textureBottom);
-            
+
             appendTexturedVertex(m_vertices, right, top,
                                  textureRight, textureTop);
         }

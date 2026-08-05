@@ -15,7 +15,7 @@
 namespace {
 constexpr float COIN_WIDTH  = 16.f;
 constexpr float COIN_HEIGHT = 16.f;
-constexpr const char* COIN_TEXTURE_PATH = "assets/textures/items/items_objects.png";
+constexpr const char* COIN_TEXTURE_PATH = "assets/textures/tiles/tileset.png";
 } // namespace
 
 Coin::Coin()

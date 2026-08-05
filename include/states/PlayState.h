@@ -44,4 +44,7 @@ private:
     int m_currentLevel = 1;
     static constexpr int MAX_LEVELS = 2;
     std::string getCurrentLevelPath() const;
+
+    bool m_needsReload = false;
+    bool m_needsGameOver = false;
 };

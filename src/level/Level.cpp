@@ -25,7 +25,14 @@ constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?'};
+constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
+
+float calculateBackgroundTop(std::size_t levelHeightInTiles) {
+    const float levelHeight = static_cast<float>(levelHeightInTiles * TILE_SIZE);
+    const float groundTop = std::max(0.f, levelHeight - static_cast<float>(TILE_SIZE));
+    const float backgroundHeight = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.y);
+    return std::max(0.f, groundTop - backgroundHeight);
+}
 } // namespace
 
 
@@ -166,9 +173,10 @@ void Level::render(sf::RenderWindow& window) {
 
         float stripWidth = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.x);
         float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+        float backgroundTop = calculateBackgroundTop(m_tileMap.getHeight());
 
         for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
-            bgSprite.setPosition(sf::Vector2f(x, 304.f));
+            bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
             window.draw(bgSprite);
         }
     }

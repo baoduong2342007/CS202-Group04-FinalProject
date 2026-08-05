@@ -58,11 +58,12 @@ Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& pos
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            return new QuestionBlock(position, world);
+            return new QuestionBlock(position, world, QuestionBlockContent::COIN);
         case 'U':
-            return createItem(ItemType::MUSHROOM, position, world);
+            return new QuestionBlock(position, world, QuestionBlockContent::SUPER_MUSHROOM);
+        case 'O':
+            return new QuestionBlock(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
         default:
             return nullptr;
     }
 }
-

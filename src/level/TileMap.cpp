@@ -36,12 +36,29 @@ void TileMap::queueTileHit(int column, int row) {
     s_pendingTileHits.emplace_back(column, row);
 }
 
-void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario) {
+void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, const sf::Vector2f& marioPos, float marioWidth) {
     if (s_pendingTileHits.empty()) return;
 
-    // Process only the single target block hit to prevent multiple adjacent blocks from bumping together
-    auto gridPos = s_pendingTileHits.front();
-    hitTile(gridPos.x, gridPos.y, isBigMario, entities, textureManager);
+    sf::Vector2i bestGridPos = s_pendingTileHits.front();
+
+    if (marioWidth > 0.f) {
+        float marioLeft = marioPos.x;
+        float marioRight = marioPos.x + marioWidth;
+        float maxOverlap = -1.f;
+
+        for (const auto& gridPos : s_pendingTileHits) {
+            float tileLeft = static_cast<float>(gridPos.x * TILE_SIZE);
+            float tileRight = tileLeft + static_cast<float>(TILE_SIZE);
+
+            float overlap = std::max(0.f, std::min(marioRight, tileRight) - std::max(marioLeft, tileLeft));
+            if (overlap > maxOverlap) {
+                maxOverlap = overlap;
+                bestGridPos = gridPos;
+            }
+        }
+    }
+
+    hitTile(bestGridPos.x, bestGridPos.y, isBigMario, entities, textureManager);
     s_pendingTileHits.clear();
 }
 
@@ -62,9 +79,10 @@ bool isValidTileSymbol(char symbol){
 }
 
 bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F' ||
+    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
            symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|' || symbol == 'E' || symbol == 'O';
 }
+
 
 constexpr std::string_view TILESET_PATH = "assets/textures/items/items_blocks.png";
 
@@ -262,9 +280,10 @@ char TileMap::getTileAt(int column, int row) const {
 bool TileMap::isSolid(int column, int row) const {
     const char tile = getTileAt(column, row);
 
-    return tile == '1' || tile == 'B' || tile == '?' || tile == 'U' || tile == 'O' || tile == 'E' ||
+    return tile == '1' || tile == 'B' || tile == 'U' || tile == 'O' || tile == 'E' ||
            tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
+
 
 std::size_t TileMap::getWidth() const {
     if (m_grid.empty()){

@@ -18,7 +18,7 @@
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
 #include "items/Star.h"             // TV5 (Sprint 5)
-#include "level/QuestionBlock.h"     // TV5 (Sprint 4)
+#include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
 
 // ============================================================
 // PATTERN: Factory Method Implementation
@@ -65,3 +65,4 @@ Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& pos
             return nullptr;
     }
 }
+

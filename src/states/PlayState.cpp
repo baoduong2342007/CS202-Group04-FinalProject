@@ -92,30 +92,8 @@ void PlayState::onNotify(EventType event) {
 }
 
 void PlayState::processEvents(const sf::Event& event) {
-    // Edge-triggered actions (jump, pause) — fire once per key press
-    if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
-        if (keyPressed->code == sf::Keyboard::Key::W ||
-            keyPressed->code == sf::Keyboard::Key::Up ||
-            keyPressed->code == sf::Keyboard::Key::Space) {
-            if (m_level->getMario()) {
-                m_level->getMario()->jump();
-            }
-        }
-        if (keyPressed->code == sf::Keyboard::Key::Escape) {
-            GameManager::getInstance().pushState(std::make_unique<PauseState>());
-        }
-    }
-
-    if (const auto* keyReleased = event.getIf<sf::Event::KeyReleased>()) {
-        if (keyReleased->code == sf::Keyboard::Key::A || 
-            keyReleased->code == sf::Keyboard::Key::Left ||
-            keyReleased->code == sf::Keyboard::Key::D || 
-            keyReleased->code == sf::Keyboard::Key::Right) {
-            if (m_level->getMario()) {
-                m_level->getMario()->stopMoving();
-            }
-        }
-    }
+    (void)event;
+    // Movement and continuous inputs are polled cleanly by m_inputHandler in update(dt).
 }
 
 void PlayState::update(float dt) {

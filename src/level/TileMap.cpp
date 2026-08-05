@@ -22,53 +22,82 @@
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}";
-constexpr float TILE_FRICTION = 0.6f;
 
-bool isBlankLine(const std::string& line){
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+
+constexpr float TILE_FRICTION = 0.6f;
+constexpr unsigned int TILESET_TILE_COUNT = 10;
+
+constexpr unsigned int GROUND_TILE_INDEX = 0;
+constexpr unsigned int BRICK_TILE_INDEX = 1;
+constexpr unsigned int QUESTION_TILE_INDEX = 2;
+constexpr unsigned int STONE_TILE_INDEX = 3;
+constexpr unsigned int FLAG_TOP_TILE_INDEX = 4;
+constexpr unsigned int FLAG_POLE_TILE_INDEX = 5;
+constexpr unsigned int PIPE_TOP_LEFT_TILE_INDEX = 6;
+constexpr unsigned int PIPE_BODY_LEFT_TILE_INDEX = 7;
+constexpr unsigned int PIPE_TOP_RIGHT_TILE_INDEX = 8;
+constexpr unsigned int PIPE_BODY_RIGHT_TILE_INDEX = 9;
+
+bool isBlankLine(const std::string& line) {
     return line.find_first_not_of(" \t") == std::string::npos;
 }
 
-bool isCommentLine(const std::string& line){
+bool isCommentLine(const std::string& line) {
     const std::size_t firstCharacter = line.find_first_not_of(" \t");
 
     return firstCharacter != std::string::npos && line[firstCharacter] == '#';
 }
 
-bool isValidTileSymbol(char symbol){
+bool isValidTileSymbol(char symbol) {
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
 }
 
-bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
+bool isRenderableTile(char symbol) {
+    return symbol == '1' || symbol == 'B' || symbol == '?' || symbol == 'F' ||
            symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|';
 }
 
-constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+unsigned int getTilesetIndex(char symbol) {
+    switch (symbol) {
+        case '1':
+            return GROUND_TILE_INDEX;
 
-const sf::IntRect& getTileTextureRect(char symbol){
-    using namespace SpriteFrames::Tiles;
-    switch (symbol){
         case 'B':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
-            return BRICK;
+            return BRICK_TILE_INDEX;
+
+        case '?':
+            return QUESTION_TILE_INDEX;
+
+        case 'S':
+            return STONE_TILE_INDEX;
 
         case 'F':
-        case '|':
-            return BRICK; // placeholder until finish spec provided
+            return FLAG_TOP_TILE_INDEX;
 
-        case '1':
-        case 'S':
+        case '|':
+            return FLAG_POLE_TILE_INDEX;
+
+        case '[':
+            return PIPE_TOP_LEFT_TILE_INDEX;
+
+        case '{':
+            return PIPE_BODY_LEFT_TILE_INDEX;
+
+        case ']':
+            return PIPE_TOP_RIGHT_TILE_INDEX;
+
+        case '}':
+            return PIPE_BODY_RIGHT_TILE_INDEX;
+
         default:
-            return GROUND;
+            return GROUND_TILE_INDEX;
     }
 }
 
 void appendTexturedVertex(sf::VertexArray& vertices,
                           float x, float y,
-                          float textureX, float textureY){
+                          float textureX, float textureY) {
     sf::Vertex vertex;
     vertex.position = {x, y};
     vertex.color = sf::Color::White;
@@ -86,27 +115,27 @@ struct LevelValidationState {
 bool validateRow(const std::string& row,
                  std::size_t lineNumber,
                  const std::string& path,
-                 LevelValidationState& state){
-    if (state.expectedWidth == 0){
+                 LevelValidationState& state) {
+    if (state.expectedWidth == 0) {
         state.expectedWidth = row.size();
-    } else if (row.size() != state.expectedWidth){
+    } else if (row.size() != state.expectedWidth) {
         std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
         
         return false;
     }
     
-    for (std::size_t column = 0; column < row.size(); ++column){
+    for (std::size_t column = 0; column < row.size(); ++column) {
         const char symbol = row[column];
 
-        if (!isValidTileSymbol(symbol)){
+        if (!isValidTileSymbol(symbol)) {
             std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
 
             return false;
         }
 
-        if (symbol == 'M'){
+        if (symbol == 'M') {
             ++state.marioSpawnCount;
-        } else if (symbol == 'F'){
+        } else if (symbol == 'F') {
             ++state.finishCount;
         }
     }
@@ -114,14 +143,14 @@ bool validateRow(const std::string& row,
     return true;
 }
 
-bool validateLevelMarkers(const LevelValidationState& state, const std::string& path){
-    if (state.marioSpawnCount != 1){
+bool validateLevelMarkers(const LevelValidationState& state, const std::string& path) {
+    if (state.marioSpawnCount != 1) {
         std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << state.marioSpawnCount << " in " << path << std::endl;
 
         return false;
     }
 
-    if (state.finishCount == 0){
+    if (state.finishCount == 0) {
         std::cerr << "Invalid level file: no finish flag found in " << path << std::endl;
 
         return false;
@@ -132,13 +161,13 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
 
 } // namespace
 
-TileMap::~TileMap(){
+TileMap::~TileMap() {
     clearPhysicsBodies();
 }
 
-bool TileMap::loadFromFile(const std::string& path){
+bool TileMap::loadFromFile(const std::string& path) {
     std::ifstream inputFile(path);
-    if (!inputFile.is_open()){
+    if (!inputFile.is_open()) {
         std::cerr << "Failed to open level file: " << path << std::endl;
         return false;
     }
@@ -148,18 +177,18 @@ bool TileMap::loadFromFile(const std::string& path){
     std::string line;
     std::size_t lineNumber = 0;
 
-    while(std::getline(inputFile, line)){
+    while(std::getline(inputFile, line)) {
         ++lineNumber;
         // Remove the carriage-return character from Windows CRLF files.
-        if (!line.empty() && line.back() == '\r'){
+        if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
 
-        if (isBlankLine(line) || isCommentLine(line)){
+        if (isBlankLine(line) || isCommentLine(line)) {
             continue;
         }
 
-        if (!validateRow(line, lineNumber, path, validationState)){
+        if (!validateRow(line, lineNumber, path, validationState)) {
             return false;
         }
 
@@ -177,7 +206,7 @@ bool TileMap::loadFromFile(const std::string& path){
     sf::Texture loadedTileset;
     try {
         loadedTileset = sf::Texture(std::string(TILESET_PATH));
-    } catch (const sf::Exception& exception){
+    } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;
         return false;
@@ -208,11 +237,11 @@ char TileMap::getTileAt(int column, int row) const {
     const std::size_t gridRow = static_cast<std::size_t>(row);
     const std::size_t gridColumn = static_cast<std::size_t>(column);
 
-    if (gridRow >= m_grid.size()){
+    if (gridRow >= m_grid.size()) {
         return '.';
     }
 
-    if (gridColumn >= m_grid[gridRow].size()){
+    if (gridColumn >= m_grid[gridRow].size()) {
         return '.';
     }
 
@@ -238,14 +267,14 @@ std::size_t TileMap::getHeight() const {
     return m_grid.size();
 }
 
-void TileMap::buildVertices(){
+void TileMap::buildVertices() {
     m_vertices.clear();
 
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
             const char symbol = m_grid[row][column];
 
-            if (!isRenderableTile(symbol)){
+            if (!isRenderableTile(symbol)) {
                 continue;
             }
 
@@ -255,13 +284,11 @@ void TileMap::buildVertices(){
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const sf::IntRect& texRect = getTileTextureRect(symbol);
-
-            const float textureLeft = static_cast<float>(texRect.position.x);
-            const float textureTop = static_cast<float>(texRect.position.y);
-
-            const float textureRight = textureLeft + static_cast<float>(texRect.size.x);
-            const float textureBottom = textureTop + static_cast<float>(texRect.size.y);
+            const unsigned int tileIndex = getTilesetIndex(symbol);
+            const float textureLeft = static_cast<float>(tileIndex * TILE_SIZE);
+            const float textureTop = 0.f;
+            const float textureRight = textureLeft + static_cast<float>(TILE_SIZE);
+            const float textureBottom = static_cast<float>(TILE_SIZE);
 
             // First triangle: top-left, bottom-left, bottom-right.
             appendTexturedVertex(m_vertices, left, top,
@@ -289,9 +316,9 @@ void TileMap::buildVertices(){
 std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
     std::vector<sf::Vector2i> positions;
 
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
-            if (m_grid[row][column] == symbol){
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+            if (m_grid[row][column] == symbol) {
                 positions.emplace_back(static_cast<int>(column), static_cast<int>(row));
             }
         }
@@ -300,7 +327,7 @@ std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
     return positions;
 }
 
-sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
+sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition) {
     const float tileSize = static_cast<float>(TILE_SIZE);
 
     return {static_cast<float>(gridPosition.x) * tileSize,
@@ -308,39 +335,54 @@ sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition){
     };
 }
 
-void TileMap::createPhysicsBodies(b2World* world){
-    if (!world){
+void TileMap::createPhysicsBodies(b2World* world) {
+    if (!world) {
         std::cerr << "Cannot create TileMap physics bodies: world is null" << std::endl;
         return;
     }
-    
+
     clearPhysicsBodies();
     m_physicsWorld = world;
-    
+
     const float tileSize = static_cast<float>(TILE_SIZE);
-    
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
-            if (!isSolid(static_cast<int>(column), static_cast<int>(row))){
-                continue;
+
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        std::size_t column = 0;
+
+        while (column < m_grid[row].size()) {
+            while (column < m_grid[row].size() && !isSolid(static_cast<int>(column), static_cast<int>(row))) {
+                ++column;
             }
-            
-            sf::Vector2f centerPixels(
-                static_cast<float>(column) * tileSize + tileSize / 2.f,
-                static_cast<float>(row) * tileSize + tileSize / 2.f
-            );
-            b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
+
+            if (column >= m_grid[row].size()) {
+                break;
+            }
+
+            const std::size_t startColumn = column;
+
+            while (column < m_grid[row].size() && isSolid(static_cast<int>(column), static_cast<int>(row))) {
+                ++column;
+            }
+
+            const std::size_t tileCount = column - startColumn;
+
+            const float bodyWidth = static_cast<float>(tileCount) * tileSize;
+
+            const float centerX = static_cast<float>(startColumn) * tileSize + bodyWidth / 2.f;
+
+            const float centerY = static_cast<float>(row) * tileSize + tileSize / 2.f;
 
             b2BodyDef bodyDefinition;
             bodyDefinition.type = b2_staticBody;
-            bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
-            
+            bodyDefinition.position = PhysicsEngine::pixelsToMeters(sf::Vector2f(centerX, centerY));
+
             b2Body* body = world->CreateBody(&bodyDefinition);
-            
-            float halfSizeMeters = PhysicsEngine::pixelsToMeters(tileSize / 2.f);
+
             b2PolygonShape shape;
-            shape.SetAsBox(halfSizeMeters, halfSizeMeters);
-            
+            shape.SetAsBox(PhysicsEngine::pixelsToMeters(bodyWidth / 2.f),
+                           PhysicsEngine::pixelsToMeters(tileSize / 2.f)
+                           );
+
             b2FixtureDef fixtureDefinition;
             fixtureDefinition.shape = &shape;
             fixtureDefinition.friction = TILE_FRICTION;
@@ -351,7 +393,7 @@ void TileMap::createPhysicsBodies(b2World* world){
     }
 }
 
-void TileMap::clearPhysicsBodies(){
+void TileMap::clearPhysicsBodies() {
     if (!m_physicsWorld){
         m_physicsBodies.clear();
         return;

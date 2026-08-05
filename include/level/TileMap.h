@@ -1,8 +1,8 @@
 /**
  * @file TileMap.h
  * @author TV4 (Vy)
- * @brief TileMap management: load, query, and render level tiles
- * @note Sprint 4 - level loading, validation, queries, and placeholder rendering
+ * @brief TileMap management: load, validate, query, render, and create physics
+ * @note Sprint 4 - textured tile rendering using a 10-frame tileset
  */
 
 #pragma once

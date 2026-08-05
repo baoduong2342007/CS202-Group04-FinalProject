@@ -26,14 +26,14 @@ Tất cả tệp hình ảnh dùng định dạng `.png` (hỗ trợ kênh Alpha
 ### 1.2. Kẻ địch (`assets/textures/enemies/`)
 | Sheet | Mô tả & Quy ước cắt | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/enemies/goomba.png` | Goomba — 3 frame ngang 32×32: walk ×2 (0–64px) + squish (64–96px). | ✅ Có sẵn (tạm thời) |
-| `assets/textures/enemies/enemies.png` | **Sheet chung nhiều enemy** — chứa Goomba, Koopa, v.v. Dùng làm nguồn cắt cho **Koopa** khi TV4 implement (Sprint 5–6). | ✅ Có sẵn |
+| `assets/textures/enemies/goomba.png` | Sprite sheet Goomba gồm 2 frame di chuyển và 1 frame bị giẫm bẹp; mỗi frame 32×32 px, tổng kích thước 96×32 px. | ✅ Có sẵn |
+| `assets/textures/enemies/koopa.png` | Koopa sprite sheet gồm 2 frame đi bộ, 1 frame mai đứng yên và 1 frame mai bắt đầu hồi phục; mỗi frame nằm trong canvas 32×48 px, tổng kích thước 128×48 px. | ✅ Có sẵn |
+| `assets/textures/enemies/enemies.png` | **Sheet chung nhiều enemy** — chứa Goomba, Koopa, v.v. Dùng làm nguồn cắt bổ sung. | ✅ Có sẵn |
 
 ### 1.3. Ô bản đồ & Gạch đá (`assets/textures/tiles/`)
 | Sheet | Mô tả & Quy ước cắt | Trạng thái |
 | :--- | :--- | :---: |
-| `assets/textures/tiles/tileset.png` | **Tileset chính.** Layout chuẩn: 4 tile ngang × 32px/tile → **kích thước 128×32**. | ✅ Có sẵn |
-| | Vị trí tile (KHỚP `TileMap.cpp`): `[0]=ground` (đất), `[1]=brick` (gạch), `[2]=?` (khối hỏi chấm), `[3]=F` (cờ đích/flag). | |
+| `assets/textures/tiles/tileset.png` | **Tileset chính.** Layout chuẩn: 4 tile ngang × 32px/tile → kích thước 128×32 px (ground, brick, question block, finish pole). | ✅ Có sẵn |
 
 ### 1.4. Vật phẩm (`assets/textures/items/`)
 | Sheet | Mô tả & Quy ước cắt | Trạng thái |

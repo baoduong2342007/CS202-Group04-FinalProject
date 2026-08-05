@@ -15,6 +15,7 @@
 
 class b2Body;
 class b2World;
+class Mario;
 
 class TileMap {
 public:
@@ -49,8 +50,8 @@ public:
         outCol = static_cast<int>(ptr & 0xFFFF);
     }
 
-    static void queueTileHit(int column, int row);
-    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, const sf::Vector2f& marioPos = {0.f, 0.f}, float marioWidth = 32.f);
+    static void queueTileHit(int column, int row, float overlap = 0.f);
+    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, Mario* mario = nullptr);
 
     bool hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager);
     

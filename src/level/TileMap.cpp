@@ -7,6 +7,8 @@
 
 #include "level/TileMap.h"
 
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <string_view>
@@ -16,8 +18,11 @@
 #include <SFML/System/Exception.hpp>
 
 #include "physics/PhysicsEngine.h"
+#include "level/TileCollisionSpans.h"
 #include "entities/Entity.h"
 #include "entities/BlockDebris.h"
+#include "entities/Mario.h"
+#include "entities/QuestionBlock.h"
 #include "items/Mushroom.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -26,39 +31,78 @@
 namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}UEO";
+constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr unsigned int TILESET_TILE_COUNT = 4;
 
-std::vector<sf::Vector2i> s_pendingTileHits;
-} // namespace
-
-void TileMap::queueTileHit(int column, int row) {
-    s_pendingTileHits.emplace_back(column, row);
+bool isSolidTileSymbol(char tile) {
+    return tile == '1' || tile == 'B' || tile == 'E' ||
+           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
-void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, const sf::Vector2f& marioPos, float marioWidth) {
+struct PendingTileHit {
+    sf::Vector2i gridPos;
+    float overlap;
+};
+
+std::vector<PendingTileHit> s_pendingTileHits;
+
+int worldToGridCoordinate(float coordinate) {
+    return static_cast<int>(std::lround(coordinate / TILE_SIZE_PIXELS));
+}
+
+QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entities,
+                                   int column,
+                                   int row) {
+    for (auto& entity : entities) {
+        if (!entity || !entity->isQuestionBlock() ||
+            !entity->isActive() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        sf::Vector2f position = entity->getPosition();
+        if (worldToGridCoordinate(position.x) == column &&
+            worldToGridCoordinate(position.y) == row) {
+            return static_cast<QuestionBlock*>(entity.get());
+        }
+    }
+
+    return nullptr;
+}
+} // namespace
+
+void TileMap::queueTileHit(int column, int row, float overlap) {
+    for (auto& pendingHit : s_pendingTileHits) {
+        if (pendingHit.gridPos.x == column && pendingHit.gridPos.y == row) {
+            pendingHit.overlap = std::max(pendingHit.overlap, overlap);
+            return;
+        }
+    }
+
+    s_pendingTileHits.push_back(PendingTileHit{{column, row}, overlap});
+}
+
+void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, Mario* mario) {
     if (s_pendingTileHits.empty()) return;
 
-    sf::Vector2i bestGridPos = s_pendingTileHits.front();
+    PendingTileHit bestHit = s_pendingTileHits.front();
+    for (const auto& pendingHit : s_pendingTileHits) {
+        if (pendingHit.overlap > bestHit.overlap) {
+            bestHit = pendingHit;
+        }
+    }
 
-    if (marioWidth > 0.f) {
-        float marioLeft = marioPos.x;
-        float marioRight = marioPos.x + marioWidth;
-        float maxOverlap = -1.f;
-
-        for (const auto& gridPos : s_pendingTileHits) {
-            float tileLeft = static_cast<float>(gridPos.x * TILE_SIZE);
-            float tileRight = tileLeft + static_cast<float>(TILE_SIZE);
-
-            float overlap = std::max(0.f, std::min(marioRight, tileRight) - std::max(marioLeft, tileLeft));
-            if (overlap > maxOverlap) {
-                maxOverlap = overlap;
-                bestGridPos = gridPos;
-            }
+    const sf::Vector2i bestGridPos = bestHit.gridPos;
+    if (mario) {
+        if (QuestionBlock* block = findQuestionBlockAt(entities, bestGridPos.x, bestGridPos.y)) {
+            block->onHit(*mario, &entities, &textureManager);
+            s_pendingTileHits.clear();
+            return;
         }
     }
 
     hitTile(bestGridPos.x, bestGridPos.y, isBigMario, entities, textureManager);
+
     s_pendingTileHits.clear();
 }
 
@@ -80,7 +124,7 @@ bool isValidTileSymbol(char symbol){
 
 bool isRenderableTile(char symbol){
     return symbol == '1' || symbol == 'B' || symbol == 'F' ||
-           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|' || symbol == 'E' || symbol == 'O';
+           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|' || symbol == 'E';
 }
 
 
@@ -278,10 +322,7 @@ char TileMap::getTileAt(int column, int row) const {
 }
 
 bool TileMap::isSolid(int column, int row) const {
-    const char tile = getTileAt(column, row);
-
-    return tile == '1' || tile == 'B' || tile == 'U' || tile == 'O' || tile == 'E' ||
-           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
+    return isSolidTileSymbol(getTileAt(column, row));
 }
 
 
@@ -412,41 +453,39 @@ void TileMap::createPhysicsBodies(b2World* world){
     m_physicsWorld = world;
     
     const float tileSize = static_cast<float>(TILE_SIZE);
-    
-    for (std::size_t row = 0; row < m_grid.size(); ++row){
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column){
-            if (!isSolid(static_cast<int>(column), static_cast<int>(row))){
-                continue;
-            }
-            
-            sf::Vector2f centerPixels(
-                static_cast<float>(column) * tileSize + tileSize / 2.f,
-                static_cast<float>(row) * tileSize + tileSize / 2.f
-            );
-            b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
+    const std::vector<TileCollisionSpan> spans =
+        buildHorizontalTileCollisionSpans(m_grid, isSolidTileSymbol);
 
-            b2BodyDef bodyDefinition;
-            bodyDefinition.type = b2_staticBody;
-            bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
+    for (const TileCollisionSpan& span : spans) {
+        const float spanWidthPixels = static_cast<float>(span.length) * tileSize;
+        const sf::Vector2f centerPixels(
+            static_cast<float>(span.column) * tileSize + spanWidthPixels / 2.f,
+            static_cast<float>(span.row) * tileSize + tileSize / 2.f
+        );
+        const b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
 
-            uintptr_t packedData = TILE_USERDATA_FLAG |
-                                   (static_cast<uintptr_t>(row) << 16) |
-                                   static_cast<uintptr_t>(column);
-            bodyDefinition.userData.pointer = packedData;
-            
-            b2Body* body = world->CreateBody(&bodyDefinition);
-            
-            float halfSizeMeters = PhysicsEngine::pixelsToMeters(tileSize / 2.f);
-            b2PolygonShape shape;
-            shape.SetAsBox(halfSizeMeters, halfSizeMeters);
-            
-            b2FixtureDef fixtureDefinition;
-            fixtureDefinition.shape = &shape;
-            fixtureDefinition.friction = TILE_FRICTION;
+        b2BodyDef bodyDefinition;
+        bodyDefinition.type = b2_staticBody;
+        bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
 
-            body->CreateFixture(&fixtureDefinition);
-            m_physicsBodies.push_back(body);
-        }
+        // Coordinates identify the span start for diagnostics only. Contact points
+        // determine the exact tile when Mario hits a block from below.
+        bodyDefinition.userData.pointer = TILE_USERDATA_FLAG |
+                                        (static_cast<uintptr_t>(span.row) << 16) |
+                                        static_cast<uintptr_t>(span.column);
+
+        b2Body* body = world->CreateBody(&bodyDefinition);
+
+        b2PolygonShape shape;
+        shape.SetAsBox(PhysicsEngine::pixelsToMeters(spanWidthPixels / 2.f),
+                       PhysicsEngine::pixelsToMeters(tileSize / 2.f));
+
+        b2FixtureDef fixtureDefinition;
+        fixtureDefinition.shape = &shape;
+        fixtureDefinition.friction = TILE_FRICTION;
+
+        body->CreateFixture(&fixtureDefinition);
+        m_physicsBodies.push_back(body);
     }
 }
 
@@ -497,21 +536,11 @@ bool TileMap::hitTile(int column, int row, bool isBigMario, std::vector<std::uni
             m_grid[row][column] = '.';
             buildVertices();
 
-            // Destroy physics body if world is unlocked
             sf::Vector2f tileWorldPos = gridToWorldPosition({column, row});
             if (m_physicsWorld && !m_physicsWorld->IsLocked()) {
-                for (auto it = m_physicsBodies.begin(); it != m_physicsBodies.end(); ++it) {
-                    b2Body* b = *it;
-                    if (b) {
-                        int cCol, cRow;
-                        unpackTileCoords(b->GetUserData().pointer, cCol, cRow);
-                        if (cCol == column && cRow == row) {
-                            m_physicsWorld->DestroyBody(b);
-                            m_physicsBodies.erase(it);
-                            break;
-                        }
-                    }
-                }
+                // One tile may be inside a merged span, so rebuild static terrain
+                // from the updated grid instead of destroying a single body.
+                createPhysicsBodies(m_physicsWorld);
             }
 
             // Spawn 4 flying debris particles

@@ -75,6 +75,7 @@ void Level::spawnEntitiesFromTileMap() {
             TileMap::gridToWorldPosition(marioSpawns.front());
         m_mario = std::make_unique<Mario>(spawnPos,
                                           sf::Vector2f(32.f, 32.f));
+        m_mario->setRespawnPosition(spawnPos);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! "
                   << "Defaulting to (100, 100)" << std::endl;
@@ -111,8 +112,15 @@ void Level::spawnEntitiesFromTileMap() {
 }
 
 void Level::update(float dt) {
+    if (m_mario) {
+        m_mario->preparePhysics(dt);
+    }
+
     if (m_world) {
-        PhysicsEngine::update(*m_world, dt);
+        const bool physicsStepped = PhysicsEngine::update(*m_world, dt);
+        if (physicsStepped && m_mario) {
+            m_mario->refreshGroundedState();
+        }
     }
 
     // Update tilemap bump animations
@@ -120,9 +128,7 @@ void Level::update(float dt) {
 
     // Process queued tile hits (bumping Question blocks & shattering Brick blocks)
     bool isBigMario = (m_mario && m_mario->getMarioState() != MarioState::SMALL);
-    sf::Vector2f marioPos = m_mario ? m_mario->getPosition() : sf::Vector2f(0.f, 0.f);
-    float marioWidth = m_mario ? m_mario->getSize().x : 32.f;
-    m_tileMap.processPendingHits(m_entities, m_textureManager, isBigMario, marioPos, marioWidth);
+    m_tileMap.processPendingHits(m_entities, m_textureManager, isBigMario, m_mario.get());
 
     // Update Mario
     if (m_mario) {

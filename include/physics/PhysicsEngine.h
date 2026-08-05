@@ -12,7 +12,9 @@
 
 class PhysicsEngine {
 public:
-    static void update(b2World& world, float dt);
+    /// Advances the fixed-step simulation and reports whether at least one
+    /// Box2D step occurred. Callers can then refresh contact-derived state.
+    static bool update(b2World& world, float dt);
 
     // Pixel to Meter conversions (e.g. 30 pixels = 1 meter)
     static constexpr float PPM = 30.0f;

@@ -23,9 +23,8 @@ public:
     /// @param contact Pointer to Box2D contact object
     static void resolve(b2Contact* contact);
 
-    /// @brief Resolves ending of collision between Box2D fixtures
-    /// @param contact Pointer to Box2D contact object
-    static void resolveEnd(b2Contact* contact);
+    /// @brief Adjusts active contact properties before Box2D solves them
+    static void preSolve(b2Contact* contact);
 
 private:
     CollisionManager() = delete;

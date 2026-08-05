@@ -11,6 +11,7 @@ void ContactListener::BeginContact(b2Contact* contact) {
     CollisionManager::resolve(contact);
 }
 
-void ContactListener::EndContact(b2Contact* contact) {
-    CollisionManager::resolveEnd(contact);
+void ContactListener::PreSolve(b2Contact* contact, const b2Manifold* oldManifold) {
+    (void)oldManifold;
+    CollisionManager::preSolve(contact);
 }

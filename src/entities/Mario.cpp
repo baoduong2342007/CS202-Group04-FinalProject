@@ -422,6 +422,36 @@ void Mario::setMoveIntent(float inputDirection) {
   }
 }
 
+bool Mario::hasCeilingClearance() const {
+  if (!m_body || !m_body->GetWorld()) return true;
+
+  b2AABB aabb;
+  b2Vec2 pos = m_body->GetPosition();
+  float halfW = PhysicsEngine::pixelsToMeters(14.0f);
+  float currentTop = pos.y - PhysicsEngine::pixelsToMeters(16.0f);
+  float requiredTop = pos.y - PhysicsEngine::pixelsToMeters(32.0f);
+
+  aabb.lowerBound.Set(pos.x - halfW, requiredTop);
+  aabb.upperBound.Set(pos.x + halfW, currentTop);
+
+  class ClearanceQueryCallback : public b2QueryCallback {
+  public:
+    bool hasCollision = false;
+    b2Body* marioBody;
+    ClearanceQueryCallback(b2Body* body) : marioBody(body) {}
+
+    bool ReportFixture(b2Fixture* fixture) override {
+      b2Body* body = fixture->GetBody();
+      if (body == marioBody || fixture->IsSensor()) return true;
+      hasCollision = true;
+      return false; // Stop query on first solid collision
+    }
+  } callback(m_body);
+
+  m_body->GetWorld()->QueryAABB(&callback, aabb);
+  return !callback.hasCollision;
+}
+
 void Mario::powerUp(MarioState state) {
   if (m_marioState == state) return;
 
@@ -437,9 +467,12 @@ void Mario::powerUp(MarioState state) {
   }
 
   // If growing from Small to Super/Fire, offset Box2D body upward by 16px (0.5m)
+  // ONLY if overhead clearance exists, otherwise anchor to current position to avoid geometry clipping
   if (wasSmall && (state == MarioState::SUPER || state == MarioState::FIRE) && m_body) {
-    b2Vec2 currentPos = m_body->GetPosition();
-    m_body->SetTransform(b2Vec2(currentPos.x, currentPos.y - PhysicsEngine::pixelsToMeters(16.f)), m_body->GetAngle());
+    if (hasCeilingClearance()) {
+      b2Vec2 currentPos = m_body->GetPosition();
+      m_body->SetTransform(b2Vec2(currentPos.x, currentPos.y - PhysicsEngine::pixelsToMeters(16.f)), m_body->GetAngle());
+    }
   }
 
   setupAnimationsForState(*m_animationSystem, m_marioState);

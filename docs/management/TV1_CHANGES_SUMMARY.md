@@ -55,7 +55,7 @@ Trong 11 commit gần đây, TV1 đã hoàn thành các mục tiêu quan trọng
     * Quản lý màn chơi 1-based (bắt đầu từ World 1-1).
     * `loadLevel(int)`: Kiểm tra kết quả nạp file, tự chuyển về Menu nếu file hỏng.
     * `snapshotProgress()` / `restoreProgress()`: Chụp chỉ số từ Mario trước khi hủy màn và nạp lại vào Mario mới.
-    * `updateTransition(dt)`: State machine làm mờ/sáng màn hình chuyển màn.
+    * `updateTransition(dt)`: State machine làm mờ/sáng màn hình chuyển màn. Đã sửa các lỗi đồ họa 1-frame (BUG-018: nháy sáng, BUG-019: sprite chưa cắt frame và camera giật bằng cách gọi `update(0.f)` sau khi nạp màn).
     * `m_terminalCommittedThisFrame`: Chống nạp trùng event GameOver/NextLevel trong cùng 1 frame.
 
 * **[include/states/GameOverState.h](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/states/GameOverState.h)** & **[src/states/GameOverState.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/src/states/GameOverState.cpp)** *(Cập nhật - S6-TV1-14)*

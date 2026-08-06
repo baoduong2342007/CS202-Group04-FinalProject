@@ -280,6 +280,7 @@ void PlayState::updateTransition(float dt) {
                 // navigateToLevel() resets m_fadeAlpha to 0 — restore it so
                 // FADE_IN starts from a fully black screen.
                 m_fadeAlpha = 255.f;
+                m_fadeOverlay.setFillColor(sf::Color(0, 0, 0, 255));
                 m_transitionPhase = TransitionPhase::FADE_IN;
                 EventBus::getInstance().notify(EventType::LEVEL_STARTED);
             }

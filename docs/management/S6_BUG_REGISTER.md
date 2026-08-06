@@ -45,6 +45,8 @@
 | BUG-015 | Sprint 5 error plan còn là instruction | Đọc doc cũ | TV1 | S6-TV1-33 | FIXED |
 | BUG-016 | .gitattributes thiếu FLAC/PDF binary | Git add | TV1 | S6-TV1-34 | FIXED |
 | BUG-017 | EntityFactory gọi sai tên Factory Method | Code review | TV1 | S6-TV1-23 | FIXED |
+| BUG-018 | Transition: 1-frame mờ dần nháy sáng | Chuyển level (LOADING->FADE_IN) | TV1 | S6-TV1-12 | FIXED |
+| BUG-019 | Transition: Camera giật & Sprite thu nhỏ | Quan sát 0.5s đầu FADE_IN | TV1 | S6-TV1-12 | FIXED |
 
 ---
 

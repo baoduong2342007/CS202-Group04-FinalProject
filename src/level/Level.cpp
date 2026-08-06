@@ -70,6 +70,9 @@ bool Level::loadFromFile(const std::string& path) {
     // Spawn Mario and all entities from tile codes
     spawnEntitiesFromTileMap();
 
+    // Initialize camera and entity sprite frames before first render
+    update(0.f);
+
     return true;
 }
 

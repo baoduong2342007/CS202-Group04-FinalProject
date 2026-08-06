@@ -48,19 +48,21 @@ bool Level::loadFromFile(const std::string& path) {
     }
 
     // Initialize camera with screen size and level pixel-bounds
-    float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
 
-    m_camera.init(
-        sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
-                     static_cast<float>(SCREEN_HEIGHT)),
-        sf::FloatRect(sf::Vector2f(0.f, 0.f),
-                      sf::Vector2f(levelWidth, levelHeight))
-    );
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    m_camera.init(sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
+                               static_cast<float>(SCREEN_HEIGHT)
+                               ),
+                  sf::FloatRect(sf::Vector2f(0.f, 0.f),
+                                sf::Vector2f(levelWidth, levelHeight)
+                                )
+                  );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
-    m_contactListener = std::make_unique<ContactListener>();
+    m_contactListener = std::make_unique<ContactListener>(m_tileMap);
     m_world->SetContactListener(m_contactListener.get());
 
     if (m_world) {
@@ -77,19 +79,18 @@ bool Level::loadFromFile(const std::string& path) {
 }
 
 void Level::spawnEntitiesFromTileMap() {
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
     // --- Spawn Mario from 'M' tile code (see level1.txt) ---
     auto marioSpawns = m_tileMap.findTiles('M');
 
     if (!marioSpawns.empty()) {
-        sf::Vector2f spawnPos =
-            TileMap::gridToWorldPosition(marioSpawns.front());
-        m_mario = std::make_unique<Mario>(spawnPos,
-                                          sf::Vector2f(32.f, 32.f));
+        sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
+        m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
         m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
-        std::cerr << "Level: No Mario spawn point ('M') found! "
-                  << "Defaulting to (100, 100)" << std::endl;
+        std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
         m_mario = std::make_unique<Mario>();
     }
 

@@ -62,16 +62,15 @@ float calculateMarioBlockOverlap(const Mario* mario,
     return std::max(0.f, std::min(marioRight, blockRight) - std::max(marioLeft, blockLeft));
 }
 
-void queueTileBlockHit(Mario* mario, b2Body* marioBody, int column, int row) {
-    float overlap = calculateMarioBlockOverlap(
-        mario,
-        marioBody,
-        static_cast<float>(column) * BLOCK_SIZE_PIXELS,
-        BLOCK_SIZE_PIXELS
-    );
+void queueTileBlockHit(TileMap& tileMap, Mario* mario, b2Body* marioBody, int column, int row) {
+    float overlap = calculateMarioBlockOverlap(mario,
+                                               marioBody,
+                                               static_cast<float>(column) * BLOCK_SIZE_PIXELS,
+                                               BLOCK_SIZE_PIXELS
+                                               );
 
     if (overlap > 0.f) {
-        TileMap::queueTileHit(column, row, overlap);
+        tileMap.queueTileHit(column, row, overlap);
     }
 }
 
@@ -79,10 +78,12 @@ int worldToTileIndex(float coordinate) {
     return static_cast<int>(std::lround(coordinate / BLOCK_SIZE_PIXELS));
 }
 
-void queueTileBlockHitFromContact(Mario* mario,
+void queueTileBlockHitFromContact(TileMap& tileMap,
+                                  Mario* mario,
                                   b2Body* marioBody,
                                   b2Contact* contact,
-                                  const b2WorldManifold& worldManifold) {
+                                  const b2WorldManifold& worldManifold
+                                  ) {
     if (!mario || !marioBody || !contact) {
         return;
     }
@@ -122,6 +123,7 @@ void queueTileBlockHitFromContact(Mario* mario,
             BLOCK_SIZE_PIXELS
         );
         queueTileBlockHit(
+            tileMap,
             mario,
             marioBody,
             tile.column,
@@ -130,14 +132,23 @@ void queueTileBlockHitFromContact(Mario* mario,
     }
 }
 
-void queueEntityBlockHit(Mario* mario, b2Body* marioBody, const Entity& block) {
+void queueEntityBlockHit(TileMap& tileMap, Mario* mario, b2Body* marioBody, const Entity& block) {
     sf::Vector2f position = block.getPosition();
-    float overlap = calculateMarioBlockOverlap(mario, marioBody, position.x, block.getSize().x);
+
+    float overlap = calculateMarioBlockOverlap(mario,
+                                               marioBody,
+                                               position.x,
+                                               block.getSize().x
+                                               );
 
     if (overlap > 0.f) {
-        TileMap::queueTileHit(worldToTileIndex(position.x), worldToTileIndex(position.y), overlap);
+        tileMap.queueTileHit(worldToTileIndex(position.x),
+                             worldToTileIndex(position.y),
+                             overlap
+                             );
     }
 }
+
 } // namespace
 
 void CollisionManager::preSolve(b2Contact* contact) {
@@ -155,7 +166,7 @@ void CollisionManager::preSolve(b2Contact* contact) {
     }
 }
 
-void CollisionManager::resolve(b2Contact* contact) {
+void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     if (!contact) return;
 
     b2Fixture* fixtureA = contact->GetFixtureA();
@@ -244,7 +255,7 @@ void CollisionManager::resolve(b2Contact* contact) {
     }
 
     if (mario && marioBody) {
-        handleMarioCollision(mario, otherEntity, marioBody, contact);
+        handleMarioCollision(mario, otherEntity, marioBody, contact, tileMap);
         return;
     }
 
@@ -318,7 +329,12 @@ void CollisionManager::resolve(b2Contact* contact) {
     }
 }
 
-void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body* marioBody, b2Contact* contact) {
+void CollisionManager::handleMarioCollision(Mario* mario,
+                                            Entity* other,
+                                            b2Body* marioBody,
+                                            b2Contact* contact,
+                                            TileMap& tileMap
+                                            ) {
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
 
@@ -338,7 +354,7 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
 
         if (TileMap::isTileUserData(otherPtr)) {
             if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
-                queueTileBlockHitFromContact(mario, marioBody, contact, worldManifold);
+                queueTileBlockHitFromContact(tileMap, mario, marioBody, contact, worldManifold);
             }
         }
     }
@@ -376,7 +392,7 @@ void CollisionManager::handleMarioCollision(Mario* mario, Entity* other, b2Body*
     // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
         if (other && other->isQuestionBlock()) {
-            queueEntityBlockHit(mario, marioBody, *other);
+            queueEntityBlockHit(tileMap, mario, marioBody, *other);
         }
 #ifdef DEBUG
         std::cout << "[DEBUG][CollisionManager] Mario hit overhead block from below!" << std::endl;

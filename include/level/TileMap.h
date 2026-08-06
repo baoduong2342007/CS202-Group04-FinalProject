@@ -50,7 +50,7 @@ public:
         outCol = static_cast<int>(ptr & 0xFFFF);
     }
 
-    static void queueTileHit(int column, int row, float overlap = 0.f);
+    void queueTileHit(int column, int row, float overlap = 0.f);
     void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, Mario* mario = nullptr);
 
     bool hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager);
@@ -60,6 +60,11 @@ public:
 
 private:
     static constexpr unsigned int TILE_SIZE = 32;
+
+    struct PendingTileHit {
+        sf::Vector2i gridPosition;
+        float overlap;
+    };
 
     struct TileBump {
         int column;
@@ -78,4 +83,5 @@ private:
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;
+    std::vector<PendingTileHit> m_pendingTileHits;
 };

@@ -41,13 +41,6 @@ bool isSolidTileSymbol(char tile) {
            tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
-struct PendingTileHit {
-    sf::Vector2i gridPos;
-    float overlap;
-};
-
-std::vector<PendingTileHit> s_pendingTileHits;
-
 int worldToGridCoordinate(float coordinate) {
     return static_cast<int>(std::lround(coordinate / TILE_SIZE_PIXELS));
 }
@@ -72,40 +65,40 @@ QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entitie
 } // namespace
 
 void TileMap::queueTileHit(int column, int row, float overlap) {
-    for (auto& pendingHit : s_pendingTileHits) {
-        if (pendingHit.gridPos.x == column && pendingHit.gridPos.y == row) {
+    for (auto& pendingHit : m_pendingTileHits) {
+        if (pendingHit.gridPosition.x == column && pendingHit.gridPosition.y == row) {
             pendingHit.overlap = std::max(pendingHit.overlap, overlap);
             return;
         }
     }
 
-    s_pendingTileHits.push_back(PendingTileHit{{column, row}, overlap});
+    m_pendingTileHits.push_back({{column, row}, overlap});
 }
 
 void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, Mario* mario) {
-    if (s_pendingTileHits.empty()) {
+    if (m_pendingTileHits.empty()) {
         return;
     }
 
-    PendingTileHit bestHit = s_pendingTileHits.front();
-    for (const auto& pendingHit : s_pendingTileHits) {
+    PendingTileHit bestHit = m_pendingTileHits.front();
+    for (const auto& pendingHit : m_pendingTileHits) {
         if (pendingHit.overlap > bestHit.overlap) {
             bestHit = pendingHit;
         }
     }
 
-    const sf::Vector2i bestGridPos = bestHit.gridPos;
+    const sf::Vector2i bestGridPos = bestHit.gridPosition;
     if (mario) {
         if (QuestionBlock* block = findQuestionBlockAt(entities, bestGridPos.x, bestGridPos.y)) {
             block->onHit(*mario, &entities, &textureManager);
-            s_pendingTileHits.clear();
+            m_pendingTileHits.clear();
             return;
         }
     }
 
     hitTile(bestGridPos.x, bestGridPos.y, isBigMario, entities, textureManager);
 
-    s_pendingTileHits.clear();
+    m_pendingTileHits.clear();
 }
 
 namespace {
@@ -356,6 +349,8 @@ bool TileMap::loadFromFile(const std::string& path) {
         std::cerr << "[TileMap] Warning: Tileset image size is " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
 #endif
     }
+
+    m_pendingTileHits.clear();
 
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);

@@ -5,11 +5,12 @@
  */
 #pragma once
 #include "states/IGameState.h"
+#include "core/GameProgress.h"
 #include <SFML/Graphics.hpp>
 
 class WinState : public IGameState {
 public:
-    WinState();
+    explicit WinState(const GameProgress& progress = {});
     ~WinState() override = default;
 
     void onEnter() override;
@@ -22,4 +23,6 @@ public:
 private:
     sf::Font m_font;
     sf::Text m_text;
+    GameProgress m_progress;
+    sf::Text m_scoreText;
 };

@@ -24,6 +24,7 @@ public:
     ~Mario() override = default;
 
     // 2. Override methods
+    void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false) override;
     void update(float dt) override;
 
     // 3. Public methods
@@ -59,6 +60,10 @@ public:
     void setMarioState(MarioState state);
     int getScore() const;
     int getCoinCount() const;
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setScore(int score);
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setCoinCount(int coins);
     bool isInvincible() const;
     bool canShootFireBall() const;
     int getLives() const;

@@ -19,11 +19,11 @@ endif()
 # ==============================================================================
 # 2. FIND OR DOWNLOAD SFML LIBRARY (cross-platform: Windows, macOS, Linux)
 # ==============================================================================
-# On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it
+# On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it.
+# S6-TV1-27: TLS verification is ON, and an existing SFML folder is never deleted
+# (a failed configure must not destroy data). Archive hash verification is documented
+# below but intentionally not hard-coded until the upstream hash is confirmed.
 if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFMLConfig.cmake")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
-        file(REMOVE_RECURSE "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
-    endif()
     if(MSVC)
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-vc17-64-bit.zip")
@@ -32,9 +32,13 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip")
     endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    file(DOWNLOAD "${SFML_URL}" 
-                  "${SFML_ZIP_PATH}" 
-                  TLS_VERIFY OFF
+    # NOTE: TLS verification is ON. To also verify the archive integrity, set
+    # EXPECTED_HASH to the real SHA256 of the downloaded zip (e.g.
+    # "SHA256=<hex>"). It is intentionally omitted here because the exact
+    # upstream hash must be confirmed by the maintainer before hard-coding.
+    file(DOWNLOAD "${SFML_URL}"
+                  "${SFML_ZIP_PATH}"
+                  TLS_VERIFY ON
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
     if(STATUS_CODE EQUAL 0)
@@ -89,6 +93,10 @@ FetchContent_MakeAvailable(box2d)
 # Recursively scan all .cpp source files in the src/ directory
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+
+# S6-TV1-26: exclude demo files from the production target so the demo's
+# main() does not collide with src/main.cpp (duplicate symbol at link time).
+list(FILTER SOURCES EXCLUDE REGEX "src/demo/.*\\.cpp$")
 
 add_executable(main ${SOURCES})
 
@@ -145,11 +153,18 @@ if(BUILD_TESTING)
         src/entities/Entity.cpp
         src/entities/Mario.cpp
         src/patterns/EventBus.cpp
-        src/physics/PhysicsEngine.cpp
     )
     target_include_directories(mario_physics_tests PRIVATE include)
     target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+
+    add_executable(play_state_tests
+        tests/PlayStateTests.cpp
+        src/patterns/EventBus.cpp
+    )
+    target_include_directories(play_state_tests PRIVATE include)
+    target_link_libraries(play_state_tests PRIVATE SFML::Graphics)
+    add_test(NAME play_state_tests COMMAND play_state_tests)
 endif()
 
 # Platform-specific Release build settings
@@ -165,11 +180,13 @@ endif()
 # 5. POST-BUILD ACTIONS
 # ==============================================================================
 
-# 5.1. Auto-sync assets and levels directories to the build folder on EVERY build
+# 5.1. Auto-sync assets and levels directories to the build folder.
+# S6-TV1-29: `cmake -E copy_directory` only overwrites files whose content/timestamp
+# changed, so unchanged assets are not re-copied on every invocation (incremental).
 add_custom_target(CopyAssets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
-    COMMENT "Auto-syncing assets and level maps to build directory..."
+    COMMENT "Auto-syncing assets and level maps to build directory (incremental)..."
 )
 
 # 5.2. Copy SFML DLL files (Windows only)

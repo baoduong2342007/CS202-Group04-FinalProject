@@ -17,8 +17,12 @@
 *.jpg binary
 *.wav binary
 *.ogg binary
+*.flac binary
 *.ttf binary
 *.dll binary
 *.a binary
 *.lib binary
 *.dylib binary
+*.pdf binary
+*.zip binary
+*.exe binary

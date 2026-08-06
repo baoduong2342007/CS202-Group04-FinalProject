@@ -18,5 +18,6 @@ enum class EventType {
     ENEMY_STOMPED,
     COIN_COLLECTED,
     LEVEL_COMPLETED,
-    GAME_PAUSED
+    GAME_PAUSED,
+    LEVEL_STARTED    // S6-TV1-12: fired after level load + restore
 };

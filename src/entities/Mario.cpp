@@ -288,6 +288,11 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
   m_body->SetLinearVelocity(b2Vec2(newVxMeters, currentVy));
 }
 
+void Mario::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor) {
+  Entity::initPhysics(world, type, size, isSensor);
+  rebuildFixture();
+}
+
 void Mario::rebuildFixture() {
   sf::Vector2f targetSize = (m_marioState == MarioState::SMALL)
                                 ? SMALL_MARIO_SIZE
@@ -311,9 +316,23 @@ void Mario::rebuildFixture() {
   }
 
   // Create new shape with 0.0f friction to prevent wall sticking
+  // Use a beveled octagon (chamfered box) to prevent Box2D ghost collisions on seams between blocks
   b2PolygonShape dynamicBox;
-  dynamicBox.SetAsBox(PhysicsEngine::pixelsToMeters(targetSize.x / 2.0f),
-                      PhysicsEngine::pixelsToMeters(targetSize.y / 2.0f));
+  float w = PhysicsEngine::pixelsToMeters(targetSize.x / 2.0f);
+  float h = PhysicsEngine::pixelsToMeters(targetSize.y / 2.0f);
+  float bevel = PhysicsEngine::pixelsToMeters(4.0f); // 4-pixel corner bevel
+
+  b2Vec2 vertices[8];
+  vertices[0].Set(-w + bevel, -h); // Top edge, left
+  vertices[1].Set( w - bevel, -h); // Top edge, right
+  vertices[2].Set( w, -h + bevel); // Right edge, top
+  vertices[3].Set( w,  h - bevel); // Right edge, bottom
+  vertices[4].Set( w - bevel,  h); // Bottom edge, right
+  vertices[5].Set(-w + bevel,  h); // Bottom edge, left
+  vertices[6].Set(-w,  h - bevel); // Left edge, bottom
+  vertices[7].Set(-w, -h + bevel); // Left edge, top
+  
+  dynamicBox.Set(vertices, 8);
 
   b2FixtureDef fixtureDef;
   fixtureDef.shape = &dynamicBox;
@@ -457,6 +476,14 @@ int Mario::getScore() const {
 
 int Mario::getCoinCount() const {
   return m_coinCount;
+}
+
+void Mario::setScore(int score) {
+  m_score = score;
+}
+
+void Mario::setCoinCount(int coins) {
+  m_coinCount = coins;
 }
 
 void Mario::setInvincible(float duration) {

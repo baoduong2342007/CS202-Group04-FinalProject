@@ -1,5 +1,12 @@
 # Sprint 1–5 — Kế Hoạch Sửa Lỗi Tổng Hợp (v2)
 
+> [!WARNING] LEGACY — KHÔNG CÒN LÀ INSTRUCTION HIỆN HÀNH
+> Tài liệu này là kế hoạch sửa lỗi của **Sprint 5** và đã được thay thế bởi
+> [`PLAN.md`](PLAN.md) (Sprint 6) và bug register P0/P1/P2 (S6-TV1-02).
+> - Không dùng tài liệu này làm nguồn instruction hiện hành.
+> - Các đường dẫn tuyệt đối (ví dụ `file:///f:/...`) bên dưới chỉ mang tính tham khảo lịch sử.
+> - Mọi task chưa hoàn thành trong tài liệu này phải được theo dõi qua Sprint 6 tracker.
+
 > [!IMPORTANT]
 > Bản cập nhật v2: Đã rà soát **toàn bộ** code của 5 TV, không chỉ những gì review đề cập. Phát hiện thêm **3 lỗi mới** mà review bỏ sót.
 

@@ -24,8 +24,6 @@ public:
         m_lastValue = m_value;
     }
 
-    void undo() override {}
-
 private:
     int& m_executionCount;
     int& m_lastValue;

@@ -158,14 +158,19 @@ if(BUILD_TESTING)
     add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
 
     add_executable(mario_physics_tests
-        tests/MarioPhysicsTests.cpp
-        src/core/AnimationSystem.cpp
-        src/core/TextureManager.cpp
-        src/entities/Character.cpp
-        src/entities/Entity.cpp
-        src/entities/Mario.cpp
-        src/patterns/EventBus.cpp
-    )
+    	tests/MarioPhysicsTests.cpp
+    	src/core/AnimationSystem.cpp
+    	src/core/TextureManager.cpp
+    	src/entities/Character.cpp
+    	src/entities/Entity.cpp
+    	src/entities/FireBall.cpp
+    	src/entities/Mario.cpp
+    	src/items/Item.cpp
+    	src/patterns/EventBus.cpp
+    	src/states/FireMarioState.cpp
+    	src/states/SmallMarioState.cpp
+    	src/states/SuperMarioState.cpp
+	)
     target_include_directories(mario_physics_tests PRIVATE include)
     target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)

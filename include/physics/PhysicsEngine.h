@@ -26,7 +26,6 @@ private:
     PhysicsEngine() = default;
     ~PhysicsEngine() = default;
 
-    static float s_timeAccumulator;
     static constexpr float TIME_STEP = 1.0f / 60.0f;
     static constexpr int VELOCITY_ITERATIONS = 8;
     static constexpr int POSITION_ITERATIONS = 3;

@@ -23,7 +23,11 @@ public:
     // 3. Public methods
     void bounce(const sf::Vector2f& surfaceNormal = sf::Vector2f(0.f, -1.f));
     void deactivate();
+    EntityType getType() const override { return EntityType::PROJECTILE; }
     bool isFireBall() const override { return true; }
+
+    /// Re-initialize FireBall for Object Pooling without re-allocating memory
+    void spawn(const sf::Vector2f& position, Direction direction, b2World* world);
 
     // 4. Getters / Setters
     int getBounceCount() const;

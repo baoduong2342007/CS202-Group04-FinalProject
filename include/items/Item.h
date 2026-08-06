@@ -31,7 +31,8 @@ public:
     // 4. Getters / Setters
     bool isCollected() const;
 
-    /// Identifies this entity as an Item for RTTI-free type checking
+    /// Identifies this entity as an Item for constant-time type checking
+    EntityType getType() const override { return EntityType::ITEM; }
     bool isItem() const override { return true; }
 
 protected:

@@ -6,12 +6,8 @@
 
 #include "physics/PhysicsEngine.h"
 
-float PhysicsEngine::s_timeAccumulator = 0.0f;
-
 void PhysicsEngine::update(b2World& world, float dt) {
-    s_timeAccumulator += dt;
-    while (s_timeAccumulator >= TIME_STEP) {
-        world.Step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-        s_timeAccumulator -= TIME_STEP;
-    }
+    float stepTime = (dt > 0.05f) ? 0.05f : dt;
+    world.Step(stepTime, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
 }
+

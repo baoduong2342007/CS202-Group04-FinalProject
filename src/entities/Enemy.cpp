@@ -9,3 +9,8 @@
 Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health)
 : Character(position, size, health){}
 
+void Enemy::onSideCollision(Entity* other) {
+    (void)other;
+}
+
+

@@ -94,6 +94,10 @@ FetchContent_MakeAvailable(box2d)
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
+# S6-TV1-26: exclude demo files from the production target so the demo's
+# main() does not collide with src/main.cpp (duplicate symbol at link time).
+list(FILTER SOURCES EXCLUDE REGEX "src/demo/.*\\.cpp$")
+
 add_executable(main ${SOURCES})
 
 # ==============================================================================

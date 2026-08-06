@@ -100,9 +100,9 @@ For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STR
 
 ## Related Documents
 
-- [`ROLES.md`](ROLES.md) — Detailed role assignments
-- [`WEEKLY_PLAN.md`](WEEKLY_PLAN.md) — 6-week plan by member
+- [`docs/management/ROLES.md`](docs/management/ROLES.md) — Detailed role assignments
+- [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md) — 6-week plan by member
 - [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Folder & file structure
 - [`CODING_RULES.md`](CODING_RULES.md) — Coding conventions, Git, naming rules
-- [`docs/design_patterns.md`](docs/design_patterns.md) — Description of the 5 design patterns _(written by TV1 in Week 5)_
-- [`docs/class_diagram.png`](docs/class_diagram.png) — Class diagram _(Week 6)_
+- [`docs/class_diagram.md`](docs/class_diagram.md) — Class diagram _(Week 6)_
+- [`PLAN.md`](PLAN.md) — Sprint 6 plan (current sprint)

@@ -10,9 +10,12 @@
 SuperMario/
 │
 ├── CMakeLists.txt              ← TV1 (Dương) maintain (SFML configuration)
+├── CMakePresets.json           ← TV1 (Dương): Debug/Release/Tests presets
 ├── README.md
 ├── FILE_STRUCTURE.md
 ├── CODING_RULES.md
+├── PLAN.md                     ← Sprint 6 plan (current sprint)
+├── implementation_plan_sprint5_error.md ← LEGACY Sprint 5 error plan (archived)
 ├── .gitignore
 │
 ├── thirdparty/                 ← Folder containing external libraries
@@ -22,14 +25,11 @@ SuperMario/
 │       └── lib/                ← Library files (.lib / .a)
 │
 ├── docs/                       ← TV1 (Dương) maintain
-│   ├── class_diagram.drawio    ← draw.io file for editing
-│   ├── class_diagram.png       ← exported PNG for submission
-│   ├── design_patterns.md      ← description of 5 patterns (TV1 (Dương) writes in Week 5)
+│   ├── class_diagram.md        ← class diagram (Week 6)
+│   ├── PLAN_TV1.md             ← TV1 personal plan
 │   ├── management/             ← Sprint planning and task tracking
 │   │   ├── ROLES.md
-│   │   ├── WEEKLY_PLAN.md
-│   │   ├── need_to_do_W4.md
-│   │   └── fix_sprint_4_TV1.md
+│   │   └── WEEKLY_PLAN.md
 │   └── specs/                  ← Project specifications
 │       └── CS202-FinalProject_SuperMario.md
 │
@@ -74,12 +74,18 @@ SuperMario/
 │       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
 │
 ├── levels/                     ← TV4 (Vy) maintain
+│   ├── level0.txt              ← test fixture (NOT in release catalog)
 │   ├── level1.txt
 │   ├── level2.txt
 │   └── level3.txt              ← (planned for upcoming release)
 │
 ├── saves/                      ← auto-generated, do not commit
 │   └── .gitkeep                ← empty file to force Git to track the directory
+│
+├── tests/                      ← automated tests (CTest)
+│   ├── InputStateTests.cpp
+│   ├── MarioPhysicsTests.cpp
+│   └── TileCollisionSpanTests.cpp
 │
 ├── include/                    ← all .h header files
 │   ├── core/

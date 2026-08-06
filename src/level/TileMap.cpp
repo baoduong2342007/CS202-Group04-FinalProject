@@ -185,8 +185,10 @@ bool validateRow(const std::string& row,
     if (state.expectedWidth == 0) {
         state.expectedWidth = row.size();
     } else if (row.size() != state.expectedWidth) {
-        std::cerr << "Invalid level file: inconsistent row width at line " << lineNumber << " in " << path << std::endl;
-        
+        const std::size_t mismatchColumn = row.size() < state.expectedWidth ? row.size() + 1 : state.expectedWidth + 1;
+
+        std::cerr << "Invalid level file: row " << lineNumber << " has width " << row.size() << ", expected " << state.expectedWidth << "; first mismatch at column " << mismatchColumn << " in " << path << std::endl;
+
         return false;
     }
     
@@ -194,7 +196,7 @@ bool validateRow(const std::string& row,
         const char symbol = row[column];
 
         if (!isValidTileSymbol(symbol)) {
-            std::cerr << "Invalid tile symbol '" << symbol << "' at line " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
+            std::cerr << "Invalid tile symbol '" << symbol << "' at row " << lineNumber << ", column " << column + 1 << " in " << path << std::endl;
 
             return false;
         }

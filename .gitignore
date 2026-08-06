@@ -1,5 +1,5 @@
 # Build and Output directories
-build/
+build*/
 out/
 bin/
 lib/

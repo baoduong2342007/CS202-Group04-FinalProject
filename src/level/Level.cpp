@@ -16,7 +16,7 @@
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
-#include "entities/Goomba.h"
+#include "entities/Enemy.h"
 #include "core/SpriteFrames.h"
 
 namespace {
@@ -107,8 +107,7 @@ void Level::spawnEntitiesFromTileMap() {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
                 if (entity->isEnemy()) {
-                    Goomba* goomba = dynamic_cast<Goomba*>(entity.get());
-                    if (goomba) goomba->setTileMap(&m_tileMap);
+                    static_cast<Enemy*>(entity.get())->setTileMap(&m_tileMap);
                 }
                 m_entities.push_back(std::move(entity));
             }

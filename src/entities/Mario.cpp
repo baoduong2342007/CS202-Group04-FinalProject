@@ -459,6 +459,14 @@ int Mario::getCoinCount() const {
   return m_coinCount;
 }
 
+void Mario::setScore(int score) {
+  m_score = score;
+}
+
+void Mario::setCoinCount(int coins) {
+  m_coinCount = coins;
+}
+
 void Mario::setInvincible(float duration) {
   m_isInvincible = true;
   m_invincibilityTimer = duration;

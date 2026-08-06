@@ -59,6 +59,10 @@ public:
     void setMarioState(MarioState state);
     int getScore() const;
     int getCoinCount() const;
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setScore(int score);
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setCoinCount(int coins);
     bool isInvincible() const;
     bool canShootFireBall() const;
     int getLives() const;

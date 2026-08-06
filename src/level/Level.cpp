@@ -207,11 +207,16 @@ void Level::checkItemCollisions() {
         if (!entity->isItem()) continue;
 
         Item* item = static_cast<Item*>(entity.get());
-        if (!item->isCollected()) {
-            if (item->checkOverlap(*m_mario)) {
-                item->onCollect(*m_mario);
+        if (item->isCollected()) {
+            if (!item->shouldRemove()) {
                 item->markForRemoval();
             }
+            continue;
+        }
+
+        if (item->checkOverlap(*m_mario)) {
+            item->onCollect(*m_mario);
+            item->markForRemoval();
         }
     }
 }

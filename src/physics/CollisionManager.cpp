@@ -176,6 +176,14 @@ void CollisionManager::resolve(b2Contact* contact) {
     contact->GetWorldManifold(&worldManifold);
     b2Vec2 normal = worldManifold.normal;
 
+    // Invoke Polymorphic Double Dispatch callbacks
+    if (entityA) {
+        entityA->onCollisionBegin(entityB, contact, normal);
+    }
+    if (entityB) {
+        entityB->onCollisionBegin(entityA, contact, -normal);
+    }
+
     // Handle FireBall collisions if present
     FireBall* fireBall = nullptr;
     Entity* target = nullptr;

@@ -24,15 +24,25 @@ FireBall::FireBall()
       m_lifetime(0.f),
       m_bounceCooldown(0.f) {
     initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
+    setSprite("assets/textures/items/items_objects.png");
 }
 
-FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
-    : Entity(position, FIREBALL_SIZE),
-      m_direction(direction),
-      m_bounceCount(0),
-      m_lifetime(0.f),
-      m_bounceCooldown(0.f) {
-    initPhysics(world, b2_dynamicBody, FIREBALL_SIZE, false);
+void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World* world) {
+    m_position = position;
+    m_direction = direction;
+    m_bounceCount = 0;
+    m_lifetime = 0.f;
+    m_bounceCooldown = 0.f;
+    m_active = true;
+    m_pendingDestroy = false;
+
+    if (!m_body && world) {
+        initPhysics(world, b2_dynamicBody, FIREBALL_SIZE, false);
+    } else if (m_body) {
+        m_body->SetEnabled(true);
+        m_body->SetTransform(PhysicsEngine::pixelsToMeters(position + FIREBALL_SIZE / 2.0f), 0.0f);
+        m_body->GetUserData().pointer = reinterpret_cast<uintptr_t>(this);
+    }
 
     if (m_body) {
         float dirMultiplier = (direction == Direction::RIGHT) ? 1.0f : -1.0f;
@@ -41,6 +51,7 @@ FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* w
         m_body->SetLinearVelocity(b2Vec2(vxMeters, vyMeters));
     }
 }
+
 
 void FireBall::update(float dt) {
     if (!m_active || m_pendingDestroy) return;

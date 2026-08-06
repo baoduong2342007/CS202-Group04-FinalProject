@@ -139,14 +139,16 @@ int runTV3Demo() {
           mario.powerUp(MarioState::FIRE);
           std::cout << "[TV3 Demo] Switched Mario state to FIRE" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::F) {
-          if (mario.canShootFireBall()) {
-            sf::Vector2f fbPos = mario.getPosition() + sf::Vector2f(mario.getFacingDirection() == Direction::RIGHT ? 35.f : -15.f, 10.f);
-            auto fb = std::make_unique<FireBall>(fbPos, mario.getFacingDirection(), world);
+          auto fb = mario.shootFireBall(world);
+          if (fb) {
             fireballs.push_back(std::move(fb));
-            std::cout << "[TV3 Demo] FireBall shot! Active fireballs: " << fireballs.size() << std::endl;
+            std::cout << "[TV3 Demo] FireBall shot via mario.shootFireBall()! Active fireballs: " << fireballs.size() << std::endl;
           } else {
             std::cout << "[TV3 Demo] Cannot shoot FireBall! Mario must be in FIRE state (Press 3)." << std::endl;
           }
+        } else if (keyPressed->code == sf::Keyboard::Key::C) {
+          mario.addCoin();
+          std::cout << "[TV3 Demo] Coin added! Current coin count in Mario: " << mario.getCoinCount() << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::K) {
           mario.powerDown();
           std::cout << "[TV3 Demo] Mario powerDown() triggered. Remaining lives: " << mario.getLives() << std::endl;

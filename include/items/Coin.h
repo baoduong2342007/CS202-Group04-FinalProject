@@ -25,7 +25,7 @@ public:
     void update(float dt) override;
     void onCollect(Mario& mario) override;
 
-    CoinType getType() const { return m_type; }
+    CoinType getCoinType() const { return m_type; }
 
 private:
     // 6. Private members

@@ -69,8 +69,20 @@ if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
-# Find SFML 3.0 with required components
-find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
+# Find SFML 3.0 with required components or fallback to FetchContent
+include(FetchContent)
+find_package(SFML 3.0 COMPONENTS Graphics Window System Audio QUIET)
+if(NOT SFML_FOUND)
+    message(STATUS "SFML 3.0 not found locally or on system. Fetching SFML 3.0.0 via FetchContent...")
+    FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG        3.0.0
+    )
+    set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SFML)
+endif()
 
 # ==============================================================================
 # 2.2. FIND OR DOWNLOAD BOX2D LIBRARY

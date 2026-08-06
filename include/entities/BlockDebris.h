@@ -14,6 +14,7 @@ public:
     ~BlockDebris() override = default;
 
     void update(float dt) override;
+    EntityType getType() const override { return EntityType::TERRAIN; }
 
 private:
     sf::Vector2f m_vel;

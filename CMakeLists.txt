@@ -59,7 +59,7 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
     endif()
 endif()
 
-# Prioritize local SFML in the `thirdparty/SFML` directory (Windows) or Homebrew (macOS)
+# Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     if(MSVC AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/libsfml-system.a")
         message(FATAL_ERROR
@@ -67,12 +67,22 @@ if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
             "Regenerate with: cmake -S . -B build -G \"MinGW Makefiles\"")
     endif()
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
-elseif(APPLE AND EXISTS "/opt/homebrew/opt/sfml")
-    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/sfml")
 endif()
 
-# Find SFML 3.0 with required components
-find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
+# Find SFML 3.0 with required components or fallback to FetchContent
+include(FetchContent)
+find_package(SFML 3.0 COMPONENTS Graphics Window System Audio QUIET)
+if(NOT SFML_FOUND)
+    message(STATUS "SFML 3.0 not found locally or on system. Fetching SFML 3.0.0 via FetchContent...")
+    FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG        3.0.0
+    )
+    set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SFML)
+endif()
 
 # ==============================================================================
 # 2.2. FIND OR DOWNLOAD BOX2D LIBRARY

@@ -199,8 +199,14 @@ void Mario::update(float dt) {
     powerDown();
   }
 
-  // Tick invincibility timer (develop)
+  // Tick invincibility & fire cooldown timers
   updateInvincibility(dt);
+  if (m_fireCooldown > 0.0f) {
+    m_fireCooldown -= dt;
+    if (m_fireCooldown < 0.0f) {
+      m_fireCooldown = 0.0f;
+    }
+  }
 
   // Clamp terminal fall velocity to prevent AABB tunneling (TV3)
   if (m_body) {
@@ -430,6 +436,12 @@ void Mario::powerUp(MarioState state) {
     m_statePattern = std::make_unique<FireMarioState>();
   }
 
+  // If growing from Small to Super/Fire, offset Box2D body upward by 16px (0.5m)
+  if (wasSmall && (state == MarioState::SUPER || state == MarioState::FIRE) && m_body) {
+    b2Vec2 currentPos = m_body->GetPosition();
+    m_body->SetTransform(b2Vec2(currentPos.x, currentPos.y - PhysicsEngine::pixelsToMeters(16.f)), m_body->GetAngle());
+  }
+
   setupAnimationsForState(*m_animationSystem, m_marioState);
   playAnimation("idle");
 
@@ -576,6 +588,8 @@ std::unique_ptr<FireBall> Mario::shootFireBall(b2World* world) {
     return nullptr;
   }
 
+  m_fireCooldown = FIRE_COOLDOWN_DURATION;
+
   float spawnX = m_position.x + (getFacingDirection() == Direction::RIGHT ? m_size.x + 4.f : -16.f);
   float spawnY = m_position.y + m_size.y * 0.4f;
   sf::Vector2f spawnPos(spawnX, spawnY);
@@ -624,7 +638,7 @@ bool Mario::isInvincible() const {
 }
 
 bool Mario::canShootFireBall() const {
-  return m_marioState == MarioState::FIRE;
+  return m_marioState == MarioState::FIRE && m_fireCooldown <= 0.0f;
 }
 
 int Mario::getLives() const {

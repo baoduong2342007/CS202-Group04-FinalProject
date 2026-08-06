@@ -44,6 +44,7 @@ public:
     void powerUp(MarioState state);
     void powerDown();
     void queuePowerDown();
+    void addScore(int points);
     void addCoin();
     void collectCoin(int scoreValue = 200);
     std::unique_ptr<FireBall> shootFireBall(b2World* world);
@@ -121,5 +122,8 @@ protected:
 
     float m_inputDirX = 0.0f;
     bool m_jumpRequested = false;
+
+    float m_fireCooldown = 0.0f;
+    static constexpr float FIRE_COOLDOWN_DURATION = 0.25f; // 250ms per S6-TV3-18
 };
 

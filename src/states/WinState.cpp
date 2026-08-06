@@ -16,12 +16,20 @@ WinState::WinState(const GameProgress& progress)
     }
     m_text.setString("YOU WIN!\nPress ENTER to Menu");
     m_text.setCharacterSize(40);
-    m_text.setPosition({400.f, 250.f});
+    m_text.setFillColor(sf::Color::White);
+    
+    sf::FloatRect bounds = m_text.getLocalBounds();
+    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+    m_text.setPosition({640.f, 250.f});
 
     m_scoreText.setString("FINAL SCORE: " + std::to_string(m_progress.score));
     m_scoreText.setCharacterSize(24);
     m_scoreText.setFillColor(sf::Color::Yellow);
-    m_scoreText.setPosition({400.f, 380.f});
+    
+    sf::FloatRect scoreBounds = m_scoreText.getLocalBounds();
+    m_scoreText.setOrigin({scoreBounds.position.x + scoreBounds.size.x / 2.f,
+                           scoreBounds.position.y + scoreBounds.size.y / 2.f});
+    m_scoreText.setPosition({640.f, 380.f});
 }
 
 void WinState::onEnter() {}

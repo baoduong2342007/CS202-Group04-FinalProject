@@ -74,8 +74,9 @@ Trong 11 commit gần đây, TV1 đã hoàn thành các mục tiêu quan trọng
 * **[src/level/Level.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/src/level/Level.cpp)** *(Cập nhật - S6-TV1-22)*
   * **Nội dung:** Nhận `std::unique_ptr<Entity>` từ Factory và đẩy vào `m_entities` bằng `std::move()`.
 
-* **[include/entities/Mario.h](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/entities/Mario.h)** & **[src/entities/Mario.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/src/entities/Mario.cpp)** *(Cập nhật - S6-TV1-10)*
-  * **Nội dung:** Thêm `setScore(int)` và `setCoinCount(int)` phục vụ khôi phục tiến trình.
+* **[include/entities/Entity.h](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/entities/Entity.h)**, **[include/entities/Mario.h](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/entities/Mario.h)** & **[src/entities/Mario.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/src/entities/Mario.cpp)** *(Cập nhật)*
+  * **Nội dung:** Thêm `setScore(int)` và `setCoinCount(int)` phục vụ khôi phục tiến trình (S6-TV1-10).
+  * **Nội dung:** Chuyển `initPhysics` thành hàm `virtual`, ghi đè trong `Mario.cpp` để thay đổi Box2D Collider của Mario từ hình vuông sang **bát giác vát góc (Beveled Box)**. Sửa triệt để lỗi "Ghost Collision" khiến Mario bị kẹt khi đi qua khe hở siêu nhỏ giữa các Block riêng biệt (như Question Block).
 
 ---
 
@@ -93,6 +94,7 @@ Trong 11 commit gần đây, TV1 đã hoàn thành các mục tiêu quan trọng
   * **[JumpCommand](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/patterns/JumpCommand.h)** (`.h`/`.cpp`), **[MoveLeftCommand](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/patterns/MoveLeftCommand.h)** (`.h`/`.cpp`), **[MoveRightCommand](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/include/patterns/MoveRightCommand.h)** (`.h`/`.cpp`): Xóa các hàm `undo()` rỗng.
   * **[tests/InputStateTests.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/tests/InputStateTests.cpp)**: Cập nhật mock class loại bỏ `undo()`.
   * **[tests/PlayStateTests.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/tests/PlayStateTests.cpp)** *(Tạo mới - S6-TV1-13, 14)*: Thêm unit test kiểm tra chống race condition giữa cái chết và chuyển màn cũng như logic WinState.
+  * **[src/states/WinState.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/src/states/WinState.cpp)** *(Cập nhật)*: Khắc phục lỗi "mất màn hình You Win" (màn hình đen) bằng cách cấu hình lại `sf::Text` với `setFillColor` và căn giữa màn hình (fix tương thích với SFML 3).
 
 ---
 

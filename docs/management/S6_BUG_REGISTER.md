@@ -47,6 +47,8 @@
 | BUG-017 | EntityFactory gọi sai tên Factory Method | Code review | TV1 | S6-TV1-23 | FIXED |
 | BUG-018 | Transition: 1-frame mờ dần nháy sáng | Chuyển level (LOADING->FADE_IN) | TV1 | S6-TV1-12 | FIXED |
 | BUG-019 | Transition: Camera giật & Sprite thu nhỏ | Quan sát 0.5s đầu FADE_IN | TV1 | S6-TV1-12 | FIXED |
+| BUG-020 | Ghost Collisions: Mario kẹt khi trượt ngang | Spam trái/phải trên Question Block | TV1 | S6-TV1-02 | FIXED |
+| BUG-021 | WinState bị mất chữ (màn hình đen thui) | Hoàn thành World 3 | TV1 | S6-TV1-12 | FIXED |
 
 ---
 

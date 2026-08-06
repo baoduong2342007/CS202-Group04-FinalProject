@@ -58,4 +58,11 @@ namespace LevelCatalog {
     inline int count() {
         return static_cast<int>(getAll().size());
     }
+
+    /// Checks whether the given level number exceeds the highest configured release level.
+    inline bool isPastFinalLevel(int levelNumber) {
+        const auto& catalog = getAll();
+        if (catalog.empty()) return true;
+        return levelNumber > catalog.back().number;
+    }
 }

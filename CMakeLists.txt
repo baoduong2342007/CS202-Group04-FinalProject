@@ -153,11 +153,18 @@ if(BUILD_TESTING)
         src/entities/Entity.cpp
         src/entities/Mario.cpp
         src/patterns/EventBus.cpp
-        src/physics/PhysicsEngine.cpp
     )
     target_include_directories(mario_physics_tests PRIVATE include)
     target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+
+    add_executable(play_state_tests
+        tests/PlayStateTests.cpp
+        src/patterns/EventBus.cpp
+    )
+    target_include_directories(play_state_tests PRIVATE include)
+    target_link_libraries(play_state_tests PRIVATE SFML::Graphics)
+    add_test(NAME play_state_tests COMMAND play_state_tests)
 endif()
 
 # Platform-specific Release build settings

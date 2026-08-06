@@ -131,7 +131,7 @@ void PlayState::onNotify(EventType event) {
         snapshotProgress();
         m_progress.currentLevel++;
         // S6-TV1-12: start the transition state machine (freeze → fade → load → fade in).
-        m_transitionIsWin = (m_progress.currentLevel > LevelCatalog::count());
+        m_transitionIsWin = LevelCatalog::isPastFinalLevel(m_progress.currentLevel);
         m_transitionTargetLevel = m_progress.currentLevel;
         m_transitionPhase = TransitionPhase::FADE_OUT;
         m_fadeAlpha = 0.f;

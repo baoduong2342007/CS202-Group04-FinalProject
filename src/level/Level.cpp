@@ -83,6 +83,7 @@ void Level::spawnEntitiesFromTileMap() {
         m_mario = std::make_unique<Mario>(spawnPos,
                                           sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
+        m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! "
                   << "Defaulting to (100, 100)" << std::endl;

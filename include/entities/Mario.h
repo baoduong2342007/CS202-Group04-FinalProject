@@ -127,5 +127,12 @@ protected:
 
     float m_fireCooldown = 0.0f;
     static constexpr float FIRE_COOLDOWN_DURATION = 0.25f; // 250ms per S6-TV3-18
+
+    // Dynamic Pit Threshold & Map Bounds (S6-TV3-07)
+    float m_pitThreshold = 800.0f;
+
+public:
+    void setPitThreshold(float threshold) { m_pitThreshold = threshold; }
+    float getPitThreshold() const { return m_pitThreshold; }
 };
 

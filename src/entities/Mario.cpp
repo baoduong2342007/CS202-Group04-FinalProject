@@ -229,8 +229,22 @@ void Mario::update(float dt) {
   }
   updateAnimation(dt);
 
-  // Pit fall check (TV3)
-  if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
+  // Left world boundary clamp (S6-TV3-08): prevent Mario from moving left off-screen past X = 0
+  constexpr float MIN_WORLD_X = 16.0f; // Half Mario's width (32/2)
+  if (m_body) {
+    b2Vec2 bodyPos = m_body->GetPosition();
+    float minXPosMeters = PhysicsEngine::pixelsToMeters(MIN_WORLD_X);
+    if (bodyPos.x < minXPosMeters) {
+      m_body->SetTransform(b2Vec2(minXPosMeters, bodyPos.y), m_body->GetAngle());
+      b2Vec2 vel = m_body->GetLinearVelocity();
+      if (vel.x < 0.0f) {
+        m_body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
+      }
+    }
+  }
+
+  // Dynamic pit fall check (S6-TV3-07): uses dynamic m_pitThreshold set from Level map bounds
+  if (m_position.y > m_pitThreshold) {
     loseLife();
   }
 

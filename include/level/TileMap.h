@@ -44,16 +44,24 @@ public:
     
     // UserData packing constants for Box2D tile bodies
     static constexpr uintptr_t TILE_USERDATA_FLAG = 0x8000000000000000ULL;
-    static bool isTileUserData(uintptr_t ptr) { return (ptr & TILE_USERDATA_FLAG) != 0; }
+    static bool isTileUserData(uintptr_t ptr) {
+        return (ptr & TILE_USERDATA_FLAG) != 0;
+    }
     static void unpackTileCoords(uintptr_t ptr, int& outCol, int& outRow) {
         outRow = static_cast<int>((ptr >> 16) & 0xFFFF);
         outCol = static_cast<int>(ptr & 0xFFFF);
     }
 
     void queueTileHit(int column, int row, float overlap = 0.f);
-    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager, bool isBigMario, Mario* mario = nullptr);
+    void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities,
+                            class TextureManager& textureManager,
+                            bool isBigMario,
+                            Mario* mario = nullptr
+                            );
 
-    bool hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<class Entity>>& entities, class TextureManager& textureManager);
+    bool hitTile(int column, int row, bool isBigMario,
+                 std::vector<std::unique_ptr<class Entity>>& entities
+                 );
     
     void update(float dt);
     void triggerTileBump(int column, int row);

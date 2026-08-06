@@ -24,9 +24,6 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
-#include "items/Mushroom.h"
-#include "patterns/EventBus.h"
-#include "patterns/EventType.h"
 #include "core/SpriteFrames.h"
 
 namespace {
@@ -96,7 +93,8 @@ void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities,
         }
     }
 
-    hitTile(bestGridPos.x, bestGridPos.y, isBigMario, entities, textureManager);
+    hitTile(bestGridPos.x,bestGridPos.y,
+            isBigMario, entities);
 
     m_pendingTileHits.clear();
 }
@@ -568,7 +566,8 @@ void TileMap::clearPhysicsBodies() {
     m_physicsWorld = nullptr;
 }
 
-bool TileMap::hitTile(int column, int row, bool isBigMario, std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager) {
+bool TileMap::hitTile(int column, int row, bool isBigMario,
+                      std::vector<std::unique_ptr<Entity>>& entities) {
     if (row < 0 || row >= static_cast<int>(m_grid.size())) {
         return false;
     }
@@ -577,24 +576,6 @@ bool TileMap::hitTile(int column, int row, bool isBigMario, std::vector<std::uni
     }
 
     char symbol = m_grid[row][column];
-
-    // --- Mushroom Block ('U' or 'O') — '?' is handled by QuestionBlock entity (animated) ---
-    if (symbol == 'U' || symbol == 'O') {
-        // Change tile to Empty Block 'E'
-        m_grid[row][column] = 'E';
-        buildVertices();
-        triggerTileBump(column, row);
-
-        // Spawn Mushroom above the block
-        sf::Vector2f spawnPos = gridToWorldPosition({column, row - 1});
-        MushroomType mushType = (symbol == 'O') ? MushroomType::ONE_UP : MushroomType::SUPER;
-        auto mushroom = std::make_unique<Mushroom>(spawnPos, m_physicsWorld, mushType);
-        mushroom->setTextureManager(textureManager);
-        entities.push_back(std::move(mushroom));
-
-        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
-        return true;
-    }
 
     // --- Breakable Brick Block ('B') ---
     if (TileSemantics::isBreakable(symbol)) {

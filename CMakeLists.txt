@@ -19,11 +19,11 @@ endif()
 # ==============================================================================
 # 2. FIND OR DOWNLOAD SFML LIBRARY (cross-platform: Windows, macOS, Linux)
 # ==============================================================================
-# On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it
+# On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it.
+# S6-TV1-27: TLS verification is ON, and an existing SFML folder is never deleted
+# (a failed configure must not destroy data). Archive hash verification is documented
+# below but intentionally not hard-coded until the upstream hash is confirmed.
 if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFMLConfig.cmake")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
-        file(REMOVE_RECURSE "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
-    endif()
     if(MSVC)
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-vc17-64-bit.zip")
@@ -32,9 +32,13 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip")
     endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    file(DOWNLOAD "${SFML_URL}" 
-                  "${SFML_ZIP_PATH}" 
-                  TLS_VERIFY OFF
+    # NOTE: TLS verification is ON. To also verify the archive integrity, set
+    # EXPECTED_HASH to the real SHA256 of the downloaded zip (e.g.
+    # "SHA256=<hex>"). It is intentionally omitted here because the exact
+    # upstream hash must be confirmed by the maintainer before hard-coding.
+    file(DOWNLOAD "${SFML_URL}"
+                  "${SFML_ZIP_PATH}"
+                  TLS_VERIFY ON
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
     if(STATUS_CODE EQUAL 0)
@@ -55,9 +59,16 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
     endif()
 endif()
 
-# Prioritize local SFML in the `thirdparty/SFML` directory (Windows only)
+# Prioritize local SFML in the `thirdparty/SFML` directory (Windows) or Homebrew (macOS)
 if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+    if(MSVC AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/libsfml-system.a")
+        message(FATAL_ERROR
+            "thirdparty/SFML contains MinGW libraries, but this configure is using MSVC. "
+            "Regenerate with: cmake -S . -B build -G \"MinGW Makefiles\"")
+    endif()
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
+elseif(APPLE AND EXISTS "/opt/homebrew/opt/sfml")
+    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/sfml")
 endif()
 
 # Find SFML 3.0 with required components
@@ -112,6 +123,41 @@ target_link_libraries(main PRIVATE
     box2d
 )
 
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(input_state_tests
+        tests/InputStateTests.cpp
+        src/patterns/InputHandler.cpp
+        src/patterns/InputState.cpp
+    )
+    target_include_directories(input_state_tests PRIVATE include)
+    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    add_test(NAME input_state_tests COMMAND input_state_tests)
+
+    add_executable(tile_collision_span_tests
+        tests/TileCollisionSpanTests.cpp
+        src/level/TileCollisionSpans.cpp
+        src/physics/TileContactResolver.cpp
+    )
+    target_include_directories(tile_collision_span_tests PRIVATE include)
+    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
+
+    add_executable(mario_physics_tests
+        tests/MarioPhysicsTests.cpp
+        src/core/AnimationSystem.cpp
+        src/core/TextureManager.cpp
+        src/entities/Character.cpp
+        src/entities/Entity.cpp
+        src/entities/Mario.cpp
+        src/patterns/EventBus.cpp
+        src/physics/PhysicsEngine.cpp
+    )
+    target_include_directories(mario_physics_tests PRIVATE include)
+    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+    add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+endif()
+
 # Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(WIN32)
@@ -125,15 +171,14 @@ endif()
 # 5. POST-BUILD ACTIONS
 # ==============================================================================
 
-# 5.1. Copy assets and levels directories to the executable output folder
-foreach(DIR "assets" "levels")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${DIR}")
-        add_custom_command(TARGET main POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/${DIR}" "$<TARGET_FILE_DIR:main>/${DIR}"
-            COMMENT "Copying directory '${DIR}' to build output folder..."
-        )
-    endif()
-endforeach()
+# 5.1. Auto-sync assets and levels directories to the build folder.
+# S6-TV1-29: `cmake -E copy_directory` only overwrites files whose content/timestamp
+# changed, so unchanged assets are not re-copied on every invocation (incremental).
+add_custom_target(CopyAssets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
+    COMMENT "Auto-syncing assets and level maps to build directory (incremental)..."
+)
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)

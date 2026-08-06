@@ -16,21 +16,33 @@
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
+#include "entities/Goomba.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
 constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
-// Tile codes that represent spawnable entities
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
+
+float calculateBackgroundTop(std::size_t levelHeightInTiles) {
+    const float levelHeight = static_cast<float>(levelHeightInTiles * TILE_SIZE);
+    const float groundTop = std::max(0.f, levelHeight - static_cast<float>(TILE_SIZE));
+    const float backgroundHeight = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.y);
+    return std::max(0.f, groundTop - backgroundHeight);
+}
 } // namespace
+
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 Level::~Level() = default;
 
 bool Level::loadFromFile(const std::string& path) {
+    m_levelPath = path;
     if (!m_tileMap.loadFromFile(path)) {
+
         std::cerr << "Level: Failed to load TileMap from " << path << std::endl;
         return false;
     }
@@ -47,7 +59,7 @@ bool Level::loadFromFile(const std::string& path) {
     );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
-    m_world = std::make_unique<b2World>(b2Vec2(0.f, 9.8f));
+    m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
     m_contactListener = std::make_unique<ContactListener>();
     m_world->SetContactListener(m_contactListener.get());
 
@@ -70,6 +82,7 @@ void Level::spawnEntitiesFromTileMap() {
             TileMap::gridToWorldPosition(marioSpawns.front());
         m_mario = std::make_unique<Mario>(spawnPos,
                                           sf::Vector2f(32.f, 32.f));
+        m_mario->setRespawnPosition(spawnPos);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! "
                   << "Defaulting to (100, 100)" << std::endl;
@@ -93,16 +106,36 @@ void Level::spawnEntitiesFromTileMap() {
             if (raw) {
                 // Wire TextureManager so entity sprites can load
                 raw->setTextureManager(m_textureManager);
+                if (raw->isEnemy()) {
+                    Goomba* goomba = dynamic_cast<Goomba*>(raw);
+                    if (goomba) goomba->setTileMap(&m_tileMap);
+                }
                 m_entities.emplace_back(raw);
             }
+
         }
     }
+
 }
 
 void Level::update(float dt) {
-    if (m_world) {
-        PhysicsEngine::update(*m_world, dt);
+    if (m_mario) {
+        m_mario->preparePhysics(dt);
     }
+
+    if (m_world) {
+        const bool physicsStepped = PhysicsEngine::update(*m_world, dt);
+        if (physicsStepped && m_mario) {
+            m_mario->refreshGroundedState();
+        }
+    }
+
+    // Update tilemap bump animations
+    m_tileMap.update(dt);
+
+    // Process queued tile hits (bumping Question blocks & shattering Brick blocks)
+    bool isBigMario = (m_mario && m_mario->getMarioState() != MarioState::SMALL);
+    m_tileMap.processPendingHits(m_entities, m_textureManager, isBigMario, m_mario.get());
 
     // Update Mario
     if (m_mario) {
@@ -121,15 +154,34 @@ void Level::update(float dt) {
     // Remove dead entities
     removeDeadEntities();
 
-    // Update camera to follow Mario
+    // Update camera to follow Mario's center
     if (m_mario) {
-        m_camera.update(dt, m_mario->getPosition());
+        sf::Vector2f centerPos = m_mario->getPosition() + (m_mario->getSize() / 2.0f);
+        m_camera.update(dt, centerPos);
     }
 }
 
 void Level::render(sf::RenderWindow& window) {
     // Apply camera view
     window.setView(m_camera.getView());
+
+    // Draw Mountain Background for main levels (temporarily disabled for level0)
+    if (m_levelPath.find("level0") == std::string::npos) {
+        const sf::Texture& bgTex = m_textureManager.getTexture(std::string(SpriteFrames::Backgrounds::MOUNTAINS_PATH));
+        sf::Sprite bgSprite(bgTex);
+        bgSprite.setTextureRect(SpriteFrames::Backgrounds::OVERWORLD);
+
+        float stripWidth = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.x);
+        float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+        float backgroundTop = calculateBackgroundTop(m_tileMap.getHeight());
+
+        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
+            bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
+            window.draw(bgSprite);
+        }
+    }
+
+
 
     // Draw tilemap background
     m_tileMap.render(window);
@@ -197,6 +249,11 @@ Mario* Level::getMario() {
 const Mario* Level::getMario() const { 
     return m_mario.get(); 
 }
+bool Level::isLevelCompleted() const {
+    return m_levelCompleted;
+}
+
+
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
 TextureManager& Level::getTextureManager() { return m_textureManager; }

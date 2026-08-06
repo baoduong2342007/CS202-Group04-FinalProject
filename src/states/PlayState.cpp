@@ -7,33 +7,39 @@
 #include "states/PlayState.h"
 
 #include "patterns/EventBus.h"
+
 #include "patterns/JumpCommand.h"
 #include "patterns/MoveLeftCommand.h"
 #include "patterns/MoveRightCommand.h"
 #include "patterns/PauseCommand.h"
+
 #include "states/GameOverState.h"
 #include "states/WinState.h"
 #include "states/PauseState.h"
+#include "states/MenuState.h"
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
 #include <cstdint>
+#include <iostream>
 
 namespace {
     const sf::Color FADE_START_COLOR(0, 0, 0, 0);
 }
 
 PlayState::PlayState() {
-    m_level = std::make_unique<Level>();
-    m_level->loadFromFile(getCurrentLevelPath());
+    // S6-TV1-06/07: New Game always starts at Level 1 (one-based), never Level 0.
+    m_progress.currentLevel = 1;
+
+    if (!loadLevel(m_progress.currentLevel)) {
+        // S6-TV1-11: level load failure returns the player to the Menu with a message.
+        std::cerr << "[PlayState] Failed to load Level " << m_progress.currentLevel
+                  << " — returning to Menu." << std::endl;
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        return;
+    }
 
     // Bind commands to InputHandler
     rebindCommands();
-
-    // Create HUD after Level (and Mario) are initialized
-    if (m_level->getMario()) {
-        m_hud = std::make_unique<HUD>(*(m_level->getMario()));
-    }
-
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
 }
 
@@ -46,20 +52,38 @@ PlayState::~PlayState() {
 void PlayState::rebindCommands() {
     m_inputHandler.clear(); // Reset handlers
 
-    if (m_level->getMario()) {
-        m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<JumpCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<JumpCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Space, std::make_unique<JumpCommand>(m_level->getMario()));
+    if (m_level && m_level->getMario()) {
+        m_inputHandler.bindKey(sf::Keyboard::Key::A,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Left,
+                               std::make_unique<MoveLeftCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
         
-        m_inputHandler.bindKey(sf::Keyboard::Key::A, std::make_unique<MoveLeftCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Left, std::make_unique<MoveLeftCommand>(m_level->getMario()));
-        
-        m_inputHandler.bindKey(sf::Keyboard::Key::D, std::make_unique<MoveRightCommand>(m_level->getMario()));
-        m_inputHandler.bindKey(sf::Keyboard::Key::Right, std::make_unique<MoveRightCommand>(m_level->getMario()));
-    }
+        m_inputHandler.bindKey(sf::Keyboard::Key::D,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Right,
+                               std::make_unique<MoveRightCommand>(m_level->getMario()),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
 
-    // Pause command
-    m_inputHandler.bindKey(sf::Keyboard::Key::Escape, std::make_unique<PauseCommand>(&GameManager::getInstance()));
+        m_inputHandler.bindKey(sf::Keyboard::Key::W,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Up,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Space,
+                               std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
+                               std::make_unique<PauseCommand>(),
+                               InputTrigger::Pressed);
+    }
 }
 
 void PlayState::onEnter() {
@@ -76,31 +100,33 @@ void PlayState::onExit() {
     SoundManager::getInstance().stopMusic();
 }
 
+void PlayState::onPause() {
+    // S6-TV1-15/17: freeze gameplay — pause music; timer/input handled by PauseState overlay.
+    SoundManager::getInstance().pauseMusic();
+}
+
+void PlayState::onResume() {
+    // S6-TV1-15/17: restore music and resume updates.
+    SoundManager::getInstance().playMusic();
+}
+
 void PlayState::onNotify(EventType event) {
     if (event == EventType::PLAYER_DIED) {
-        if (m_level->getMario() && m_level->getMario()->getLives() <= 0) {
-            GameManager::getInstance().changeState(std::make_unique<GameOverState>());
+        if (m_level && m_level->getMario() && m_level->getMario()->getLives() <= 0) {
+            m_needsGameOver = true;
         } else {
-            // Reload level
-            m_level = std::make_unique<Level>();
-            m_level->loadFromFile(getCurrentLevelPath());
-            rebindCommands();
-            if (m_level->getMario()) {
-                m_hud = std::make_unique<HUD>(*(m_level->getMario()));
-            }
+            // Defer reload to next frame — may be called during Box2D step
+            m_needsReload = true;
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
-        m_currentLevel++;
-        if (m_currentLevel > MAX_LEVELS) {
+        // S6-TV1-09: snapshot BEFORE destroying the level so we never read
+        // data from a Mario that is about to be destroyed.
+        snapshotProgress();
+        m_progress.currentLevel++;
+        if (m_progress.currentLevel > MAX_LEVELS) {
             m_isFading = true;
         } else {
-            // Load next level
-            m_level = std::make_unique<Level>();
-            m_level->loadFromFile(getCurrentLevelPath());
-            rebindCommands();
-            if (m_level->getMario()) {
-                m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, m_currentLevel);
-            }
+            m_needsReload = true;
         }
     } else if (event == EventType::GAME_PAUSED) {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
@@ -108,23 +134,101 @@ void PlayState::onNotify(EventType event) {
 }
 
 void PlayState::processEvents(const sf::Event& event) {
-    if (const auto* keyReleased = event.getIf<sf::Event::KeyReleased>()) {
-        if (keyReleased->code == sf::Keyboard::Key::A || 
-            keyReleased->code == sf::Keyboard::Key::Left ||
-            keyReleased->code == sf::Keyboard::Key::D || 
-            keyReleased->code == sf::Keyboard::Key::Right) {
-            if (m_level->getMario()) {
-                m_level->getMario()->stopMoving();
-            }
-        }
+    (void)event;
+}
+
+void PlayState::processInput(const InputState& inputState) {
+    if (!m_level || !m_level->getMario()) {
+        return;
+    }
+
+    m_level->getMario()->setMoveIntent(0.0f);
+    m_inputHandler.handleInput(inputState);
+}
+
+void PlayState::snapshotProgress() {
+    if (!m_level || !m_level->getMario()) {
+        return;
+    }
+
+    // S6-TV1-09: capture exactly once, from the live Mario.
+    m_progress.score = m_level->getMario()->getScore();
+    m_progress.coins = m_level->getMario()->getCoinCount();
+    m_progress.lives = m_level->getMario()->getLives();
+    m_progress.power = m_level->getMario()->getMarioState();
+}
+
+void PlayState::restoreProgress() {
+    if (!m_level || !m_level->getMario()) {
+        return;
+    }
+
+    // S6-TV1-10: apply session progress to the fresh Mario/HUD.
+    m_level->getMario()->setScore(m_progress.score);
+    m_level->getMario()->setCoinCount(m_progress.coins);
+    m_level->getMario()->setLives(m_progress.lives);
+    if (m_progress.power != MarioState::SMALL) {
+        m_level->getMario()->setMarioState(m_progress.power);
+    }
+
+    if (m_hud) {
+        m_hud->setWorldLevel(1, m_progress.currentLevel);
     }
 }
 
-void PlayState::update(float dt) {
-    // Process continuous inputs via InputHandler
-    m_inputHandler.handleInput();
+bool PlayState::loadLevel(int levelNumber) {
+    // S6-TV1-11: never ignore the loadFromFile() result.
+    m_level = std::make_unique<Level>();
+    if (!m_level->loadFromFile(getCurrentLevelPath())) {
+        m_level.reset();
+        return false;
+    }
 
-    // Physics is now updated inside Level::update()
+    // Create HUD after Level (and Mario) are initialized
+    if (m_level->getMario()) {
+        m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, levelNumber);
+    }
+
+    m_fadeOverlay.setFillColor(FADE_START_COLOR);
+    return true;
+}
+
+void PlayState::navigateToLevel(int levelNumber) {
+    // S6-TV1-10/12: restore progress onto the newly created Mario/HUD.
+    if (!loadLevel(levelNumber)) {
+        std::cerr << "[PlayState] Failed to load Level " << levelNumber
+                  << " — returning to Menu." << std::endl;
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        return;
+    }
+    restoreProgress();
+    rebindCommands();
+    m_isFading = false;
+    m_fadeAlpha = 0.f;
+}
+
+void PlayState::update(float dt) {
+    // S6-TV1-13: only one terminal result (GameOver or level transition)
+    // may be committed per frame.
+    m_terminalCommittedThisFrame = false;
+
+    // Handle deferred state changes (safe: outside Box2D step)
+    if (m_needsGameOver) {
+        m_needsGameOver = false;
+        m_terminalCommittedThisFrame = true;
+        GameManager::getInstance().changeState(std::make_unique<GameOverState>());
+        return;
+    }
+    if (m_needsReload) {
+        m_needsReload = false;
+        m_terminalCommittedThisFrame = true;
+        navigateToLevel(m_progress.currentLevel);
+        return;
+    }
+
+    if (!m_level) {
+        return; // Level failed to load — Menu transition is pending.
+    }
 
     // Update level entities
     m_level->update(dt);
@@ -146,6 +250,10 @@ void PlayState::update(float dt) {
 }
 
 void PlayState::render(sf::RenderWindow& window) {
+    if (!m_level) {
+        return; // Level failed to load — Menu transition is pending.
+    }
+
     m_level->render(window);
 
     // Switch to default view for UI overlay
@@ -161,5 +269,6 @@ void PlayState::render(sf::RenderWindow& window) {
 }
 
 std::string PlayState::getCurrentLevelPath() const {
-    return "levels/level" + std::to_string(m_currentLevel) + ".txt";
+    // S6-TV1-07: one-based level number maps directly to file name.
+    return "levels/level" + std::to_string(m_progress.currentLevel) + ".txt";
 }

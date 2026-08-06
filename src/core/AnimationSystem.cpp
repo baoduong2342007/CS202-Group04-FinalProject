@@ -8,13 +8,9 @@
 #include <iostream>
 
 Animation AnimationSystem::createGridAnimation(
-    int startX, 
-    int startY, 
-    int frameWidth, 
-    int frameHeight, 
-    int frameCount, 
-    float frameDuration, 
-    bool isLooping) 
+    int startX, int startY, int frameWidth, int frameHeight, 
+    int frameCount, float frameDuration, bool isLooping,
+    int spacingX, int spacingY) 
 {
     Animation anim;
     anim.frameDuration = frameDuration;
@@ -33,10 +29,28 @@ Animation AnimationSystem::createGridAnimation(
     }
 
     for (int i = 0; i < frameCount; ++i) {
-        int x = startX + (i * frameWidth);
-        int y = startY;
+        int x = startX + i * (frameWidth + spacingX);
+        int y = startY + i * spacingY;
         
         anim.frames.push_back(sf::IntRect({x, y}, {frameWidth, frameHeight}));
+    }
+
+    return anim;
+}
+
+Animation AnimationSystem::createManualAnimation(
+    const std::vector<sf::IntRect>& frames,
+    float frameDuration,
+    bool isLooping)
+{
+    Animation anim;
+    anim.frameDuration = frameDuration;
+    anim.isLooping = isLooping;
+    anim.frames = frames;
+
+    if (frameDuration <= RESET_TIME) {
+        std::cerr << "[AnimationSystem] Warning: Frame duration must be > 0. Clamping to default." << std::endl;
+        anim.frameDuration = Animation::DEFAULT_FRAME_DURATION;
     }
 
     return anim;

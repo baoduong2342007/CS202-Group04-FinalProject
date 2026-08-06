@@ -5,6 +5,7 @@
  */
 #include "states/PauseState.h"
 #include "core/GameManager.h"
+#include "patterns/InputState.h"
 #include <iostream>
 
 PauseState::PauseState() : m_font(), m_text(m_font) {
@@ -20,10 +21,12 @@ void PauseState::onEnter() {}
 void PauseState::onExit() {}
 
 void PauseState::processEvents(const sf::Event& event) {
-    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
-        if (key->code == sf::Keyboard::Key::Escape) {
-            GameManager::getInstance().popState();
-        }
+    (void)event;
+}
+
+void PauseState::processInput(const InputState& inputState) {
+    if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
+        GameManager::getInstance().popState();
     }
 }
 

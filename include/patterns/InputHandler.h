@@ -16,12 +16,23 @@
 
 // 3. Project headers
 #include "patterns/ICommand.h"
+#include "patterns/InputState.h"
 
 // ============================================================
 // PATTERN: Command (InputHandler component)
 // Reason: maps sf::Keyboard::Key → ICommand*; allows rebinding
 //         keys at runtime without touching game logic
 // ============================================================
+
+enum class InputTrigger {
+    Pressed,
+    Held
+};
+
+enum class InputGroup {
+    None,
+    Horizontal
+};
 
 class InputHandler {
 public:
@@ -31,7 +42,10 @@ public:
 
     // 3. Public methods
     /// Bind a key to a command (takes ownership via unique_ptr)
-    void bindKey(sf::Keyboard::Key key, std::unique_ptr<ICommand> command);
+    void bindKey(sf::Keyboard::Key key,
+                 std::unique_ptr<ICommand> command,
+                 InputTrigger trigger = InputTrigger::Held,
+                 InputGroup group = InputGroup::None);
 
     /// Remove the binding for a key
     void unbindKey(sf::Keyboard::Key key);
@@ -39,8 +53,8 @@ public:
     /// Clear all bound keys
     void clear();
 
-    /// Poll all bound keys and execute commands for pressed keys
-    void handleInput() const;
+    /// Dispatch commands from the event-driven input state.
+    void handleInput(const InputState& inputState) const;
 
     // 4. Getters
     /// Retrieve the command bound to a key (nullptr if unbound).
@@ -51,6 +65,12 @@ public:
     bool isBound(sf::Keyboard::Key key) const;
 
 private:
+    struct Binding {
+        std::unique_ptr<ICommand> command;
+        InputTrigger trigger;
+        InputGroup group;
+    };
+
     // 6. Private members
-    std::unordered_map<sf::Keyboard::Key, std::unique_ptr<ICommand>> m_keyBindings;
+    std::unordered_map<sf::Keyboard::Key, Binding> m_keyBindings;
 };

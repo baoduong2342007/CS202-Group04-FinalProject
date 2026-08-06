@@ -11,6 +11,8 @@
 #include "entities/Mario.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 constexpr float STAR_WIDTH  = 32.f;
@@ -21,7 +23,7 @@ constexpr float STAR_INVINCIBILITY_DURATION = 10.f;
 constexpr int   STAR_SCORE_VALUE  = 1000;
 
 constexpr const char* STAR_TEXTURE_PATH =
-    "assets/textures/items/star.png";
+    "assets/textures/items/items_objects.png";
 } // namespace
 
 Star::Star()
@@ -31,6 +33,9 @@ Star::Star()
       m_patrolDirection(1) {
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
+    m_animationSystem->addAnimation("idle",
+        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+    playAnimation("idle");
 }
 
 Star::Star(const sf::Vector2f& position, b2World* world)
@@ -40,13 +45,15 @@ Star::Star(const sf::Vector2f& position, b2World* world)
       m_patrolDirection(1) {
     initPhysics(world, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
+    m_animationSystem->addAnimation("idle",
+        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+    playAnimation("idle");
 }
 
 void Star::update(float dt) {
-    (void)dt;
-
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
+    updateAnimation(dt);
     patrol();
 }
 

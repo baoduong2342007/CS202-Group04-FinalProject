@@ -6,6 +6,7 @@
 #include "states/WinState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "patterns/InputState.h"
 #include <iostream>
 
 WinState::WinState() : m_font(), m_text(m_font) {
@@ -21,10 +22,12 @@ void WinState::onEnter() {}
 void WinState::onExit() {}
 
 void WinState::processEvents(const sf::Event& event) {
-    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
-        if (key->code == sf::Keyboard::Key::Enter) {
-            GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        }
+    (void)event;
+}
+
+void WinState::processInput(const InputState& inputState) {
+    if (inputState.wasPressed(sf::Keyboard::Key::Enter)) {
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
     }
 }
 

@@ -41,6 +41,9 @@ public:
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();
+    std::vector<std::unique_ptr<Entity>>& getEntities() { return m_entities; }
+    bool isLevelCompleted() const;
+
 
 private:
     // 5. Private methods
@@ -58,4 +61,6 @@ private:
     std::unique_ptr<Mario> m_mario;
     std::vector<std::unique_ptr<Entity>> m_entities;
     bool m_levelCompleted = false;
+    std::string m_levelPath;
 };
+

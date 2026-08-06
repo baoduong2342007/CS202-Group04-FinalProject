@@ -10,11 +10,16 @@
 
 #include "items/Item.h"
 
+enum class MushroomType {
+    SUPER,  // Red — grows Mario to Big Mario
+    ONE_UP  // Green — grants +1 life
+};
+
 class Mushroom : public Item {
 public:
     // 1. Constructor / Destructor
-    Mushroom();
-    Mushroom(const sf::Vector2f& position, b2World* world);
+    Mushroom(MushroomType type = MushroomType::SUPER);
+    Mushroom(const sf::Vector2f& position, b2World* world, MushroomType type = MushroomType::SUPER);
     ~Mushroom() override = default;
 
     // 2. Override methods
@@ -26,11 +31,15 @@ public:
     /// Reverse horizontal direction when hitting a wall
     void onWallCollision();
 
+    /// Set patrol speed (0 for standing still)
+    void setPatrolSpeed(float speed) { m_patrolSpeed = speed; }
+
 private:
     // 5. Private methods
     void patrol();
 
     // 6. Private members
+    MushroomType m_type;
     float m_patrolSpeed;
     /// +1 = moving right, -1 = moving left
     int m_patrolDirection;

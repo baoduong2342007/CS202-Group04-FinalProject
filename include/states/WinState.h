@@ -15,6 +15,7 @@ public:
     void onEnter() override;
     void onExit() override;
     void processEvents(const sf::Event& event) override;
+    void processInput(const InputState& inputState) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
 

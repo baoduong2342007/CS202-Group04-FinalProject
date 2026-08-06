@@ -39,15 +39,24 @@ public:
     void moveLeft();
     void moveRight();
     void stopMoving();
+    void setMoveIntent(float inputDirection);
+    void preparePhysics(float dt);
     void powerUp(MarioState state);
     void powerDown();
-    void addScore(int points);
+    void queuePowerDown();
     void addCoin();
+    void collectCoin(int scoreValue = 200);
     std::unique_ptr<FireBall> shootFireBall(b2World* world);
     void setInvincible(float duration);
     void updateInvincibility(float dt);
     void loseLife();
+    void addLife(int lives = 1) { m_lives += lives; }
     void respawn(const sf::Vector2f& spawnPosition);
+    void setRespawnPosition(const sf::Vector2f& spawnPosition);
+    /// Recompute grounding from the contacts that survived the latest Box2D step.
+    void refreshGroundedState();
+    /// Clear grounding when Mario starts an upward movement before the next step.
+    void clearGroundedState();
     EntityType getType() const override { return EntityType::MARIO; }
     bool isMario() const override { return true; }
 
@@ -60,6 +69,10 @@ public:
     void setMarioState(MarioState state);
     int getScore() const;
     int getCoinCount() const;
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setScore(int score);
+    /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
+    void setCoinCount(int coins);
     bool isInvincible() const;
     bool canShootFireBall() const;
     int getLives() const;
@@ -101,5 +114,12 @@ protected:
     // Fixture Caching
     b2Fixture* m_smallFixture = nullptr;
     b2Fixture* m_superFixture = nullptr;
+
+    bool m_pendingFixtureRebuild = false;
+    bool m_pendingPowerDown = false;
+    sf::Vector2f m_respawnPosition;
+
+    float m_inputDirX = 0.0f;
+    bool m_jumpRequested = false;
 };
 

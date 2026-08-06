@@ -6,18 +6,21 @@
  */
 
 #include "entities/Mario.h"
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "entities/FireBall.h"
 #include "entities/Enemy.h"
 #include "items/Item.h"
 #include "physics/PhysicsEngine.h"
+#include "level/TileMap.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "states/SmallMarioState.h"
 #include "states/SuperMarioState.h"
 #include "states/FireMarioState.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
@@ -42,6 +45,9 @@ constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
 constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
 constexpr float MAX_WALL_NORMAL_X = 0.5f;
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
+constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.0f;
+constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
+constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
@@ -49,6 +55,41 @@ const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
 const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
 constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
+
+constexpr const char* MARIO_TEXTURE_PATH = "assets/textures/mario/MarioLuigi.png";
+
+// Helper: register animation clips for the current MarioState
+void setupAnimationsForState(AnimationSystem& animSys, MarioState state) {
+    switch (state) {
+    case MarioState::SMALL: {
+        namespace F = SpriteFrames::SmallMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+        break;
+    }
+    case MarioState::SUPER: {
+        namespace F = SpriteFrames::BigMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+        break;
+    }
+    case MarioState::FIRE: {
+        namespace F = SpriteFrames::FireBigMario;
+        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+        break;
+    }
+    }
+}
 } // namespace
 
 Mario::Mario()
@@ -68,14 +109,12 @@ Mario::Mario()
       m_isSkidding(false),
       m_wasJumpPressed(false),
       m_isTransforming(false),
-      m_transformTimer(0.f) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+      m_transformTimer(0.f),
+      m_pendingPowerDown(false),
+      m_respawnPosition(DEFAULT_MARIO_POSITION) {
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/MarioLuigi.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
@@ -95,18 +134,20 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isSkidding(false),
       m_wasJumpPressed(false),
       m_isTransforming(false),
-      m_transformTimer(0.f) {
-    m_animationSystem->addAnimation("idle", AnimationSystem::createGridAnimation(0, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 3, 0.1f));
-    m_animationSystem->addAnimation("jump", AnimationSystem::createGridAnimation(96, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("death", AnimationSystem::createGridAnimation(128, 0, 32, 32, 1, 1.f));
-    m_animationSystem->addAnimation("spawn", AnimationSystem::createGridAnimation(160, 0, 32, 32, 3, 0.15f));
+      m_transformTimer(0.f),
+      m_pendingPowerDown(false),
+      m_respawnPosition(position) {
+    setupAnimationsForState(*m_animationSystem, m_marioState);
     playAnimation("idle");
-    setSprite("assets/textures/mario/MarioLuigi.png");
+    setSprite(MARIO_TEXTURE_PATH);
 }
 
 void Mario::update(float dt) {
   if (!m_active) return;
+
+  if (m_pendingFixtureRebuild) {
+    rebuildFixture();
+  }
 
   // Handle transformation transition animation (0.5s freeze & flash)
   if (m_isTransforming) {
@@ -139,10 +180,12 @@ void Mario::update(float dt) {
     if (m_deathTimer <= 0.f) {
       m_isDying = false;
       if (m_lives > 0) {
-        respawn(DEFAULT_MARIO_POSITION);
+        respawn(m_respawnPosition);
+        setInvincible(DAMAGE_INVINCIBILITY_DURATION);
       } else {
         takeDamage(FATAL_DAMAGE);
         m_active = false;
+        EventBus::getInstance().notify(EventType::PLAYER_DIED);
       }
     }
     return;
@@ -150,6 +193,11 @@ void Mario::update(float dt) {
 
   // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
   syncPhysics();
+
+  if (m_pendingPowerDown) {
+    m_pendingPowerDown = false;
+    powerDown();
+  }
 
   // Tick invincibility timer (develop)
   updateInvincibility(dt);
@@ -166,6 +214,8 @@ void Mario::update(float dt) {
   // Animation state machine (develop)
   if (!isGrounded()) {
       playAnimation("jump");
+  } else if (m_isSkidding) {
+      playAnimation("skid");
   } else if (std::abs(getVelocity().x) > 5.f) {
       playAnimation("walk");
   } else {
@@ -177,6 +227,27 @@ void Mario::update(float dt) {
   if (m_position.y > PIT_DEATH_Y_THRESHOLD) {
     loseLife();
   }
+
+  // Handle scaling and flipping manually in update for now
+  if (m_sprite) {
+      float scaleX = (m_facingDirection == Direction::LEFT) ? -2.f : 2.f;
+      m_sprite->setScale({scaleX, 2.f});
+      if (m_facingDirection == Direction::LEFT) {
+          m_sprite->setOrigin({16.f, 0.f});
+      } else {
+          m_sprite->setOrigin({0.f, 0.f});
+      }
+  }
+}
+
+void Mario::preparePhysics(float dt) {
+  if (!m_active || !m_body) {
+    return;
+  }
+
+  // Apply player input before Box2D advances so the current frame reacts immediately.
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, false);
+  m_jumpRequested = false;
 }
 
 // DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
@@ -216,12 +287,15 @@ void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, b
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + frictionStep);
     }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
+    }
   }
 
   if (jumpKeyPressed) {
     float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
     currentVy = jumpVelocityMeters;
-    setGrounded(false);
+    clearGroundedState();
 
 #ifdef DEBUG
     std::cout << "[DEBUG][Mario] Jump executed with velocity: " << jumpVelocityMeters << std::endl;
@@ -236,16 +310,16 @@ void Mario::applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, flo
 
   if (inputDirX != 0.0f) {
     newVx += inputDirX * AIR_ACCEL * dt;
-
-    float maxAirSpeed = std::max(targetMaxSpeed, std::abs(newVx));
-    if (newVx > maxAirSpeed) newVx = maxAirSpeed;
-    if (newVx < -maxAirSpeed) newVx = -maxAirSpeed;
+    newVx = std::clamp(newVx, -targetMaxSpeed, targetMaxSpeed);
   } else {
     float airFrictionStep = AIR_FRICTION * dt;
     if (newVx > 0.0f) {
       newVx = std::max(0.0f, newVx - airFrictionStep);
     } else if (newVx < 0.0f) {
       newVx = std::min(0.0f, newVx + airFrictionStep);
+    }
+    if (std::abs(newVx) < 1.0f) {
+      newVx = 0.0f;
     }
   }
 
@@ -284,6 +358,12 @@ void Mario::rebuildFixture() {
   if (!m_body)
     return;
 
+  if (m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    m_pendingFixtureRebuild = true;
+    return;
+  }
+  m_pendingFixtureRebuild = false;
+
   // Remove existing fixtures
   for (b2Fixture *f = m_body->GetFixtureList(); f;) {
     b2Fixture *next = f->GetNext();
@@ -312,40 +392,28 @@ void Mario::jump() {
   if (!m_body || !isGrounded() || m_isDying)
     return;
 
-  float jumpVelocity = -PhysicsEngine::pixelsToMeters(m_jumpForce);
-  m_body->SetLinearVelocity(
-      b2Vec2(m_body->GetLinearVelocity().x, jumpVelocity));
-  setGrounded(false);
-
-  EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+  m_jumpRequested = true;
 }
 
 void Mario::moveLeft() {
-  if (!m_body || m_isDying)
-    return;
-
-  float desiredXVelocity = -PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
-  setFacingDirection(Direction::LEFT);
+  setMoveIntent(-1.0f);
 }
 
 void Mario::moveRight() {
-  if (!m_body || m_isDying)
-    return;
-
-  float desiredXVelocity = PhysicsEngine::pixelsToMeters(m_moveSpeed);
-  m_body->SetLinearVelocity(
-      b2Vec2(desiredXVelocity, m_body->GetLinearVelocity().y));
-  setFacingDirection(Direction::RIGHT);
+  setMoveIntent(1.0f);
 }
 
 void Mario::stopMoving() {
-  if (!m_body || m_isDying)
-    return;
+  setMoveIntent(0.0f);
+}
 
-  m_body->SetLinearVelocity(
-      b2Vec2(0.0f, m_body->GetLinearVelocity().y));
+void Mario::setMoveIntent(float inputDirection) {
+  m_inputDirX = std::clamp(inputDirection, -1.0f, 1.0f);
+  if (m_inputDirX < 0.0f) {
+    setFacingDirection(Direction::LEFT);
+  } else if (m_inputDirX > 0.0f) {
+    setFacingDirection(Direction::RIGHT);
+  }
 }
 
 void Mario::powerUp(MarioState state) {
@@ -362,14 +430,8 @@ void Mario::powerUp(MarioState state) {
     m_statePattern = std::make_unique<FireMarioState>();
   }
 
-  // If growing from Small to Super/Fire, offset Box2D body upward by 16px (0.5m)
-  if (wasSmall && m_body) {
-    b2Vec2 currentPos = m_body->GetPosition();
-    m_body->SetTransform(b2Vec2(currentPos.x, currentPos.y - PhysicsEngine::pixelsToMeters(16.f)), m_body->GetAngle());
-  }
-
-  m_isTransforming = true;
-  m_transformTimer = 0.5f;
+  setupAnimationsForState(*m_animationSystem, m_marioState);
+  playAnimation("idle");
 
   EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
   rebuildFixture();
@@ -387,16 +449,29 @@ void Mario::powerDown() {
   if (m_isInvincible || m_isDying || m_isTransforming) {
     return;
   }
+  if (m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
+    queuePowerDown();
+    return;
+  }
+
   if (m_marioState == MarioState::FIRE) {
     powerUp(MarioState::SUPER);
-    setInvincible(2.0f);
+    rebuildFixture();
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else if (m_marioState == MarioState::SUPER) {
     powerUp(MarioState::SMALL);
-    setInvincible(2.0f);
+    rebuildFixture();
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else {
     loseLife();
+  }
+}
+
+void Mario::queuePowerDown() {
+  if (!m_isInvincible) {
+    m_pendingPowerDown = true;
   }
 }
 
@@ -414,29 +489,46 @@ void Mario::loseLife() {
   if (m_lives > 0) {
     m_lives--;
   }
-  EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
 #ifdef DEBUG
   std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
 #endif
+
+  if (m_lives > 0) {
+    respawn(m_respawnPosition);
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
+  } else {
+    takeDamage(FATAL_DAMAGE);
+    m_active = false;
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
+  }
 }
 
 void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_marioState = MarioState::SMALL;
+  m_size = SMALL_MARIO_SIZE;
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   m_isDying = false;
-  playAnimation("spawn");
+  clearGroundedState();
   setPosition(spawnPosition);
+
+  if (m_body) {
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    m_body->SetAngularVelocity(0.f);
+    m_body->SetAwake(true);
+  }
+  setupAnimationsForState(*m_animationSystem, m_marioState);
+  playAnimation("idle");
   rebuildFixture();
 
   if (m_sprite) {
     m_sprite->setColor(sf::Color::White);
   }
+}
 
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-  }
+void Mario::setRespawnPosition(const sf::Vector2f& spawnPosition) {
+  m_respawnPosition = spawnPosition;
 }
 
 MarioState Mario::getMarioState() const { return m_marioState; }
@@ -457,16 +549,26 @@ void Mario::addScore(int points) {
   m_score += points;
 }
 
+void Mario::collectCoin(int scoreValue) {
+  ++m_coinCount;
+  addScore(scoreValue);
+  EventBus::getInstance().notify(EventType::COIN_COLLECTED);
+}
+
 int Mario::getScore() const {
   return m_score;
 }
 
-void Mario::addCoin() {
-  m_coinCount++;
-}
-
 int Mario::getCoinCount() const {
   return m_coinCount;
+}
+
+void Mario::setScore(int score) {
+  m_score = score;
+}
+
+void Mario::setCoinCount(int coins) {
+  m_coinCount = coins;
 }
 
 std::unique_ptr<FireBall> Mario::shootFireBall(b2World* world) {
@@ -543,6 +645,55 @@ bool Mario::isSkidding() const {
 
 bool Mario::isDying() const {
   return m_isDying;
+}
+
+void Mario::refreshGroundedState() {
+  if (!m_body) {
+    setGrounded(false);
+    return;
+  }
+
+  bool grounded = false;
+  for (b2ContactEdge* edge = m_body->GetContactList(); edge; edge = edge->next) {
+    b2Contact* contact = edge->contact;
+    if (!contact || !contact->IsTouching()) {
+      continue;
+    }
+
+    b2Body* bodyA = contact->GetFixtureA()->GetBody();
+    b2Body* bodyB = contact->GetFixtureB()->GetBody();
+    b2Body* otherBody = (bodyA == m_body) ? bodyB : bodyA;
+    if (!otherBody) {
+      continue;
+    }
+
+    const uintptr_t userData = otherBody->GetUserData().pointer;
+    Entity* otherEntity = (userData != 0 && !TileMap::isTileUserData(userData))
+                              ? reinterpret_cast<Entity*>(userData)
+                              : nullptr;
+    if (otherEntity && (otherEntity->isEnemy() || otherEntity->isItem())) {
+      continue;
+    }
+
+    b2WorldManifold manifold;
+    contact->GetWorldManifold(&manifold);
+    b2Vec2 normal = manifold.normal;
+    if (bodyB == m_body) {
+      normal = -normal;
+    }
+
+    if (normal.y > GROUND_NORMAL_Y_THRESHOLD &&
+        std::abs(normal.x) < MAX_GROUND_NORMAL_X) {
+      grounded = true;
+      break;
+    }
+  }
+
+  setGrounded(grounded);
+}
+
+void Mario::clearGroundedState() {
+  setGrounded(false);
 }
 
 // ── Double Dispatch Collision Resolution ────────────────────────

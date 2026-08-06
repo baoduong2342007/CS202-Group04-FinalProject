@@ -39,12 +39,36 @@ TextureManager::TextureManager() {
 bool TextureManager::loadTexture(const std::string& id, const std::string& filename) {
     // If it already exists, don't load it again
     if (m_textures.find(id) != m_textures.end()) {
-        std::cerr << "[TextureManager] WARNING: Texture ID '" << id << "' already exists.\n";
         return true;
     }
 
     try {
-        // SFML 3: sf::Texture(filename) constructor (throws sf::Exception on failure)
+        // Background textures (e.g. bg_mountains.png) should not mask out sky blue colors
+        if (id.find("bg_") != std::string::npos || filename.find("bg_") != std::string::npos) {
+            auto texture = std::make_unique<sf::Texture>(filename);
+            m_textures[id] = std::move(texture);
+            return true;
+        }
+
+        sf::Image img;
+        if (img.loadFromFile(filename)) {
+            sf::Color bg1(146, 144, 255);
+            sf::Color bg2(0, 41, 140);
+            sf::Color corner = img.getPixel({0, 0});
+            
+            // Create mask for background colors to make them transparent
+            img.createMaskFromColor(bg1);
+            img.createMaskFromColor(bg2);
+            if (corner.a == 255 && (corner == bg1 || corner == bg2 || (corner.r < 50 && corner.g < 50))) {
+                img.createMaskFromColor(corner);
+            }
+
+            auto texture = std::make_unique<sf::Texture>(img);
+            m_textures[id] = std::move(texture);
+            return true;
+        }
+
+        // Fallback direct load
         auto texture = std::make_unique<sf::Texture>(filename);
         m_textures[id] = std::move(texture);
         return true;
@@ -57,6 +81,12 @@ bool TextureManager::loadTexture(const std::string& id, const std::string& filen
 
 const sf::Texture& TextureManager::getTexture(const std::string& id) const {
     auto it = m_textures.find(id);
+
+    // If texture not found in map, attempt to auto-load using id as file path
+    if (it == m_textures.end()) {
+        const_cast<TextureManager*>(this)->loadTexture(id, id);
+        it = m_textures.find(id);
+    }
 
     // Invariant Check: Does the ID actually exist?
     if (it == m_textures.end()) {

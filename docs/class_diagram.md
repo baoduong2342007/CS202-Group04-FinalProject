@@ -6,11 +6,12 @@
  *       Final version will be exported as class_diagram.png in Week 6.
  */
 
-# Class Diagram — Super Mario (Draft)
+# Class Diagram — Super Mario
 
-> **Status:** Week 1 Draft
-> **Last updated:** 2026-07-01
+> **Status:** Sprint 6 (updated)
+> **Last updated:** 2026-08-06
 > **Author:** TV1 (Dương)
+> **Note:** Reflects current implementation (ownership, state lifecycle, factory, EventBus, Box2D).
 
 ---
 
@@ -36,13 +37,16 @@ classDiagram
     }
 
     class GameManager {
-        -static GameManager* s_instance
-        -IGameState* m_currentState
-        -GameManager()
+        -unique_ptr~IGameState~ m_currentState
+        -unique_ptr~IGameState~ m_previousState
+        -vector~PendingOp~ m_pendingOps
         +static getInstance() GameManager&
-        +changeState(IGameState* state) void
+        +changeState(unique_ptr~IGameState~) void
+        +pushState(unique_ptr~IGameState~) void
+        +popState() void
         +update(float dt) void
         +render(sf::RenderWindow& window) void
+        -processPendingOps() void
     }
 
     class SoundManager {
@@ -61,10 +65,15 @@ classDiagram
 
     class IGameState {
         <<interface>>
-        +init()* void
+        +onEnter()* void
+        +onExit()* void
+        +onPause() void
+        +onResume() void
+        +processEvents(sf::Event)* void
+        +processInput(InputState)* void
         +update(float dt)* void
         +render(sf::RenderWindow& window)* void
-        +exit()* void
+        +isOverlay() bool
     }
 
     class MenuState {
@@ -75,11 +84,19 @@ classDiagram
     }
 
     class PlayState {
-        -Level* m_currentLevel
-        +init() void
+        -unique_ptr~Level~ m_level
+        -unique_ptr~HUD~ m_hud
+        -GameProgress m_progress
+        +onEnter() void
+        +onExit() void
+        +onPause() void
+        +onResume() void
         +update(float dt) void
         +render(sf::RenderWindow& window) void
-        +exit() void
+        -loadLevel(int) bool
+        -navigateToLevel(int) void
+        -snapshotProgress() void
+        -restoreProgress() void
     }
 
     class PauseState {
@@ -140,16 +157,25 @@ classDiagram
     }
 
     class Mario {
-        -MarioState m_state
+        -MarioState m_marioState
         -int m_lives
         -int m_score
-        +handleInput(InputHandler& input) void
+        -int m_coinCount
         +jump() void
-        +applyPowerUp(PowerUpType type) void
+        +moveLeft() void
+        +moveRight() void
+        +stopMoving() void
+        +powerUp(MarioState) void
+        +powerDown() void
         +loseLife() void
+        +addScore(int) void
+        +collectCoin(int) void
+        +setScore(int) void
+        +setCoinCount(int) void
         +getLives() int
         +getScore() int
-        +getState() MarioState
+        +getCoinCount() int
+        +getMarioState() MarioState
     }
 
     class Enemy {
@@ -225,12 +251,17 @@ classDiagram
     %% ============================================================
 
     class Level {
+        -unique_ptr~b2World~ m_world
+        -unique_ptr~ContactListener~ m_contactListener
         -TileMap m_tileMap
-        -vector~Entity*~ m_entities
+        -Camera m_camera
+        -unique_ptr~Mario~ m_mario
+        -vector~unique_ptr~Entity~~ m_entities
         +loadFromFile(string path) bool
         +update(float dt) void
         +render(sf::RenderWindow& window) void
-        +getEntities() vector~Entity*~
+        +getMario() Mario*
+        +getEntities() vector~unique_ptr~Entity~~&
     }
 
     class TileMap {
@@ -296,8 +327,10 @@ classDiagram
     %% ============================================================
 
     class EntityFactory {
-        +createEnemy(EnemyType type, sf::Vector2f pos) Enemy*
-        +createItem(ItemType type, sf::Vector2f pos) Item*
+        <<Simple Factory>>
+        +createEnemy(EnemyType type, sf::Vector2f pos, b2World*) Entity*
+        +createItem(ItemType type, sf::Vector2f pos, b2World*) Entity*
+        +createFromTileCode(char code, sf::Vector2f pos, b2World*) Entity*
     }
 
     class IObserver {
@@ -314,16 +347,16 @@ classDiagram
 
     class EventBus {
         -static EventBus* s_instance
-        -map~Event, vector~IObserver*~~ m_listeners
+        -unordered_map~EventType, vector~IObserver*~~ m_listeners
         +static getInstance() EventBus&
-        +subscribe(Event event, IObserver* obs) void
-        +unsubscribe(Event event, IObserver* obs) void
-        +publish(Event event, void* data) void
+        +subscribe(EventType event, IObserver* obs) void
+        +unsubscribe(EventType event, IObserver* obs) void
+        +notify(EventType event) void
     }
 
     class ICommand {
         <<interface>>
-        +execute(Mario& mario)* void
+        +execute()* void
     }
 
     class InputHandler {
@@ -358,9 +391,12 @@ classDiagram
         +isClicked() bool
     }
 
-    class SaveManager {
-        +saveHighScore(int score) void
-        +loadHighScore() int
+    class GameProgress {
+        +int currentLevel
+        +int score
+        +int coins
+        +int lives
+        +MarioState power
     }
 
     %% ============================================================
@@ -388,7 +424,7 @@ classDiagram
     class MarioState {
         <<enumeration>>
         SMALL
-        BIG
+        SUPER
         FIRE
     }
 

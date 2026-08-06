@@ -2,9 +2,8 @@
  * @file HUD.h
  * @author TV5 (Truyền)
  * @brief Heads-Up Display showing score, lives, coin count, and world indicator.
- * @note Subscribes to EventBus (COIN_COLLECTED, PLAYER_DIED, PLAYER_POWER_UP)
- *       and queries Mario::getScore() directly, since EventBus::notify carries
- *       no payload. Coin count is tracked locally via COIN_COLLECTED events.
+ * @note Subscribes to EventBus for refresh triggers, while Mario remains the
+ *       authoritative source for score, lives, and coin count.
  */
 
 #pragma once
@@ -71,7 +70,6 @@ private:
     std::optional<sf::Text> m_livesText;  ///< "LIVES x 3"
     std::optional<sf::Text> m_coinText;   ///< "COINS x 05"
     std::optional<sf::Text> m_worldText;  ///< "WORLD 1-1"
-    int m_coinCount;            ///< Coin counter incremented on COIN_COLLECTED.
     int m_worldNumber;          ///< Current world number.
     int m_levelNumber;          ///< Current level number.
     bool m_fontLoaded;          ///< Whether the font loaded successfully.

@@ -43,5 +43,6 @@ public:
     void clear();
 
 private:
+    size_t m_capacity;
     std::vector<std::unique_ptr<FireBall>> m_pool;
 };

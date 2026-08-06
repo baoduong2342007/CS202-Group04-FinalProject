@@ -21,7 +21,3 @@ void JumpCommand::execute() {
         m_mario->jump();
     }
 }
-
-void JumpCommand::undo() {
-    // Jump is not reversible — intentional no-op
-}

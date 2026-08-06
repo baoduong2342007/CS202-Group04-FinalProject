@@ -21,9 +21,3 @@ void MoveRightCommand::execute() {
         m_mario->moveRight();
     }
 }
-
-void MoveRightCommand::undo() {
-    if (m_mario) {
-        m_mario->stopMoving();
-    }
-}

@@ -3,13 +3,12 @@
  * @author TV5
  * @brief Concrete Command — triggers the game to pause
  * @note Week 2 — bound to sf::Keyboard::Key::Escape by default in InputHandler
+ * @note Sprint 6 — S6-TV1-25: removed unused GameManager dependency
  */
 
 #pragma once
 
 #include "patterns/ICommand.h"
-
-class GameManager;
 
 // ============================================================
 // PATTERN: Command (concrete)
@@ -20,14 +19,9 @@ class GameManager;
 class PauseCommand : public ICommand {
 public:
     // 1. Constructor / Destructor
-    explicit PauseCommand(GameManager* gameManager);
+    PauseCommand() = default;
     ~PauseCommand() override = default;
 
     // 2. Override methods
     void execute() override;
-    void undo() override;
-
-private:
-    // 6. Private members
-    GameManager* m_gameManager;  // non-owning pointer — delegates to state machine
 };

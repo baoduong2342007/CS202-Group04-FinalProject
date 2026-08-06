@@ -1,13 +1,14 @@
 /**
  * @file EntityFactory.h
  * @author TV1 (Dương)
- * @brief Factory Method pattern interface for instantiating polymorphic game entities
+ * @brief Simple Factory for instantiating polymorphic game entities
  * @note Week 4 — provides creation methods for enemies and items based on types or tile codes
+ * @note Sprint 6 — S6-TV1-23: this is a Simple Factory (static utility with switch),
+ *       NOT the canonical Factory Method pattern, which requires subclassable
+ *       creator classes with virtual factory methods.
  */
 
 #pragma once
-
-// 1. Standard library
 
 // 2. SFML
 #include <SFML/Graphics.hpp>
@@ -28,7 +29,7 @@ enum class ItemType {
 };
 
 // ============================================================
-// PATTERN: Factory Method
+// PATTERN: Simple Factory
 // Reason: avoids hardcoded new Goomba(), new Koopa() across TileMap or Level;
 //         allows adding new enemy and item types cleanly without modifying level loading code.
 // Note:   EntityFactory::create() methods are the ONLY exception to the raw pointer rule in coding.md.

@@ -1,8 +1,9 @@
 /**
  * @file EntityFactory.cpp
  * @author TV1 (Dương)
- * @brief Factory Method pattern implementation for instantiating polymorphic game entities
+ * @brief Simple Factory implementation for instantiating polymorphic game entities
  * @note Week 4 — uses hook points for TV4 (Enemy) and TV5 (Item) concrete classes
+ * @note Sprint 6 — S6-TV1-23: this is a Simple Factory, not canonical Factory Method
  */
 
 #include "patterns/EntityFactory.h"
@@ -21,7 +22,7 @@
 #include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
 
 // ============================================================
-// PATTERN: Factory Method Implementation
+// PATTERN: Simple Factory Implementation
 // ============================================================
 Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
     switch (type) {

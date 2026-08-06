@@ -25,7 +25,6 @@ public:
 
     // 2. Override methods
     void execute() override;
-    void undo() override;
 
 private:
     // 6. Private members

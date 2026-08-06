@@ -64,9 +64,11 @@ MenuState::MenuState(int score, int coins, int world, int level, int topScore)
       m_coinSprite(m_hudTexture) {}
 
 void MenuState::onEnter() {
-    if (!m_hudTexture.loadFromFile("assets/textures/ui/hud.png")) {
+    try {
+        m_hudTexture = sf::Texture("assets/textures/ui/hud.png");
+    } catch (const std::exception& e) {
 #ifdef DEBUG
-        std::cerr << "[DEBUG][MenuState] Failed to load hud.png\n";
+        std::cerr << "[DEBUG][MenuState] Failed to load hud.png: " << e.what() << "\n";
 #endif
         return; // Cannot render menu without texture
     }

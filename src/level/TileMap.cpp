@@ -225,6 +225,65 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
     return true;
 }
 
+bool validateFlagPole(const std::vector<std::string>& grid, const std::string& path) {
+    std::size_t finishRow = 0;
+    std::size_t finishColumn = 0;
+    bool finishFound = false;
+
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        const std::size_t column = grid[row].find('F');
+
+        if (column != std::string::npos) {
+            finishRow = row;
+            finishColumn = column;
+            finishFound = true;
+            break;
+        }
+    }
+
+    if (!finishFound) {
+        return false;
+    }
+
+    const std::size_t firstPoleRow = finishRow + 1;
+
+    if (firstPoleRow >= grid.size() || grid[firstPoleRow][finishColumn] != '|') {
+        std::cerr << "Invalid level file: finish point at row " << finishRow + 1 << ", column " << finishColumn + 1 << " must have a pole tile directly below it in " << path << std::endl;
+
+        return false;
+    }
+
+    std::size_t row = firstPoleRow;
+
+    while (row < grid.size() && grid[row][finishColumn] == '|') {
+        ++row;
+    }
+
+    if (row >= grid.size() || !isSolidTileSymbol(grid[row][finishColumn])) {
+        std::cerr << "Invalid level file: flag pole at column " << finishColumn + 1 << " must end on a solid tile in " << path << std::endl;
+
+        return false;
+    }
+
+    for (std::size_t currentRow = 0; currentRow < grid.size(); ++currentRow) {
+        for (std::size_t currentColumn = 0; currentColumn < grid[currentRow].size(); ++currentColumn) {
+            if (grid[currentRow][currentColumn] != '|') {
+                continue;
+            }
+
+            const bool belongsToPole = currentColumn == finishColumn && currentRow >= firstPoleRow && currentRow < row;
+
+            if (!belongsToPole) {
+                std::cerr << "Invalid level file: disconnected pole tile at row " << currentRow + 1 << ", column " << currentColumn + 1 << " in " << path << std::endl;
+
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 } // namespace
 
 TileMap::~TileMap() {
@@ -269,6 +328,11 @@ bool TileMap::loadFromFile(const std::string& path) {
     if (!validateLevelMarkers(validationState, path)) {
         return false;
     }
+
+    if (!validateFlagPole(loadedGrid, path)) {
+        return false;
+    }
+    
     sf::Texture loadedTileset;
     try {
         loadedTileset = sf::Texture(std::string(TILESET_PATH));

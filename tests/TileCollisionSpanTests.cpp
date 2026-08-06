@@ -12,6 +12,7 @@
 #include <box2d/box2d.h>
 
 #include "level/TileCollisionSpans.h"
+#include "level/TileSemantics.h"
 #include "physics/TileContactResolver.h"
 
 namespace {
@@ -132,12 +133,26 @@ bool testCeilingContactTargetsOwningTile() {
            check(solverSlop.column == 3 && solverSlop.row == 2,
                  "small Box2D contact slop must not select the row below the ceiling");
 }
+
+bool testGroundAndBrickSemantics() {
+    return check(
+               !TileSemantics::isBreakable('1'),
+               "ground tile '1' must not be breakable"
+           ) &&
+           check(
+               TileSemantics::isBreakable('B'),
+               "brick tile 'B' must be breakable"
+           );
+}
+
 } // namespace
 
 int main() {
-    const bool success = testSpanLayout() &&
-                          testDestroyedTileSplitsSpan() &&
-                          testRightSpamCrossesTileBoundaries() &&
-                          testCeilingContactTargetsOwningTile();
+    const bool success = testGroundAndBrickSemantics() &&
+                            testSpanLayout() &&
+                            testDestroyedTileSplitsSpan() &&
+                            testRightSpamCrossesTileBoundaries() &&
+                            testCeilingContactTargetsOwningTile();
+
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

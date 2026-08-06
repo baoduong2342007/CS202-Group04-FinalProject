@@ -19,6 +19,7 @@
 
 #include "physics/PhysicsEngine.h"
 #include "level/TileCollisionSpans.h"
+#include "level/TileSemantics.h"
 #include "entities/Entity.h"
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
@@ -600,8 +601,8 @@ bool TileMap::hitTile(int column, int row, bool isBigMario, std::vector<std::uni
         return true;
     }
 
-    // --- Brick Block ('1' or 'B') ---
-    if (symbol == '1' || symbol == 'B') {
+    // --- Breakable Brick Block ('B') ---
+    if (TileSemantics::isBreakable(symbol)) {
         if (isBigMario) {
             // Shatter Brick Block
             m_grid[row][column] = '.';

@@ -2,8 +2,9 @@
  * @file PlayState.h
  * @author TV1 (Dương)
  * @brief Play state implementation (handles the main gameplay loop)
- * @note Sprint 6 — S6-TV1-07/08/09/10/11/13: one-based level progression,
- *       session GameProgress, load error handling, terminal-result race guard.
+ * @note Sprint 6 — S6-TV1-07/08/09/10/11/12/13: one-based level progression,
+ *       session GameProgress, load error handling, transition freeze,
+ *       terminal-result race guard.
  */
 
 #pragma once
@@ -14,6 +15,7 @@
 #include "ui/HUD.h"
 #include "patterns/IObserver.h"
 #include "core/GameProgress.h"
+#include "core/LevelCatalog.h"
 
 class PlayState : public IGameState, public IObserver {
 public:
@@ -49,7 +51,8 @@ private:
     /// Apply m_progress values to the freshly created Mario/HUD.
     void restoreProgress();
 
-    std::string getCurrentLevelPath() const;
+    /// S6-TV1-12: advance the transition state machine (freeze gameplay during it).
+    void updateTransition(float dt);
 
     // 6. Private members
     std::unique_ptr<Level> m_level;
@@ -57,15 +60,19 @@ private:
     std::unique_ptr<HUD> m_hud;
 
     GameProgress m_progress;   ///< Session progress, independent of Level lifetime.
-    static constexpr int MAX_LEVELS = 3;
 
     sf::RectangleShape m_fadeOverlay;
     float m_fadeAlpha = 0.f;
-    bool m_isFading = false;
     float m_fadeDuration = 0.5f;
 
     bool m_needsReload = false;
     bool m_needsGameOver = false;
     /// S6-TV1-13: only one terminal result can be committed per frame.
     bool m_terminalCommittedThisFrame = false;
+
+    /// S6-TV1-12: transition state machine
+    enum class TransitionPhase { NONE, FADE_OUT, LOADING, FADE_IN };
+    TransitionPhase m_transitionPhase = TransitionPhase::NONE;
+    int m_transitionTargetLevel = 0;
+    bool m_transitionIsWin = false;
 };

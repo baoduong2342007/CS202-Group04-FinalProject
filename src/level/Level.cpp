@@ -101,16 +101,16 @@ void Level::spawnEntitiesFromTileMap() {
         for (const auto& gridPos : positions) {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
-            Entity* raw =
+            auto entity =
                 EntityFactory::createFromTileCode(code, worldPos, m_world.get());
-            if (raw) {
+            if (entity) {
                 // Wire TextureManager so entity sprites can load
-                raw->setTextureManager(m_textureManager);
-                if (raw->isEnemy()) {
-                    Goomba* goomba = dynamic_cast<Goomba*>(raw);
+                entity->setTextureManager(m_textureManager);
+                if (entity->isEnemy()) {
+                    Goomba* goomba = dynamic_cast<Goomba*>(entity.get());
                     if (goomba) goomba->setTileMap(&m_tileMap);
                 }
-                m_entities.emplace_back(raw);
+                m_entities.push_back(std::move(entity));
             }
 
         }

@@ -106,26 +106,20 @@ FetchContent_MakeAvailable(box2d)
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
-add_executable(main ${SOURCES})
+# Remove main.cpp from SOURCES to avoid multiple definition of main in tests
+list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-# ==============================================================================
-# 4. TARGET BUILD CONFIGURATIONS
-# ==============================================================================
-# Include directories
-target_include_directories(main PRIVATE include)
-
-# Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
-
-# Compiler flags
+# Add global compiler options (must be set before targets)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
+    add_compile_options(-Wall -Wextra -pedantic)
 elseif(MSVC)
-    target_compile_options(main PRIVATE /W4 /permissive- /FS)
+    add_compile_options(/W4 /permissive- /FS)
 endif()
 
-# Link SFML and Box2D libraries
-target_link_libraries(main PRIVATE
+# Core logic static library
+add_library(game_lib STATIC ${SOURCES})
+target_include_directories(game_lib PUBLIC include)
+target_link_libraries(game_lib PUBLIC
     SFML::Graphics
     SFML::Window
     SFML::System
@@ -133,38 +127,35 @@ target_link_libraries(main PRIVATE
     box2d
 )
 
+# Executable target
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE game_lib)
+
+# ==============================================================================
+# 4. TARGET BUILD CONFIGURATIONS
+# ==============================================================================
+# Define DEBUG macro for debug builds
+target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(input_state_tests
         tests/InputStateTests.cpp
-        src/patterns/InputHandler.cpp
-        src/patterns/InputState.cpp
     )
-    target_include_directories(input_state_tests PRIVATE include)
-    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    target_link_libraries(input_state_tests PRIVATE game_lib)
     add_test(NAME input_state_tests COMMAND input_state_tests)
 
     add_executable(tile_collision_span_tests
         tests/TileCollisionSpanTests.cpp
-        src/level/TileCollisionSpans.cpp
-        src/physics/TileContactResolver.cpp
     )
-    target_include_directories(tile_collision_span_tests PRIVATE include)
-    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    target_link_libraries(tile_collision_span_tests PRIVATE game_lib)
     add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
 
     add_executable(mario_physics_tests
         tests/MarioPhysicsTests.cpp
-        src/core/AnimationSystem.cpp
-        src/core/TextureManager.cpp
-        src/entities/Character.cpp
-        src/entities/Entity.cpp
-        src/entities/Mario.cpp
-        src/patterns/EventBus.cpp
-        src/physics/PhysicsEngine.cpp
     )
-    target_include_directories(mario_physics_tests PRIVATE include)
-    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+    target_link_libraries(mario_physics_tests PRIVATE game_lib)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
 endif()
 

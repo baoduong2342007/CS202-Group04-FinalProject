@@ -27,6 +27,11 @@ FireBall::FireBall()
     setSprite("assets/textures/items/items_objects.png");
 }
 
+FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
+    : FireBall() {
+    spawn(position, direction, world);
+}
+
 void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World* world) {
     m_position = position;
     m_direction = direction;

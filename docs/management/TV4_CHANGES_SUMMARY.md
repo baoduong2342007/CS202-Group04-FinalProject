@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-15
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-24
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -781,7 +781,49 @@ Các trường hợp generic entity cleanup được xử lý riêng trong S6-TV
 
 ---
 
-## 15. Quy Ước Cập Nhật File Này
+## 15. Koopa Ledge Detection
+
+### File liên quan
+
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+
+### S6-TV4-24 — Ngăn Walking Koopa rơi khỏi platform
+
+Koopa walking hiện sử dụng `TileMap` để kiểm tra terrain ngay phía trước hướng patrol.
+
+`Level` truyền `TileMap` cho enemy thông qua virtual `Enemy::setTileMap()`. `Koopa` override method này và giữ reference tới TileMap để thực hiện ledge detection.
+
+Trong `isApproachingLedge()`, Koopa kiểm tra:
+
+- solid terrain bên dưới vị trí hiện tại;
+- solid terrain ngay phía trước hướng di chuyển.
+
+Nếu Koopa vẫn đang đứng trên solid terrain nhưng phía trước không còn solid tile, Koopa đảo hướng trước khi rời platform.
+
+Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
+
+`SHELL_IDLE` không di chuyển và `SHELL_SLIDING` không sử dụng ledge detection, vì vậy shell vẫn có thể lao xuống pit theo gameplay bình thường.
+
+`reverseDirection()` trực tiếp cập nhật facing direction và horizontal velocity thay vì gọi lại `patrol()`, tránh recursive ledge checks.
+
+### Kiểm tra
+
+- Walking Koopa quay đầu ở mép trái platform.
+- Walking Koopa quay đầu ở mép phải platform.
+- Koopa không quay đầu sai trên continuous ground.
+- Wall collision vẫn đổi hướng bình thường.
+- Shell idle vẫn đứng yên.
+- Shell sliding không quay đầu tại ledge.
+- Enemy activation và off-screen cleanup vẫn hoạt động.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 16. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

@@ -28,6 +28,8 @@ public:
     void onWallCollision() override;
     void patrol() override;
 
+    void setTileMap(const TileMap* tileMap) override;
+
     void kick(Direction direction);
 
     bool isInShell() const;
@@ -37,8 +39,10 @@ public:
 
 private:
     void reverseDirection();
+    bool isApproachingLedge() const;
 
     KoopaState m_state;
     float m_patrolSpeed;
-};
 
+    const TileMap* m_tileMap = nullptr;
+};

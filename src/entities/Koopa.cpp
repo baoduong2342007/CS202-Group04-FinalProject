@@ -6,8 +6,10 @@
  */
 
 #include "entities/Koopa.h"
+#include "level/TileMap.h"
 
 #include <memory>
+#include <cmath>
 
 #include <box2d/box2d.h>
 
@@ -19,6 +21,7 @@ constexpr int DEFAULT_KOOPA_HEALTH = 1;
 constexpr float DEFAULT_KOOPA_PATROL_SPEED = 50.f;
 constexpr float KOOPA_SLIDE_SPEED = 240.f;
 constexpr float PIT_CLEANUP_Y = 800.f;
+constexpr float EDGE_PROBE_OFFSET = 2.f;
 
 constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/koopa.png";
 
@@ -168,6 +171,10 @@ void Koopa::patrol() {
         return;
     }
 
+    if (isApproachingLedge()) {
+        reverseDirection();
+    }
+
     sf::Vector2f velocity = getVelocity();
 
     if (getFacingDirection() == Direction::LEFT) {
@@ -220,14 +227,40 @@ void Koopa::reverseDirection() {
     sf::Vector2f velocity = getVelocity();
 
     if (m_state == KoopaState::SHELL_SLIDING) {
-        velocity.x =
-            getFacingDirection() == Direction::LEFT
-                ? -KOOPA_SLIDE_SPEED
-                : KOOPA_SLIDE_SPEED;
-
-        setVelocity(velocity);
-        return;
+        velocity.x = getFacingDirection() == Direction::LEFT
+                ? -KOOPA_SLIDE_SPEED : KOOPA_SLIDE_SPEED;
+    } else if (m_state == KoopaState::WALKING) {
+        velocity.x = getFacingDirection() == Direction::LEFT
+                ? -m_patrolSpeed : m_patrolSpeed;
     }
 
-    patrol();
+    setVelocity(velocity);
+}
+
+void Koopa::setTileMap(const TileMap* tileMap) {
+    m_tileMap = tileMap;
+}
+
+bool Koopa::isApproachingLedge() const {
+    if (!m_tileMap) {
+        return false;
+    }
+
+    const float footY = m_position.y + m_size.y + EDGE_PROBE_OFFSET;
+
+    const float currentX = m_position.x + m_size.x / 2.f;
+
+    const float frontX = getFacingDirection() == Direction::LEFT
+            ? m_position.x - EDGE_PROBE_OFFSET
+            : m_position.x + m_size.x + EDGE_PROBE_OFFSET;
+
+    const int row = static_cast<int>(std::floor(footY / TILE_SIZE));
+
+    const int currentColumn =static_cast<int>(std::floor(currentX / TILE_SIZE));
+    const int frontColumn =static_cast<int>(std::floor(frontX / TILE_SIZE));
+
+    const bool hasCurrentGround = m_tileMap->isSolid(currentColumn, row);
+    const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
+
+    return hasCurrentGround && !hasFrontGround;
 }

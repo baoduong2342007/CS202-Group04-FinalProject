@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14, S6-TV4-16
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -707,7 +707,41 @@ Physics body không bị disable trước activation. Box2D vẫn có thể sett
 
 ---
 
-## 11. Quy Ước Cập Nhật File Này
+## 12. Level 2 Spawn Fairness
+
+### File liên quan
+
+- [`levels/level2.txt`](../../levels/level2.txt)
+
+### S6-TV4-16 — Kiểm tra vị trí spawn của Koopa
+
+Các Koopa trong Level 2 được kiểm tra cùng với enemy activation policy để bảo đảm chúng không di chuyển hoặc rơi khỏi khu vực spawn trước khi Mario nhìn thấy.
+
+Tất cả Koopa hiện có solid terrain trực tiếp bên dưới spawn point.
+
+Một Koopa trên platform ngắn được đặt quá gần mép trái trong khi Koopa mặc định bắt đầu với hướng di chuyển sang trái. Spawn này được dịch sang phía phải của cùng platform để tạo thêm khoảng di chuyển trước mép.
+
+Không thay đổi enemy physics hoặc patrol speed.
+
+### Phân chia trách nhiệm
+
+S6-TV4-21 chịu trách nhiệm ngăn enemy chạy AI trước khi đi vào camera.
+
+S6-TV4-16 chỉ bảo đảm spawn point ban đầu hợp lý.
+
+Khả năng phát hiện và quay lại khi gặp ledge được xử lý riêng trong S6-TV4-24.
+
+### Kiểm tra
+
+- Mọi Koopa đều có solid terrain dưới spawn point.
+- Enemy ngoài camera không patrol trước khi được nhìn thấy.
+- Koopa platform đầu tiên không rơi ngay sau khi activate.
+- Các Koopa còn lại giữ nguyên gameplay.
+- Build và toàn bộ CTest hiện tại vẫn pass.
+
+---
+
+## 13. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

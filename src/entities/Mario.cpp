@@ -52,7 +52,7 @@ constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
 const sf::Vector2f SMALL_MARIO_SIZE(28.f, 30.f);
-const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
+const sf::Vector2f SUPER_MARIO_SIZE(28.f, 60.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
 constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
 

@@ -187,12 +187,57 @@ bool testSmallMarioTraversesOneBlockPassage() {
     return check(endX > startX + 50.0f,
                  "Small Mario must move smoothly through 1-block-high passage without getting stuck");
 }
+
+bool testSuperMarioTraversesTwoBlockPassage() {
+    b2World world({0.0f, 25.0f});
+    
+    // Create floor at Y = 8.0m (top surface at Y = 7.5m = 240px)
+    b2BodyDef floorDef;
+    floorDef.type = b2_staticBody;
+    floorDef.position.Set(5.0f, 8.0f);
+    b2Body* floor = world.CreateBody(&floorDef);
+    b2PolygonShape floorShape;
+    floorShape.SetAsBox(5.0f, 0.5f);
+    floor->CreateFixture(&floorShape, 0.0f);
+
+    // Create ceiling at Y = 5.0m (bottom surface at Y = 5.5m = 176px -> 2-block clearance = 64px)
+    b2BodyDef ceilingDef;
+    ceilingDef.type = b2_staticBody;
+    ceilingDef.position.Set(5.0f, 5.0f);
+    b2Body* ceiling = world.CreateBody(&ceilingDef);
+    b2PolygonShape ceilingShape;
+    ceilingShape.SetAsBox(5.0f, 0.5f);
+    ceiling->CreateFixture(&ceilingShape, 0.0f);
+
+    // Spawn Super Mario at Y = 200px inside the 2-block passage
+    Mario mario({134.0f, 200.0f}, {32.0f, 64.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 64.0f});
+    mario.setMarioState(MarioState::SUPER);
+    settleMarioOnPlatform(world, mario);
+
+    float startX = PhysicsEngine::metersToPixels(mario.getBody()->GetPosition().x);
+    mario.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+    }
+    float endX = PhysicsEngine::metersToPixels(mario.getBody()->GetPosition().x);
+
+    std::cout << "[TEST] Two-block passage traversal start X: " << startX
+              << ", end X: " << endX << std::endl;
+
+    return check(endX > startX + 50.0f,
+                 "Super Mario must move smoothly through 2-block-high passage without getting stuck");
+}
 } // namespace
 
 int main() {
     const bool success = testLandingRefreshesGroundingAndAllowsJump() &&
                          testGroundingRecoversAfterTerrainRebuild() &&
                          testShortJumpVsLongJump() &&
-                         testSmallMarioTraversesOneBlockPassage();
+                         testSmallMarioTraversesOneBlockPassage() &&
+                         testSuperMarioTraversesTwoBlockPassage();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

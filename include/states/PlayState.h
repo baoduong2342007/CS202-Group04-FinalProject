@@ -32,7 +32,7 @@ public:
     void processEvents(const sf::Event& event) override;
     void processInput(const InputState& inputState) override;
     void update(float dt) override;
-    void render(sf::RenderWindow& window) override;
+    void render(sf::RenderTarget& target) override;
 
     void onNotify(EventType event) override;
 
@@ -67,6 +67,10 @@ private:
 
     bool m_needsReload = false;
     bool m_needsGameOver = false;
+
+    float m_deathDelayTimer = 0.f;
+    bool m_isGameOverPending = false;
+    bool m_isReloadPending = false;
     /// S6-TV1-13: only one terminal result can be committed per frame.
     bool m_terminalCommittedThisFrame = false;
 

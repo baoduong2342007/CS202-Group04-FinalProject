@@ -423,9 +423,13 @@ void Mario::loseLife() {
 #endif
 
   if (m_lives > 0) {
-    respawn(m_respawnPosition);
-    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
+    // We lost a life but have more. Set to SMALL so the snapshot saves it correctly,
+    // and deactivate Mario to freeze him during the camera shake delay.
+    m_marioState = MarioState::SMALL;
+    m_active = false;
+    EventBus::getInstance().notify(EventType::PLAYER_LOST_LIFE);
   } else {
+    // Game over death
     takeDamage(FATAL_DAMAGE);
     m_active = false;
     EventBus::getInstance().notify(EventType::PLAYER_DIED);

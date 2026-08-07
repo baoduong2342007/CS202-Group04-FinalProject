@@ -359,6 +359,17 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         }
     }
 
+    // Starman Invincibility check: Defeat enemy on any contact
+    if (other && other->isEnemy()) {
+        Enemy* enemy = static_cast<Enemy*>(other);
+        if (mario->isStarInvincible()) {
+            enemy->takeDamage(enemy->getHealth());
+            enemy->markForRemoval();
+            EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+            return;
+        }
+    }
+
     // Top stomp check. Grounded state itself is refreshed from all active
     // Box2D contacts after each completed physics step.
     bool isStomp = false;
@@ -405,6 +416,7 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
         marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
         mario->clearGroundedState();
+        return;
     }
     // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {

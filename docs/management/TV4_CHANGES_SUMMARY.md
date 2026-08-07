@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14, S6-TV4-16
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14, S6-TV4-16, S6-TV4-21 đến S6-TV4-22
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -741,7 +741,58 @@ Khả năng phát hiện và quay lại khi gặp ledge được xử lý riêng
 
 ---
 
-## 13. Quy Ước Cập Nhật File Này
+## 13. Off-screen Enemy Update Policy
+
+### File liên quan
+
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+
+### S6-TV4-22 — Giới hạn enemy update ngoài camera
+
+Sau S6-TV4-21, enemy chưa từng xuất hiện trên camera sẽ không chạy AI.
+
+Tuy nhiên, enemy đã được activate trước đó vẫn tiếp tục được cập nhật trên toàn bộ map ngay cả khi đã nằm xa camera.
+
+Level hiện sử dụng một update region rộng hơn camera hai tile ở mỗi phía.
+
+Enemy đã activate nhưng nằm ngoài region này sẽ tạm dừng horizontal movement và không chạy patrol/state AI.
+
+### State preservation
+
+Off-screen culling không thay đổi:
+
+- activation state;
+- facing direction;
+- health;
+- Koopa state;
+- entity lifecycle state.
+
+Vì vậy enemy không respawn hoặc reset khi camera quay lại.
+
+Khi enemy trở lại update region, concrete enemy update tiếp tục từ state hiện tại.
+
+Ví dụ, Koopa đang ở `SHELL_IDLE` vẫn là shell idle sau khi rời và quay lại camera. Koopa đang `SHELL_SLIDING` tiếp tục sliding thay vì reset thành `WALKING`.
+
+### Lifecycle exception
+
+Enemy đã chết vẫn được update ngoài camera để các cleanup timer tiếp tục hoạt động.
+
+Điều này đặc biệt cần cho Goomba stomped vì squish animation phải chạy đủ thời gian trước khi entity được đánh dấu removal.
+
+### Kiểm tra
+
+- Enemy chưa từng nhìn thấy không chạy AI.
+- Enemy đã activate không tiếp tục patrol trên toàn map.
+- Camera quay lại không reset enemy state.
+- Koopa shell state được giữ nguyên.
+- Dead enemy vẫn hoàn thành cleanup timer.
+- Item và QuestionBlock không bị ảnh hưởng bởi enemy culling.
+- Build và toàn bộ CTest hiện tại vẫn pass.
+
+---
+
+## 14. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

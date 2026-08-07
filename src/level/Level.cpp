@@ -23,18 +23,20 @@ namespace {
 constexpr unsigned int SCREEN_WIDTH = 1280;
 constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
+constexpr float ENEMY_UPDATE_MARGIN = static_cast<float>(TILE_SIZE) * 2.f;
 
-bool isEnemyVisibleHorizontally(const Enemy& enemy, const sf::View& cameraView) {
+bool isEnemyWithinHorizontalRange(const Enemy& enemy, const sf::View& cameraView, float margin) {
     const sf::Vector2f cameraCenter = cameraView.getCenter();
 
     const sf::Vector2f cameraSize = cameraView.getSize();
 
-    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f;
-    const float cameraRight = cameraCenter.x + cameraSize.x / 2.f;
+    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f - margin;
+    const float cameraRight = cameraCenter.x + cameraSize.x / 2.f + margin;
 
     const sf::FloatRect enemyBounds = enemy.getBoundingBox();
 
     const float enemyLeft = enemyBounds.position.x;
+
     const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
 
     return enemyRight >= cameraLeft && enemyLeft <= cameraRight;
@@ -164,21 +166,48 @@ void Level::update(float dt) {
 
     // Update all entities (enemies, items)
     for (auto& entity : m_entities) {
-        if (entity->isEnemy()) {
-            Enemy* enemy = static_cast<Enemy*>(entity.get());
-
-            if (!enemy->isActivated()) {
-                const bool visible = isEnemyVisibleHorizontally(*enemy, m_camera.getView());
-
-                if (!visible) {
-                    continue;
-                }
-
-                enemy->activate();
-            }
+        if (!entity->isEnemy()) {
+            entity->update(dt);
+            continue;
         }
 
-        entity->update(dt);
+        Enemy* enemy = static_cast<Enemy*>(entity.get());
+
+        const sf::View& cameraView = m_camera.getView();
+
+        // First-time activation:
+        if (!enemy->isActivated()) {
+            const bool visible = isEnemyWithinHorizontalRange(*enemy, cameraView, 0.f);
+
+            if (!visible) {
+                continue;
+            }
+
+            enemy->activate();
+        }
+
+        const bool insideUpdateRange = isEnemyWithinHorizontalRange(*enemy, cameraView, ENEMY_UPDATE_MARGIN);
+
+        if (!insideUpdateRange) {
+            if (enemy->isDead()) {
+                enemy->update(dt);
+                continue;
+            }
+
+            // Pause horizontal movement without resetting
+            // enemy state, direction, health, or activation.
+            if (b2Body* body = enemy->getBody()) {
+                b2Vec2 velocity = body->GetLinearVelocity();
+
+                velocity.x = 0.f;
+
+                body->SetLinearVelocity(velocity);
+            }
+
+            continue;
+        }
+
+        enemy->update(dt);
     }
 
     // Check item-Mario collisions

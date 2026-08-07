@@ -295,11 +295,11 @@ bool TileMap::loadFromFile(const std::string& path){
     return true;
 }
 
-void TileMap::render(sf::RenderWindow& window) const {
+void TileMap::render(sf::RenderTarget& target) const {
     sf::RenderStates states;
     states.texture = &m_tileset;
 
-    window.draw(m_vertices, states);
+    target.draw(m_vertices, states);
 }
 
 char TileMap::getTileAt(int column, int row) const {

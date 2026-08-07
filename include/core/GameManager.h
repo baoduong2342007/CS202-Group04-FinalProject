@@ -33,7 +33,7 @@ public:
     void processEvents(const sf::Event& event);
     void processInput(const InputState& inputState);
     void update(float dt);
-    void render(sf::RenderWindow& window);
+    void render(sf::RenderTarget& target);
 
 private:
     // 1. Constructor / Destructor

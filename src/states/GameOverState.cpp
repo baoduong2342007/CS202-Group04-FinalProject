@@ -50,9 +50,9 @@ void GameOverState::processInput(const InputState& inputState) {
 
 void GameOverState::update(float dt) { (void)dt; }
 
-void GameOverState::render(sf::RenderWindow& window) {
-    window.clear(sf::Color::Black);
-    window.setView(window.getDefaultView());
-    window.draw(m_text);
-    window.draw(m_scoreText);
+void GameOverState::render(sf::RenderTarget& target) {
+    target.clear(sf::Color::Black);
+    target.setView(target.getDefaultView());
+    target.draw(m_text);
+    target.draw(m_scoreText);
 }

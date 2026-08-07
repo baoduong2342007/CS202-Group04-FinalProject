@@ -6,15 +6,18 @@
 
 #include "physics/PhysicsEngine.h"
 
-float PhysicsEngine::s_timeAccumulator = 0.0f;
-
-bool PhysicsEngine::update(b2World& world, float dt) {
-    s_timeAccumulator += dt;
+bool PhysicsEngine::update(b2World& world, float dt, float& timeAccumulator) {
+    timeAccumulator += dt;
     bool stepped = false;
-    while (s_timeAccumulator >= TIME_STEP) {
+    int steps = 0;
+    while (timeAccumulator >= TIME_STEP && steps < MAX_SUBSTEPS) {
         world.Step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-        s_timeAccumulator -= TIME_STEP;
+        timeAccumulator -= TIME_STEP;
         stepped = true;
+        steps++;
+    }
+    if (steps >= MAX_SUBSTEPS) {
+        timeAccumulator = 0.0f; // Drop excess accumulated time on frame spike
     }
     return stepped;
 }

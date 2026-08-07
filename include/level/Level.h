@@ -62,5 +62,6 @@ private:
     std::vector<std::unique_ptr<Entity>> m_entities;
     bool m_levelCompleted = false;
     std::string m_levelPath;
+    float m_physicsAccumulator = 0.0f;
 };
 

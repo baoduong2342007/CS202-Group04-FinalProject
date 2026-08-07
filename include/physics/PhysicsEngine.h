@@ -12,9 +12,17 @@
 
 class PhysicsEngine {
 public:
-    /// Advances the fixed-step simulation and reports whether at least one
-    /// Box2D step occurred. Callers can then refresh contact-derived state.
-    static bool update(b2World& world, float dt);
+    PhysicsEngine() = default;
+    ~PhysicsEngine() = default;
+
+    /// Advances the fixed-step simulation with a max substep clamp of 5 per frame.
+    static bool update(b2World& world, float dt, float& timeAccumulator);
+    
+    /// Backward-compatible update overload using instance accumulator
+    bool update(b2World& world, float dt) { return update(world, dt, m_timeAccumulator); }
+    void resetAccumulator() { m_timeAccumulator = 0.0f; }
+
+    static constexpr int MAX_SUBSTEPS = 5;
 
     // Pixel to Meter conversions (e.g. 30 pixels = 1 meter)
     static constexpr float PPM = 30.0f;
@@ -25,10 +33,7 @@ public:
     static inline sf::Vector2f metersToPixels(const b2Vec2& meters) { return sf::Vector2f(meters.x * PPM, meters.y * PPM); }
 
 private:
-    PhysicsEngine() = default;
-    ~PhysicsEngine() = default;
-
-    static float s_timeAccumulator;
+    float m_timeAccumulator = 0.0f;
     static constexpr float TIME_STEP = 1.0f / 60.0f;
     static constexpr int VELOCITY_ITERATIONS = 8;
     static constexpr int POSITION_ITERATIONS = 3;

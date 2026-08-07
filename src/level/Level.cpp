@@ -129,7 +129,7 @@ void Level::update(float dt) {
     }
 
     if (m_world) {
-        const bool physicsStepped = PhysicsEngine::update(*m_world, dt);
+        const bool physicsStepped = PhysicsEngine::update(*m_world, dt, m_physicsAccumulator);
         if (physicsStepped && m_mario) {
             m_mario->refreshGroundedState();
         }

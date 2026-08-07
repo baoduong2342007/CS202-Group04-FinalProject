@@ -140,8 +140,12 @@ void PlayState::onNotify(EventType event) {
             m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
         }
         m_terminalCommittedThisFrame = true;
-        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before game over
-        m_isGameOverPending = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before state change
+        if (m_level && m_level->getMario() && m_level->getMario()->getLives() > 0) {
+            m_isReloadPending = true;
+        } else {
+            m_isGameOverPending = true;
+        }
     } else if (event == EventType::PLAYER_LOST_LIFE) {
         if (m_level) {
             m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);

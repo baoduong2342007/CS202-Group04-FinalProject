@@ -11,6 +11,7 @@
 #include <box2d/box2d.h>
 
 #include "entities/Mario.h"
+#include "entities/FireBallPool.h"
 #include "physics/PhysicsEngine.h"
 
 namespace {
@@ -231,6 +232,59 @@ bool testSuperMarioTraversesTwoBlockPassage() {
     return check(endX > startX + 50.0f,
                  "Super Mario must move smoothly through 2-block-high passage without getting stuck");
 }
+bool testTimestepSubstepClamp() {
+    b2World world({0.0f, 25.0f});
+    float accumulator = 0.0f;
+    // Pass a huge delta time spike of 1.0s (60 steps worth)
+    const bool stepped = PhysicsEngine::update(world, 1.0f, accumulator);
+    
+    // Accumulator should drop excess time and reset to 0.0f on spike
+    return check(stepped, "PhysicsEngine must step on large dt spike") &&
+           check(std::abs(accumulator) < 0.001f, "Accumulator must reset to 0 after MAX_SUBSTEPS clamp");
+}
+
+bool testStarmanVsDamageGraceIndependence() {
+    Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
+    
+    mario.activateStarman(5.0f);
+    if (!check(mario.isStarInvincible(), "Starman activation must set isStarInvincible to true") ||
+        !check(!mario.isDamageImmune(), "Starman activation must not set isDamageImmune to true") ||
+        !check(mario.isInvincible(), "isInvincible must return true when Starman active")) {
+        return false;
+    }
+
+    mario.update(6.0f); // Advance time past Starman duration
+    if (!check(!mario.isStarInvincible(), "isStarInvincible must expire after duration")) {
+        return false;
+    }
+
+    mario.activateDamageGrace(2.0f);
+    if (!check(!mario.isStarInvincible(), "Damage grace activation must not set isStarInvincible") ||
+        !check(mario.isDamageImmune(), "Damage grace activation must set isDamageImmune to true") ||
+        !check(mario.isInvincible(), "isInvincible must return true when damage grace active")) {
+        return false;
+    }
+
+    return true;
+}
+
+bool testFireBallPoolLimitAndMasks() {
+    b2World world({0.0f, 25.0f});
+    FireBallPool pool(2);
+    
+    FireBall* fb1 = pool.acquire({100.0f, 100.0f}, Direction::RIGHT, &world);
+    FireBall* fb2 = pool.acquire({120.0f, 100.0f}, Direction::LEFT, &world);
+    FireBall* fb3 = pool.acquire({140.0f, 100.0f}, Direction::RIGHT, &world);
+
+    if (!check(fb1 != nullptr, "First fireball acquire must succeed") ||
+        !check(fb2 != nullptr, "Second fireball acquire must succeed") ||
+        !check(fb3 == nullptr, "Third fireball acquire must fail when pool capacity is 2") ||
+        !check(pool.getActiveCount() == 2, "Active count must be exactly 2")) {
+        return false;
+    }
+
+    return true;
+}
 } // namespace
 
 int main() {
@@ -238,6 +292,9 @@ int main() {
                          testGroundingRecoversAfterTerrainRebuild() &&
                          testShortJumpVsLongJump() &&
                          testSmallMarioTraversesOneBlockPassage() &&
-                         testSuperMarioTraversesTwoBlockPassage();
+                         testSuperMarioTraversesTwoBlockPassage() &&
+                         testTimestepSubstepClamp() &&
+                         testStarmanVsDamageGraceIndependence() &&
+                         testFireBallPoolLimitAndMasks();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

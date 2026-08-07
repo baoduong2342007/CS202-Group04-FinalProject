@@ -71,13 +71,13 @@ SuperMario/
 │   │       ├── castle.flac
 │   │       └── ... (additional audio tracks)
 │   └── fonts/
-│       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
+│       └── mario.ttf           ← pixel font (đã có sẵn)
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level0.txt              ← test fixture (NOT in release catalog)
-│   ├── level1.txt
-│   ├── level2.txt
-│   └── level3.txt              ← (planned for upcoming release)
+│   ├── level1.txt              ← World 1-1 (overworld tutorial)
+│   ├── level2.txt              ← World 1-2 (underground)
+│   └── level3.txt              ← World 1-3 (castle/sky, released)
 │
 ├── saves/                      ← auto-generated, do not commit
 │   └── .gitkeep                ← empty file to force Git to track the directory
@@ -85,7 +85,10 @@ SuperMario/
 ├── tests/                      ← automated tests (CTest)
 │   ├── InputStateTests.cpp
 │   ├── MarioPhysicsTests.cpp
-│   └── TileCollisionSpanTests.cpp
+│   ├── TileCollisionSpanTests.cpp
+│   ├── PlayStateTests.cpp
+│   ├── GameManagerTests.cpp
+│   └── EventBusTests.cpp
 │
 ├── include/                    ← all .h header files
 │   ├── core/

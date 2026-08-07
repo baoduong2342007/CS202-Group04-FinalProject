@@ -422,13 +422,17 @@ void Mario::loseLife() {
   std::cout << "[DEBUG][Mario] Mario died. Lives remaining: " << m_lives << std::endl;
 #endif
 
+  // S6-TV1-18: PLAYER_DIED fires on EVERY death (life already decremented exactly
+  // once above). Whether this results in a level reload (non-terminal death) or a
+  // GameOver is decided by the observer (PlayState) from the remaining lives.
+  EventBus::getInstance().notify(EventType::PLAYER_DIED);
+
   if (m_lives > 0) {
     respawn(m_respawnPosition);
     setInvincible(DAMAGE_INVINCIBILITY_DURATION);
   } else {
     takeDamage(FATAL_DAMAGE);
     m_active = false;
-    EventBus::getInstance().notify(EventType::PLAYER_DIED);
   }
 }
 
@@ -457,6 +461,11 @@ MarioState Mario::getMarioState() const { return m_marioState; }
 
 void Mario::setMarioState(MarioState state) {
   m_marioState = state;
+  // S6-TV1-10: rebuilding just the fixture leaves the previous power state's
+  // animation clips registered. Rebuild the clips too so an SMALL/SUPER/FIRE
+  // restore from GameProgress uses the correct sprites.
+  setupAnimationsForState(*m_animationSystem, m_marioState);
+  playAnimation("idle");
   rebuildFixture();
 }
 

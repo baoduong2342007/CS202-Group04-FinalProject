@@ -35,6 +35,9 @@ public:
     void update(float dt);
     void render(sf::RenderWindow& window);
 
+    /// Number of states currently on the stack (used by regression tests).
+    int stackDepth() const { return static_cast<int>(m_stateStack.size()); }
+
 private:
     // 1. Constructor / Destructor
     GameManager() = default;
@@ -56,10 +59,13 @@ private:
     };
 
     // 5. Private methods
+    void applyOp(PendingOp& op);
     void processPendingOps();
+    IGameState* top() { return m_stateStack.empty() ? nullptr : m_stateStack.back().get(); }
 
     // 6. Private members
-    std::unique_ptr<IGameState> m_currentState;
-    std::unique_ptr<IGameState> m_previousState;
+    // A true state stack. CHANGE resets the whole stack, PUSH overlays a state
+    // on top (pausing the one below), POP removes the top and resumes the new one.
+    std::vector<std::unique_ptr<IGameState>> m_stateStack;
     std::vector<PendingOp> m_pendingOps;
 };

@@ -55,19 +55,22 @@
 
 | Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
 |---|---|---|---|---|
-| GameProgress session | TV1 | DONE | S6-TV1-08/09/10 | Build pass |
-| Level progression 1-based | TV1 | DONE | S6-TV1-07 | Build pass |
-| Load error handling | TV1 | DONE | S6-TV1-11 | Build pass |
-| Terminal-result race guard | TV1 | DONE | S6-TV1-13 | Build pass |
-| Deferred state ops | TV1 | DONE | S6-TV1-16 | Build pass |
-| Pause/Resume lifecycle | TV1 | DONE | S6-TV1-15 | Build pass |
-| CMake presets | TV1 | DONE | S6-TV1-28 | Build pass |
-| Docs cleanup | TV1 | DONE | S6-TV1-30→34 | — |
-| Unsubscribe audit (all observers) | TV1 | DONE | S6-TV1-21 | PlayState ✅, HUD ✅, SoundManager ✅ (Singleton safe) |
-| LevelCatalog (centralized levels) | TV1 | DONE | S6-TV1-05 | PlayState dùng catalog, không còn hard-code path/MAX_LEVELS |
-| EntityFactory → unique_ptr | TV1 | DONE | S6-TV1-22 | Không còn raw `new` ở factory; Level.cpp dùng `std::move` |
-| Transition freeze + fade | TV1 | DONE | S6-TV1-12 | FADE_OUT→LOADING→FADE_IN state machine, gameplay frozen |
-| Demo exclusion (CMake) | TV1 | DONE | S6-TV1-26 | `list(FILTER SOURCES EXCLUDE REGEX)` loại src/demo/ |
+| GameProgress session | TV1 | DONE | S6-TV1-08/09/10 | Snapshot trước khi hủy Level; `setMarioState()` dựng lại animation → giữ SUPER/FIRE visual qua level (build pass) |
+| Level progression 1-based | TV1 | DONE | S6-TV1-07 | LevelCatalog one-based; New Game bắt đầu Level 1 (build pass) |
+| Load error handling | TV1 | DONE | S6-TV1-11 | Load chuyển về `onEnter()`, queue Menu đúng FIFO; không để failed PlayState (build pass) |
+| Transition freeze + input block | TV1 | DONE | S6-TV1-12 | `processInput` chặn trong transition; reload fail không vào FADE_IN, không phát `LEVEL_STARTED` (build pass) |
+| Terminal-result race guard | TV1 | PARTIAL | S6-TV1-13/14 | Guard + Win đã viết (PlayState). PlayStateTests vẫn chỉ test `isPastFinalLevel()`; test thật cần SFML/audio context |
+| Deferred state ops (state stack) | TV1 | DONE | S6-TV1-16 | GameManager dùng `m_stateStack` + snapshot queue; `game_manager_tests` pass (stack lifecycle, deferred-op, overlay teardown) |
+| Pause/Resume lifecycle | TV1 | DONE | S6-TV1-15/17 | IGameState lifecycle đủ; Pause dừng update/input/music; subscriber-growth chưa có test 20 vòng riêng (dùng event_bus_tests) |
+| `PLAYER_DIED` mỗi lần chết | TV1 | DONE | S6-TV1-18 | `Mario::loseLife()` phát event mỗi lần trừ life; GameOver theo lives còn lại (build pass) |
+| Observer lifetime / subscriber growth | TV1 | DONE | S6-TV1-20/21 | `event_bus_tests` pass: unsubscribe giữa callback, không duplicate subscriber, không stale callback sau nhiều vòng |
+| SaveManager | TV4 | BLOCKED | S6-TV1-19 | Owner TV4; TV1 giữ `BLOCKED`, chỉ tích hợp khi interface sẵn sàng |
+| CMake: SHA256 + target name | TV1 | DONE | S6-TV1-27/28 | `EXPECTED_HASH` thật (SHA256) cho SFML zips; target đổi `main` → `SuperMario`; 3 preset clean build |
+| CMake: CopyAssets per-file | TV1 | DONE | S6-TV1-29 | `copy_if_different` per-file + `make_directory`; no-op build không re-copy assets (đã kiểm) |
+| LevelCatalog (centralized levels) | TV1 | DONE | S6-TV1-05 | PlayState dùng catalog, không còn hard-code path/`MAX_LEVELS` |
+| EntityFactory → unique_ptr | TV1 | DONE | S6-TV1-22 | Không còn raw `new` ở factory; call site dùng `std::make_unique` |
+| Docs/metadata/diagram cleanup | TV1 | DONE | S6-TV1-23/30→34 | CODING_RULES = Simple Factory; class_diagram sửa API sai; README test/controls; FILE_STRUCTURE; xóa 26 `.gitkeep`dư |
+| Demo exclusion (CMake) | TV1 | DONE | S6-TV1-26 | `list(FILTER SOURCES EXCLUDE REGEX)` loại `src/demo/` |
 
 ---
 

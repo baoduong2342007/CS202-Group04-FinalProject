@@ -26,7 +26,7 @@
 |---|---|
 | Language | C++17 |
 | Game Engine | SFML 3.0.0 (graphics, window, system, audio) |
-| Build System | CMake 3.15+ |
+| Build System | CMake 3.16+ |
 | Compiler | g++ (MinGW-w64) 14.2.0+ |
 | Version Control | Git + GitHub |
 
@@ -82,6 +82,40 @@ cmake --build build
 
 ---
 
+### 5. Build & Run the tests (CTest)
+
+Tests are enabled when `BUILD_TESTING=ON` (Debug and Tests presets). Run them with:
+
+**Windows (MinGW):**
+```bash
+cmake --preset mingw-tests
+cmake --build --preset mingw-tests
+ctest --preset mingw-tests --output-on-failure
+```
+
+**Manually (any generator):**
+```bash
+cmake -B build-tests -D BUILD_TESTING=ON
+cmake --build build-tests
+ctest --test-dir build-tests --output-on-failure
+```
+
+Test suites: `input_state_tests`, `mario_physics_tests`, `tile_collision_span_tests`, `play_state_tests`, `game_manager_tests`, `event_bus_tests`.
+
+---
+
+## Controls
+
+| Action | Key |
+|---|---|
+| Move left | `A` / `←` (hold) |
+| Move right | `D` / `→` (hold) |
+| Jump | `W` / `↑` / `Space` |
+| Pause | `Esc` |
+| Menu / Confirm (in menus) | `Enter` or mouse click |
+
+---
+
 ## Directory Structure Summary
 
 ```
@@ -90,6 +124,7 @@ CS202-Group04-FinalProject/
 ├── include/         # Header files (.h) organized by module (core, entities, states...)
 ├── src/             # Source files (.cpp) corresponding to include/
 ├── levels/          # Text files containing level designs (.txt)
+├── tests/           # Automated unit tests (CTest)
 ├── thirdparty/      # External libraries (SFML binaries are auto-downloaded here on Windows)
 └── CMakeLists.txt   # CMake build configuration file
 ```

@@ -29,18 +29,13 @@ namespace {
 PlayState::PlayState() {
     // S6-TV1-06/07: New Game always starts at Level 1 (one-based), never Level 0.
     m_progress.currentLevel = 1;
-
-    if (!loadLevel(m_progress.currentLevel)) {
-        // S6-TV1-11: level load failure returns the player to the Menu with a message.
-        std::cerr << "[PlayState] Failed to load Level " << m_progress.currentLevel
-                  << " — returning to Menu." << std::endl;
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
-    }
-
-    // Bind commands to InputHandler
-    rebindCommands();
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
+
+    // S6-TV1-11: the level is NOT loaded here (in the constructor). Loading is
+    // performed in onEnter() so a load failure can be propagated as a Menu
+    // transition in the correct FIFO order — if we queued the Menu transition here
+    // it would be processed before the caller's queued PlayState and the final state
+    // would be an empty PlayState.
 }
 
 PlayState::~PlayState() {
@@ -90,7 +85,21 @@ void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
+
+    // S6-TV1-11: load the initial level here, not in the constructor, so a failure
+    // can propagate a Menu transition in the correct order. On success we emit
+    // LEVEL_STARTED exactly once.
+    if (!loadLevel(m_progress.currentLevel)) {
+        std::cerr << "[PlayState] Failed to load Level " << m_progress.currentLevel
+                  << " — returning to Menu." << std::endl;
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        return;
+    }
+
+    restoreProgress(); // no-op for default progress on a brand-new Level 1
+    rebindCommands();
     SoundManager::getInstance().playMusic();
+    EventBus::getInstance().notify(EventType::LEVEL_STARTED);
 }
 
 void PlayState::onExit() {
@@ -145,6 +154,10 @@ void PlayState::processEvents(const sf::Event& event) {
 }
 
 void PlayState::processInput(const InputState& inputState) {
+    // S6-TV1-12: block all gameplay input during a transition (freeze).
+    if (m_transitionPhase != TransitionPhase::NONE) {
+        return;
+    }
     if (!m_level || !m_level->getMario()) {
         return;
     }
@@ -207,17 +220,18 @@ bool PlayState::loadLevel(int levelNumber) {
     return true;
 }
 
-void PlayState::navigateToLevel(int levelNumber) {
+bool PlayState::navigateToLevel(int levelNumber) {
     // S6-TV1-10/12: restore progress onto the newly created Mario/HUD.
     if (!loadLevel(levelNumber)) {
         std::cerr << "[PlayState] Failed to load Level " << levelNumber
                   << " — returning to Menu." << std::endl;
         GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
+        return false;
     }
     restoreProgress();
     rebindCommands();
     m_fadeAlpha = 0.f;
+    return true;
 }
 
 void PlayState::update(float dt) {
@@ -275,8 +289,12 @@ void PlayState::updateTransition(float dt) {
                 GameManager::getInstance().changeState(
                     std::make_unique<WinState>(m_progress));
                 m_transitionPhase = TransitionPhase::NONE;
+            } else if (!navigateToLevel(m_transitionTargetLevel)) {
+                // S6-TV1-11/12: the reload failed — a Menu transition has been
+                // queued. Abort the transition WITHOUT entering FADE_IN and WITHOUT
+                // emitting LEVEL_STARTED for a level that never loaded.
+                m_transitionPhase = TransitionPhase::NONE;
             } else {
-                navigateToLevel(m_transitionTargetLevel);
                 // navigateToLevel() resets m_fadeAlpha to 0 — restore it so
                 // FADE_IN starts from a fully black screen.
                 m_fadeAlpha = 255.f;

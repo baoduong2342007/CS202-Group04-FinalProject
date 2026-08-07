@@ -44,7 +44,8 @@ private:
     bool loadLevel(int levelNumber);
 
     /// Re-load the current level and restore progress (used after death/retry/next-level).
-    void navigateToLevel(int levelNumber);
+    /// Returns false if the level file is missing/invalid (a Menu transition is queued).
+    bool navigateToLevel(int levelNumber);
 
     /// Snapshot current Mario/HUD values into m_progress (called before reload/destroy).
     void snapshotProgress();

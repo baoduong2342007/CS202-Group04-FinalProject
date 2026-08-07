@@ -224,14 +224,16 @@ Each pattern must be clearly documented in the code with a comment block:
 
 ```cpp
 // ============================================================
-// PATTERN: Factory Method
-// Reason: avoids hardcoded new Goomba(), new Koopa() in multiple places;
-//         allows adding new enemy types without modifying Level.cpp
+// PATTERN: Simple Factory (not Factory Method)
+// Reason: centralizes construction of enemy/item variants so call sites don't
+//         hardcode `new Goomba()` / `new Koopa()`; returns an OWNING
+//         std::unique_ptr so raw owning pointers are never exposed. Calling it
+//         "Factory Method" is wrong (there is no inheritance-based creation hook).
 // ============================================================
-Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& pos, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& pos, b2World* world) {
     switch (type) {
-        case EnemyType::GOOMBA: return new Goomba(pos, world);
-        case EnemyType::KOOPA:  return new Koopa(pos, world);
+        case EnemyType::GOOMBA: return std::make_unique<Goomba>(pos, world);
+        case EnemyType::KOOPA:  return std::make_unique<Koopa>(pos, world);
         default: return nullptr;
     }
 }
@@ -241,7 +243,7 @@ Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& pos, b2Wo
 
 | # | Pattern | Main File | Implementer |
 |---|---|---|---|
-| 1 | Factory | `EntityFactory.h/.cpp` | TV1 (Dương) |
+| 1 | Simple Factory | `EntityFactory.h/.cpp` | TV1 (Dương) |
 | 2 | Singleton | `GameManager.h`, `SoundManager.h` | TV1 (Dương), TV5 (Truyền) |
 | 3 | Observer | `EventBus.h`, `IObserver.h` | TV1 (Dương) |
 | 4 | State | `IGameState.h`, `*State.cpp` | TV1 (Dương), TV2 (Nhật) |

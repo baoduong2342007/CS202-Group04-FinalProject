@@ -727,54 +727,57 @@ vào enemy activation policy của S6-TV4-21.
 
 ---
 
-## 14. Off-screen Enemy Update Policy
+## 14. Off-screen Enemy Cleanup
 
-### File liên quan
+### S6-TV4-22 — Cleanup enemy quá xa phía sau viewport
 
-- [`src/level/Level.cpp`](../../src/level/Level.cpp)
-- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+Enemy off-screen policy được điều chỉnh để tránh hai vấn đề:
 
-### S6-TV4-22 — Giới hạn enemy update ngoài camera
+1. Enemy chưa được nhìn thấy chạy AI trên toàn bộ map.
+2. Enemy đã đi rất xa phía sau camera vẫn tồn tại vô thời hạn.
 
-Sau S6-TV4-21, enemy chưa từng xuất hiện trên camera sẽ không chạy AI.
+S6-TV4-21 chịu trách nhiệm first-time activation trong vùng 64 px phía trước viewport.
 
-Tuy nhiên, enemy đã được activate trước đó vẫn tiếp tục được cập nhật trên toàn bộ map ngay cả khi đã nằm xa camera.
+Sau khi được activate, enemy tiếp tục gameplay update bình thường và không bị freeze hoặc reset khi tạm rời viewport.
 
-Level hiện sử dụng một update region rộng hơn camera hai tile ở mỗi phía.
+Enemy chỉ được đánh dấu removal khi toàn bộ bounding box đã nằm xa hơn một chiều rộng viewport phía sau cạnh trái camera.
 
-Enemy đã activate nhưng nằm ngoài region này sẽ tạm dừng horizontal movement và không chạy patrol/state AI.
+```text
+inactive
+   ↓
+64 px activation range
+   ↓
+activated
+   ↓
+continue updating
+   ↓
+more than one viewport behind camera
+   ↓
+markForRemoval()
+```
 
-### State preservation
+### Phân chia trách nhiệm
 
-Off-screen culling không thay đổi:
+Task này chỉ cleanup enemy phía sau camera.
 
-- activation state;
-- facing direction;
-- health;
-- Koopa state;
-- entity lifecycle state.
+Không xử lý:
 
-Vì vậy enemy không respawn hoặc reset khi camera quay lại.
+- item/projectile cleanup;
+- entity dưới level bounds;
+- pit cleanup;
+- Koopa ledge hoặc shell behavior.
 
-Khi enemy trở lại update region, concrete enemy update tiếp tục từ state hiện tại.
-
-Ví dụ, Koopa đang ở `SHELL_IDLE` vẫn là shell idle sau khi rời và quay lại camera. Koopa đang `SHELL_SLIDING` tiếp tục sliding thay vì reset thành `WALKING`.
-
-### Lifecycle exception
-
-Enemy đã chết vẫn được update ngoài camera để các cleanup timer tiếp tục hoạt động.
-
-Điều này đặc biệt cần cho Goomba stomped vì squish animation phải chạy đủ thời gian trước khi entity được đánh dấu removal.
+Các trường hợp generic entity cleanup được xử lý riêng trong S6-TV4-31.
 
 ### Kiểm tra
 
-- Enemy chưa từng nhìn thấy không chạy AI.
-- Enemy đã activate không tiếp tục patrol trên toàn map.
-- Camera quay lại không reset enemy state.
-- Koopa shell state được giữ nguyên.
-- Dead enemy vẫn hoàn thành cleanup timer.
-- Item và QuestionBlock không bị ảnh hưởng bởi enemy culling.
-- Build và toàn bộ CTest hiện tại vẫn pass.
+- Enemy chưa activate không chạy AI.
+- Enemy activate đúng theo S6-TV4-21.
+- Enemy đã activate không bị reset khi rời viewport.
+- Enemy chưa quá một viewport phía sau vẫn tồn tại.
+- Enemy quá một viewport phía sau được cleanup.
+- Item và QuestionBlock không bị ảnh hưởng.
+- Build và toàn bộ CTest pass.
 
 ---
 

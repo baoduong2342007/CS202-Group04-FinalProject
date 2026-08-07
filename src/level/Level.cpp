@@ -41,6 +41,20 @@ bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     return enemyRight >= cameraLeft && enemyLeft <= activationRight;
 }
 
+bool shouldCleanupEnemyBehindCamera(const Enemy& enemy, const sf::View& cameraView) {
+    const sf::Vector2f cameraCenter = cameraView.getCenter();
+    const sf::Vector2f cameraSize = cameraView.getSize();
+
+    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f;
+
+    const float cleanupBoundary = cameraLeft - cameraSize.x;
+    const sf::FloatRect enemyBounds = enemy.getBoundingBox();
+
+    const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
+
+    return enemyRight < cleanupBoundary;
+}
+
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
 constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
 
@@ -175,12 +189,19 @@ void Level::update(float dt) {
 
         Enemy* enemy = static_cast<Enemy*>(entity.get());
 
+        const sf::View& cameraView = m_camera.getView();
+
         if (!enemy->isActivated()) {
-            if (!shouldActivateEnemy(*enemy, m_camera.getView())) {
+            if (!shouldActivateEnemy(*enemy, cameraView)) {
                 continue;
             }
 
             enemy->activate();
+        }
+
+        if (shouldCleanupEnemyBehindCamera(*enemy, cameraView)) {
+            enemy->markForRemoval();
+            continue;
         }
 
         enemy->update(dt);

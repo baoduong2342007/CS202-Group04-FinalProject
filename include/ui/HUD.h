@@ -9,6 +9,7 @@
 #pragma once
 
 // 1. Standard library
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -48,12 +49,32 @@ public:
     /// @brief Re-reads score/lives and updates the text objects.
     void update();
 
+    /// @brief Advances the level timer and refreshes all HUD values.
+    /// @param dt Seconds elapsed since the previous frame.
+    /// @param gameplayActive False while paused, transitioning, or otherwise
+    ///        frozen; the timer does not advance in that case.
+    void update(float dt, bool gameplayActive);
+
     /// @brief Draws the HUD onto the render target.
     void draw(sf::RenderTarget& target) const;
 
     // 4. Getters / Setters
     int getCoinCount() const;
     void setWorldLevel(int world, int level);
+    int getTimeRemaining() const { return m_timeRemaining; }
+    bool isTimeWarningActive() const;
+    bool hasTimedOut() const { return m_timeRemaining == 0; }
+
+    /// Reset the countdown for a newly loaded level.
+    void resetTimer(int seconds = DEFAULT_LEVEL_TIME);
+
+    /// Optional hooks let the state/gameplay owner connect warning and
+    /// timeout behavior without coupling HUD to SoundManager or Mario death.
+    void setTimeWarningCallback(std::function<void()> callback);
+    void setTimeoutCallback(std::function<void()> callback);
+
+    static constexpr int DEFAULT_LEVEL_TIME = 400;
+    static constexpr int TIME_WARNING_THRESHOLD = 100;
 
 private:
     // 5. Private methods
@@ -62,6 +83,7 @@ private:
 
     /// @brief Builds all HUD text strings from current state.
     void refreshText();
+    void advanceTimer(float dt, bool gameplayActive);
 
     // 6. Private members
     const Mario& m_mario;       ///< Player reference for score queries.
@@ -70,7 +92,17 @@ private:
     std::optional<sf::Text> m_livesText;  ///< "LIVES x 3"
     std::optional<sf::Text> m_coinText;   ///< "COINS x 05"
     std::optional<sf::Text> m_worldText;  ///< "WORLD 1-1"
+    std::optional<sf::Text> m_timeText;   ///< "TIME 400"
+    std::optional<sf::Text> m_powerText;  ///< "POWER FIRE" / "POWER STAR"
     int m_worldNumber;          ///< Current world number.
     int m_levelNumber;          ///< Current level number.
     bool m_fontLoaded;          ///< Whether the font loaded successfully.
+
+    int m_timeRemaining = DEFAULT_LEVEL_TIME;
+    float m_timerAccumulator = 0.f;
+    bool m_timeWarningEmitted = false;
+    bool m_timerPausedForEvent = false;
+    bool m_timerEnabled = true;
+    std::function<void()> m_timeWarningCallback;
+    std::function<void()> m_timeoutCallback;
 };

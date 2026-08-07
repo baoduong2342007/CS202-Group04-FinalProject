@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14, S6-TV4-16, S6-TV4-21 đến S6-TV4-22
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-15
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -565,72 +565,29 @@ Level files cũng được đồng bộ với tập tile symbol hiện tại.
 
 ---
 
-## 9. Level 1 Tutorial Flow
+## 9. Level 1 Tutorial Flow Verification
 
-### File liên quan
+### S6-TV4-13 — Hoàn thiện Level 1 tutorial flow
 
-- [`levels/level1.txt`](../../levels/level1.txt)
-
-### S6-TV4-13 — Hoàn thiện tutorial flow của Level 1
-
-Level 1 được điều chỉnh để giới thiệu các cơ chế gameplay theo thứ tự tăng dần, thay vì đưa enemy hoặc power-up đến người chơi quá sớm.
-
-Flow tutorial hiện tại hướng tới:
+Level 1 được kiểm tra theo tutorial sequence của Sprint 6:
 
 ```text
-Movement
-   ↓
-Coin
-   ↓
-Jump / Question Block
-   ↓
-Super Mushroom
-   ↓
-Goomba
-   ↓
-Finish Flag
+Movement → Coin → Jump / QuestionBlock → Mushroom → Goomba → Flag
 ```
 
-### Thay đổi level
+Level hiện có một coin gần khu vực spawn, QuestionBlock và Mushroom block trước enemy đầu tiên, sau đó mới giới thiệu Goomba và các obstacle tiếp theo.
 
-Một coin được đặt ở khu vực đầu level để tạo mục tiêu di chuyển đơn giản ngay sau khi Mario spawn.
-
-Một QuestionBlock được đổi thành ký hiệu `U`:
-
-```
-U = QuestionBlock chứa Super Mushroom
-```
-
-`EntityFactory` đã hỗ trợ `U` dưới dạng `QuestionBlockContent::SUPER_MUSHROOM`, vì vậy thay đổi này chỉ sử dụng level symbol hiện có và không thay đổi asset path hoặc sprite coordinate.
-
-Enemy đầu tiên tiếp tục nằm sau khu vực tutorial block/power-up để người chơi có cơ hội làm quen với movement và jump trước khi gặp nguy hiểm.
-
-### Nguyên tắc thiết kế
-
-Task này chỉ thay đổi bố trí gameplay trong level.
-
-Không thay đổi:
-
-- texture path;
-- sprite sheet;
-- texture rectangle;
-- sprite coordinate;
-- enemy implementation;
-- physics constants.
-
-Các thay đổi liên quan trực tiếp đến asset đang được tạm hoãn trong lúc
-cấu trúc spritesheet chung của project vẫn đang được cập nhật.
+Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã đáp ứng mục tiêu của task.
 
 ### Kiểm tra
 
-- Level có đúng một Mario spawn `M`.
-- Level có đúng một finish point `F`.
+- Mario có khoảng trống để làm quen movement ngay sau spawn.
 - Coin xuất hiện trước enemy đầu tiên.
-- Có QuestionBlock thường để giới thiệu block interaction.
-- Có `U` để giới thiệu Super Mushroom.
-- Mario có thể nhận Mushroom trước khi gặp Goomba đầu tiên.
-- Người chơi có thể hoàn thành Level 1 mà không cần sử dụng damage boost.
-- Level validation vẫn pass.
+- QuestionBlock xuất hiện trước combat.
+- `U` cung cấp Super Mushroom trước Goomba đầu tiên.
+- Level có thể hoàn thành từ spawn tới flag.
+- Không cần damage boost để hoàn thành.
+- Build và toàn bộ CTest hiện tại pass.
 
 ---
 
@@ -640,27 +597,22 @@ cấu trúc spritesheet chung của project vẫn đang được cập nhật.
 
 - [`levels/level1.txt`](../../levels/level1.txt)
 
-### S6-TV4-14 — Kiểm tra gap của Level 1 theo jump envelope
+- ### S6-TV4-14 — Kiểm tra Level 1 gaps
 
-Level 1 được kiểm tra để bảo đảm các khoảng trống bắt buộc nằm trong khả năng jump hiện tại của Mario.
+  Level 1 được kiểm tra dựa trên các bề mặt Mario thực sự có thể đứng, không chỉ dựa trên khoảng trống ở hàng ground thấp nhất.
 
-Việc đánh giá được thực hiện dựa trên bề mặt mà Mario thực sự có thể đứng và di chuyển, thay vì chỉ dựa trên các ô trống ở các hàng ground thấp nhất.
+  Các gap bắt buộc trên completion route được thử trực tiếp với movement và jump hiện tại của Mario.
 
-Một khu vực gần cuối level có khoảng trống dài ở phần ground bên dưới, nhưng các solid block phía trên tạo thành hai cụm bậc thang hướng vào nhau. Vì vậy khoảng cách nhảy thực tế giữa hai ledge ngắn hơn đáng kể so với chiều rộng của khoảng trống ở đáy.
+  Kết quả:
 
-### Kết quả
+  - Không có jump bắt buộc vượt ngoài jump envelope hiện tại.
+  - Không có frame-perfect jump.
+  - Không cần damage boost để vượt gap.
+  - Các staircase/platform phía trên được tính là một phần của traversal route.
+  - Nếu một jump yêu cầu run, run phải được expose qua input và được giới thiệu
+    trước obstacle đó.
 
-Không cần thay đổi geometry của Level 1.
-
-Các gap bắt buộc hiện tại có thể vượt qua bằng movement và jump thông thường, không yêu cầu damage boost hoặc một thao tác frame-perfect.
-
-### Kiểm tra
-
-- Các pit đầu level có thể vượt qua bằng normal jump.
-- Khu vực staircase gần cuối level có thể vượt qua từ ledge này sang ledge kia.
-- Không có gap bắt buộc vượt ngoài jump envelope hiện tại.
-- Không cần thay đổi physics hoặc movement constants.
-- Level 1 có thể hoàn thành bằng control scheme hiện tại.
+  Không cần thay đổi geometry nếu toàn bộ manual checks trên pass.
 
 ---
 
@@ -707,37 +659,36 @@ Physics body không bị disable trước activation. Box2D vẫn có thể sett
 
 ---
 
-## 12. Level 2 Spawn Fairness
+## 12. Level 2 Underground / Vertical Section
 
-### File liên quan
+### S6-TV4-15 — Bổ sung pipe và vertical traversal cho Level 2
 
-- [`levels/level2.txt`](../../levels/level2.txt)
+Level 2 được bổ sung các pipe tile để tạo thêm vertical variation và đáp ứng layout requirement của Sprint 6.
 
-### S6-TV4-16 — Kiểm tra vị trí spawn của Koopa
+Ba cụm pipe được tạo bằng các symbol:
 
-Các Koopa trong Level 2 được kiểm tra cùng với enemy activation policy để bảo đảm chúng không di chuyển hoặc rơi khỏi khu vực spawn trước khi Mario nhìn thấy.
+```text
+[] = pipe top
+{} = pipe body
+```
 
-Tất cả Koopa hiện có solid terrain trực tiếp bên dưới spawn point.
+Các pipe:
 
-Một Koopa trên platform ngắn được đặt quá gần mép trái trong khi Koopa mặc định bắt đầu với hướng di chuyển sang trái. Spawn này được dịch sang phía phải của cùng platform để tạo thêm khoảng di chuyển trước mép.
-
-Không thay đổi enemy physics hoặc patrol speed.
-
-### Phân chia trách nhiệm
-
-S6-TV4-21 chịu trách nhiệm ngăn enemy chạy AI trước khi đi vào camera.
-
-S6-TV4-16 chỉ bảo đảm spawn point ban đầu hợp lý.
-
-Khả năng phát hiện và quay lại khi gặp ledge được xử lý riêng trong S6-TV4-24.
+- có top/body ghép đúng cột;
+- có solid terrain bên dưới;
+- tham gia TileMap collision như terrain;
+- tạo thêm các bề mặt đứng/nhảy mà không thay đổi completion route chính.
 
 ### Kiểm tra
 
-- Mọi Koopa đều có solid terrain dưới spawn point.
-- Enemy ngoài camera không patrol trước khi được nhìn thấy.
-- Koopa platform đầu tiên không rơi ngay sau khi activate.
-- Các Koopa còn lại giữ nguyên gameplay.
-- Build và toàn bộ CTest hiện tại vẫn pass.
+- Pipe render đúng từ consolidated tileset.
+- Mario đứng và nhảy trên pipe được.
+- Mario không xuyên qua pipe.
+- Enemy không xuyên qua pipe.
+- Các khoảng giữa pipe vẫn vượt qua được bình thường.
+- Level 2 vẫn load và hoàn thành được.
+- Build và toàn bộ CTest hiện tại pass.
+
 
 ---
 
@@ -791,6 +742,7 @@ Enemy đã chết vẫn được update ngoài camera để các cleanup timer t
 - Build và toàn bộ CTest hiện tại vẫn pass.
 
 ---
+
 
 ## 14. Quy Ước Cập Nhật File Này
 

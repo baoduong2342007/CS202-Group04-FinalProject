@@ -24,18 +24,23 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
-#include "core/SpriteFrames.h"
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}UEO";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEO";
 constexpr float TILE_SIZE_PIXELS = 32.f;
+constexpr int TILE_TEXTURE_SIZE = 32;
 constexpr float TILE_FRICTION = 0.6f;
+
 constexpr unsigned int TILESET_TILE_COUNT = 4;
 
+constexpr unsigned int GROUND_TILE_INDEX = 0;
+constexpr unsigned int BRICK_TILE_INDEX = 1;
+constexpr unsigned int QUESTION_TILE_INDEX = 2;
+constexpr unsigned int FINISH_POLE_TILE_INDEX = 3;
+
 bool isSolidTileSymbol(char tile) {
-    return tile == '1' || tile == 'B' || tile == 'E' ||
-           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
+    return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S';
 }
 
 int worldToGridCoordinate(float coordinate) {
@@ -115,41 +120,43 @@ bool isValidTileSymbol(char symbol) {
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
 }
 
-bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
-           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|' || symbol == 'E';
+bool isRenderableTile(char symbol) {
+    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E';
 }
 
 
-constexpr std::string_view TILESET_PATH = "assets/textures/items/items_blocks.png";
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+
+sf::IntRect makeTilesetRect(unsigned int tileIndex) {
+    const int textureX =
+        static_cast<int>(tileIndex) * TILE_TEXTURE_SIZE;
+
+    return sf::IntRect(
+        {textureX, 0},
+        {TILE_TEXTURE_SIZE, TILE_TEXTURE_SIZE}
+    );
+}
 
 sf::IntRect getTilesetRect(char symbol) {
-    switch (symbol){
+    switch (symbol) {
         case '1':
         case 'S':
-            return SpriteFrames::Blocks::BRICK;
+            return makeTilesetRect(GROUND_TILE_INDEX);
 
         case 'B':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
-            return SpriteFrames::Blocks::BRICK;
+            return makeTilesetRect(BRICK_TILE_INDEX);
 
         case '?':
         case 'U':
         case 'O':
-            return SpriteFrames::Blocks::QUESTION1;
-
-        case 'E':
-            return SpriteFrames::Blocks::EMPTY;
+            return makeTilesetRect(QUESTION_TILE_INDEX);
 
         case 'F':
         case '|':
-            return SpriteFrames::Blocks::EMPTY;
+            return makeTilesetRect(FINISH_POLE_TILE_INDEX);
 
         default:
-            return SpriteFrames::Blocks::BRICK;
+            return makeTilesetRect(GROUND_TILE_INDEX);
     }
 }
 

@@ -1,7 +1,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-07  
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -468,7 +468,89 @@ Các trường hợp manual test:
 
 ---
 
-## 7. Quy Ước Cập Nhật File Này
+## 8. Four-Tile TileMap Spritesheet
+
+### File liên quan
+
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+- [`levels/level1.txt`](../../levels/level1.txt)
+- [`levels/level2.txt`](../../levels/level2.txt)
+- [`assets/textures/tiles/tileset.png`](../../assets/textures/tiles/tileset.png)
+
+### S6-TV4-09 — Chuyển TileMap sang tileset bốn frame
+
+`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong
+`SpriteFrames::Blocks` để render terrain. Điều này khiến ground,
+brick và finish pole phụ thuộc vào spritesheet dành cho item/block,
+đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
+
+Theo cấu trúc asset mới của nhóm, `TileMap` hiện sử dụng:
+
+```text
+assets/textures/tiles/tileset.png
+```
+
+Tileset gồm đúng bốn frame nằm ngang, mỗi frame có kích thước 32×32:
+
+| Index | Nội dung       |
+| ----- | -------------- |
+| 0     | Ground         |
+| 1     | Brick          |
+| 2     | Question block |
+| 3     | Finish pole    |
+
+### Phương pháp được sử dụng
+
+Các frame trong tileset được truy cập thông qua named indices thay vì
+hardcode trực tiếp texture coordinates.
+
+```
+GROUND_TILE_INDEX
+BRICK_TILE_INDEX
+QUESTION_TILE_INDEX
+FINISH_POLE_TILE_INDEX
+```
+
+Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect`
+tương ứng trong spritesheet.
+
+`TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render
+terrain.
+
+Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi
+`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
+
+### Loại bỏ pipe tile cũ
+
+Các ký hiệu pipe:
+
+```
+[ ] { }
+```
+
+đã được loại khỏi level format vì tileset mới không còn chứa các frame
+pipe và thiết kế level hiện tại không sử dụng pipe.
+
+Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile
+`.` để giữ nguyên kích thước từng hàng của level.
+
+Các symbol tương ứng cũng được loại khỏi:
+
+- level validation;
+- solid tile semantics;
+- TileMap rendering;
+- tileset frame mapping.
+
+### Kết quả
+
+`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame,
+không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
+
+Level files cũng được đồng bộ với tập tile symbol hiện tại.
+
+---
+
+## 9. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

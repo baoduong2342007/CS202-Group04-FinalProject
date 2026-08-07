@@ -37,7 +37,7 @@ public:
     void update(float) override {}
     void processEvents(const sf::Event&) override {}
     void processInput(const InputState&) override {}
-    void render(sf::RenderWindow&) override {}
+    void render(sf::RenderTarget&) override {}
     bool isOverlay() const override { return m_data->overlay; }
 
 private:
@@ -59,7 +59,7 @@ public:
     void update(float) override {}
     void processEvents(const sf::Event&) override {}
     void processInput(const InputState&) override {}
-    void render(sf::RenderWindow&) override {}
+    void render(sf::RenderTarget&) override {}
     bool isOverlay() const override { return false; }
 
 private:

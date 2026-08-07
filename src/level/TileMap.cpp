@@ -24,23 +24,17 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
+#include "level/TileFrames.h"
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEO";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEO[]{}";
 constexpr float TILE_SIZE_PIXELS = 32.f;
-constexpr int TILE_TEXTURE_SIZE = 16;
 constexpr float TILE_FRICTION = 0.6f;
 
-constexpr unsigned int TILESET_TILE_COUNT = 4;
-
-constexpr unsigned int GROUND_TILE_INDEX = 0;
-constexpr unsigned int BRICK_TILE_INDEX = 1;
-constexpr unsigned int QUESTION_TILE_INDEX = 2;
-constexpr unsigned int FINISH_POLE_TILE_INDEX = 3;
-
 bool isSolidTileSymbol(char tile) {
-    return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S';
+    return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
+            tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
 int worldToGridCoordinate(float coordinate) {
@@ -121,42 +115,46 @@ bool isValidTileSymbol(char symbol) {
 }
 
 bool isRenderableTile(char symbol) {
-    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E';
+    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
+    symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
 }
-
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
-
-sf::IntRect makeTilesetRect(unsigned int tileIndex) {
-    const int textureX =
-        static_cast<int>(tileIndex) * TILE_TEXTURE_SIZE;
-
-    return sf::IntRect(
-        {textureX, 0},
-        {TILE_TEXTURE_SIZE, TILE_TEXTURE_SIZE}
-    );
-}
 
 sf::IntRect getTilesetRect(char symbol) {
     switch (symbol) {
         case '1':
+            return TileFrames::GROUND;
+
         case 'S':
-            return makeTilesetRect(GROUND_TILE_INDEX);
+            return TileFrames::STONE;
 
         case 'B':
-            return makeTilesetRect(BRICK_TILE_INDEX);
+            return TileFrames::BRICK;
 
-        case '?':
-        case 'U':
-        case 'O':
-            return makeTilesetRect(QUESTION_TILE_INDEX);
+        case 'E':
+            return TileFrames::USED_BLOCK;
+
+        case '[':
+            return TileFrames::PIPE_TOP_LEFT;
+
+        case ']':
+            return TileFrames::PIPE_TOP_RIGHT;
+
+        case '{':
+            return TileFrames::PIPE_BODY_LEFT;
+
+        case '}':
+            return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+            return TileFrames::FINISH_TOP;
+
         case '|':
-            return makeTilesetRect(FINISH_POLE_TILE_INDEX);
+            return TileFrames::FINISH_POLE;
 
         default:
-            return makeTilesetRect(GROUND_TILE_INDEX);
+            return TileFrames::GROUND;
     }
 }
 
@@ -346,13 +344,10 @@ bool TileMap::loadFromFile(const std::string& path) {
     loadedTileset.setSmooth(false);
 
     const sf::Vector2u tilesetSize = loadedTileset.getSize();
-    const unsigned int expectedWidth = TILE_SIZE * TILESET_TILE_COUNT;
-    const unsigned int expectedHeight = TILE_SIZE;
 
-    if (tilesetSize.x < expectedWidth || tilesetSize.y < expectedHeight) {
-#ifdef DEBUG
-        std::cerr << "[TileMap] Warning: Tileset image size is " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
-#endif
+    if (tilesetSize.x == 0 || tilesetSize.y == 0) {
+        std::cerr << "Invalid TileMap tileset dimensions: " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
+        return false;
     }
 
     m_pendingTileHits.clear();

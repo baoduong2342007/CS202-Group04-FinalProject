@@ -28,7 +28,7 @@ public:
 
     bool loadFromFile(const std::string& path);
 
-    void render(sf::RenderWindow& window) const;
+    void render(sf::RenderTarget& target) const;
 
     char getTileAt(int column, int row) const;
     bool isSolid(int column, int row) const;

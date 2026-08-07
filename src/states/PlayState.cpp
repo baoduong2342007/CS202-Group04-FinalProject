@@ -24,6 +24,12 @@
 
 namespace {
     const sf::Color FADE_START_COLOR(0, 0, 0, 0);
+
+    // Death/Damage Camera Shake configuration
+    constexpr float DEATH_SHAKE_DURATION = 0.5f;
+    constexpr float DEATH_SHAKE_INTENSITY = 15.0f;
+    constexpr float DAMAGE_SHAKE_DURATION = 0.3f;
+    constexpr float DAMAGE_SHAKE_INTENSITY = 8.0f;
 }
 
 PlayState::PlayState() {
@@ -83,6 +89,8 @@ void PlayState::rebindCommands() {
 
 void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
+    EventBus::getInstance().subscribe(EventType::PLAYER_LOST_LIFE, this);
+    EventBus::getInstance().subscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
 
@@ -104,6 +112,8 @@ void PlayState::onEnter() {
 
 void PlayState::onExit() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
+    EventBus::getInstance().unsubscribe(EventType::PLAYER_LOST_LIFE, this);
+    EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
     SoundManager::getInstance().stopMusic();
@@ -126,12 +136,22 @@ void PlayState::onNotify(EventType event) {
     }
 
     if (event == EventType::PLAYER_DIED) {
+        if (m_level) {
+            m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
+        }
         m_terminalCommittedThisFrame = true;
-        if (m_level && m_level->getMario() && m_level->getMario()->getLives() <= 0) {
-            m_needsGameOver = true;
-        } else {
-            // Defer reload to next frame — may be called during Box2D step
-            m_needsReload = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before game over
+        m_isGameOverPending = true;
+    } else if (event == EventType::PLAYER_LOST_LIFE) {
+        if (m_level) {
+            m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
+        }
+        m_terminalCommittedThisFrame = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before reloading
+        m_isReloadPending = true;
+    } else if (event == EventType::PLAYER_POWER_DOWN) {
+        if (m_level) {
+            m_level->getCamera().shake(DAMAGE_SHAKE_DURATION, DAMAGE_SHAKE_INTENSITY);
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
         m_terminalCommittedThisFrame = true;
@@ -251,6 +271,19 @@ void PlayState::update(float dt) {
         return;
     }
 
+    if (m_deathDelayTimer > 0.f) {
+        m_deathDelayTimer -= dt;
+        if (m_deathDelayTimer <= 0.f) {
+            if (m_isGameOverPending) {
+                m_needsGameOver = true;
+            } else if (m_isReloadPending) {
+                m_needsReload = true;
+            }
+            m_isGameOverPending = false;
+            m_isReloadPending = false;
+        }
+    }
+
     // Handle deferred state changes (safe: outside Box2D step)
     if (m_needsGameOver) {
         m_needsGameOver = false;
@@ -262,6 +295,7 @@ void PlayState::update(float dt) {
     if (m_needsReload) {
         m_needsReload = false;
         m_terminalCommittedThisFrame = true;
+        snapshotProgress(); // CRITICAL: Save progress (like decremented lives) before reloading!
         navigateToLevel(m_progress.currentLevel);
         return;
     }
@@ -325,21 +359,21 @@ void PlayState::updateTransition(float dt) {
     }
 }
 
-void PlayState::render(sf::RenderWindow& window) {
+void PlayState::render(sf::RenderTarget& target) {
     if (!m_level) {
         return; // Level failed to load — Menu transition is pending.
     }
 
-    m_level->render(window);
+    m_level->render(target);
 
     // Switch to default view for UI overlay
-    window.setView(window.getDefaultView());
+    target.setView(target.getDefaultView());
     if (m_hud) {
-        m_hud->draw(window);
+        m_hud->draw(target);
     }
 
     if (m_fadeAlpha > 0.f) {
-        m_fadeOverlay.setSize(sf::Vector2f(window.getSize()));
-        window.draw(m_fadeOverlay);
+        m_fadeOverlay.setSize(sf::Vector2f(target.getSize()));
+        target.draw(m_fadeOverlay);
     }
 }

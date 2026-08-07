@@ -19,9 +19,9 @@
 #include "entities/Enemy.h"
 #include "core/SpriteFrames.h"
 
+#include "core/DisplayConfig.h"
+
 namespace {
-constexpr unsigned int SCREEN_WIDTH = 1280;
-constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
@@ -52,13 +52,12 @@ bool Level::loadFromFile(const std::string& path) {
 
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    m_camera.init(sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
-                               static_cast<float>(SCREEN_HEIGHT)
-                               ),
-                  sf::FloatRect(sf::Vector2f(0.f, 0.f),
-                                sf::Vector2f(levelWidth, levelHeight)
-                                )
-                  );
+    m_camera.init(
+        sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
+                     static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
+        sf::FloatRect(sf::Vector2f(0.f, 0.f),
+                      sf::Vector2f(levelWidth, levelHeight))
+    );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
@@ -166,9 +165,9 @@ void Level::update(float dt) {
     }
 }
 
-void Level::render(sf::RenderWindow& window) {
+void Level::render(sf::RenderTarget& target) {
     // Apply camera view
-    window.setView(m_camera.getView());
+    target.setView(m_camera.getView());
 
     // Draw Mountain Background for main levels (temporarily disabled for level0)
     if (m_levelPath.find("level0") == std::string::npos) {
@@ -182,23 +181,23 @@ void Level::render(sf::RenderWindow& window) {
 
         for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
             bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
-            window.draw(bgSprite);
+            target.draw(bgSprite);
         }
     }
 
 
 
     // Draw tilemap background
-    m_tileMap.render(window);
+    m_tileMap.render(target);
 
     // Draw all entities (enemies, items)
     for (const auto& entity : m_entities) {
-        window.draw(*entity);
+        target.draw(*entity);
     }
 
     // Draw Mario on top
     if (m_mario) {
-        window.draw(*m_mario);
+        target.draw(*m_mario);
     }
 }
 

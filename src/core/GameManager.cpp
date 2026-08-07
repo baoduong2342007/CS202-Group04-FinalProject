@@ -89,7 +89,7 @@ void GameManager::processInput(const InputState& inputState) {
     }
 }
 
-void GameManager::render(sf::RenderWindow& window) {
+void GameManager::render(sf::RenderTarget& target) {
     if (m_stateStack.empty()) {
         return;
     }
@@ -97,7 +97,7 @@ void GameManager::render(sf::RenderWindow& window) {
     // If the current top is an overlay (e.g. PauseState), render the state below it
     // first so the world is visible behind the overlay.
     if (top()->isOverlay() && m_stateStack.size() >= 2) {
-        m_stateStack[m_stateStack.size() - 2]->render(window);
+        m_stateStack[m_stateStack.size() - 2]->render(target);
     }
-    top()->render(window);
+    top()->render(target);
 }

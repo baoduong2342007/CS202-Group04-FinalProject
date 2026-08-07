@@ -33,7 +33,7 @@ public:
     void processEvents(const sf::Event& event);
     void processInput(const InputState& inputState);
     void update(float dt);
-    void render(sf::RenderWindow& window);
+    void render(sf::RenderTarget& target);
 
     /// Number of states currently on the stack (used by regression tests).
     int stackDepth() const { return static_cast<int>(m_stateStack.size()); }

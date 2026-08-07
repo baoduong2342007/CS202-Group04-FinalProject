@@ -49,7 +49,7 @@ public:
      * @brief Renders the Menu background, text, and sprites.
      * @param window The sf::RenderWindow to draw onto.
      */
-    void render(sf::RenderWindow& window) override;
+    void render(sf::RenderTarget& target) override;
 
 private:
     // 6. Private members

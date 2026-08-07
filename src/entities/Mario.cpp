@@ -266,8 +266,9 @@ void Mario::preparePhysics(float dt) {
   }
 
   // Apply player input before Box2D advances so the current frame reacts immediately.
-  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, false);
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, m_jumpReleased);
   m_jumpRequested = false;
+  m_jumpReleased = false;
 }
 
 // DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
@@ -432,6 +433,10 @@ void Mario::jump() {
     return;
 
   m_jumpRequested = true;
+}
+
+void Mario::releaseJump() {
+  m_jumpReleased = true;
 }
 
 void Mario::moveLeft() {

@@ -151,6 +151,12 @@ void PlayState::processInput(const InputState& inputState) {
 
     m_level->getMario()->setMoveIntent(0.0f);
     m_inputHandler.handleInput(inputState);
+
+    if (inputState.wasReleased(sf::Keyboard::Key::W) ||
+        inputState.wasReleased(sf::Keyboard::Key::Up) ||
+        inputState.wasReleased(sf::Keyboard::Key::Space)) {
+        m_level->getMario()->releaseJump();
+    }
 }
 
 void PlayState::snapshotProgress() {

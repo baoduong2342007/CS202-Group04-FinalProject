@@ -90,10 +90,65 @@ bool testGroundingRecoversAfterTerrainRebuild() {
     return check(settleMarioOnPlatform(world, mario),
                  "Mario must regain grounded state after rebuilt terrain contacts");
 }
+
+bool testShortJumpVsLongJump() {
+    // 1. Long jump test (jump key held)
+    b2World worldLong({0.0f, 25.0f});
+    createPlatform(worldLong);
+
+    Mario marioLong({134.0f, 0.0f}, {32.0f, 32.0f});
+    marioLong.initPhysics(&worldLong, b2_dynamicBody, {32.0f, 32.0f});
+    settleMarioOnPlatform(worldLong, marioLong);
+
+    marioLong.jump();
+    marioLong.preparePhysics(TIME_STEP);
+    worldLong.Step(TIME_STEP, 8, 3);
+
+    float longJumpMinY = PhysicsEngine::metersToPixels(marioLong.getBody()->GetPosition().y);
+    for (int step = 0; step < 60; ++step) {
+        marioLong.preparePhysics(TIME_STEP); // jumpKeyReleased is false
+        worldLong.Step(TIME_STEP, 8, 3);
+        float currentY = PhysicsEngine::metersToPixels(marioLong.getBody()->GetPosition().y);
+        longJumpMinY = std::min(longJumpMinY, currentY);
+    }
+
+    // 2. Short jump test (jump key released early while ascending)
+    b2World worldShort({0.0f, 25.0f});
+    createPlatform(worldShort);
+
+    Mario marioShort({134.0f, 0.0f}, {32.0f, 32.0f});
+    marioShort.initPhysics(&worldShort, b2_dynamicBody, {32.0f, 32.0f});
+    settleMarioOnPlatform(worldShort, marioShort);
+
+    marioShort.jump();
+    marioShort.preparePhysics(TIME_STEP);
+    worldShort.Step(TIME_STEP, 8, 3);
+
+    // Release jump on the next frame while ascending
+    marioShort.releaseJump();
+    marioShort.preparePhysics(TIME_STEP);
+
+    float shortJumpMinY = PhysicsEngine::metersToPixels(marioShort.getBody()->GetPosition().y);
+    for (int step = 0; step < 60; ++step) {
+        marioShort.preparePhysics(TIME_STEP);
+        worldShort.Step(TIME_STEP, 8, 3);
+        float currentY = PhysicsEngine::metersToPixels(marioShort.getBody()->GetPosition().y);
+        shortJumpMinY = std::min(shortJumpMinY, currentY);
+    }
+
+    std::cout << "[TEST] Long jump min Y (pixels): " << longJumpMinY
+              << ", Short jump min Y (pixels): " << shortJumpMinY << std::endl;
+
+    // Peak height corresponds to smaller Y coordinate in screen space.
+    // Short jump peak Y should be strictly greater (lower peak height) than long jump peak Y.
+    return check(shortJumpMinY > longJumpMinY + 10.0f,
+                 "Short jump peak height must be significantly lower than long jump peak height");
+}
 } // namespace
 
 int main() {
     const bool success = testLandingRefreshesGroundingAndAllowsJump() &&
-                         testGroundingRecoversAfterTerrainRebuild();
+                         testGroundingRecoversAfterTerrainRebuild() &&
+                         testShortJumpVsLongJump();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -2,7 +2,8 @@
  * @file Camera.cpp
  * @author TV2 (Nhật)
  * @brief Implementation of the Camera class for tracking and boundary clamping.
- * @note Uses SFML 3's position/size vectors for FloatRect and std::clamp for bounds.
+ * @note Uses SFML 3's position/size vectors for FloatRect and std::clamp for
+ * bounds.
  */
 
 #include "level/Camera.h"
@@ -11,11 +12,28 @@
 #include <random>
 
 namespace {
-    std::mt19937& getShakeRng() {
-        static std::mt19937 rng(std::random_device{}());
-        return rng;
+    std::mt19937 &getShakeRng() {
+      static std::mt19937 rng(std::random_device{}());
+      return rng;
     }
-}
+
+    /**
+     * @brief The ratio of the view width used as a horizontal deadzone.
+     * @details A value of 0.05 means 5% of the screen width on either side of the center.
+     */
+    constexpr float HORIZONTAL_DEADZONE_RATIO = 0.05f;
+
+    /**
+     * @brief The padding below the bottom of the level bounds to leave space for blocks.
+     * @details A value of 32.0f equates to exactly 2 layers of standard 16px bricks.
+     */
+    constexpr float BOTTOM_TILE_PADDING = 32.0f;
+
+    /**
+     * @brief The fixed distance maintained between the target and the top of the screen when tracking upwards.
+     */
+    constexpr float TOP_BUFFER_PADDING = 40.0f;
+} // namespace
 
 // ============================================================
 // 1. Constructor
@@ -25,94 +43,96 @@ Camera::Camera() = default;
 // ============================================================
 // 3. Public methods
 // ============================================================
-void Camera::init(const sf::Vector2f& viewSize, const sf::FloatRect& levelBounds) {
-    m_view.setSize(viewSize);
-    m_levelBounds = levelBounds;
-    
-    // Set an initial center to avoid a 0,0 snap on the very first frame
-    m_view.setCenter({viewSize.x / 2.0f, viewSize.y / 2.0f});
+void Camera::init(const sf::Vector2f &viewSize,
+                  const sf::FloatRect &levelBounds) {
+  m_view.setSize(viewSize);
+  m_levelBounds = levelBounds;
+
+  // Set an initial center to avoid a 0,0 snap on the very first frame
+  m_view.setCenter({viewSize.x / 2.0f, viewSize.y / 2.0f});
 }
 
 void Camera::shake(float duration, float magnitude) {
-    m_shakeTimer = duration;
-    m_shakeMagnitude = magnitude;
+  m_shakeTimer = duration;
+  m_shakeMagnitude = magnitude;
 }
 
-void Camera::update(float dt, const sf::Vector2f& targetPosition) {
-    sf::Vector2f currentCenter = m_view.getCenter();
-    sf::Vector2f newCenter = currentCenter;
+void Camera::update(float dt, const sf::Vector2f &targetPosition) {
+  sf::Vector2f currentCenter = m_view.getCenter();
+  sf::Vector2f newCenter = currentCenter;
 
-    // Strict horizontal tracking (1:1 lock)
-    newCenter.x = targetPosition.x;
+  // Horizontal deadzone tracking (5% of screen width)
+  const float horizontalDeadzone = m_view.getSize().x * HORIZONTAL_DEADZONE_RATIO;
+  if (targetPosition.x < currentCenter.x - horizontalDeadzone) {
+    newCenter.x = targetPosition.x + horizontalDeadzone;
+  } else if (targetPosition.x > currentCenter.x + horizontalDeadzone) {
+    newCenter.x = targetPosition.x - horizontalDeadzone;
+  }
 
-    // Vertical deadzone tracking
-    // Only adjust Y if the target moves beyond the center 50% of the screen vertically.
-    const float verticalDeadzone = m_view.getSize().y * 0.25f;
+  // Vertical tracking: Rigid top buffer with an absolute baseline
+  // Calculate the default camera Y position so that the bottom of the screen
+  // is exactly 32 pixels (2 layers of brick) below the bottom of the level.
+  float defaultCenterY = m_levelBounds.position.y + m_levelBounds.size.y + BOTTOM_TILE_PADDING - (m_view.getSize().y / 2.0f);
 
-    if (targetPosition.y < currentCenter.y - verticalDeadzone) {
-        newCenter.y = targetPosition.y + verticalDeadzone;
-    } else if (targetPosition.y > currentCenter.y + verticalDeadzone) {
-        newCenter.y = targetPosition.y - verticalDeadzone;
-    }
+  // The camera strictly maintains a 40-pixel buffer between Mario and the TOP of the screen
+  const float topOffset = m_view.getSize().y / 2.0f - TOP_BUFFER_PADDING;
+  
+  // Calculate where the camera *wants* to be to maintain that 40px top buffer
+  newCenter.y = targetPosition.y + topOffset;
 
-    m_view.setCenter(newCenter);
-    clampToBoundaries();
+  // But lock the camera so it NEVER drops below the default resting position.
+  // This means the camera ONLY moves if Mario jumps high enough to push against 
+  // that 40-pixel top buffer. If he falls, it tracks him exactly at that buffer 
+  // until it gracefully hits the baseline and stops.
+  newCenter.y = std::min(newCenter.y, defaultCenterY);
 
-    // Apply screen shake if active
-    if (m_shakeTimer > 0.f) {
-        m_shakeTimer -= dt;
-        
-        // Generate random offsets between -m_shakeMagnitude and +m_shakeMagnitude
-        std::uniform_real_distribution<float> dist(-m_shakeMagnitude, m_shakeMagnitude);
-        float offsetX = dist(getShakeRng());
-        float offsetY = dist(getShakeRng());
-        
-        sf::Vector2f shakenCenter = m_view.getCenter();
-        shakenCenter.x += offsetX;
-        shakenCenter.y += offsetY;
-        
-        m_view.setCenter(shakenCenter);
-    }
+  m_view.setCenter(newCenter);
+
+  // Apply screen shake if active BEFORE clamping
+  if (m_shakeTimer > 0.f) {
+    m_shakeTimer -= dt;
+
+    std::uniform_real_distribution<float> dist(-m_shakeMagnitude,
+                                               m_shakeMagnitude);
+    float offsetX = dist(getShakeRng());
+    float offsetY = dist(getShakeRng());
+
+    sf::Vector2f shakenCenter = m_view.getCenter();
+    shakenCenter.x += offsetX;
+    shakenCenter.y += offsetY;
+
+    m_view.setCenter(shakenCenter);
+  }
+
+  // Clamp to boundaries AFTER all modifications
+  clampToBoundaries();
 }
 
 // ============================================================
 // 4. Getters
 // ============================================================
-const sf::View& Camera::getView() const {
-    return m_view;
-}
+const sf::View &Camera::getView() const { return m_view; }
 
 // ============================================================
 // 5. Private methods
 // ============================================================
 void Camera::clampToBoundaries() {
-    sf::Vector2f currentCenter = m_view.getCenter();
-    sf::Vector2f halfSize = m_view.getSize() / 2.0f;
+  sf::Vector2f currentCenter = m_view.getCenter();
+  sf::Vector2f halfSize = m_view.getSize() / 2.0f;
 
-    // SFML 3 uses .position and .size instead of .left, .top, .width, .height
-    float minX = m_levelBounds.position.x + halfSize.x;
-    float maxX = m_levelBounds.position.x + m_levelBounds.size.x - halfSize.x;
-    
-    float minY = m_levelBounds.position.y + halfSize.y;
-    float maxY = m_levelBounds.position.y + m_levelBounds.size.y - halfSize.y;
+  float minX = m_levelBounds.position.x + halfSize.x;
+  float maxX = m_levelBounds.position.x + m_levelBounds.size.x - halfSize.x;
 
-    // Handle X bounds
-    if (minX > maxX) {
-        // Failsafe: Level is narrower than screen width
-        currentCenter.x = m_levelBounds.position.x + (m_levelBounds.size.x / 2.0f);
-    } else {
-        // Normal clamping
-        currentCenter.x = std::clamp(currentCenter.x, minX, maxX);
-    }
+  // Handle X bounds
+  if (minX > maxX) {
+    currentCenter.x = m_levelBounds.position.x + (m_levelBounds.size.x / 2.0f);
+  } else {
+    currentCenter.x = std::clamp(currentCenter.x, minX, maxX);
+  }
 
-    // Handle Y bounds
-    if (minY > maxY) {
-        // Failsafe: Level is shorter than screen height
-        currentCenter.y = m_levelBounds.position.y + (m_levelBounds.size.y / 2.0f);
-    } else {
-        // Normal clamping
-        currentCenter.y = std::clamp(currentCenter.y, minY, maxY);
-    }
+  // Y bounds clamping removed.
+  // This allows the camera to drop below the level boundaries
+  // to fulfill the "2 layers of brick below Mario" requirement.
 
-    m_view.setCenter(currentCenter);
+  m_view.setCenter(currentCenter);
 }

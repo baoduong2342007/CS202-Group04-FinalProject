@@ -21,6 +21,8 @@
 #include <box2d/box2d.h>
 class ContactListener;
 
+#include "entities/FireBallPool.h"
+
 class Level {
 public:
     // 1. Constructor / Destructor
@@ -42,6 +44,7 @@ public:
     Camera& getCamera();
     TextureManager& getTextureManager();
     std::vector<std::unique_ptr<Entity>>& getEntities() { return m_entities; }
+    FireBallPool& getFireBallPool() { return m_fireBallPool; }
     bool isLevelCompleted() const;
 
 
@@ -60,6 +63,7 @@ private:
     TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
     std::vector<std::unique_ptr<Entity>> m_entities;
+    FireBallPool m_fireBallPool{2};
     bool m_levelCompleted = false;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;

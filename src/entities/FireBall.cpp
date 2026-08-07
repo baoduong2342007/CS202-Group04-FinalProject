@@ -43,6 +43,12 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
 
     if (!m_body && world) {
         initPhysics(world, b2_dynamicBody, FIREBALL_SIZE, false);
+        if (m_body && m_body->GetFixtureList()) {
+            b2Filter filter;
+            filter.categoryBits = 0x0004; // Projectile category
+            filter.maskBits = 0xFFFB;     // Mask out Mario (category 0x0004 vs 0x0002)
+            m_body->GetFixtureList()->SetFilterData(filter);
+        }
     } else if (m_body) {
         m_body->SetEnabled(true);
         m_body->SetTransform(PhysicsEngine::pixelsToMeters(position + FIREBALL_SIZE / 2.0f), 0.0f);

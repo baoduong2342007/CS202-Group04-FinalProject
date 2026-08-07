@@ -152,6 +152,9 @@ void Level::update(float dt) {
         entity->update(dt);
     }
 
+    // Update active FireBall projectiles
+    m_fireBallPool.update(dt);
+
     // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
@@ -186,8 +189,6 @@ void Level::render(sf::RenderWindow& window) {
         }
     }
 
-
-
     // Draw tilemap background
     m_tileMap.render(window);
 
@@ -195,6 +196,9 @@ void Level::render(sf::RenderWindow& window) {
     for (const auto& entity : m_entities) {
         window.draw(*entity);
     }
+
+    // Draw FireBall projectiles
+    m_fireBallPool.render(window);
 
     // Draw Mario on top
     if (m_mario) {

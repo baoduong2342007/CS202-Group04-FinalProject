@@ -24,6 +24,22 @@ constexpr unsigned int SCREEN_WIDTH = 1280;
 constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
+bool isEnemyVisibleHorizontally(const Enemy& enemy, const sf::View& cameraView) {
+    const sf::Vector2f cameraCenter = cameraView.getCenter();
+
+    const sf::Vector2f cameraSize = cameraView.getSize();
+
+    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f;
+    const float cameraRight = cameraCenter.x + cameraSize.x / 2.f;
+
+    const sf::FloatRect enemyBounds = enemy.getBoundingBox();
+
+    const float enemyLeft = enemyBounds.position.x;
+    const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
+
+    return enemyRight >= cameraLeft && enemyLeft <= cameraRight;
+}
+
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
 constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
 
@@ -148,6 +164,20 @@ void Level::update(float dt) {
 
     // Update all entities (enemies, items)
     for (auto& entity : m_entities) {
+        if (entity->isEnemy()) {
+            Enemy* enemy = static_cast<Enemy*>(entity.get());
+
+            if (!enemy->isActivated()) {
+                const bool visible = isEnemyVisibleHorizontally(*enemy, m_camera.getView());
+
+                if (!visible) {
+                    continue;
+                }
+
+                enemy->activate();
+            }
+        }
+
         entity->update(dt);
     }
 

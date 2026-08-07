@@ -13,4 +13,10 @@ void Enemy::onSideCollision(Entity* other) {
     (void)other;
 }
 
+void Enemy::activate() {
+    m_activated = true;
+}
 
+bool Enemy::isActivated() const {
+    return m_activated;
+}

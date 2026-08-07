@@ -1,7 +1,9 @@
+
+
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11 đến S6-TV4-14
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -385,11 +387,9 @@ Không gọi trực tiếp logic spawn Mushroom từ `TileMap`.
 
 ### S6-TV4-11 — Mở rộng vùng kích hoạt trên toàn bộ cột cờ
 
-Finish trigger trước đây chỉ có kích thước 32×32 tại tile `F`.
-Vì vậy, Mario phải chạm đúng phần đầu cột cờ mới có thể hoàn thành level.
+Finish trigger trước đây chỉ có kích thước 32×32 tại tile `F`. Vì vậy, Mario phải chạm đúng phần đầu cột cờ mới có thể hoàn thành level.
 
-Trigger hiện được tạo thành một hình chữ nhật bao phủ từ tile `F`
-đến tile pole `|` thấp nhất nằm trong cùng một cột.
+Trigger hiện được tạo thành một hình chữ nhật bao phủ từ tile `F`đến tile pole `|` thấp nhất nằm trong cùng một cột.
 
 ### Phương pháp được sử dụng
 
@@ -398,16 +398,13 @@ Trigger hiện được tạo thành một hình chữ nhật bao phủ từ til
 - Finish point `F`.
 - Toàn bộ pole tile `|`.
 
-Từ hàng chứa finish point và hàng pole thấp nhất, hệ thống tính chiều cao
-của vùng kích hoạt bằng:
+Từ hàng chứa finish point và hàng pole thấp nhất, hệ thống tính chiều cao của vùng kích hoạt bằng:
 
 ```cpp
 (bottomRow - finishPosition.y + 1) * TILE_SIZE
 ```
 
-Level validation đã bảo đảm mỗi level chỉ có đúng một finish point,
-các pole tile liên tục và nằm trong cùng một cột. Vì vậy, vùng trigger
-luôn tương ứng với đúng cột cờ của level.
+Level validation đã bảo đảm mỗi level chỉ có đúng một finish point, các pole tile liên tục và nằm trong cùng một cột. Vì vậy, vùng trigger luôn tương ứng với đúng cột cờ của level.
 
 ### Cách hoạt động
 
@@ -420,8 +417,7 @@ F
 |
 ```
 
-Vùng trigger bao phủ toàn bộ các tile trên, nhưng không bao gồm solid tile
-nằm bên dưới chân cột cờ.
+Vùng trigger bao phủ toàn bộ các tile trên, nhưng không bao gồm solid tile nằm bên dưới chân cột cờ.
 
 Mario có thể kích hoạt hoàn thành level khi chạm:
 
@@ -439,8 +435,7 @@ Gameplay code không cần gọi trực tiếp vùng finish trigger.
 checkFinishFlag();
 ```
 
-mỗi frame. Khi bounding box của Mario giao với bất kỳ phần nào trong vùng
-cột cờ, hệ thống đặt:
+mỗi frame. Khi bounding box của Mario giao với bất kỳ phần nào trong vùng cột cờ, hệ thống đặt:
 
 ```cpp
 m_levelCompleted = true;
@@ -466,6 +461,36 @@ Các trường hợp manual test:
 - Đứng cạnh nhưng không giao với cột cờ → chưa hoàn thành.
 - Sau khi hoàn thành, event không bị gửi lặp lại.
 
+### S6-TV4-12 — Ngăn finish event bị kích hoạt lặp
+
+`Level::update()` kiểm tra finish trigger ở mỗi frame. Vì Mario có thể ở trong vùng cột cờ trong nhiều frame liên tiếp, nếu không có guard thì `LEVEL_COMPLETED` có thể được phát nhiều lần.
+
+`Level` sử dụng `m_levelCompleted` như một completion latch.
+
+Trước khi kiểm tra collision:
+
+```cpp
+if (!m_mario || m_levelCompleted) {
+    return;
+}
+```
+
+Khi Mario chạm finish trigger lần đầu:
+
+```
+m_levelCompleted = true;
+
+EventBus::getInstance().notify(
+    EventType::LEVEL_COMPLETED
+);
+```
+
+Sau đó mọi lần gọi `checkFinishFlag()` tiếp theo đều return ngay.
+
+`PlayState` cũng có `m_terminalCommittedThisFrame` để tránh nhiều terminal event được commit trong cùng một frame.
+
+Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, nên completion state được reset về `false`.
+
 ---
 
 ## 8. Four-Tile TileMap Spritesheet
@@ -479,10 +504,7 @@ Các trường hợp manual test:
 
 ### S6-TV4-09 — Chuyển TileMap sang tileset bốn frame
 
-`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong
-`SpriteFrames::Blocks` để render terrain. Điều này khiến ground,
-brick và finish pole phụ thuộc vào spritesheet dành cho item/block,
-đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
+`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong `SpriteFrames::Blocks` để render terrain. Điều này khiến ground, brick và finish pole phụ thuộc vào spritesheet dành cho item/block, đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
 
 Theo cấu trúc asset mới của nhóm, `TileMap` hiện sử dụng:
 
@@ -501,8 +523,7 @@ Tileset gồm đúng bốn frame nằm ngang, mỗi frame có kích thước 32�
 
 ### Phương pháp được sử dụng
 
-Các frame trong tileset được truy cập thông qua named indices thay vì
-hardcode trực tiếp texture coordinates.
+Các frame trong tileset được truy cập thông qua named indices thay vì hardcode trực tiếp texture coordinates.
 
 ```
 GROUND_TILE_INDEX
@@ -511,14 +532,11 @@ QUESTION_TILE_INDEX
 FINISH_POLE_TILE_INDEX
 ```
 
-Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect`
-tương ứng trong spritesheet.
+Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect` tương ứng trong spritesheet.
 
-`TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render
-terrain.
+`TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render terrain.
 
-Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi
-`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
+Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
 
 ### Loại bỏ pipe tile cũ
 
@@ -528,11 +546,9 @@ Các ký hiệu pipe:
 [ ] { }
 ```
 
-đã được loại khỏi level format vì tileset mới không còn chứa các frame
-pipe và thiết kế level hiện tại không sử dụng pipe.
+đã được loại khỏi level format vì tileset mới không còn chứa các frame pipe và thiết kế level hiện tại không sử dụng pipe.
 
-Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile
-`.` để giữ nguyên kích thước từng hàng của level.
+Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile `.` để giữ nguyên kích thước từng hàng của level.
 
 Các symbol tương ứng cũng được loại khỏi:
 
@@ -543,14 +559,155 @@ Các symbol tương ứng cũng được loại khỏi:
 
 ### Kết quả
 
-`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame,
-không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
+`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame, không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
 
 Level files cũng được đồng bộ với tập tile symbol hiện tại.
 
 ---
 
-## 9. Quy Ước Cập Nhật File Này
+## 9. Level 1 Tutorial Flow
+
+### File liên quan
+
+- [`levels/level1.txt`](../../levels/level1.txt)
+
+### S6-TV4-13 — Hoàn thiện tutorial flow của Level 1
+
+Level 1 được điều chỉnh để giới thiệu các cơ chế gameplay theo thứ tự tăng dần, thay vì đưa enemy hoặc power-up đến người chơi quá sớm.
+
+Flow tutorial hiện tại hướng tới:
+
+```text
+Movement
+   ↓
+Coin
+   ↓
+Jump / Question Block
+   ↓
+Super Mushroom
+   ↓
+Goomba
+   ↓
+Finish Flag
+```
+
+### Thay đổi level
+
+Một coin được đặt ở khu vực đầu level để tạo mục tiêu di chuyển đơn giản ngay sau khi Mario spawn.
+
+Một QuestionBlock được đổi thành ký hiệu `U`:
+
+```
+U = QuestionBlock chứa Super Mushroom
+```
+
+`EntityFactory` đã hỗ trợ `U` dưới dạng `QuestionBlockContent::SUPER_MUSHROOM`, vì vậy thay đổi này chỉ sử dụng level symbol hiện có và không thay đổi asset path hoặc sprite coordinate.
+
+Enemy đầu tiên tiếp tục nằm sau khu vực tutorial block/power-up để người chơi có cơ hội làm quen với movement và jump trước khi gặp nguy hiểm.
+
+### Nguyên tắc thiết kế
+
+Task này chỉ thay đổi bố trí gameplay trong level.
+
+Không thay đổi:
+
+- texture path;
+- sprite sheet;
+- texture rectangle;
+- sprite coordinate;
+- enemy implementation;
+- physics constants.
+
+Các thay đổi liên quan trực tiếp đến asset đang được tạm hoãn trong lúc
+cấu trúc spritesheet chung của project vẫn đang được cập nhật.
+
+### Kiểm tra
+
+- Level có đúng một Mario spawn `M`.
+- Level có đúng một finish point `F`.
+- Coin xuất hiện trước enemy đầu tiên.
+- Có QuestionBlock thường để giới thiệu block interaction.
+- Có `U` để giới thiệu Super Mushroom.
+- Mario có thể nhận Mushroom trước khi gặp Goomba đầu tiên.
+- Người chơi có thể hoàn thành Level 1 mà không cần sử dụng damage boost.
+- Level validation vẫn pass.
+
+---
+
+## 10. Level 1 Gap Validation
+
+### File liên quan
+
+- [`levels/level1.txt`](../../levels/level1.txt)
+
+### S6-TV4-14 — Kiểm tra gap của Level 1 theo jump envelope
+
+Level 1 được kiểm tra để bảo đảm các khoảng trống bắt buộc nằm trong khả năng jump hiện tại của Mario.
+
+Việc đánh giá được thực hiện dựa trên bề mặt mà Mario thực sự có thể đứng và di chuyển, thay vì chỉ dựa trên các ô trống ở các hàng ground thấp nhất.
+
+Một khu vực gần cuối level có khoảng trống dài ở phần ground bên dưới, nhưng các solid block phía trên tạo thành hai cụm bậc thang hướng vào nhau. Vì vậy khoảng cách nhảy thực tế giữa hai ledge ngắn hơn đáng kể so với chiều rộng của khoảng trống ở đáy.
+
+### Kết quả
+
+Không cần thay đổi geometry của Level 1.
+
+Các gap bắt buộc hiện tại có thể vượt qua bằng movement và jump thông thường, không yêu cầu damage boost hoặc một thao tác frame-perfect.
+
+### Kiểm tra
+
+- Các pit đầu level có thể vượt qua bằng normal jump.
+- Khu vực staircase gần cuối level có thể vượt qua từ ledge này sang ledge kia.
+- Không có gap bắt buộc vượt ngoài jump envelope hiện tại.
+- Không cần thay đổi physics hoặc movement constants.
+- Level 1 có thể hoàn thành bằng control scheme hiện tại.
+
+---
+
+## 11. Enemy Activation
+
+### File liên quan
+
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+- [`src/entities/Enemy.cpp`](../../src/entities/Enemy.cpp)
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+
+### S6-TV4-21 — Chỉ activate enemy khi camera nhìn thấy
+
+Trước thay đổi này, `Level::update()` gọi `update()` cho toàn bộ entity trên map ở mỗi frame.
+
+Do đó Goomba và Koopa có thể bắt đầu patrol ngay từ lúc level được load, kể cả khi chúng nằm rất xa camera. Enemy trên platform ngắn có thể di chuyển hoặc rơi khỏi khu vực spawn trước khi Mario tới.
+
+Enemy hiện có một activation state:
+
+```cpp
+bool m_activated = false;
+```
+
+Enemy chưa activated chỉ bắt đầu chạy AI khi bounding box của nó giao với vùng nhìn ngang hiện tại của camera.
+
+Sau lần activation đầu tiên, trạng thái được giữ lại để tránh reset AI khi enemy tạm thời rời camera.
+
+### Phân chia trách nhiệm
+
+Task này chỉ xử lý first-time activation.
+
+Việc quyết định enemy đã activated có tiếp tục update sau khi rời màn hình hay không được xử lý riêng trong S6-TV4-22.
+
+Physics body không bị disable trước activation. Box2D vẫn có thể settle enemy xuống terrain, nhưng patrol AI chưa chạy nên enemy không tự đi khỏi spawn trước khi được nhìn thấy.
+
+### Kiểm tra
+
+- Enemy ngoài camera chưa chạy patrol AI.
+- Enemy bắt đầu update khi đi vào camera.
+- Enemy chỉ chuyển từ inactive sang activated một lần.
+- Coin, item và QuestionBlock không bị activation gate.
+- Level 2 enemy không tự di chuyển trước khi Mario tới.
+- Build và toàn bộ CTest hiện tại vẫn pass.
+
+---
+
+## 11. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

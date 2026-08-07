@@ -526,7 +526,7 @@ namespace FireShooting {
     } // namespace Luigi
 } // namespace FireShooting
 
-// ── Enemies (from assets/textures/enemies/enemies.png) ─────────────────────
+// ── Enemies (from docs/assets/reference/enemies.png) ───────────────────────
 // Verified coordinates from BFS connected-component extraction (157 sprites).
 // World Themes for "Ground Enemies" (4-col): Overworld / Underground / Castle / Underwater
 // World Themes for "Green Enemies" (3-col):  Overworld / Underground+Castle / Underwater

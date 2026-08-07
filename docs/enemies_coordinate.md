@@ -1,6 +1,8 @@
 # Bảng Tọa Độ & Ý Nghĩa Chi Tiết Khung Hình Quái Vật (`enemies_coordinate.md`)
 
-Danh sách toàn bộ **157** thành phần liên thông quái vật tách từ tệp `enemies.png` (đã lọc bỏ nền xanh đậm `(0,41,140)` và xanh trung `(146,144,255)`, loại trừ vùng Tilemap reference và text box):
+Danh sách toàn bộ **157** thành phần liên thông quái vật tách từ tệp
+`docs/assets/reference/enemies.png` (đã lọc bỏ nền xanh đậm `(0,41,140)` và
+xanh trung `(146,144,255)`, loại trừ vùng Tilemap reference và text box):
 
 > **Quy ước palette (bảng màu NES):**
 > - **Overworld (OW)**: Xanh lá `(12,147,0)` + Cam `(230,156,33)` — dùng cho Level 1-1, 1-3, 3-1, v.v.

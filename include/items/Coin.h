@@ -25,6 +25,11 @@ public:
     void update(float dt) override;
     void onCollect(Mario& mario) override;
 
+    /// Award one coin and convert every complete 100-coin group into a life.
+    /// Keeping this rule here makes normal coins and QuestionBlock coins use
+    /// exactly the same scoring path.
+    static void awardTo(Mario& mario);
+
     CoinType getCoinType() const { return m_type; }
 
 private:
@@ -35,5 +40,6 @@ private:
 
     static constexpr float POPUP_DURATION = 0.45f;
     static constexpr float POPUP_HEIGHT = 48.f;
-    static constexpr int COIN_SCORE_VALUE = 200;
+    static constexpr int COIN_SCORE_VALUE = 100;
+    static constexpr int COINS_PER_LIFE = 100;
 };

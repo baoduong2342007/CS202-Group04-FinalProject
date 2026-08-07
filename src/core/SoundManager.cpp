@@ -1,43 +1,35 @@
 /**
  * @file SoundManager.cpp
  * @author TV5 (Truyền)
- * @brief Singleton audio manager — loads, caches, and plays sound effects & music
- * @note Week 2 — subscribes to EventBus for automatic playback on game events
+ * @brief Singleton audio manager with named music tracks and SFX voice pool.
  */
 
 #include "core/SoundManager.h"
 
+#include <algorithm>
+#include <cmath>
+#include <utility>
+
 #ifdef DEBUG
 #include <iostream>
 #endif
+
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
-
-// ============================================================
-// PATTERN: Singleton & Observer (Subscriber)
-// Reason: only one audio device / mixer should exist at a time;
-//         any class can play sounds without owning the manager.
-//         Listens to EventBus for decoupled audio feedback.
-// ============================================================
 
 namespace {
 constexpr float DEFAULT_SOUND_VOLUME = 100.f;
 constexpr float DEFAULT_MUSIC_VOLUME = 50.f;
 } // namespace
 
-// ── Singleton access ─────────────────────────────────────────
-
 SoundManager& SoundManager::getInstance() {
     static SoundManager instance;
     return instance;
 }
 
-// ── Constructor / Destructor ─────────────────────────────────
-
 SoundManager::SoundManager()
     : m_soundVolume(DEFAULT_SOUND_VOLUME),
       m_musicVolume(DEFAULT_MUSIC_VOLUME) {
-    // Subscribe to game events for automatic sound playback
     EventBus& bus = EventBus::getInstance();
     bus.subscribe(EventType::PLAYER_JUMPED, this);
     bus.subscribe(EventType::COIN_COLLECTED, this);
@@ -46,21 +38,33 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::PLAYER_POWER_UP, this);
     bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.subscribe(EventType::GAME_PAUSED, this);
+    bus.subscribe(EventType::LEVEL_COMPLETED, this);
 
-    // Preload sound effects
-    loadSound("jump",    "assets/sounds/effects/jump.wav");
-    loadSound("coin",    "assets/sounds/effects/coin.wav");
-    loadSound("stomp",   "assets/sounds/effects/stompswim.wav");
-    loadSound("death",   "assets/sounds/effects/death.wav");
+    // Event-to-SFX catalog. All paths are relative to the executable so the
+    // same mapping works from a clean CMake build directory.
+    loadSound("jump", "assets/sounds/effects/jump.wav");
+    loadSound("jumpsmall", "assets/sounds/effects/jumpsmall.wav");
+    loadSound("coin", "assets/sounds/effects/coin.wav");
+    loadSound("stomp", "assets/sounds/effects/stompswim.wav");
+    loadSound("kick", "assets/sounds/effects/kickkill.wav");
+    loadSound("death", "assets/sounds/effects/death.wav");
+    loadSound("gameover", "assets/sounds/effects/gameover.wav");
     loadSound("powerup", "assets/sounds/effects/powerup.wav");
     loadSound("powerdown", "assets/sounds/effects/pipepowerdown.wav");
+    loadSound("fireball", "assets/sounds/effects/fireball.wav");
+    loadSound("flagpole", "assets/sounds/effects/flagpole.wav");
+    loadSound("brick", "assets/sounds/effects/brick.wav");
+    loadSound("bump", "assets/sounds/effects/bump.wav");
+    loadSound("item", "assets/sounds/effects/item.wav");
+    loadSound("oneup", "assets/sounds/effects/1up.wav");
+    loadSound("pause", "assets/sounds/effects/pause.wav");
+    loadSound("hurryup", "assets/sounds/effects/hurryup.wav");
 
-    // Preload background music
-    loadMusic("assets/sounds/music/overworld.flac");
+    registerDefaultMusicPaths();
+    loadMusic(MusicId::OVERWORLD, "assets/sounds/music/overworld.flac");
 }
 
 SoundManager::~SoundManager() {
-    // Unsubscribe from all events to prevent dangling pointer
     EventBus& bus = EventBus::getInstance();
     bus.unsubscribe(EventType::PLAYER_JUMPED, this);
     bus.unsubscribe(EventType::COIN_COLLECTED, this);
@@ -69,9 +73,8 @@ SoundManager::~SoundManager() {
     bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
     bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.unsubscribe(EventType::GAME_PAUSED, this);
+    bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
 }
-
-// ── IObserver ────────────────────────────────────────────────
 
 void SoundManager::onNotify(EventType event) {
     switch (event) {
@@ -94,38 +97,36 @@ void SoundManager::onNotify(EventType event) {
             playSound("powerdown");
             break;
         case EventType::GAME_PAUSED:
+            playSound("pause");
             pauseMusic();
+            break;
+        case EventType::LEVEL_COMPLETED:
+            playSound("flagpole");
             break;
         default:
             break;
     }
 }
 
-// ── Sound effects ────────────────────────────────────────────
-
 bool SoundManager::loadSound(const std::string& id,
                              const std::string& filepath) {
     try {
-        // Construct SoundBuffer from file (SFML 3 throws on failure)
-        sf::SoundBuffer buffer(filepath);
-
-        // Store buffer first, then create Sound referencing it
-        auto [bufIt, bufInserted] =
-            m_soundBuffers.emplace(id, std::move(buffer));
-        if (!bufInserted) {
-            // Key already exists — overwrite the buffer
-            bufIt->second = sf::SoundBuffer(filepath);
-            // Erase old Sound so we rebuild it with the new buffer
-            m_sounds.erase(id);
+        // Construct replacements first. If the file is invalid, the existing
+        // voices remain usable instead of being replaced by an empty entry.
+        auto buffer = std::make_unique<sf::SoundBuffer>(filepath);
+        std::vector<std::unique_ptr<sf::Sound>> voices;
+        voices.reserve(SOUND_VOICE_COUNT);
+        for (std::size_t index = 0; index < SOUND_VOICE_COUNT; ++index) {
+            auto voice = std::make_unique<sf::Sound>(*buffer);
+            voice->setVolume(m_soundVolume);
+            voices.push_back(std::move(voice));
         }
 
-        // Create the Sound object referencing the stored buffer
-        m_sounds.emplace(std::piecewise_construct,
-                         std::forward_as_tuple(id),
-                         std::forward_as_tuple(bufIt->second));
-
-        // Apply current volume
-        m_sounds.at(id).setVolume(m_soundVolume);
+        // Voices refer to the buffer, so replace voices before replacing the
+        // buffer they currently reference.
+        m_soundVoices[id] = std::move(voices);
+        m_voiceCursors[id] = 0;
+        m_soundBuffers[id] = std::move(buffer);
         return true;
     } catch (const sf::Exception& e) {
 #ifdef DEBUG
@@ -143,15 +144,28 @@ bool SoundManager::loadSound(const std::string& id,
 }
 
 void SoundManager::playSound(const std::string& id) {
-    auto it = m_sounds.find(id);
-    if (it == m_sounds.end()) {
-        // Sound not loaded — silently ignore (asset may not exist yet)
+    auto it = m_soundVoices.find(id);
+    if (it == m_soundVoices.end() || it->second.empty()) {
         return;
     }
-    it->second.play();
-}
 
-// ── Background music ─────────────────────────────────────────
+    auto& voices = it->second;
+    std::size_t& cursor = m_voiceCursors[id];
+    const std::size_t start = cursor % voices.size();
+
+    for (std::size_t offset = 0; offset < voices.size(); ++offset) {
+        const std::size_t index = (start + offset) % voices.size();
+        if (voices[index]->getStatus() == sf::Sound::Status::Playing) {
+            continue;
+        }
+
+        voices[index]->play();
+        cursor = (index + 1) % voices.size();
+        return;
+    }
+    // All voices are busy. Drop this request instead of restarting one and
+    // cutting off an already audible sound.
+}
 
 bool SoundManager::loadMusic(const std::string& filepath) {
     if (!m_music.openFromFile(filepath)) {
@@ -159,14 +173,36 @@ bool SoundManager::loadMusic(const std::string& filepath) {
         std::cerr << "[SoundManager] Failed to load music from "
                   << filepath << "\n";
 #endif
+        m_musicLoaded = false;
         return false;
     }
+
+    m_currentMusicId.reset();
+    m_musicLoaded = true;
     m_music.setVolume(m_musicVolume);
     m_music.setLooping(true);
     return true;
 }
 
+bool SoundManager::loadMusic(MusicId id, const std::string& filepath) {
+    m_musicPaths[id] = filepath;
+    return openMusic(id);
+}
+
 void SoundManager::playMusic() {
+    if (m_musicLoaded) {
+        // sf::Music::play() resumes a paused stream and starts a stopped
+        // stream from its beginning.
+        m_music.play();
+    }
+}
+
+void SoundManager::playMusic(MusicId id) {
+    if (!m_musicLoaded || !m_currentMusicId || *m_currentMusicId != id) {
+        if (!openMusic(id)) {
+            return;
+        }
+    }
     m_music.play();
 }
 
@@ -175,20 +211,23 @@ void SoundManager::stopMusic() {
 }
 
 void SoundManager::pauseMusic() {
-    m_music.pause();
+    if (m_music.getStatus() == sf::Music::Status::Playing) {
+        m_music.pause();
+    }
 }
 
-// ── Volume control ───────────────────────────────────────────
-
 void SoundManager::setSoundVolume(float volume) {
-    m_soundVolume = volume;
-    for (auto& [id, sound] : m_sounds) {
-        sound.setVolume(m_soundVolume);
+    m_soundVolume = clampVolume(volume);
+    for (auto& [id, voices] : m_soundVoices) {
+        (void)id;
+        for (auto& voice : voices) {
+            voice->setVolume(m_soundVolume);
+        }
     }
 }
 
 void SoundManager::setMusicVolume(float volume) {
-    m_musicVolume = volume;
+    m_musicVolume = clampVolume(volume);
     m_music.setVolume(m_musicVolume);
 }
 
@@ -198,4 +237,43 @@ float SoundManager::getSoundVolume() const {
 
 float SoundManager::getMusicVolume() const {
     return m_musicVolume;
+}
+
+float SoundManager::clampVolume(float volume) {
+    if (!std::isfinite(volume)) {
+        return 0.f;
+    }
+    return std::clamp(volume, 0.f, 100.f);
+}
+
+bool SoundManager::isSoundLoaded(const std::string& id) const {
+    return m_soundVoices.find(id) != m_soundVoices.end();
+}
+
+void SoundManager::registerDefaultMusicPaths() {
+    m_musicPaths[MusicId::OVERWORLD] = "assets/sounds/music/overworld.flac";
+    m_musicPaths[MusicId::UNDERGROUND] = "assets/sounds/music/underground.flac";
+    m_musicPaths[MusicId::CASTLE] = "assets/sounds/music/castle.flac";
+    m_musicPaths[MusicId::STAR] = "assets/sounds/music/invincible.flac";
+    m_musicPaths[MusicId::DEATH] = "assets/sounds/music/death.flac";
+    m_musicPaths[MusicId::GAME_OVER] = "assets/sounds/music/gameover.flac";
+    m_musicPaths[MusicId::WIN] = "assets/sounds/music/level_complete.flac";
+}
+
+bool SoundManager::openMusic(MusicId id) {
+    const auto pathIt = m_musicPaths.find(id);
+    if (pathIt == m_musicPaths.end() || !m_music.openFromFile(pathIt->second)) {
+#ifdef DEBUG
+        std::cerr << "[SoundManager] Failed to load music id "
+                  << static_cast<int>(id) << "\n";
+#endif
+        m_musicLoaded = false;
+        return false;
+    }
+
+    m_music.setVolume(m_musicVolume);
+    m_music.setLooping(true);
+    m_currentMusicId = id;
+    m_musicLoaded = true;
+    return true;
 }

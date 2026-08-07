@@ -59,11 +59,11 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode, const s
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::COIN);
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ADAPTIVE);
         case 'U':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::SUPER_MUSHROOM);
-        case 'O':
             return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
+        case 'O':
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::STAR);
         default:
             return nullptr;
     }

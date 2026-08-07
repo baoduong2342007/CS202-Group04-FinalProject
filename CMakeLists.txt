@@ -147,6 +147,7 @@ include(CTest)
 if(BUILD_TESTING)
     add_executable(input_state_tests
         tests/InputStateTests.cpp
+
     )
     target_link_libraries(input_state_tests PRIVATE game_lib)
     add_test(NAME input_state_tests COMMAND input_state_tests)

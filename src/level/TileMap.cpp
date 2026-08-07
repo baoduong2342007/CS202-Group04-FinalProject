@@ -29,7 +29,7 @@ namespace {
 
 constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEO";
 constexpr float TILE_SIZE_PIXELS = 32.f;
-constexpr int TILE_TEXTURE_SIZE = 32;
+constexpr int TILE_TEXTURE_SIZE = 16;
 constexpr float TILE_FRICTION = 0.6f;
 
 constexpr unsigned int TILESET_TILE_COUNT = 4;

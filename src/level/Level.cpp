@@ -219,20 +219,43 @@ void Level::checkItemCollisions() {
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_levelCompleted) return;
+    if (!m_mario || m_levelCompleted) {
+        return;
+    }
 
-    auto flags = m_tileMap.findTiles('F');
-    sf::FloatRect marioBounds = m_mario->getBoundingBox();
+    const auto finishTiles = m_tileMap.findTiles('F');
 
-    for (const auto& gridPos : flags) {
-        sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
-        sf::FloatRect flagBounds(worldPos, sf::Vector2f(32.f, 32.f));
+    if (finishTiles.empty()) {
+        return;
+    }
 
-        if (marioBounds.findIntersection(flagBounds)) {
-            m_levelCompleted = true;
-            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
-            break;
+    const auto& finishPosition = finishTiles.front();
+
+    int bottomRow = finishPosition.y;
+
+    const auto poleTiles = m_tileMap.findTiles('|');
+
+    for (const auto& polePosition : poleTiles) {
+        if (polePosition.x == finishPosition.x && polePosition.y > bottomRow) {
+            bottomRow = polePosition.y;
         }
+    }
+
+    const sf::Vector2f triggerPosition = TileMap::gridToWorldPosition(finishPosition);
+
+    const float triggerHeight = static_cast<float>(bottomRow - finishPosition.y + 1) * static_cast<float>(TILE_SIZE);
+
+    const sf::FloatRect finishTrigger(triggerPosition, sf::Vector2f(static_cast<float>(TILE_SIZE),
+                                                                    triggerHeight
+                                                                    )
+                                      );
+
+    const sf::FloatRect marioBounds = m_mario->getBoundingBox();
+
+    if (marioBounds.findIntersection(finishTrigger)) {
+        m_levelCompleted = true;
+
+        EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
     }
 }
 

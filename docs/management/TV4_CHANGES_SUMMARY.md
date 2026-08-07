@@ -377,6 +377,97 @@ Không gọi trực tiếp logic spawn Mushroom từ `TileMap`.
 
 ---
 
+## 7. Full-height Finish Trigger
+
+### File liên quan
+
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+
+### S6-TV4-11 — Mở rộng vùng kích hoạt trên toàn bộ cột cờ
+
+Finish trigger trước đây chỉ có kích thước 32×32 tại tile `F`.
+Vì vậy, Mario phải chạm đúng phần đầu cột cờ mới có thể hoàn thành level.
+
+Trigger hiện được tạo thành một hình chữ nhật bao phủ từ tile `F`
+đến tile pole `|` thấp nhất nằm trong cùng một cột.
+
+### Phương pháp được sử dụng
+
+`TileMap::findTiles()` được dùng để tìm:
+
+- Finish point `F`.
+- Toàn bộ pole tile `|`.
+
+Từ hàng chứa finish point và hàng pole thấp nhất, hệ thống tính chiều cao
+của vùng kích hoạt bằng:
+
+```cpp
+(bottomRow - finishPosition.y + 1) * TILE_SIZE
+```
+
+Level validation đã bảo đảm mỗi level chỉ có đúng một finish point,
+các pole tile liên tục và nằm trong cùng một cột. Vì vậy, vùng trigger
+luôn tương ứng với đúng cột cờ của level.
+
+### Cách hoạt động
+
+Luồng tile của cột cờ có dạng:
+
+```tex
+F
+|
+|
+|
+```
+
+Vùng trigger bao phủ toàn bộ các tile trên, nhưng không bao gồm solid tile
+nằm bên dưới chân cột cờ.
+
+Mario có thể kích hoạt hoàn thành level khi chạm:
+
+- Phần trên gần tile `F`.
+- Phần giữa thân cờ.
+- Phần dưới thân cờ.
+
+### Cách sử dụng
+
+Gameplay code không cần gọi trực tiếp vùng finish trigger.
+
+`Level::update()` tiếp tục gọi:
+
+```cpp
+checkFinishFlag();
+```
+
+mỗi frame. Khi bounding box của Mario giao với bất kỳ phần nào trong vùng
+cột cờ, hệ thống đặt:
+
+```cpp
+m_levelCompleted = true;
+```
+
+và gửi event:
+
+```cpp
+EventBus::getInstance().notify(
+    EventType::LEVEL_COMPLETED
+);
+```
+
+Biến `m_levelCompleted` bảo đảm event hoàn thành level chỉ được gửi một lần.
+
+### Kiểm tra
+
+Các trường hợp manual test:
+
+- Chạm phần trên của cột cờ → hoàn thành level.
+- Chạm giữa thân cờ → hoàn thành level.
+- Chạm phần dưới thân cờ → hoàn thành level.
+- Đứng cạnh nhưng không giao với cột cờ → chưa hoàn thành.
+- Sau khi hoàn thành, event không bị gửi lặp lại.
+
+---
+
 ## 7. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:

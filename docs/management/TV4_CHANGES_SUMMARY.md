@@ -624,38 +624,51 @@ Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã 
 - [`src/entities/Enemy.cpp`](../../src/entities/Enemy.cpp)
 - [`src/level/Level.cpp`](../../src/level/Level.cpp)
 
-### S6-TV4-21 — Chỉ activate enemy khi camera nhìn thấy
+### S6-TV4-21 — Activate enemy trong vùng 64 px phía trước viewport
 
-Trước thay đổi này, `Level::update()` gọi `update()` cho toàn bộ entity trên map ở mỗi frame.
+Enemy activation được điều chỉnh để tránh việc toàn bộ enemy trên map chạy patrol ngay từ lúc level vừa load.
 
-Do đó Goomba và Koopa có thể bắt đầu patrol ngay từ lúc level được load, kể cả khi chúng nằm rất xa camera. Enemy trên platform ngắn có thể di chuyển hoặc rơi khỏi khu vực spawn trước khi Mario tới.
+Enemy chưa được activate sẽ không chạy gameplay update cho đến khi bounding box của nó đi vào viewport hoặc nằm trong vùng 64 px phía trước cạnh phải của viewport.
 
-Enemy hiện có một activation state:
+Khi điều kiện được thỏa mãn:
 
 ```cpp
-bool m_activated = false;
+enemy->activate();
 ```
 
-Enemy chưa activated chỉ bắt đầu chạy AI khi bounding box của nó giao với vùng nhìn ngang hiện tại của camera.
+sẽ chuyển enemy sang trạng thái activated.
 
-Sau lần activation đầu tiên, trạng thái được giữ lại để tránh reset AI khi enemy tạm thời rời camera.
+Activation là trạng thái một chiều:
+
+```
+inactive → activated
+```
+
+Sau khi đã activate, enemy tiếp tục được update bình thường và không bị reset hoặc freeze lại khi rời viewport.
+
+Việc cleanup enemy đã đi quá xa phía sau camera được tách sang S6-TV4-22.
 
 ### Phân chia trách nhiệm
 
-Task này chỉ xử lý first-time activation.
+S6-TV4-21 chỉ xử lý thời điểm enemy bắt đầu hoạt động.
 
-Việc quyết định enemy đã activated có tiếp tục update sau khi rời màn hình hay không được xử lý riêng trong S6-TV4-22.
+Không xử lý trong task này:
 
-Physics body không bị disable trước activation. Box2D vẫn có thể settle enemy xuống terrain, nhưng patrol AI chưa chạy nên enemy không tự đi khỏi spawn trước khi được nhìn thấy.
+- cleanup enemy phía sau camera;
+- pit cleanup;
+- ledge detection;
+- Koopa shell state;
+- sprite hoặc animation asset.
 
 ### Kiểm tra
 
-- Enemy ngoài camera chưa chạy patrol AI.
-- Enemy bắt đầu update khi đi vào camera.
-- Enemy chỉ chuyển từ inactive sang activated một lần.
-- Coin, item và QuestionBlock không bị activation gate.
-- Level 2 enemy không tự di chuyển trước khi Mario tới.
-- Build và toàn bộ CTest hiện tại vẫn pass.
+- Enemy xa phía trước camera chưa chạy patrol.
+- Enemy bắt đầu hoạt động khi nằm trong vùng 64 px phía trước viewport.
+- Enemy chỉ activate một lần.
+- Enemy đã activate tiếp tục hoạt động khi rời viewport.
+- Item và QuestionBlock không bị activation gate.
+- Level 2 enemy không tự di chuyển từ đầu level trước khi Mario tới.
+- Build và toàn bộ CTest hiện tại pass.
 
 ---
 
@@ -689,10 +702,32 @@ Các pipe:
 - Level 2 vẫn load và hoàn thành được.
 - Build và toàn bộ CTest hiện tại pass.
 
+---
+
+## 13. Level 2 Spawn Validation
+
+### S6-TV4-16 — Kiểm tra spawn fairness của Level 2
+
+Các spawn Koopa trong Level 2 được kiểm tra để bảo đảm enemy có terrain
+hợp lệ dưới vị trí spawn và không tạo unavoidable damage khi Mario tiếp cận.
+
+Layout hiện tại không cần thay đổi thêm nếu các Koopa vẫn đứng đúng platform
+khi bắt đầu xuất hiện trong viewport.
+
+Tuy nhiên, yêu cầu “Koopa không rơi hoặc attack trước khi thấy” còn phụ thuộc
+vào enemy activation policy của S6-TV4-21.
+
+### Kiểm tra
+
+- Koopa không spawn giữa không trung.
+- Koopa không spawn bên trong pipe hoặc solid terrain.
+- Spawn không nằm ngay tại blind landing bắt buộc.
+- Không có unavoidable damage ngay khi Mario tiến vào khu vực.
+- Enemy activation trước khi Mario tiếp cận hiện được kiểm soát bởi S6-TV4-21 với vùng activation 64 px phía trước viewport.
 
 ---
 
-## 13. Off-screen Enemy Update Policy
+## 14. Off-screen Enemy Update Policy
 
 ### File liên quan
 
@@ -743,8 +778,7 @@ Enemy đã chết vẫn được update ngoài camera để các cleanup timer t
 
 ---
 
-
-## 14. Quy Ước Cập Nhật File Này
+## 15. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

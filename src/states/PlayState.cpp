@@ -145,7 +145,12 @@ void PlayState::processEvents(const sf::Event& event) {
 }
 
 void PlayState::processInput(const InputState& inputState) {
-    if (!m_level || !m_level->getMario()) {
+    if (!m_level || !m_level->getMario() ||
+        m_transitionPhase != TransitionPhase::NONE ||
+        m_needsReload || m_needsGameOver ||
+        !m_level->getMario()->isActive()) {
+        // Do not let movement/shoot commands buffer while the state is
+        // transitioning, waiting for death/GameOver, or the player is dead.
         return;
     }
 
@@ -201,7 +206,14 @@ bool PlayState::loadLevel(int levelNumber) {
     // Create HUD after Level (and Mario) are initialized
     if (m_level->getMario()) {
         m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, def->number);
+        m_hud->setTimeWarningCallback([] {
+            SoundManager::getInstance().playSound("hurryup");
+        });
     }
+
+    // LevelCatalog owns the level-to-MusicId mapping; SoundManager owns the
+    // path resolution and streaming lifecycle.
+    SoundManager::getInstance().playMusic(def->music);
 
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
     return true;
@@ -254,7 +266,9 @@ void PlayState::update(float dt) {
     m_level->update(dt);
 
     if (m_hud) {
-        m_hud->update();
+        const bool gameplayActive = m_transitionPhase == TransitionPhase::NONE &&
+                                     !m_needsReload && !m_needsGameOver;
+        m_hud->update(dt, gameplayActive);
     }
 }
 

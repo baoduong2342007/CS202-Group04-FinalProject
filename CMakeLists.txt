@@ -131,6 +131,8 @@ if(BUILD_TESTING)
         tests/InputStateTests.cpp
         src/patterns/InputHandler.cpp
         src/patterns/InputState.cpp
+        src/patterns/RunCommand.cpp
+        src/patterns/ShootCommand.cpp
     )
     target_include_directories(input_state_tests PRIVATE include)
     target_link_libraries(input_state_tests PRIVATE SFML::Window)

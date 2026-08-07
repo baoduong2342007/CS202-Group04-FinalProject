@@ -72,8 +72,20 @@ if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
-# Find SFML 3.0 with required components
-find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
+# Find SFML 3.0 with required components or fallback to FetchContent
+include(FetchContent)
+find_package(SFML 3.0 COMPONENTS Graphics Window System Audio QUIET)
+if(NOT SFML_FOUND)
+    message(STATUS "SFML 3.0 not found locally or on system. Fetching SFML 3.0.0 via FetchContent...")
+    FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG        3.0.0
+    )
+    set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SFML)
+endif()
 
 # ==============================================================================
 # 2.2. FIND OR DOWNLOAD BOX2D LIBRARY
@@ -149,14 +161,19 @@ if(BUILD_TESTING)
     add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
 
     add_executable(mario_physics_tests
-        tests/MarioPhysicsTests.cpp
-        src/core/AnimationSystem.cpp
-        src/core/TextureManager.cpp
-        src/entities/Character.cpp
-        src/entities/Entity.cpp
-        src/entities/Mario.cpp
-        src/patterns/EventBus.cpp
-    )
+    	tests/MarioPhysicsTests.cpp
+    	src/core/AnimationSystem.cpp
+    	src/core/TextureManager.cpp
+    	src/entities/Character.cpp
+    	src/entities/Entity.cpp
+    	src/entities/FireBall.cpp
+    	src/entities/Mario.cpp
+    	src/items/Item.cpp
+    	src/patterns/EventBus.cpp
+    	src/states/FireMarioState.cpp
+    	src/states/SmallMarioState.cpp
+    	src/states/SuperMarioState.cpp
+	)
     target_include_directories(mario_physics_tests PRIVATE include)
     target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)

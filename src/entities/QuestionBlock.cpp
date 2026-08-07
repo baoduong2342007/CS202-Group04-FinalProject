@@ -12,9 +12,9 @@
 #include "core/TextureManager.h"
 #include "items/Coin.h"
 #include "items/Mushroom.h"
+#include "items/FireFlower.h"
+#include "items/Star.h"
 #include "entities/Mario.h"
-#include "patterns/EventBus.h"
-#include "patterns/EventType.h"
 
 namespace {
 constexpr float BLOCK_SIZE = 32.f;
@@ -25,6 +25,7 @@ constexpr float ANIM_FRAME_DURATION = 0.2f;
 QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content)
     : Entity(position, sf::Vector2f(BLOCK_SIZE, BLOCK_SIZE)),
       m_content(content) {
+    m_contentResolved = content != QuestionBlockContent::ADAPTIVE;
     initPhysics(world, b2_staticBody, sf::Vector2f(BLOCK_SIZE, BLOCK_SIZE), false);
     setSprite(QUESTION_BLOCK_TEXTURE);
     m_animationSystem->addAnimation("idle",
@@ -68,24 +69,49 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
 
     playAnimation("empty");
 
+    // A '?' block resolves its content exactly once at hit time. SMALL Mario
+    // gets a Mushroom; powered-up Mario gets a FireFlower.
+    if (!m_contentResolved && m_content == QuestionBlockContent::ADAPTIVE) {
+        m_content = (mario.getMarioState() == MarioState::SMALL)
+                        ? QuestionBlockContent::SUPER_MUSHROOM
+                        : QuestionBlockContent::FIRE_FLOWER;
+        m_contentResolved = true;
+    }
+
+    const QuestionBlockContent resolvedContent = m_content;
+    if (resolvedContent == QuestionBlockContent::COIN) {
+        Coin::awardTo(mario);
+    }
+
     if (entities && (textureManager || m_textureManager)) {
         TextureManager& texMgr = textureManager ? *textureManager : *m_textureManager;
         sf::Vector2f spawnPos = getPosition() - sf::Vector2f(0.f, BLOCK_SIZE);
         b2World* world = getBody() ? getBody()->GetWorld() : nullptr;
 
-        if (m_content == QuestionBlockContent::COIN) {
-            mario.collectCoin();
+        if (resolvedContent == QuestionBlockContent::COIN) {
             auto popupCoin = std::make_unique<Coin>(spawnPos, world, CoinType::QUESTION_POPUP);
             popupCoin->setTextureManager(texMgr);
             entities->push_back(std::move(popupCoin));
-        } else if (m_content == QuestionBlockContent::SUPER_MUSHROOM) {
-            auto mushroom = std::make_unique<Mushroom>(spawnPos, world, MushroomType::SUPER);
+        } else if (resolvedContent == QuestionBlockContent::SUPER_MUSHROOM ||
+                   resolvedContent == QuestionBlockContent::ONEUP_MUSHROOM) {
+            const MushroomType mushroomType =
+                resolvedContent == QuestionBlockContent::ONEUP_MUSHROOM
+                    ? MushroomType::ONE_UP
+                    : MushroomType::SUPER;
+            auto mushroom = std::make_unique<Mushroom>(spawnPos, world, mushroomType);
             mushroom->setTextureManager(texMgr);
+            mushroom->setCollectibleDelay(ITEM_EMERGE_DELAY);
             entities->push_back(std::move(mushroom));
-        } else if (m_content == QuestionBlockContent::ONEUP_MUSHROOM) {
-            auto mushroom = std::make_unique<Mushroom>(spawnPos, world, MushroomType::ONE_UP);
-            mushroom->setTextureManager(texMgr);
-            entities->push_back(std::move(mushroom));
+        } else if (resolvedContent == QuestionBlockContent::FIRE_FLOWER) {
+            auto flower = std::make_unique<FireFlower>(spawnPos, world);
+            flower->setTextureManager(texMgr);
+            flower->setCollectibleDelay(ITEM_EMERGE_DELAY);
+            entities->push_back(std::move(flower));
+        } else if (resolvedContent == QuestionBlockContent::STAR) {
+            auto star = std::make_unique<Star>(spawnPos, world);
+            star->setTextureManager(texMgr);
+            star->setCollectibleDelay(ITEM_EMERGE_DELAY);
+            entities->push_back(std::move(star));
         }
     }
 }

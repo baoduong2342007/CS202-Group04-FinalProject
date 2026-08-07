@@ -40,6 +40,8 @@ FireFlower::FireFlower(const sf::Vector2f& position, b2World* world)
 }
 
 void FireFlower::update(float dt) {
+    updateCollectibleDelay(dt);
+
     // Stationary item — sync physics position and update animation clip
     syncPhysics();
     updateAnimation(dt);
@@ -56,12 +58,16 @@ void FireFlower::onCollect(Mario& mario) {
     // SMALL Mario becomes FIRE directly; SUPER Mario also becomes FIRE.
     // (In classic SMB, a mushroom would be spawned for SMALL Mario instead,
     //  but here we apply the fire state for simplicity per the design doc.)
-    if (mario.getMarioState() != MarioState::FIRE) {
+    const bool stateChanged = mario.getMarioState() != MarioState::FIRE;
+    if (stateChanged) {
         mario.powerUp(MarioState::FIRE);
     }
 
     mario.addScore(FIRE_FLOWER_SCORE_VALUE);
 
-    // Notify observers (SoundManager plays powerup.wav, HUD updates score)
-    EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    // Mario::powerUp() publishes the event when the state changes. If Mario
+    // is already FIRE, publish exactly one event for this pickup here.
+    if (!stateChanged) {
+        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    }
 }

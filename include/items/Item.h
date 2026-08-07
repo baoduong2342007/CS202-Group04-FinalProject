@@ -28,6 +28,10 @@ public:
     /// Check whether this item's bounding box overlaps Mario's
     bool checkOverlap(const Entity& other) const;
 
+    /// Delay collection briefly while an item is emerging from a block.
+    void setCollectibleDelay(float seconds);
+    float getCollectibleDelay() const { return m_collectibleDelay; }
+
     // 4. Getters / Setters
     bool isCollected() const;
 
@@ -35,6 +39,10 @@ public:
     bool isItem() const override { return true; }
 
 protected:
+    /// Advance the emergence delay. Subclasses call this from update().
+    void updateCollectibleDelay(float dt);
+
     // 6. Protected members
     bool m_isCollected;
+    float m_collectibleDelay = 0.f;
 };

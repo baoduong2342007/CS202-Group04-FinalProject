@@ -1,9 +1,8 @@
 /**
  * @file class_diagram.md
  * @author TV1
- * @brief Draft class diagram for Super Mario project (Week 1)
- * @note This is a draft — will be refined as implementation progresses.
- *       Final version will be exported as class_diagram.png in Week 6.
+ * @brief Current implementation class diagram for the Super Mario project
+ * @note Reflects Sprint 6 implementation (ownership, state stack, Simple Factory, EventBus, Box2D).
  */
 
 # Class Diagram — Super Mario
@@ -37,8 +36,7 @@ classDiagram
     }
 
     class GameManager {
-        -unique_ptr~IGameState~ m_currentState
-        -unique_ptr~IGameState~ m_previousState
+        -vector~unique_ptr~IGameState~~ m_stateStack
         -vector~PendingOp~ m_pendingOps
         +static getInstance() GameManager&
         +changeState(unique_ptr~IGameState~) void
@@ -46,6 +44,8 @@ classDiagram
         +popState() void
         +update(float dt) void
         +render(sf::RenderWindow& window) void
+        +stackDepth() int
+        -applyOp(PendingOp&) void
         -processPendingOps() void
     }
 
@@ -94,7 +94,7 @@ classDiagram
         +update(float dt) void
         +render(sf::RenderWindow& window) void
         -loadLevel(int) bool
-        -navigateToLevel(int) void
+        -navigateToLevel(int) bool
         -snapshotProgress() void
         -restoreProgress() void
     }
@@ -328,21 +328,21 @@ classDiagram
 
     class EntityFactory {
         <<Simple Factory>>
-        +createEnemy(EnemyType type, sf::Vector2f pos, b2World*) Entity*
-        +createItem(ItemType type, sf::Vector2f pos, b2World*) Entity*
-        +createFromTileCode(char code, sf::Vector2f pos, b2World*) Entity*
+        +createEnemy(EnemyType type, sf::Vector2f pos, b2World*) unique_ptr~Entity~
+        +createItem(ItemType type, sf::Vector2f pos, b2World*) unique_ptr~Entity~
+        +createFromTileCode(char code, sf::Vector2f pos, b2World*) unique_ptr~Entity~
     }
 
     class IObserver {
         <<interface>>
-        +onNotify(Event event, void* data)* void
+        +onNotify(EventType event)* void
     }
 
     class ISubject {
         <<interface>>
-        +subscribe(Event event, IObserver* obs)* void
-        +unsubscribe(Event event, IObserver* obs)* void
-        +publish(Event event, void* data)* void
+        +subscribe(EventType event, IObserver* obs)* void
+        +unsubscribe(EventType event, IObserver* obs)* void
+        +notify(EventType event)* void
     }
 
     class EventBus {
@@ -360,9 +360,9 @@ classDiagram
     }
 
     class InputHandler {
-        -map~sf::Keyboard::Key, ICommand*~ m_bindings
-        +bindKey(sf::Keyboard::Key key, ICommand* cmd) void
-        +getAction(sf::Keyboard::Key key) ICommand*
+        -map~sf::Keyboard::Key, unique_ptr~ICommand~~ m_bindings
+        +bindKey(sf::Keyboard::Key key, unique_ptr~ICommand~ cmd, InputTrigger, InputGroup) void
+        +handleInput(InputState) void
     }
 
     ISubject <|.. EventBus
@@ -379,16 +379,6 @@ classDiagram
         -float m_time
         +update(int score, int lives, float time) void
         +render(sf::RenderWindow& window) void
-    }
-
-    class Button {
-        -sf::RectangleShape m_shape
-        -sf::Text m_text
-        -bool m_isHovered
-        +Button(string label, sf::Vector2f pos)
-        +handleEvent(sf::Event event) bool
-        +render(sf::RenderWindow& window) void
-        +isClicked() bool
     }
 
     class GameProgress {

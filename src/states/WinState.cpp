@@ -47,9 +47,9 @@ void WinState::processInput(const InputState& inputState) {
 
 void WinState::update(float dt) { (void)dt; }
 
-void WinState::render(sf::RenderWindow& window) {
-    window.clear(sf::Color::Black);
-    window.setView(window.getDefaultView());
-    window.draw(m_text);
-    window.draw(m_scoreText);
+void WinState::render(sf::RenderTarget& target) {
+    target.clear(sf::Color::Black);
+    target.setView(target.getDefaultView());
+    target.draw(m_text);
+    target.draw(m_scoreText);
 }

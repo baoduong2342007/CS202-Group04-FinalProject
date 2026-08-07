@@ -37,6 +37,7 @@ public:
     [[deprecated("Use Command pattern via InputHandler instead")]]
     void handleInput();
     void jump();
+    void releaseJump();
     void moveLeft();
     void moveRight();
     void stopMoving();
@@ -125,6 +126,7 @@ protected:
 
     float m_inputDirX = 0.0f;
     bool m_jumpRequested = false;
+    bool m_jumpReleased = false;
 
     float m_fireCooldown = 0.0f;
     static constexpr float FIRE_COOLDOWN_DURATION = 0.25f; // 250ms per S6-TV3-18

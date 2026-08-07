@@ -361,8 +361,25 @@ void CollisionManager::handleMarioCollision(Mario* mario,
 
     // Top stomp check. Grounded state itself is refreshed from all active
     // Box2D contacts after each completed physics step.
-    if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X &&
-        marioVel.y >= -0.1f && other && other->isEnemy()) {
+    bool isStomp = false;
+    if (other && other->isEnemy()) {
+        if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {
+            isStomp = true;
+        } else {
+            b2Body* otherBody = other->getBody();
+            if (otherBody && marioBody) {
+                float marioHalfHeight = PhysicsEngine::pixelsToMeters(mario->getSize().y / 2.0f);
+                float marioBottomMeters = marioBody->GetPosition().y + marioHalfHeight;
+                float enemyMidMeters = otherBody->GetPosition().y;
+                float tolerance = PhysicsEngine::pixelsToMeters(other->getSize().y * 0.2f);
+                if (marioBottomMeters <= enemyMidMeters + tolerance) {
+                    isStomp = true;
+                }
+            }
+        }
+    }
+
+    if (isStomp) {
         Enemy* enemy = static_cast<Enemy*>(other);
 
         // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.

@@ -5,25 +5,39 @@
  * @note Sprint 4 fix — delegates logic to GameManager (State Pattern)
  */
 #include "core/Game.h"
+#include "core/DisplayConfig.h"
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
 #include "states/MenuState.h"
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <memory>
 
 namespace {
-constexpr unsigned int SCREEN_WIDTH = 1280;
-constexpr unsigned int SCREEN_HEIGHT = 720;
-constexpr unsigned int FRAMERATE_LIMIT = 60;
+    /**
+     * @brief The maximum delta time in seconds. Clamps the frame time to prevent huge physics jumps.
+     */
+    constexpr float MAX_DELTA_TIME = 0.1f;
+
+    /**
+     * @brief The allowable tolerance when checking if the aspect ratio matches the target ratio.
+     */
+    constexpr float ASPECT_RATIO_TOLERANCE = 0.01f;
 } // namespace
 
 Game::Game()
-    : m_window(sf::VideoMode({SCREEN_WIDTH, SCREEN_HEIGHT}),
+    : m_window(sf::VideoMode(
+                   {DisplayConfig::WINDOW_WIDTH, DisplayConfig::WINDOW_HEIGHT}),
                "Super Mario - CS202 Group 04",
-               sf::Style::Titlebar | sf::Style::Close) {
-  m_window.setFramerateLimit(FRAMERATE_LIMIT);
+               sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize) {
+  m_window.setFramerateLimit(DisplayConfig::FRAMERATE_LIMIT);
 
-  // Physics world is now owned and initialized by Level.
+  if (!m_renderTexture.resize(
+          {DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT})) {
+    std::cerr << "Failed to create render texture!" << std::endl;
+  }
+  m_renderTexture.setSmooth(false);
 
   // Initialize SoundManager singleton — constructor subscribes to EventBus
   // and preloads all sound effects/music. Without this call the audio
@@ -45,8 +59,12 @@ void Game::run() {
 
     // Convert sf::Time to float (seconds) for the architecture
     float dt = deltaTime.asSeconds();
+    if (dt > MAX_DELTA_TIME)
+      dt = MAX_DELTA_TIME; // clamp delta time
 
     processEvents();
+    if (!m_window.isOpen())
+      break;
     update(dt);
     render();
   }
@@ -64,7 +82,19 @@ void Game::processEvents() {
 
     if (event->is<sf::Event::Closed>()) {
       m_window.close();
+      return;
     }
+    
+    if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+        float targetRatio = static_cast<float>(DisplayConfig::WINDOW_WIDTH) / DisplayConfig::WINDOW_HEIGHT;
+        float currentRatio = static_cast<float>(resized->size.x) / resized->size.y;
+        
+        if (std::abs(currentRatio - targetRatio) > ASPECT_RATIO_TOLERANCE) {
+            // Force the window to maintain the 16:9 aspect ratio by adjusting height
+            m_window.setSize({resized->size.x, static_cast<unsigned int>(resized->size.x / targetRatio)});
+        }
+    }
+
     // Delegate event to current state
     GameManager::getInstance().processEvents(*event);
   }
@@ -75,10 +105,28 @@ void Game::update(float dt) {
   GameManager::getInstance().update(dt);
 }
 void Game::render() {
-  m_window.clear(sf::Color(100, 149, 237)); // Sky blue background
+  m_renderTexture.clear(DisplayConfig::BACKGROUND_COLOR); // Sky blue background
 
   // Delegate rendering to GameManager
-  GameManager::getInstance().render(m_window);
+  GameManager::getInstance().render(m_renderTexture);
 
+  m_renderTexture.display();
+
+  // Draw RenderTexture to Window with continuous scaling (no offset needed due to locked ratio)
+  m_window.clear(sf::Color::Black);
+
+  sf::Sprite renderSprite(m_renderTexture.getTexture());
+
+  float scale = static_cast<float>(m_window.getSize().x) / DisplayConfig::LOGICAL_WIDTH;
+  renderSprite.setScale({scale, scale});
+  renderSprite.setPosition({0.f, 0.f});
+
+  // Explicitly set the view to match the physical window size 
+  // to prevent SFML from applying a second layer of scaling
+  sf::Vector2f windowSize(static_cast<float>(m_window.getSize().x), static_cast<float>(m_window.getSize().y));
+  sf::View view(windowSize / 2.f, windowSize);
+  m_window.setView(view);
+
+  m_window.draw(renderSprite);
   m_window.display();
 }

@@ -63,6 +63,11 @@
 | Pause/Resume lifecycle | TV1 | DONE | S6-TV1-15 | Build pass |
 | CMake presets | TV1 | DONE | S6-TV1-28 | Build pass |
 | Docs cleanup | TV1 | DONE | S6-TV1-30→34 | — |
+| Unsubscribe audit (all observers) | TV1 | DONE | S6-TV1-21 | PlayState ✅, HUD ✅, SoundManager ✅ (Singleton safe) |
+| LevelCatalog (centralized levels) | TV1 | DONE | S6-TV1-05 | PlayState dùng catalog, không còn hard-code path/MAX_LEVELS |
+| EntityFactory → unique_ptr | TV1 | DONE | S6-TV1-22 | Không còn raw `new` ở factory; Level.cpp dùng `std::move` |
+| Transition freeze + fade | TV1 | DONE | S6-TV1-12 | FADE_OUT→LOADING→FADE_IN state machine, gameplay frozen |
+| Demo exclusion (CMake) | TV1 | DONE | S6-TV1-26 | `list(FILTER SOURCES EXCLUDE REGEX)` loại src/demo/ |
 
 ---
 

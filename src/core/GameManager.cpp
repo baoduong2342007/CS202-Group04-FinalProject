@@ -68,12 +68,12 @@ void GameManager::processPendingOps() {
 }
 
 void GameManager::update(float dt) {
-    // Process deferred state operations first (safe point)
-    processPendingOps();
-
     if (m_currentState) {
         m_currentState->update(dt);
     }
+
+    // Process deferred state operations at the safe point (end of update)
+    processPendingOps();
 }
 
 void GameManager::processEvents(const sf::Event& event) {

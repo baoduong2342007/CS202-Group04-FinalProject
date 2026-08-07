@@ -9,6 +9,7 @@
 
 #include <box2d/box2d.h>
 
+class TileMap;
 class Entity;
 class Mario;
 
@@ -21,7 +22,7 @@ public:
 
     /// @brief Resolves beginning of collision between Box2D fixtures
     /// @param contact Pointer to Box2D contact object
-    static void resolve(b2Contact* contact);
+    static void resolve(b2Contact* contact, TileMap& tileMap);
 
     /// @brief Adjusts active contact properties before Box2D solves them
     static void preSolve(b2Contact* contact);
@@ -30,5 +31,5 @@ private:
     CollisionManager() = delete;
 
     /// @brief Handles collision between Mario and another Entity safely
-    static void handleMarioCollision(Mario* mario, Entity* other, b2Body* marioBody, b2Contact* contact);
+    static void handleMarioCollision(Mario* mario, Entity* other, b2Body* marioBody, b2Contact* contact, TileMap& tileMap);
 };

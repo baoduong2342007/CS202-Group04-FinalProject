@@ -106,8 +106,9 @@ FetchContent_MakeAvailable(box2d)
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
-# Remove main.cpp from SOURCES to avoid multiple definition of main in tests
+# Remove main.cpp and demo files from SOURCES to avoid multiple definition of main in game_lib and tests
 list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+list(FILTER SOURCES EXCLUDE REGEX "src/demo/.*\\.cpp$")
 
 # Add global compiler options (must be set before targets)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -157,6 +158,12 @@ if(BUILD_TESTING)
     )
     target_link_libraries(mario_physics_tests PRIVATE game_lib)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
+
+    add_executable(play_state_tests
+        tests/PlayStateTests.cpp
+    )
+    target_link_libraries(play_state_tests PRIVATE game_lib)
+    add_test(NAME play_state_tests COMMAND play_state_tests)
 endif()
 
 # Platform-specific Release build settings

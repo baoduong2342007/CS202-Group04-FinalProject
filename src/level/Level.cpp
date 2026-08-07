@@ -16,7 +16,7 @@
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
-#include "entities/Goomba.h"
+#include "entities/Enemy.h"
 #include "core/SpriteFrames.h"
 
 namespace {
@@ -48,19 +48,21 @@ bool Level::loadFromFile(const std::string& path) {
     }
 
     // Initialize camera with screen size and level pixel-bounds
-    float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
 
-    m_camera.init(
-        sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
-                     static_cast<float>(SCREEN_HEIGHT)),
-        sf::FloatRect(sf::Vector2f(0.f, 0.f),
-                      sf::Vector2f(levelWidth, levelHeight))
-    );
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    m_camera.init(sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
+                               static_cast<float>(SCREEN_HEIGHT)
+                               ),
+                  sf::FloatRect(sf::Vector2f(0.f, 0.f),
+                                sf::Vector2f(levelWidth, levelHeight)
+                                )
+                  );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
-    m_contactListener = std::make_unique<ContactListener>();
+    m_contactListener = std::make_unique<ContactListener>(m_tileMap);
     m_world->SetContactListener(m_contactListener.get());
 
     if (m_world) {
@@ -70,24 +72,26 @@ bool Level::loadFromFile(const std::string& path) {
     // Spawn Mario and all entities from tile codes
     spawnEntitiesFromTileMap();
 
+    // Initialize camera and entity sprite frames before first render
+    update(0.f);
+
     return true;
 }
 
 void Level::spawnEntitiesFromTileMap() {
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
     // --- Spawn Mario from 'M' tile code (see level1.txt) ---
     auto marioSpawns = m_tileMap.findTiles('M');
 
     if (!marioSpawns.empty()) {
-        sf::Vector2f spawnPos =
-            TileMap::gridToWorldPosition(marioSpawns.front());
-        m_mario = std::make_unique<Mario>(spawnPos,
-                                          sf::Vector2f(32.f, 32.f));
+        sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
+        m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
         float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
         m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
-        std::cerr << "Level: No Mario spawn point ('M') found! "
-                  << "Defaulting to (100, 100)" << std::endl;
+        std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
         m_mario = std::make_unique<Mario>();
     }
 
@@ -103,16 +107,15 @@ void Level::spawnEntitiesFromTileMap() {
         for (const auto& gridPos : positions) {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
-            Entity* raw =
+            auto entity =
                 EntityFactory::createFromTileCode(code, worldPos, m_world.get());
-            if (raw) {
+            if (entity) {
                 // Wire TextureManager so entity sprites can load
-                raw->setTextureManager(m_textureManager);
-                if (raw->isEnemy()) {
-                    Goomba* goomba = dynamic_cast<Goomba*>(raw);
-                    if (goomba) goomba->setTileMap(&m_tileMap);
+                entity->setTextureManager(m_textureManager);
+                if (entity->isEnemy()) {
+                    static_cast<Enemy*>(entity.get())->setTileMap(&m_tileMap);
                 }
-                m_entities.emplace_back(raw);
+                m_entities.push_back(std::move(entity));
             }
 
         }

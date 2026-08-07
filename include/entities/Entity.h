@@ -44,7 +44,7 @@ public:
     void updateAnimation(float dt);
 
     // Box2D Physics Methods
-    void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
+    virtual void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false);
     virtual void syncPhysics();
     void destroyPhysicsBody();
 

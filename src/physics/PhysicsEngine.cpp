@@ -18,4 +18,3 @@ bool PhysicsEngine::update(b2World& world, float dt) {
     }
     return stepped;
 }
-

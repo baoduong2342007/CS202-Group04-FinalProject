@@ -16,6 +16,8 @@
  *         their own patrol, stomp, and wall-collision behaviour.
  */
 
+class TileMap;
+
 class Enemy : public Character {
 public:
     Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health);
@@ -26,6 +28,7 @@ public:
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
+    virtual void setTileMap(const TileMap* tileMap) { (void)tileMap; }
     virtual void onSideCollision(Entity* other);
     bool isEnemy() const override { return true; }
 };

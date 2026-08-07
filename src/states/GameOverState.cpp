@@ -9,7 +9,8 @@
 #include "patterns/InputState.h"
 #include <iostream>
 
-GameOverState::GameOverState() : m_font(), m_text(m_font) {
+GameOverState::GameOverState(const GameProgress& progress)
+    : m_font(), m_text(m_font), m_progress(progress), m_scoreText(m_font) {
     if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
         std::cerr << "Failed to load font in GameOverState\n";
     }
@@ -20,6 +21,14 @@ GameOverState::GameOverState() : m_font(), m_text(m_font) {
     sf::FloatRect bounds = m_text.getLocalBounds();
     m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
     m_text.setPosition({640.f, 360.f});
+
+    m_scoreText.setString("SCORE: " + std::to_string(m_progress.score));
+    m_scoreText.setCharacterSize(24);
+    m_scoreText.setFillColor(sf::Color::Yellow);
+    sf::FloatRect scoreBounds = m_scoreText.getLocalBounds();
+    m_scoreText.setOrigin({scoreBounds.position.x + scoreBounds.size.x / 2.f,
+                           scoreBounds.position.y + scoreBounds.size.y / 2.f});
+    m_scoreText.setPosition({640.f, 420.f});
 }
 
 void GameOverState::onEnter() {}
@@ -45,4 +54,5 @@ void GameOverState::render(sf::RenderWindow& window) {
     window.clear(sf::Color::Black);
     window.setView(window.getDefaultView());
     window.draw(m_text);
+    window.draw(m_scoreText);
 }

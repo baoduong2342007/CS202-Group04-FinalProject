@@ -26,7 +26,7 @@ public:
 
     bool isStomped() const;
 
-    void setTileMap(const TileMap* tileMap);
+    void setTileMap(const TileMap* tileMap) override;
 
 private:
     void reverseDirection();

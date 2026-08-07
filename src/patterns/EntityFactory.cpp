@@ -24,33 +24,33 @@
 // ============================================================
 // PATTERN: Simple Factory Implementation
 // ============================================================
-Entity* EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
     switch (type) {
         case EnemyType::GOOMBA:
-            return new Goomba(position, world);
+            return std::make_unique<Goomba>(position, world);
         case EnemyType::KOOPA:
-            return new Koopa(position, world);
+            return std::make_unique<Koopa>(position, world);
         default:
             return nullptr;
     }
 }
 
-Entity* EntityFactory::createItem(ItemType type, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createItem(ItemType type, const sf::Vector2f& position, b2World* world) {
     switch (type) {
         case ItemType::COIN:
-            return new Coin(position, world);
+            return std::make_unique<Coin>(position, world);
         case ItemType::MUSHROOM:
-            return new Mushroom(position, world);
+            return std::make_unique<Mushroom>(position, world);
         case ItemType::FIRE_FLOWER:
-            return new FireFlower(position, world);
+            return std::make_unique<FireFlower>(position, world);
         case ItemType::STAR:
-            return new Star(position, world);
+            return std::make_unique<Star>(position, world);
         default:
             return nullptr;
     }
 }
 
-Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world) {
     switch (tileCode) {
         case 'G':
             return createEnemy(EnemyType::GOOMBA, position, world);
@@ -59,11 +59,11 @@ Entity* EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& pos
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            return new QuestionBlock(position, world, QuestionBlockContent::COIN);
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::COIN);
         case 'U':
-            return new QuestionBlock(position, world, QuestionBlockContent::SUPER_MUSHROOM);
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::SUPER_MUSHROOM);
         case 'O':
-            return new QuestionBlock(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
         default:
             return nullptr;
     }

@@ -57,6 +57,8 @@ Coin::Coin(const sf::Vector2f& position, b2World* world, CoinType type)
 }
 
 void Coin::update(float dt) {
+    updateCollectibleDelay(dt);
+
     if (m_type == CoinType::QUESTION_POPUP) {
         m_popupTimer += dt;
         float progress = m_popupTimer / POPUP_DURATION;
@@ -86,7 +88,21 @@ void Coin::onCollect(Mario& mario) {
     if (m_isCollected) {
         return;
     }
-    mario.collectCoin(COIN_SCORE_VALUE);
+
+    awardTo(mario);
 
     m_isCollected = true;
+}
+
+void Coin::awardTo(Mario& mario) {
+    mario.collectCoin(COIN_SCORE_VALUE);
+
+    int coins = mario.getCoinCount();
+    while (coins >= COINS_PER_LIFE) {
+        coins -= COINS_PER_LIFE;
+        mario.addLife();
+    }
+    if (coins != mario.getCoinCount()) {
+        mario.setCoinCount(coins);
+    }
 }

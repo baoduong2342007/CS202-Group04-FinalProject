@@ -50,6 +50,8 @@ Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType ty
 }
 
 void Mushroom::update(float dt) {
+    updateCollectibleDelay(dt);
+
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
     updateAnimation(dt);
@@ -74,15 +76,24 @@ void Mushroom::onCollect(Mario& mario) {
 
     m_isCollected = true;
 
+    bool eventPublished = false;
     if (m_type == MushroomType::ONE_UP) {
         mario.addLife(1);
         mario.addScore(1000);
         EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+        eventPublished = true;
     } else {
         if (mario.getMarioState() == MarioState::SMALL) {
             mario.powerUp(MarioState::SUPER);
+            eventPublished = true;
         }
         mario.addScore(MUSHROOM_SCORE_VALUE);
+    }
+
+    // Mario::powerUp() owns the event for a state-changing pickup. For a
+    // Mushroom collected while Mario is already powered up, still emit one
+    // pickup event, but never emit two events for the same item.
+    if (!eventPublished) {
         EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
     }
 }

@@ -10,6 +10,7 @@
 // 1. Standard library
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 // 2. SFML
 #include <SFML/Window/Keyboard.hpp>
@@ -26,7 +27,8 @@
 
 enum class InputTrigger {
     Pressed,
-    Held
+    Held,
+    Released
 };
 
 enum class InputGroup {
@@ -72,5 +74,8 @@ private:
     };
 
     // 6. Private members
-    std::unordered_map<sf::Keyboard::Key, Binding> m_keyBindings;
+    // A key may have both a press and a release action (for example, jump
+    // cutoff). Bindings with the same trigger/group are replaced so calling
+    // bindKey remains a normal rebind operation.
+    std::unordered_map<sf::Keyboard::Key, std::vector<Binding>> m_keyBindings;
 };

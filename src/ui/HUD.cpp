@@ -9,6 +9,11 @@
 
 #include "ui/HUD.h"
 
+#include <algorithm>
+#include <cmath>
+#include <sstream>
+#include <iomanip>
+#include <utility>
 #include "patterns/EventBus.h"
 #include <iomanip>
 #include <sstream>
@@ -44,6 +49,11 @@ constexpr float WORLD_X = 210.f;
 constexpr float WORLD_Y = 3.f;
 constexpr float LIVES_X = 300.f;
 constexpr float LIVES_Y = 3.f;
+constexpr float TIME_X = 430.f;
+constexpr float TIME_Y = 3.f;
+constexpr float POWER_X = 540.f;
+constexpr float POWER_Y = 3.f;
+constexpr unsigned int SECOND = 1;
 
 // Text padding widths
 constexpr int SCORE_PAD_WIDTH = 6;
@@ -58,13 +68,15 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
   // Load the pixel font; check the bool return value.
   m_fontLoaded = loadFont(FONT_PATH);
 
-  // SFML 3: sf::Text requires a font at construction time, so we
-  // only construct the text objects when the font is available.
-  if (m_fontLoaded) {
-    m_scoreText.emplace(m_font);
-    m_livesText.emplace(m_font);
-    m_coinText.emplace(m_font);
-    m_worldText.emplace(m_font);
+    // SFML 3: sf::Text requires a font at construction time, so we
+    // only construct the text objects when the font is available.
+    if (m_fontLoaded) {
+        m_scoreText.emplace(m_font);
+        m_livesText.emplace(m_font);
+        m_coinText.emplace(m_font);
+        m_worldText.emplace(m_font);
+        m_timeText.emplace(m_font);
+        m_powerText.emplace(m_font);
 
     m_scoreText->setCharacterSize(FONT_SIZE);
     m_scoreText->setFillColor(sf::Color::White);
@@ -78,50 +90,75 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
     m_coinText->setFillColor(sf::Color::Yellow);
     m_coinText->setPosition({COINS_X, COINS_Y});
 
-    m_worldText->setCharacterSize(FONT_SIZE);
-    m_worldText->setFillColor(sf::Color::White);
-    m_worldText->setPosition({WORLD_X, WORLD_Y});
-  }
+        m_worldText->setCharacterSize(FONT_SIZE);
+        m_worldText->setFillColor(sf::Color::White);
+        m_worldText->setPosition({WORLD_X, WORLD_Y});
 
-  // Subscribe to gameplay events that affect the display.
-  EventBus &bus = EventBus::getInstance();
-  bus.subscribe(EventType::COIN_COLLECTED, this);
-  bus.subscribe(EventType::PLAYER_DIED, this);
-  bus.subscribe(EventType::PLAYER_LOST_LIFE, this);
-  bus.subscribe(EventType::PLAYER_POWER_UP, this);
+        m_timeText->setCharacterSize(FONT_SIZE);
+        m_timeText->setFillColor(sf::Color::White);
+        m_timeText->setPosition({TIME_X, TIME_Y});
+
+        m_powerText->setCharacterSize(FONT_SIZE);
+        m_powerText->setFillColor(sf::Color::White);
+        m_powerText->setPosition({POWER_X, POWER_Y});
+    }
+
+    // Subscribe to gameplay events that affect the display.
+    EventBus& bus = EventBus::getInstance();
+    bus.subscribe(EventType::COIN_COLLECTED, this);
+    bus.subscribe(EventType::PLAYER_DIED, this);
+    bus.subscribe(EventType::PLAYER_LOST_LIFE, this);
+    bus.subscribe(EventType::PLAYER_POWER_UP, this);
+    bus.subscribe(EventType::GAME_PAUSED, this);
+    bus.subscribe(EventType::LEVEL_COMPLETED, this);
+    bus.subscribe(EventType::LEVEL_STARTED, this);
 
   // Render the initial values.
   refreshText();
 }
 
 HUD::~HUD() {
-  // Observer contract: unsubscribe to avoid dangling pointers.
-  EventBus &bus = EventBus::getInstance();
-  bus.unsubscribe(EventType::COIN_COLLECTED, this);
-  bus.unsubscribe(EventType::PLAYER_DIED, this);
-  bus.unsubscribe(EventType::PLAYER_LOST_LIFE, this);
-  bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
+    // Observer contract: unsubscribe to avoid dangling pointers.
+    EventBus& bus = EventBus::getInstance();
+    bus.unsubscribe(EventType::COIN_COLLECTED, this);
+    bus.unsubscribe(EventType::PLAYER_DIED, this);
+    bus.unsubscribe(EventType::PLAYER_LOST_LIFE, this);
+    bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
+    bus.unsubscribe(EventType::GAME_PAUSED, this);
+    bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
+    bus.unsubscribe(EventType::LEVEL_STARTED, this);
 }
 
 // ── IObserver ────────────────────────────────────────────────
 
 void HUD::onNotify(EventType event) {
-  switch (event) {
-  case EventType::COIN_COLLECTED:
-    refreshText();
-    break;
-  case EventType::PLAYER_DIED:
-  case EventType::PLAYER_LOST_LIFE:
-    // Refresh the display.
-    refreshText();
-    break;
-  case EventType::PLAYER_POWER_UP:
-    // Power-up may change score; refresh to be safe.
-    refreshText();
-    break;
-  default:
-    break;
-  }
+    switch (event) {
+        case EventType::COIN_COLLECTED:
+            refreshText();
+            break;
+        case EventType::PLAYER_DIED:
+        case EventType::PLAYER_LOST_LIFE:
+            // Refresh the display.
+            refreshText();
+            break;
+        case EventType::PLAYER_POWER_UP:
+            // Power-up may change score; refresh to be safe.
+            refreshText();
+            break;
+        case EventType::GAME_PAUSED:
+            // The overlay stops PlayState updates. Skip the current frame as
+            // well because the pause event is delivered during input/update.
+            m_timerPausedForEvent = true;
+            break;
+        case EventType::LEVEL_COMPLETED:
+            m_timerEnabled = false;
+            break;
+        case EventType::LEVEL_STARTED:
+            resetTimer();
+            break;
+        default:
+            break;
+    }
 }
 
 // ── Public methods ───────────────────────────────────────────
@@ -131,14 +168,21 @@ void HUD::update() {
   refreshText();
 }
 
-void HUD::draw(sf::RenderTarget &target) const {
-  // Only draw if the font loaded; otherwise the text is invisible.
-  if (m_fontLoaded) {
-    target.draw(*m_scoreText);
-    target.draw(*m_livesText);
-    target.draw(*m_coinText);
-    target.draw(*m_worldText);
-  }
+void HUD::update(float dt, bool gameplayActive) {
+    advanceTimer(dt, gameplayActive);
+    refreshText();
+}
+
+void HUD::draw(sf::RenderTarget& target) const {
+    // Only draw if the font loaded; otherwise the text is invisible.
+    if (m_fontLoaded) {
+        target.draw(*m_scoreText);
+        target.draw(*m_livesText);
+        target.draw(*m_coinText);
+        target.draw(*m_worldText);
+        target.draw(*m_timeText);
+        target.draw(*m_powerText);
+    }
 }
 
 // ── Getters / Setters ────────────────────────────────────────
@@ -149,6 +193,27 @@ void HUD::setWorldLevel(int world, int level) {
   m_worldNumber = world;
   m_levelNumber = level;
   refreshText();
+}
+
+bool HUD::isTimeWarningActive() const {
+    return m_timeRemaining <= TIME_WARNING_THRESHOLD && m_timeRemaining > 0;
+}
+
+void HUD::resetTimer(int seconds) {
+    m_timeRemaining = std::max(0, seconds);
+    m_timerAccumulator = 0.f;
+    m_timeWarningEmitted = false;
+    m_timerPausedForEvent = false;
+    m_timerEnabled = true;
+    refreshText();
+}
+
+void HUD::setTimeWarningCallback(std::function<void()> callback) {
+    m_timeWarningCallback = std::move(callback);
+}
+
+void HUD::setTimeoutCallback(std::function<void()> callback) {
+    m_timeoutCallback = std::move(callback);
 }
 
 // ── Private methods ──────────────────────────────────────────
@@ -187,11 +252,12 @@ void HUD::refreshText() {
     return;
   }
 
-  // Format score as a zero-padded string (classic Mario style).
-  std::ostringstream scoreStream;
-  scoreStream << "SCORE " << std::setw(SCORE_PAD_WIDTH) << std::setfill('0')
-              << m_mario.getScore();
-  m_scoreText->setString(scoreStream.str());
+    // Format score as a zero-padded 6-digit string (classic Mario style).
+    std::ostringstream scoreStream;
+    const int displayScore = std::clamp(m_mario.getScore(), 0, 999999);
+    scoreStream << "SCORE " << std::setw(SCORE_PAD_WIDTH) << std::setfill('0')
+                << displayScore;
+    m_scoreText->setString(scoreStream.str());
 
   // Format lives as "LIVES x N".
   std::ostringstream livesStream;
@@ -204,8 +270,57 @@ void HUD::refreshText() {
              << m_mario.getCoinCount();
   m_coinText->setString(coinStream.str());
 
-  // Format world indicator as "WORLD W-L".
-  std::ostringstream worldStream;
-  worldStream << "WORLD " << m_worldNumber << "-" << m_levelNumber;
-  m_worldText->setString(worldStream.str());
+    // Format world indicator as "WORLD W-L".
+    std::ostringstream worldStream;
+    worldStream << "WORLD " << m_worldNumber << "-" << m_levelNumber;
+    m_worldText->setString(worldStream.str());
+
+    std::ostringstream timeStream;
+    timeStream << "TIME " << std::setw(3) << std::setfill('0')
+               << m_timeRemaining;
+    m_timeText->setString(timeStream.str());
+    m_timeText->setFillColor(isTimeWarningActive() ? sf::Color::Red : sf::Color::White);
+
+    std::string powerLabel;
+    if (m_mario.isInvincible()) {
+        powerLabel = "STAR";
+    } else {
+        switch (m_mario.getMarioState()) {
+            case MarioState::SMALL:
+                powerLabel = "SMALL";
+                break;
+            case MarioState::SUPER:
+                powerLabel = "SUPER";
+                break;
+            case MarioState::FIRE:
+                powerLabel = "FIRE";
+                break;
+        }
+    }
+    m_powerText->setString("POWER " + powerLabel);
+}
+
+void HUD::advanceTimer(float dt, bool gameplayActive) {
+    if (!gameplayActive || !m_timerEnabled || m_timerPausedForEvent ||
+        m_timeRemaining <= 0 || !std::isfinite(dt) || dt <= 0.f) {
+        m_timerPausedForEvent = false;
+        return;
+    }
+
+    m_timerAccumulator += dt;
+    while (m_timerAccumulator >= static_cast<float>(SECOND) && m_timeRemaining > 0) {
+        m_timerAccumulator -= static_cast<float>(SECOND);
+        --m_timeRemaining;
+
+        if (isTimeWarningActive() && !m_timeWarningEmitted) {
+            m_timeWarningEmitted = true;
+            if (m_timeWarningCallback) {
+                m_timeWarningCallback();
+            }
+        }
+
+        if (m_timeRemaining == 0 && m_timeoutCallback) {
+            m_timeoutCallback();
+        }
+    }
 }

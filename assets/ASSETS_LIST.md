@@ -1,145 +1,107 @@
-# Danh sách Assets — BẢN CẬP NHẬT (Spritesheet Chung)
+# Asset manifest — Sprint 6
 
-> **📌 QUYẾT ĐỊNH NHÓM (CẬP NHẬT):**
-> Toàn bộ đồ họa giữ dưới dạng **spritesheet chung**, **KHÔNG tách** thành các file PNG riêng lẻ
-> (không tạo `idle.png`, `walk.png`, `coin.png`, `mushroom.png`...).
-> Code dùng `sf::Sprite::setTextureRect()` và `AnimationSystem::createGridAnimation()`
-> để cắt frame từ sheet chung. Mọi thành viên khi code phải load sheet qua
-> `TextureManager` (1 lần) và cắt frame bằng **named constants** — không hardcode magic number.
->
-> *File này thay thế `ASSETS_LIST.md` cũ. Giữ bản cũ để đối chiếu.*
+Đây là source of truth duy nhất cho asset trong project. Đường dẫn `Runtime`
+tính từ thư mục executable sau khi CMake copy runtime assets; đường dẫn
+`Reference` tính từ repository root.
 
----
+## Nhãn sử dụng
 
-## 1. Đồ họa & Textures (`assets/textures/`)
+| Nhãn | Ý nghĩa |
+|---|---|
+| `Runtime` | Được code hiện tại load hoặc được đóng gói để dùng trong game loop. |
+| `Reference` | Nguồn đo/cắt sprite hoặc tài liệu hình ảnh; nằm ngoài gói runtime. |
+| `Future` | Asset hợp lệ nhưng chưa có gameplay path hiện tại. |
+| `Remove` | Không được giữ trong repository/runtime package. |
 
-Tất cả tệp hình ảnh dùng định dạng `.png` (hỗ trợ kênh Alpha), phong cách Pixel Art NES/SNES.
-**Trạng thái `✅` = file ĐÃ CÓ trong repo. `❌` = CẦN BỔ SUNG.**
+## Runtime textures và font
 
-### 1.1. Nhân vật Mario (`assets/textures/mario/`)
-| Sheet | Mô tả & Quy ước cắt | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/textures/mario/MarioLuigi.png` | **Sheet chung duy nhất cho Mario & Luigi.** Chứa mọi trạng thái: SMALL/SUPER/FIRE × idle/walk/jump/death, mọi hướng (trái/phải). Cắt frame theo grid NES (frame gốc 16×16, scale lên 32×32 trong game). Code dùng `setTextureRect()` để cắt frame — **KHÔNG tách file riêng**. | ✅ Có sẵn |
+| Path | Kích thước | Usage | Ghi chú |
+|---|---:|---|---|
+| `assets/fonts/mario.ttf` | 116,008 bytes | `Runtime` | Font dùng cho HUD và các state UI. |
+| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Goomba walk/squish. |
+| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Koopa walk/shell. |
+| `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | Mushroom, QuestionBlock và block frames. |
+| `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Coin, FireFlower và Star frames. |
+| `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
+| `assets/textures/tiles/tileset.png` | 320×32 | `Future` | Legacy tile sheet; gameplay TileMap hiện dùng block sheet. |
+| `assets/textures/ui/bg_clouds.png` | 768×1129 | `Runtime` | Menu/background asset. |
+| `assets/textures/ui/bg_mountains.png` | 768×1660 | `Runtime` | Overworld background strip. |
+| `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | Chưa có runtime render path. |
+| `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu/HUD bitmap UI asset. |
 
-> ⚠️ **Nhắc code:** `Mario.cpp` hiện gọi `setSprite("assets/textures/mario/idle.png")` — path KHÔNG tồn tại → Mario hiện là khối magenta. Cần sửa thành load sheet trên + `setTextureRect` frame đúng (phối hợp TV2 - AnimationSystem).
+Các file `assets/**/.gitkeep` chỉ là placeholder cho thư mục rỗng, không phải
+runtime asset.
 
-### 1.2. Kẻ địch (`assets/textures/enemies/`)
-| Sheet | Mô tả & Quy ước cắt | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/textures/enemies/goomba.png` | Sprite sheet Goomba gồm 2 frame di chuyển và 1 frame bị giẫm bẹp; mỗi frame 32×32 px, tổng kích thước 96×32 px. | ✅ Có sẵn |
-| `assets/textures/enemies/koopa.png` | Koopa sprite sheet gồm 2 frame đi bộ, 1 frame mai đứng yên và 1 frame mai bắt đầu hồi phục; mỗi frame nằm trong canvas 32×48 px, tổng kích thước 128×48 px. | ✅ Có sẵn |
-| `assets/textures/enemies/enemies.png` | **Sheet chung nhiều enemy** — chứa Goomba, Koopa, v.v. Dùng làm nguồn cắt bổ sung. | ✅ Có sẵn |
+## Sound effects
 
-### 1.3. Ô bản đồ & Gạch đá (`assets/textures/tiles/`)
-| Sheet | Mô tả & Quy ước cắt | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/textures/tiles/tileset.png` | **Tileset chính.** Layout chuẩn: 4 tile ngang × 32px/tile → kích thước 128×32 px (ground, brick, question block, finish pole). | ✅ Có sẵn |
+| Path | Usage |
+|---|---|
+| `assets/sounds/effects/1up.wav` | `Runtime` — one-up reward. |
+| `assets/sounds/effects/beep.wav` | `Future` — chưa có event mapping. |
+| `assets/sounds/effects/billfirework.wav` | `Future` — chưa có Bullet Bill path. |
+| `assets/sounds/effects/bowserfall.wav` | `Future` — chưa có Bowser path. |
+| `assets/sounds/effects/brick.wav` | `Runtime` — brick break mapping. |
+| `assets/sounds/effects/bump.wav` | `Runtime` — block bump mapping. |
+| `assets/sounds/effects/coin.wav` | `Runtime` — `COIN_COLLECTED`. |
+| `assets/sounds/effects/death.wav` | `Runtime` — `PLAYER_DIED`. |
+| `assets/sounds/effects/fire.wav` | `Future` — reserved fire effect. |
+| `assets/sounds/effects/fireball.wav` | `Runtime` catalog — FireBall event producer belongs to TV3. |
+| `assets/sounds/effects/flagpole.wav` | `Runtime` — `LEVEL_COMPLETED`. |
+| `assets/sounds/effects/gameover.wav` | `Runtime` catalog — GameOver state track/SFX. |
+| `assets/sounds/effects/hurryup.wav` | `Runtime` — HUD time-warning callback. |
+| `assets/sounds/effects/item.wav` | `Runtime` catalog — item emerge event. |
+| `assets/sounds/effects/jump.wav` | `Runtime` — `PLAYER_JUMPED`. |
+| `assets/sounds/effects/jumpsmall.wav` | `Runtime` catalog — small-Mario jump variant. |
+| `assets/sounds/effects/kickkill.wav` | `Runtime` catalog — shell/kick event producer belongs to TV3/TV4. |
+| `assets/sounds/effects/pause.wav` | `Runtime` — `GAME_PAUSED`. |
+| `assets/sounds/effects/pipepowerdown.wav` | `Runtime` — `PLAYER_POWER_DOWN`. |
+| `assets/sounds/effects/powerup.wav` | `Runtime` — `PLAYER_POWER_UP`. |
+| `assets/sounds/effects/stompswim.wav` | `Runtime` — `ENEMY_STOMPED`. |
+| `assets/sounds/effects/vine.wav` | `Future` — chưa có vine mechanic. |
 
-### 1.4. Vật phẩm (`assets/textures/items/`)
-| Sheet | Mô tả & Quy ước cắt | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/textures/items/items_objects.png` | **Sheet vật phẩm/đối tượng** — chứa **Coin, FireFlower, Star**... Cắt frame theo grid. | ✅ Có sẵn |
-| `assets/textures/items/items_blocks.png` | **Sheet item + block** — chứa **Mushroom (Nấm đỏ)**, block items... Cắt frame theo grid. | ✅ Có sẵn |
+Legacy duplicate GameOver effect đã bị xóa vì không có reference hợp lệ.
 
-> ⚠️ **Nhắc code:** `Coin/Mushroom/FireFlower/Star` hiện gọi `setSprite(...coin.png / mushroom.png / fireflower.png / star.png)` — các path KHÔNG tồn tại → item hiện là khối magenta. Cần sửa load sheet chung bên trên + `setTextureRect`.
+## Music
 
-### 1.5. Giao diện người dùng (`assets/textures/ui/`)
-| File | Mô tả | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/textures/ui/hud.png` | Texture HUD (icon, khung hiển thị). | ✅ Có sẵn |
-| `assets/textures/ui/bg_clouds.png` | Nền mây — dùng cho menu / background. | ✅ Có sẵn |
-| `assets/textures/ui/bg_mountains.png` | Nền núi — dùng cho menu / background. | ✅ Có sẵn |
-| `assets/textures/ui/bg_trees.png` | Nền cây — dùng cho menu / background. | ✅ Có sẵn |
+| Path | MusicId | Usage |
+|---|---|---|
+| `assets/sounds/music/overworld.flac` | `OVERWORLD` | `Runtime` — Level 1. |
+| `assets/sounds/music/underground.flac` | `UNDERGROUND` | `Runtime` — Level 2. |
+| `assets/sounds/music/castle.flac` | `CASTLE` | `Runtime` — Level 3. |
+| `assets/sounds/music/invincible.flac` | `STAR` | `Runtime` catalog — Star override. |
+| `assets/sounds/music/death.flac` | `DEATH` | `Runtime` catalog — death state. |
+| `assets/sounds/music/gameover.flac` | `GAME_OVER` | `Runtime` catalog — GameOver state. |
+| `assets/sounds/music/level_complete.flac` | `WIN` | `Runtime` catalog — Win/level complete. |
+| `assets/sounds/music/castle_complete.flac` | — | `Future` — optional castle completion variant. |
+| `assets/sounds/music/pipe.flac` | — | `Future` — pipe transition variant. |
+| `assets/sounds/music/underwater.flac` | — | `Future` — underwater theme not in release catalog. |
 
----
+## Sprite crop notes
 
-## 2. Hiệu ứng âm thanh (`assets/sounds/effects/`)
+Các ghi chú crop trước đây đã được hợp nhất tại đây và cập
+nhật theo `include/core/SpriteFrames.h`:
 
-Tất cả **ĐÃ CÓ SẴN** trong repo (định dạng `.wav`). Cột "Kích hoạt" ghi rõ ràng để bind EventBus.
+- QuestionBlock dùng `items_blocks.png`, các frame 16×16 tại
+  `(80,112)`, `(96,112)`, `(112,112)`; used block bắt đầu tại `(128,112)`.
+- Coin dùng `items_objects.png`, bốn frame 8×16 tại
+  `(180,36)`, `(190,36)`, `(200,36)`, `(210,36)`; khoảng cách giữa frame là
+  2 pixel.
+- Tile catalog dùng `items_objects.png`: ground `(180,8)`, brick `(198,8)`,
+  used block `(216,8)`, special `(234,8)`.
+- Không tạo file crop riêng như `idle.png`, `coin.png`, `mushroom.png` hoặc
+  `star.png`; animation phải cắt từ spritesheet bằng named frame constants.
 
-| File | Tình huống kích hoạt | Trạng thái |
-| :--- | :--- | :---: |
-| `jump.wav` / `jumpsmall.wav` | Mario nhảy (lớn / nhỏ). | ✅ Có sẵn |
-| `coin.wav` | Ăn đồng xu. | ✅ Có sẵn |
-| `death.wav` | Mario mất mạng. | ✅ Có sẵn |
-| `powerup.wav` | Ăn Nấm / Hoa lửa / Sao. | ✅ Có sẵn |
-| `pipepowerdown.wav` | Bị hạ cấp (power down). | ✅ Có sẵn |
-| `stompswim.wav` | Giẫm/kill enemy. | ✅ Có sẵn |
-| `kickkill.wav` | Đá mai rùa Koopa tiêu diệt enemy. | ✅ Có sẵn |
-| `fireball.wav` | Mario bắn cầu lửa. | ✅ Có sẵn |
-| `flagpole.wav` | Chạm cờ đích (kết thúc level). | ✅ Có sẵn |
-| `gameover.wav` / `gameoverunused.wav` | Game Over. | ✅ Có sẵn |
-| `brick.wav` | Phá gạch. | ✅ Có sẵn |
-| `bump.wav` | Va vào block từ dưới. | ✅ Có sẵn |
-| `pause.wav` | Tạm dừng game. | ✅ Có sẵn |
-| `1up.wav` | Được mạng (1-UP). | ✅ Có sẵn |
-| `item.wav` | Item xuất hiện từ block. | ✅ Có sẵn |
-| `fire.wav`, `vine.wav`, `hurryup.wav`, `billfirework.wav`, `bowserfall.wav`, `beep.wav` | SFX phụ (tùy chọn). | ✅ Có sẵn |
+## Reference/source files ngoài runtime
 
-> Đã bind trong `SoundManager.cpp`: jump, coin, stomp, death, powerup, powerdown, pause. **Còn cần bind thêm (Sprint 5–6):** `kick.wav` (Koopa), `fireball.wav` (FireBall), `flagpole.wav` (hoàn thành level).
+Các file dùng để đo/cắt hoặc kiểm tra component đã chuyển ra khỏi `assets/`
+để CMake không package chúng:
 
----
+| Path | Kích thước | Usage |
+|---|---:|---|
+| `docs/assets/reference/enemies.png` | 436×530 | `Reference` — atlas enemy dùng để đo/cắt. |
+| `docs/assets/reference/enemies_all_components_atlas.png` | 979×4592 | `Reference` — atlas phân tích component enemy. |
+| `docs/assets/reference/general_tile.png` | 680×776 | `Reference` — bản duplicate/source tile. |
+| `docs/assets/reference/tileset(v2).png` | 680×776 | `Reference` — legacy tile source. |
 
-## 3. Nhạc nền màn chơi (`assets/sounds/music/`)
-
-Tất cả **ĐÃ CÓ SẴN** — định dạng **`.flac`** (SFML `sf::Music` streaming, loop được).
-> ❗ Lưu ý: `ASSETS_LIST.md` cũ ghi `.ogg` — **bản cập nhật này dùng `.flac`** vì là file thực tế trong repo.
-
-| File | Kích hoạt | Trạng thái |
-| :--- | :--- | :---: |
-| `overworld.flac` | Nhạc nền level ngoài trời (World 1-1). | ✅ Có sẵn |
-| `underground.flac` | Nhạc nền level dưới hang (Level 2). | ✅ Có sẵn |
-| `castle.flac` | Nhạc nền level lâu đài (Level 3). | ✅ Có sẵn |
-| `level_complete.flac` | Hoàn thành level (flag). | ✅ Có sẵn |
-| `gameover.flac` | Game Over. | ✅ Có sẵn |
-| `death.flac` | Mario chết. | ✅ Có sẵn |
-| `invincible.flac` | Trạng thái Bất tử (Starman). | ✅ Có sẵn |
-| `pipe.flac` | Vào ống (pipe). | ✅ Có sẵn |
-| `underwater.flac` | Nhạc nền dưới nước (tùy chọn). | ✅ Có sẵn |
-| `castle_complete.flac` | Hoàn thành lâu đài. | ✅ Có sẵn |
-
-> ⚠️ **Nhắc code:** `SoundManager::playMusic()` CHƯA được gọi ở đâu → game hiện không có nhạc nền. Cần gọi trong `PlayState` (+ `stopMusic()`/`pauseMusic()` khi đổi state).
-
----
-
-## 4. Phông chữ (`assets/fonts/`)
-
-| File | Mô tả | Trạng thái |
-| :--- | :--- | :---: |
-| `assets/fonts/mario.ttf` | Font pixel retro (Press Start 2P) cho HUD, Menu, GameOver, Win, Pause. | ❌ **CẦN BỔ SUNG** |
-
-> ⚠️ **Ảnh hưởng:** HUD có font fallback C:/Windows/Fonts nên vẫn hiện được. Nhưng `MenuState / GameOverState / WinState / PauseState` **không có fallback** → nếu thiếu font, chữ màn menu/won/lose có thể không hiển thị. **Ưu tiên bổ sung file này.**
-
----
-
-## 5. Quy ước code khi dùng spritesheet chung (cho mọi thành viên)
-
-1. **Load 1 lần** qua `TextureManager::loadTexture(path, path)` — key = đường dẫn sheet.
-2. **Cắt frame** bằng `sf::Sprite::setTextureRect(sf::IntRect(...))` hoặc `AnimationSystem::createGridAnimation(...)`.
-3. **Named constants cho frame rect** — đặt trong `namespace {}` của file `.cpp` (theo `CODING_RULES.md`), KHÔNG hardcode magic number trong logic.
-4. **Không tạo file PNG riêng** cho từng state/sprite/item — chỉ dùng sheet chung.
-5. **Path luôn tương đối** (không dùng `C:\...` hoặc `../`) để build tái lập được (`cmake .. && cmake --build .`).
-
----
-
-## 6. Nguồn tải tham khảo (chỉ dùng khi CẦN BỔ SUNG — hiện đã có gần hết)
-
-* **Đồ họa & Sprites:** [The Spriters Resource](https://www.spriters-resource.com/nes/supermariobros/) · [Itch.io Pixel Art](https://itch.io/game-assets/free/tag-pixel-art) · [OpenGameArt](https://opengameart.org/)
-* **Âm thanh:** [The Sounds Resource](https://www.sounds-resource.com/nes/supermariobros/) · [Freesound](https://freesound.org/)
-* **Phông chữ:** [Google Fonts - Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) · [Dafont Pixel](https://www.dafont.com/theme.php?cat=501)
-
----
-
-## 7. Bảng đối chiếu nhanh: bản cũ (tách file) vs bản mới (sheet chung)
-
-| Loại | Bản cũ (`ASSETS_LIST.md`) | Bản mới (file này) |
-| :--- | :--- | :--- |
-| Mario | 7 file riêng (`idle.png`, `walk.png`...) | 1 sheet chung `MarioLuigi.png` ✅ |
-| Goomba | `goomba.png` | `goomba.png` ✅ (dùng luôn) |
-| Koopa | `koopa.png` (❌ cần tìm) | `enemies.png` ✅ sheet chung (cắt frame Koopa) |
-| Items | 4 file riêng (`coin.png`, `mushroom.png`...) | 2 sheet chung `items_objects.png` + `items_blocks.png` ✅ |
-| Tiles | `tileset.png` | `tileset.png` ✅ (ghi rõ layout 4 tile) |
-| UI | `hud_icons.png`, `menu_bg.png` (❌) | `hud.png`, `bg_clouds.png`, `bg_mountains.png`, `bg_trees.png` ✅ |
-| SFX | 6 file "cần tìm" | ~23 file ✅ (kèm bảng bind EventBus) |
-| Music | 3 file `.ogg` "cần tìm" | 10 file `.flac` ✅ |
-| Font | `mario.ttf` (❌) | `mario.ttf` ❌ **vẫn cần bổ sung** |
+Không dùng absolute path trong code và không copy reference files vào build
+runtime package.

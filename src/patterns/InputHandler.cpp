@@ -7,6 +7,8 @@
 
 #include "patterns/InputHandler.h"
 
+#include <algorithm>
+
 // ============================================================
 // PATTERN: Command (InputHandler component)
 // Reason: maps sf::Keyboard::Key → ICommand*; allows rebinding
@@ -17,7 +19,20 @@ void InputHandler::bindKey(sf::Keyboard::Key key,
                            std::unique_ptr<ICommand> command,
                            InputTrigger trigger,
                            InputGroup group) {
-    m_keyBindings[key] = Binding{std::move(command), trigger, group};
+    auto& bindings = m_keyBindings[key];
+    const auto existing = std::find_if(
+        bindings.begin(),
+        bindings.end(),
+        [trigger, group](const Binding& binding) {
+            return binding.trigger == trigger && binding.group == group;
+        });
+
+    Binding replacement{std::move(command), trigger, group};
+    if (existing != bindings.end()) {
+        *existing = std::move(replacement);
+    } else {
+        bindings.push_back(std::move(replacement));
+    }
 }
 
 void InputHandler::unbindKey(sf::Keyboard::Key key) {
@@ -29,32 +44,46 @@ void InputHandler::clear() {
 }
 
 void InputHandler::handleInput(const InputState& inputState) const {
-    for (const auto& [key, binding] : m_keyBindings) {
-        if (binding.trigger == InputTrigger::Pressed && inputState.wasPressed(key)) {
-            binding.command->execute();
+    for (const auto& [key, bindings] : m_keyBindings) {
+        for (const auto& binding : bindings) {
+            if (!binding.command) {
+                continue;
+            }
+
+            if (binding.trigger == InputTrigger::Pressed && inputState.wasPressed(key)) {
+                binding.command->execute();
+            } else if (binding.trigger == InputTrigger::Released && inputState.wasReleased(key)) {
+                binding.command->execute();
+            }
         }
     }
 
-    for (const auto& [key, binding] : m_keyBindings) {
-        if (binding.trigger == InputTrigger::Held && binding.group == InputGroup::None &&
-            inputState.isActiveThisFrame(key)) {
-            binding.command->execute();
+    for (const auto& [key, bindings] : m_keyBindings) {
+        for (const auto& binding : bindings) {
+            if (binding.trigger == InputTrigger::Held &&
+                binding.group == InputGroup::None &&
+                inputState.isActiveThisFrame(key) && binding.command) {
+                binding.command->execute();
+            }
         }
     }
 
     const Binding* horizontalBinding = nullptr;
     std::uint64_t latestPressOrder = 0;
 
-    for (const auto& [key, binding] : m_keyBindings) {
-        if (binding.trigger != InputTrigger::Held || binding.group != InputGroup::Horizontal ||
-            !inputState.isActiveThisFrame(key)) {
-            continue;
-        }
+    for (const auto& [key, bindings] : m_keyBindings) {
+        for (const auto& binding : bindings) {
+            if (binding.trigger != InputTrigger::Held ||
+                binding.group != InputGroup::Horizontal ||
+                !inputState.isActiveThisFrame(key) || !binding.command) {
+                continue;
+            }
 
-        const std::uint64_t pressOrder = inputState.getPressOrder(key);
-        if (!horizontalBinding || pressOrder > latestPressOrder) {
-            horizontalBinding = &binding;
-            latestPressOrder = pressOrder;
+            const std::uint64_t pressOrder = inputState.getPressOrder(key);
+            if (!horizontalBinding || pressOrder > latestPressOrder) {
+                horizontalBinding = &binding;
+                latestPressOrder = pressOrder;
+            }
         }
     }
 
@@ -65,12 +94,13 @@ void InputHandler::handleInput(const InputState& inputState) const {
 
 ICommand* InputHandler::getAction(sf::Keyboard::Key key) const {
     auto it = m_keyBindings.find(key);
-    if (it != m_keyBindings.end()) {
-        return it->second.command.get();
+    if (it != m_keyBindings.end() && !it->second.empty()) {
+        return it->second.front().command.get();
     }
     return nullptr;
 }
 
 bool InputHandler::isBound(sf::Keyboard::Key key) const {
-    return m_keyBindings.count(key) > 0;
+    const auto it = m_keyBindings.find(key);
+    return it != m_keyBindings.end() && !it->second.empty();
 }

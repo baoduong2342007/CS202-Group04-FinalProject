@@ -1,6 +1,8 @@
 # Bảng Tọa Độ & Ý Nghĩa Chi Tiết Khung Hình Quái Vật (`enemies_coordinate.md`)
 
-Danh sách toàn bộ **157** thành phần liên thông quái vật tách từ tệp `enemies.png` bằng thuật toán **Loang (Flood Fill)** trên khu vực mảng lớn nhất ($Y \in [0, 392]$):
+Danh sách toàn bộ **157** thành phần liên thông quái vật tách từ tệp
+`docs/assets/reference/enemies.png` (đã lọc bỏ nền xanh đậm `(0,41,140)` và
+xanh trung `(146,144,255)`, loại trừ vùng Tilemap reference và text box):
 
 > **Giải thích hai cột tọa độ & kích thước:**
 > - **Tọa độ Loang (X, Y) & Kích thước Loang (W × H)**: Bounding box thực tế ôm sát từng điểm ảnh (pixel) của quái vật do thuật toán loang (connected component) tìm thấy.

@@ -51,6 +51,8 @@ Star::Star(const sf::Vector2f& position, b2World* world)
 }
 
 void Star::update(float dt) {
+    updateCollectibleDelay(dt);
+
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
     updateAnimation(dt);
@@ -84,11 +86,6 @@ void Star::onCollect(Mario& mario) {
 
     // Grant temporary invincibility regardless of current state
     mario.setInvincible(STAR_INVINCIBILITY_DURATION);
-
-    // Also upgrade SMALL Mario to SUPER so the player keeps a visual benefit
-    if (mario.getMarioState() == MarioState::SMALL) {
-        mario.powerUp(MarioState::SUPER);
-    }
 
     mario.addScore(STAR_SCORE_VALUE);
 

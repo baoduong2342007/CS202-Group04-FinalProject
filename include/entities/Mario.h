@@ -79,6 +79,10 @@ public:
     /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
     void setCoinCount(int coins);
     bool isInvincible() const;
+    bool isStarInvincible() const;
+    bool isDamageImmune() const;
+    void activateStarman(float duration = 10.0f);
+    void activateDamageGrace(float duration = 2.0f);
     bool canShootFireBall() const;
     int getLives() const;
     void setLives(int lives);
@@ -104,6 +108,8 @@ protected:
     int m_coinCount;
     bool m_isInvincible;
     float m_invincibilityTimer;
+    float m_starTimer = 0.0f;
+    float m_damageGraceTimer = 0.0f;
     int m_lives;
 
     bool m_isDying;

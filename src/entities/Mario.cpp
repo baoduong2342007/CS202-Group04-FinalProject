@@ -529,7 +529,7 @@ void Mario::powerUp(MarioState state) {
 }
 
 void Mario::powerDown() {
-  if (m_isInvincible || m_isDying || m_isTransforming) {
+  if (isDamageImmune() || isStarInvincible() || m_isDying || m_isTransforming) {
     return;
   }
   if (m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
@@ -540,12 +540,12 @@ void Mario::powerDown() {
   if (m_marioState == MarioState::FIRE) {
     powerUp(MarioState::SUPER);
     rebuildFixture();
-    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
+    activateDamageGrace(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else if (m_marioState == MarioState::SUPER) {
     powerUp(MarioState::SMALL);
     rebuildFixture();
-    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
+    activateDamageGrace(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else {
     loseLife();
@@ -668,44 +668,66 @@ std::unique_ptr<FireBall> Mario::shootFireBall(b2World* world) {
   return std::make_unique<FireBall>(spawnPos, getFacingDirection(), world);
 }
 
-void Mario::setInvincible(float duration) {
-  m_isInvincible = true;
-  m_invincibilityTimer = duration;
+void Mario::activateStarman(float duration) {
+  m_starTimer = duration;
 }
 
-void Mario::updateInvincibility(float dt) {
-  if (!m_isInvincible) {
-    if (m_sprite && m_marioState != MarioState::FIRE) {
-      m_sprite->setColor(sf::Color::White); // Ensure visible
-    }
-    return;
-  }
-  
-  m_invincibilityTimer -= dt;
-  
-  // Flashing effect: toggle opacity every 0.1 seconds
-  if (m_sprite) {
-    int ms = static_cast<int>(m_invincibilityTimer * 1000);
-    if ((ms / 100) % 2 == 0) {
-      m_sprite->setColor(sf::Color::Transparent);
-    } else {
-      sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
-      m_sprite->setColor(baseColor);
-    }
-  }
+void Mario::activateDamageGrace(float duration) {
+  m_damageGraceTimer = duration;
+}
 
-  if (m_invincibilityTimer <= 0.f) {
-    m_isInvincible = false;
-    m_invincibilityTimer = 0.f;
-    if (m_sprite) {
-      sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
-      m_sprite->setColor(baseColor);
-    }
-  }
+void Mario::setInvincible(float duration) {
+  activateDamageGrace(duration);
+}
+
+bool Mario::isStarInvincible() const {
+  return m_starTimer > 0.0f;
+}
+
+bool Mario::isDamageImmune() const {
+  return m_damageGraceTimer > 0.0f;
 }
 
 bool Mario::isInvincible() const {
-  return m_isInvincible;
+  return isStarInvincible() || isDamageImmune();
+}
+
+void Mario::updateInvincibility(float dt) {
+  if (m_starTimer > 0.0f) {
+    m_starTimer -= dt;
+    if (m_starTimer < 0.0f) m_starTimer = 0.0f;
+  }
+  if (m_damageGraceTimer > 0.0f) {
+    m_damageGraceTimer -= dt;
+    if (m_damageGraceTimer < 0.0f) m_damageGraceTimer = 0.0f;
+  }
+
+  m_isInvincible = isInvincible();
+
+  if (!m_isInvincible) {
+    if (m_sprite && m_marioState != MarioState::FIRE) {
+      m_sprite->setColor(sf::Color::White);
+    }
+    return;
+  }
+
+  if (m_sprite) {
+    if (m_starTimer > 0.0f) {
+      int ms = static_cast<int>(m_starTimer * 1000);
+      int cycle = (ms / 100) % 3;
+      if (cycle == 0) m_sprite->setColor(sf::Color::Yellow);
+      else if (cycle == 1) m_sprite->setColor(sf::Color::Cyan);
+      else m_sprite->setColor(sf::Color::Magenta);
+    } else if (m_damageGraceTimer > 0.0f) {
+      int ms = static_cast<int>(m_damageGraceTimer * 1000);
+      if ((ms / 100) % 2 == 0) {
+        m_sprite->setColor(sf::Color::Transparent);
+      } else {
+        sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
+        m_sprite->setColor(baseColor);
+      }
+    }
+  }
 }
 
 bool Mario::canShootFireBall() const {

@@ -42,7 +42,7 @@ SuperMario/
 │   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   ├── enemies/
 │   │   │   ├── goomba.png      ← spritesheet: walk + squish
-│   │   │   └── enemies.png     ← spritesheet chung nhiều enemy (Koopa, v.v.)
+│   │   │   └── koopa.png       ← spritesheet: walk + shell
 │   │   ├── tiles/
 │   │   │   └── tileset.png     ← tileset 4 tile (ground/brick/?/flag), dùng texture rect
 │   │   ├── items/
@@ -71,7 +71,13 @@ SuperMario/
 │   │       ├── castle.flac
 │   │       └── ... (additional audio tracks)
 │   └── fonts/
-│       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
+│       └── mario.ttf           ← pixel font (runtime)
+
+├── docs/assets/reference/      ← TV5: source/reference, không package runtime
+│   ├── enemies.png
+│   ├── enemies_all_components_atlas.png
+│   ├── general_tile.png
+│   └── tileset(v2).png
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level0.txt              ← test fixture (NOT in release catalog)

@@ -19,9 +19,9 @@
 #include "entities/Enemy.h"
 #include "core/SpriteFrames.h"
 
+#include "core/DisplayConfig.h"
+
 namespace {
-constexpr unsigned int SCREEN_WIDTH = 1280;
-constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
@@ -48,19 +48,20 @@ bool Level::loadFromFile(const std::string& path) {
     }
 
     // Initialize camera with screen size and level pixel-bounds
-    float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
     m_camera.init(
-        sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
-                     static_cast<float>(SCREEN_HEIGHT)),
+        sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
+                     static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
-    m_contactListener = std::make_unique<ContactListener>();
+    m_contactListener = std::make_unique<ContactListener>(m_tileMap);
     m_world->SetContactListener(m_contactListener.get());
 
     if (m_world) {
@@ -77,18 +78,18 @@ bool Level::loadFromFile(const std::string& path) {
 }
 
 void Level::spawnEntitiesFromTileMap() {
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
     // --- Spawn Mario from 'M' tile code (see level1.txt) ---
     auto marioSpawns = m_tileMap.findTiles('M');
 
     if (!marioSpawns.empty()) {
-        sf::Vector2f spawnPos =
-            TileMap::gridToWorldPosition(marioSpawns.front());
-        m_mario = std::make_unique<Mario>(spawnPos,
-                                          sf::Vector2f(32.f, 32.f));
+        sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
+        m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
+        m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
-        std::cerr << "Level: No Mario spawn point ('M') found! "
-                  << "Defaulting to (100, 100)" << std::endl;
+        std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
         m_mario = std::make_unique<Mario>();
     }
 
@@ -163,9 +164,9 @@ void Level::update(float dt) {
     }
 }
 
-void Level::render(sf::RenderWindow& window) {
+void Level::render(sf::RenderTarget& target) {
     // Apply camera view
-    window.setView(m_camera.getView());
+    target.setView(m_camera.getView());
 
     // Draw Mountain Background for main levels (temporarily disabled for level0)
     if (m_levelPath.find("level0") == std::string::npos) {
@@ -179,23 +180,23 @@ void Level::render(sf::RenderWindow& window) {
 
         for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
             bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
-            window.draw(bgSprite);
+            target.draw(bgSprite);
         }
     }
 
 
 
     // Draw tilemap background
-    m_tileMap.render(window);
+    m_tileMap.render(target);
 
     // Draw all entities (enemies, items)
     for (const auto& entity : m_entities) {
-        window.draw(*entity);
+        target.draw(*entity);
     }
 
     // Draw Mario on top
     if (m_mario) {
-        window.draw(*m_mario);
+        target.draw(*m_mario);
     }
 }
 
@@ -207,30 +208,58 @@ void Level::checkItemCollisions() {
         if (!entity->isItem()) continue;
 
         Item* item = static_cast<Item*>(entity.get());
-        if (!item->isCollected()) {
-            if (item->checkOverlap(*m_mario)) {
-                item->onCollect(*m_mario);
+        if (item->isCollected()) {
+            if (!item->shouldRemove()) {
                 item->markForRemoval();
             }
+            continue;
+        }
+
+        if (item->checkOverlap(*m_mario)) {
+            item->onCollect(*m_mario);
+            item->markForRemoval();
         }
     }
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_levelCompleted) return;
+    if (!m_mario || m_levelCompleted) {
+        return;
+    }
 
-    auto flags = m_tileMap.findTiles('F');
-    sf::FloatRect marioBounds = m_mario->getBoundingBox();
+    const auto finishTiles = m_tileMap.findTiles('F');
 
-    for (const auto& gridPos : flags) {
-        sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
-        sf::FloatRect flagBounds(worldPos, sf::Vector2f(32.f, 32.f));
+    if (finishTiles.empty()) {
+        return;
+    }
 
-        if (marioBounds.findIntersection(flagBounds)) {
-            m_levelCompleted = true;
-            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
-            break;
+    const auto& finishPosition = finishTiles.front();
+
+    int bottomRow = finishPosition.y;
+
+    const auto poleTiles = m_tileMap.findTiles('|');
+
+    for (const auto& polePosition : poleTiles) {
+        if (polePosition.x == finishPosition.x && polePosition.y > bottomRow) {
+            bottomRow = polePosition.y;
         }
+    }
+
+    const sf::Vector2f triggerPosition = TileMap::gridToWorldPosition(finishPosition);
+
+    const float triggerHeight = static_cast<float>(bottomRow - finishPosition.y + 1) * static_cast<float>(TILE_SIZE);
+
+    const sf::FloatRect finishTrigger(triggerPosition, sf::Vector2f(static_cast<float>(TILE_SIZE),
+                                                                    triggerHeight
+                                                                    )
+                                      );
+
+    const sf::FloatRect marioBounds = m_mario->getBoundingBox();
+
+    if (marioBounds.findIntersection(finishTrigger)) {
+        m_levelCompleted = true;
+
+        EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
     }
 }
 

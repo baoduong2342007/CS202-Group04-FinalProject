@@ -55,11 +55,28 @@ public:
     sf::Vector2f getVelocity() const;
     bool shouldRemove() const;
 
-    /// Virtual type check — avoids dynamic_cast RTTI overhead in hot loops
-    virtual bool isItem() const { return false; }
-    virtual bool isMario() const { return false; }
-    virtual bool isEnemy() const { return false; }
-    virtual bool isFireBall() const { return false; }
+    /// Enum for fast constant-time type identification (eliminates dynamic_cast RTTI overhead)
+    enum class EntityType {
+        MARIO,
+        ENEMY,
+        ITEM,
+        PROJECTILE,
+        TERRAIN,
+        UNKNOWN
+    };
+
+    /// Pure virtual type check — constant time O(1) type identification
+    virtual EntityType getType() const = 0;
+
+    /// Polymorphic Double Dispatch collision callbacks
+    virtual void onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal);
+    virtual void onCollisionEnd(Entity* other, b2Contact* contact);
+
+    /// Legacy helper type checks
+    virtual bool isItem() const { return getType() == EntityType::ITEM; }
+    virtual bool isMario() const { return getType() == EntityType::MARIO; }
+    virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
+    virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
     virtual bool isKoopa() const { return false; }
     virtual bool isMushroom() const { return false; }
     virtual bool isStar() const { return false; }

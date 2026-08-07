@@ -32,14 +32,14 @@ void PauseState::processInput(const InputState& inputState) {
 
 void PauseState::update(float dt) { (void)dt; }
 
-void PauseState::render(sf::RenderWindow& window) {
+void PauseState::render(sf::RenderTarget& target) {
     // GameManager will render the previous state first, so this acts as an overlay
-    window.setView(window.getDefaultView());
+    target.setView(target.getDefaultView());
     
     // Draw a semi-transparent black overlay
-    sf::RectangleShape overlay(sf::Vector2f(window.getSize().x, window.getSize().y));
+    sf::RectangleShape overlay(sf::Vector2f(target.getSize().x, target.getSize().y));
     overlay.setFillColor(sf::Color(0, 0, 0, 150));
-    window.draw(overlay);
+    target.draw(overlay);
 
-    window.draw(m_text);
+    target.draw(m_text);
 }

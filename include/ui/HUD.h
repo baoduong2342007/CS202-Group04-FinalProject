@@ -58,8 +58,17 @@ public:
     /// @brief Draws the HUD onto the render target.
     void draw(sf::RenderTarget& target) const;
 
-    // 4. Getters / Setters
+    /**
+     * @brief Retrieves the current coin count.
+     * @return int The number of coins currently held.
+     */
     int getCoinCount() const;
+
+    /**
+     * @brief Updates the world and level number displayed on the HUD.
+     * @param world The world number (e.g., 1 for World 1-1).
+     * @param level The level number (e.g., 1 for World 1-1).
+     */
     void setWorldLevel(int world, int level);
     int getTimeRemaining() const { return m_timeRemaining; }
     bool isTimeWarningActive() const;

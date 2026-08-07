@@ -30,7 +30,7 @@ public:
     /// exactly the same scoring path.
     static void awardTo(Mario& mario);
 
-    CoinType getType() const { return m_type; }
+    CoinType getCoinType() const { return m_type; }
 
 private:
     // 6. Private members

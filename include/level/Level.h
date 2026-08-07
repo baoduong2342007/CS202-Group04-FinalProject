@@ -33,7 +33,7 @@ public:
     // 3. Public methods
     bool loadFromFile(const std::string& path);
     void update(float dt);
-    void render(sf::RenderWindow& window);
+    void render(sf::RenderTarget& target);
 
     // 4. Getters / Setters
     Mario* getMario();

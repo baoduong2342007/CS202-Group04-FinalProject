@@ -216,3 +216,17 @@ void Entity::updateBoundingBox() {
     m_boundingBox = sf::FloatRect(m_position, m_size);
 }
 
+// ── Polymorphic Collision Dispatch Defaults ─────────────────────
+
+void Entity::onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal) {
+    (void)other;
+    (void)contact;
+    (void)normal;
+}
+
+void Entity::onCollisionEnd(Entity* other, b2Contact* contact) {
+    (void)other;
+    (void)contact;
+}
+
+

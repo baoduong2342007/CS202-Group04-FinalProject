@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(SuperMario VERSION 1.0 LANGUAGES CXX)
 
 # ==============================================================================
@@ -27,18 +28,21 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
     if(MSVC)
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-vc17-64-bit.zip")
+        # S6-TV1-27: verified SHA256 of the official SFML 3.0.0 VC17 64-bit zip.
+        set(EXPECTED_SFML_HASH "SHA256=01295AA4E87AEBCD917A4EA67C319F325BE131B83E0F3A85F290F0CE51A492A8")
     else()
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip")
+        # S6-TV1-27: verified SHA256 of the official SFML 3.0.0 MinGW-w64 (gcc 14.2.0) 64-bit zip.
+        set(EXPECTED_SFML_HASH "SHA256=4D83F919BD9356CD8C9C7B542BF70E4F6E542A51FB0FD1B6DE7AFFC81ED919FB")
     endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    # NOTE: TLS verification is ON. To also verify the archive integrity, set
-    # EXPECTED_HASH to the real SHA256 of the downloaded zip (e.g.
-    # "SHA256=<hex>"). It is intentionally omitted here because the exact
-    # upstream hash must be confirmed by the maintainer before hard-coding.
+    # S6-TV1-27: TLS verification is ON and the archive integrity is verified via
+    # EXPECTED_SFML_HASH (real SHA256 of the downloaded zip, confirmed by TV1).
     file(DOWNLOAD "${SFML_URL}"
                   "${SFML_ZIP_PATH}"
                   TLS_VERIFY ON
+                  EXPECTED_HASH "${EXPECTED_SFML_HASH}"
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
     if(STATUS_CODE EQUAL 0)
@@ -69,8 +73,20 @@ if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/thirdparty/SFML")
 endif()
 
-# Find SFML 3.0 with required components
-find_package(SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
+# Find SFML 3.0 with required components or fallback to FetchContent
+include(FetchContent)
+find_package(SFML 3.0 COMPONENTS Graphics Window System Audio QUIET)
+if(NOT SFML_FOUND)
+    message(STATUS "SFML 3.0 not found locally or on system. Fetching SFML 3.0.0 via FetchContent...")
+    FetchContent_Declare(
+        SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG        3.0.0
+    )
+    set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(SFML)
+endif()
 
 # ==============================================================================
 # 2.2. FIND OR DOWNLOAD BOX2D LIBRARY
@@ -94,30 +110,21 @@ FetchContent_MakeAvailable(box2d)
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
-# S6-TV1-26: exclude demo files from the production target so the demo's
-# main() does not collide with src/main.cpp (duplicate symbol at link time).
+# Remove main.cpp and demo files from SOURCES to avoid multiple definition of main in game_lib and tests
+list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 list(FILTER SOURCES EXCLUDE REGEX "src/demo/.*\\.cpp$")
 
-add_executable(main ${SOURCES})
-
-# ==============================================================================
-# 4. TARGET BUILD CONFIGURATIONS
-# ==============================================================================
-# Include directories
-target_include_directories(main PRIVATE include)
-
-# Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
-
-# Compiler flags
+# Add global compiler options (must be set before targets)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
+    add_compile_options(-Wall -Wextra -pedantic)
 elseif(MSVC)
-    target_compile_options(main PRIVATE /W4 /permissive- /FS)
+    add_compile_options(/W4 /permissive- /FS)
 endif()
 
-# Link SFML and Box2D libraries
-target_link_libraries(main PRIVATE
+# Core logic static library
+add_library(game_lib STATIC ${SOURCES})
+target_include_directories(game_lib PUBLIC include)
+target_link_libraries(game_lib PUBLIC
     SFML::Graphics
     SFML::Window
     SFML::System
@@ -125,48 +132,58 @@ target_link_libraries(main PRIVATE
     box2d
 )
 
+# Executable target
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE game_lib)
+
+# ==============================================================================
+# 4. TARGET BUILD CONFIGURATIONS
+# ==============================================================================
+# Define DEBUG macro for debug builds
+target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(input_state_tests
         tests/InputStateTests.cpp
-        src/patterns/InputHandler.cpp
-        src/patterns/InputState.cpp
-        src/patterns/RunCommand.cpp
-        src/patterns/ShootCommand.cpp
+
     )
-    target_include_directories(input_state_tests PRIVATE include)
-    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    target_link_libraries(input_state_tests PRIVATE game_lib)
     add_test(NAME input_state_tests COMMAND input_state_tests)
 
     add_executable(tile_collision_span_tests
         tests/TileCollisionSpanTests.cpp
-        src/level/TileCollisionSpans.cpp
-        src/physics/TileContactResolver.cpp
     )
-    target_include_directories(tile_collision_span_tests PRIVATE include)
-    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    target_link_libraries(tile_collision_span_tests PRIVATE game_lib)
     add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
 
     add_executable(mario_physics_tests
         tests/MarioPhysicsTests.cpp
-        src/core/AnimationSystem.cpp
-        src/core/TextureManager.cpp
-        src/entities/Character.cpp
-        src/entities/Entity.cpp
-        src/entities/Mario.cpp
-        src/patterns/EventBus.cpp
     )
-    target_include_directories(mario_physics_tests PRIVATE include)
-    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+    target_link_libraries(mario_physics_tests PRIVATE game_lib)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
 
     add_executable(play_state_tests
         tests/PlayStateTests.cpp
+    )
+    target_link_libraries(play_state_tests PRIVATE game_lib)
+    add_test(NAME play_state_tests COMMAND play_state_tests)
+
+    add_executable(game_manager_tests
+        tests/GameManagerTests.cpp
+        src/core/GameManager.cpp
+    )
+    target_include_directories(game_manager_tests PRIVATE include)
+    target_link_libraries(game_manager_tests PRIVATE SFML::Graphics)
+    add_test(NAME game_manager_tests COMMAND game_manager_tests)
+
+    add_executable(event_bus_tests
+        tests/EventBusTests.cpp
         src/patterns/EventBus.cpp
     )
-    target_include_directories(play_state_tests PRIVATE include)
-    target_link_libraries(play_state_tests PRIVATE SFML::Graphics)
-    add_test(NAME play_state_tests COMMAND play_state_tests)
+    target_include_directories(event_bus_tests PRIVATE include)
+    add_test(NAME event_bus_tests COMMAND event_bus_tests)
 endif()
 
 # Platform-specific Release build settings
@@ -183,13 +200,31 @@ endif()
 # ==============================================================================
 
 # 5.1. Auto-sync assets and levels directories to the build folder.
-# S6-TV1-29: `cmake -E copy_directory` only overwrites files whose content/timestamp
-# changed, so unchanged assets are not re-copied on every invocation (incremental).
-add_custom_target(CopyAssets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
-    COMMENT "Auto-syncing assets and level maps to build directory (incremental)..."
-)
+# S6-TV1-29: copy PER-FILE with `copy_if_different`, so an unchanged file is not
+# copied again on a no-op build (unlike `copy_directory`, which re-touches every
+# file each invocation). A GLOB with CONFIGURE_DEPENDS re-scans when files are
+# added/removed.
+file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
+foreach(ASSET_FILE IN LISTS ASSET_FILES)
+    file(RELATIVE_PATH ASSET_REL "${CMAKE_SOURCE_DIR}/assets" "${ASSET_FILE}")
+    get_filename_component(ASSET_DEST_DIR "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}" DIRECTORY)
+    add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ASSET_DEST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASSET_FILE}" "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}"
+        COMMENT "Syncing asset ${ASSET_REL}"
+    )
+endforeach()
+
+file(GLOB_RECURSE LEVEL_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/levels/*")
+foreach(LEVEL_FILE IN LISTS LEVEL_FILES)
+    file(RELATIVE_PATH LEVEL_REL "${CMAKE_SOURCE_DIR}/levels" "${LEVEL_FILE}")
+    get_filename_component(LEVEL_DEST_DIR "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}" DIRECTORY)
+    add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${LEVEL_DEST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LEVEL_FILE}" "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}"
+        COMMENT "Syncing level ${LEVEL_REL}"
+    )
+endforeach()
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)

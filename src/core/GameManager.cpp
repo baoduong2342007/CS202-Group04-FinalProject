@@ -24,52 +24,53 @@ void GameManager::popState() {
     m_pendingOps.push_back({StateOp::POP, nullptr});
 }
 
-void GameManager::processPendingOps() {
-    // Process all queued operations in order. This runs at a safe point
-    // (end of update) so no state is destroyed while it is on the call stack.
-    for (auto& op : m_pendingOps) {
-        switch (op.op) {
-            case StateOp::CHANGE: {
-                if (m_currentState) {
-                    m_currentState->onExit();
-                }
-                // Hard change: previous state is no longer needed
-                m_previousState.reset();
-                m_currentState = std::move(op.state);
-                if (m_currentState) {
-                    m_currentState->onEnter();
-                }
-                break;
+void GameManager::applyOp(PendingOp& op) {
+    switch (op.op) {
+        case StateOp::CHANGE: {
+            // Hard change: tear down every state on the stack (calling each onExit),
+            // then replace with the single new state.
+            for (auto& st : m_stateStack) {
+                if (st) st->onExit();
             }
-            case StateOp::PUSH: {
-                if (m_currentState) {
-                    m_currentState->onPause();
-                }
-                m_previousState = std::move(m_currentState);
-                m_currentState = std::move(op.state);
-                if (m_currentState) {
-                    m_currentState->onEnter();
-                }
-                break;
+            m_stateStack.clear();
+            m_stateStack.push_back(std::move(op.state));
+            if (top()) top()->onEnter();
+            break;
+        }
+        case StateOp::PUSH: {
+            // Overlay: pause the current top, then push the new state on top.
+            if (top()) top()->onPause();
+            m_stateStack.push_back(std::move(op.state));
+            if (top()) top()->onEnter();
+            break;
+        }
+        case StateOp::POP: {
+            // Pop the top state (calling onExit) and resume the one below it.
+            if (top()) top()->onExit();
+            if (!m_stateStack.empty()) {
+                m_stateStack.pop_back();
             }
-            case StateOp::POP: {
-                if (m_currentState) {
-                    m_currentState->onExit();
-                }
-                m_currentState = std::move(m_previousState);
-                if (m_currentState) {
-                    m_currentState->onResume();
-                }
-                break;
-            }
+            if (top()) top()->onResume();
+            break;
         }
     }
-    m_pendingOps.clear();
+}
+
+void GameManager::processPendingOps() {
+    // S6-TV1-16: snapshot the queue before applying ops. If a lifecycle callback
+    // (onEnter/onExit/onResume) queues a new operation, that operation is appended
+    // to the (now empty) m_pendingOps and deferred to the next safe point, instead of
+    // invalidating the iteration over m_pendingOps mid-loop.
+    std::vector<PendingOp> ops;
+    ops.swap(m_pendingOps);
+    for (auto& op : ops) {
+        applyOp(op);
+    }
 }
 
 void GameManager::update(float dt) {
-    if (m_currentState) {
-        m_currentState->update(dt);
+    if (top()) {
+        top()->update(dt);
     }
 
     // Process deferred state operations at the safe point (end of update)
@@ -77,23 +78,26 @@ void GameManager::update(float dt) {
 }
 
 void GameManager::processEvents(const sf::Event& event) {
-    if (m_currentState) {
-        m_currentState->processEvents(event);
+    if (top()) {
+        top()->processEvents(event);
     }
 }
 
 void GameManager::processInput(const InputState& inputState) {
-    if (m_currentState) {
-        m_currentState->processInput(inputState);
+    if (top()) {
+        top()->processInput(inputState);
     }
 }
 
-void GameManager::render(sf::RenderWindow& window) {
-    if (m_currentState) {
-        // If the current state is an overlay (e.g., PauseState), render the previous state first
-        if (m_currentState->isOverlay() && m_previousState) {
-            m_previousState->render(window);
-        }
-        m_currentState->render(window);
+void GameManager::render(sf::RenderTarget& target) {
+    if (m_stateStack.empty()) {
+        return;
     }
+
+    // If the current top is an overlay (e.g. PauseState), render the state below it
+    // first so the world is visible behind the overlay.
+    if (top()->isOverlay() && m_stateStack.size() >= 2) {
+        m_stateStack[m_stateStack.size() - 2]->render(target);
+    }
+    top()->render(target);
 }

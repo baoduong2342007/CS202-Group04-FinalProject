@@ -7,7 +7,11 @@
 
 #pragma once
 
+#include <memory>
 #include "entities/Character.h"
+#include "states/IMarioState.h"
+
+class FireBall;
 
 // Define Mario's power-up states strictly according to project specifications
 enum class MarioState {
@@ -33,6 +37,7 @@ public:
     [[deprecated("Use Command pattern via InputHandler instead")]]
     void handleInput();
     void jump();
+    void releaseJump();
     void moveLeft();
     void moveRight();
     void stopMoving();
@@ -42,7 +47,9 @@ public:
     void powerDown();
     void queuePowerDown();
     void addScore(int points);
+    void addCoin();
     void collectCoin(int scoreValue = 200);
+    std::unique_ptr<FireBall> shootFireBall(b2World* world);
     void setInvincible(float duration);
     void updateInvincibility(float dt);
     void loseLife();
@@ -53,7 +60,14 @@ public:
     void refreshGroundedState();
     /// Clear grounding when Mario starts an upward movement before the next step.
     void clearGroundedState();
+    /// Checks if 32px overhead space is clear of solid terrain before growing (S6-TV3-11).
+    bool hasCeilingClearance() const;
+    EntityType getType() const override { return EntityType::MARIO; }
     bool isMario() const override { return true; }
+
+    // Double Dispatch collision overrides
+    void onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal) override;
+    void onCollisionEnd(Entity* other, b2Contact* contact) override;
 
     // 4. Getters / Setters
     MarioState getMarioState() const;
@@ -71,6 +85,8 @@ public:
 
     bool isRunning() const;
     bool isSkidding() const;
+    bool isDying() const;
+    bool isTransforming() const { return m_isTransforming; }
 
 protected:
     // 5. Protected methods
@@ -81,6 +97,7 @@ protected:
 
     // 6. Protected / Private members
     MarioState m_marioState;
+    std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
     float m_moveSpeed;
     int m_score;
@@ -89,13 +106,36 @@ protected:
     float m_invincibilityTimer;
     int m_lives;
 
+    bool m_isDying;
+    float m_deathTimer;
     bool m_isRunning;
     bool m_isSkidding;
     bool m_wasJumpPressed;
+
+    // Transformation effect
+    bool m_isTransforming;
+    float m_transformTimer;
+
+    // Fixture Caching
+    b2Fixture* m_smallFixture = nullptr;
+    b2Fixture* m_superFixture = nullptr;
+
     bool m_pendingFixtureRebuild = false;
     bool m_pendingPowerDown = false;
     sf::Vector2f m_respawnPosition;
 
     float m_inputDirX = 0.0f;
     bool m_jumpRequested = false;
+    bool m_jumpReleased = false;
+
+    float m_fireCooldown = 0.0f;
+    static constexpr float FIRE_COOLDOWN_DURATION = 0.25f; // 250ms per S6-TV3-18
+
+    // Dynamic Pit Threshold & Map Bounds (S6-TV3-07)
+    float m_pitThreshold = 800.0f;
+
+public:
+    void setPitThreshold(float threshold) { m_pitThreshold = threshold; }
+    float getPitThreshold() const { return m_pitThreshold; }
 };
+

@@ -24,23 +24,24 @@
 
 namespace {
     const sf::Color FADE_START_COLOR(0, 0, 0, 0);
+
+    // Death/Damage Camera Shake configuration
+    constexpr float DEATH_SHAKE_DURATION = 0.5f;
+    constexpr float DEATH_SHAKE_INTENSITY = 15.0f;
+    constexpr float DAMAGE_SHAKE_DURATION = 0.3f;
+    constexpr float DAMAGE_SHAKE_INTENSITY = 8.0f;
 }
 
 PlayState::PlayState() {
     // S6-TV1-06/07: New Game always starts at Level 1 (one-based), never Level 0.
     m_progress.currentLevel = 1;
-
-    if (!loadLevel(m_progress.currentLevel)) {
-        // S6-TV1-11: level load failure returns the player to the Menu with a message.
-        std::cerr << "[PlayState] Failed to load Level " << m_progress.currentLevel
-                  << " — returning to Menu." << std::endl;
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
-    }
-
-    // Bind commands to InputHandler
-    rebindCommands();
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
+
+    // S6-TV1-11: the level is NOT loaded here (in the constructor). Loading is
+    // performed in onEnter() so a load failure can be propagated as a Menu
+    // transition in the correct FIFO order — if we queued the Menu transition here
+    // it would be processed before the caller's queued PlayState and the final state
+    // would be an empty PlayState.
 }
 
 PlayState::~PlayState() {
@@ -88,13 +89,31 @@ void PlayState::rebindCommands() {
 
 void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
+    EventBus::getInstance().subscribe(EventType::PLAYER_LOST_LIFE, this);
+    EventBus::getInstance().subscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
+
+    // S6-TV1-11: load the initial level here, not in the constructor, so a failure
+    // can propagate a Menu transition in the correct order. On success we emit
+    // LEVEL_STARTED exactly once.
+    if (!loadLevel(m_progress.currentLevel)) {
+        std::cerr << "[PlayState] Failed to load Level " << m_progress.currentLevel
+                  << " — returning to Menu." << std::endl;
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        return;
+    }
+
+    restoreProgress(); // no-op for default progress on a brand-new Level 1
+    rebindCommands();
     SoundManager::getInstance().playMusic();
+    EventBus::getInstance().notify(EventType::LEVEL_STARTED);
 }
 
 void PlayState::onExit() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
+    EventBus::getInstance().unsubscribe(EventType::PLAYER_LOST_LIFE, this);
+    EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
     SoundManager::getInstance().stopMusic();
@@ -117,12 +136,22 @@ void PlayState::onNotify(EventType event) {
     }
 
     if (event == EventType::PLAYER_DIED) {
+        if (m_level) {
+            m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
+        }
         m_terminalCommittedThisFrame = true;
-        if (m_level && m_level->getMario() && m_level->getMario()->getLives() <= 0) {
-            m_needsGameOver = true;
-        } else {
-            // Defer reload to next frame — may be called during Box2D step
-            m_needsReload = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before game over
+        m_isGameOverPending = true;
+    } else if (event == EventType::PLAYER_LOST_LIFE) {
+        if (m_level) {
+            m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
+        }
+        m_terminalCommittedThisFrame = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before reloading
+        m_isReloadPending = true;
+    } else if (event == EventType::PLAYER_POWER_DOWN) {
+        if (m_level) {
+            m_level->getCamera().shake(DAMAGE_SHAKE_DURATION, DAMAGE_SHAKE_INTENSITY);
         }
     } else if (event == EventType::LEVEL_COMPLETED) {
         m_terminalCommittedThisFrame = true;
@@ -145,17 +174,25 @@ void PlayState::processEvents(const sf::Event& event) {
 }
 
 void PlayState::processInput(const InputState& inputState) {
+    // S6-TV1-12: block all gameplay input during a transition (freeze).
+    if (m_transitionPhase != TransitionPhase::NONE) {
+        return;
+    }
+    // S6-TV5-05: block commands when death/GameOver pending or player inactive.
     if (!m_level || !m_level->getMario() ||
-        m_transitionPhase != TransitionPhase::NONE ||
         m_needsReload || m_needsGameOver ||
         !m_level->getMario()->isActive()) {
-        // Do not let movement/shoot commands buffer while the state is
-        // transitioning, waiting for death/GameOver, or the player is dead.
         return;
     }
 
     m_level->getMario()->setMoveIntent(0.0f);
     m_inputHandler.handleInput(inputState);
+
+    if (inputState.wasReleased(sf::Keyboard::Key::W) ||
+        inputState.wasReleased(sf::Keyboard::Key::Up) ||
+        inputState.wasReleased(sf::Keyboard::Key::Space)) {
+        m_level->getMario()->releaseJump();
+    }
 }
 
 void PlayState::snapshotProgress() {
@@ -219,17 +256,18 @@ bool PlayState::loadLevel(int levelNumber) {
     return true;
 }
 
-void PlayState::navigateToLevel(int levelNumber) {
+bool PlayState::navigateToLevel(int levelNumber) {
     // S6-TV1-10/12: restore progress onto the newly created Mario/HUD.
     if (!loadLevel(levelNumber)) {
         std::cerr << "[PlayState] Failed to load Level " << levelNumber
                   << " — returning to Menu." << std::endl;
         GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
+        return false;
     }
     restoreProgress();
     rebindCommands();
     m_fadeAlpha = 0.f;
+    return true;
 }
 
 void PlayState::update(float dt) {
@@ -243,6 +281,19 @@ void PlayState::update(float dt) {
         return;
     }
 
+    if (m_deathDelayTimer > 0.f) {
+        m_deathDelayTimer -= dt;
+        if (m_deathDelayTimer <= 0.f) {
+            if (m_isGameOverPending) {
+                m_needsGameOver = true;
+            } else if (m_isReloadPending) {
+                m_needsReload = true;
+            }
+            m_isGameOverPending = false;
+            m_isReloadPending = false;
+        }
+    }
+
     // Handle deferred state changes (safe: outside Box2D step)
     if (m_needsGameOver) {
         m_needsGameOver = false;
@@ -254,6 +305,7 @@ void PlayState::update(float dt) {
     if (m_needsReload) {
         m_needsReload = false;
         m_terminalCommittedThisFrame = true;
+        snapshotProgress(); // CRITICAL: Save progress (like decremented lives) before reloading!
         navigateToLevel(m_progress.currentLevel);
         return;
     }
@@ -289,8 +341,12 @@ void PlayState::updateTransition(float dt) {
                 GameManager::getInstance().changeState(
                     std::make_unique<WinState>(m_progress));
                 m_transitionPhase = TransitionPhase::NONE;
+            } else if (!navigateToLevel(m_transitionTargetLevel)) {
+                // S6-TV1-11/12: the reload failed — a Menu transition has been
+                // queued. Abort the transition WITHOUT entering FADE_IN and WITHOUT
+                // emitting LEVEL_STARTED for a level that never loaded.
+                m_transitionPhase = TransitionPhase::NONE;
             } else {
-                navigateToLevel(m_transitionTargetLevel);
                 // navigateToLevel() resets m_fadeAlpha to 0 — restore it so
                 // FADE_IN starts from a fully black screen.
                 m_fadeAlpha = 255.f;
@@ -315,21 +371,21 @@ void PlayState::updateTransition(float dt) {
     }
 }
 
-void PlayState::render(sf::RenderWindow& window) {
+void PlayState::render(sf::RenderTarget& target) {
     if (!m_level) {
         return; // Level failed to load — Menu transition is pending.
     }
 
-    m_level->render(window);
+    m_level->render(target);
 
     // Switch to default view for UI overlay
-    window.setView(window.getDefaultView());
+    target.setView(target.getDefaultView());
     if (m_hud) {
-        m_hud->draw(window);
+        m_hud->draw(target);
     }
 
     if (m_fadeAlpha > 0.f) {
-        m_fadeOverlay.setSize(sf::Vector2f(window.getSize()));
-        window.draw(m_fadeOverlay);
+        m_fadeOverlay.setSize(sf::Vector2f(target.getSize()));
+        target.draw(m_fadeOverlay);
     }
 }

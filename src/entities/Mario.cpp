@@ -51,8 +51,8 @@ constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
-const sf::Vector2f SMALL_MARIO_SIZE(32.f, 32.f);
-const sf::Vector2f SUPER_MARIO_SIZE(32.f, 64.f);
+const sf::Vector2f SMALL_MARIO_SIZE(28.f, 30.f);
+const sf::Vector2f SUPER_MARIO_SIZE(28.f, 60.f);
 constexpr float MARIO_FIXTURE_DENSITY = 1.0f;
 constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
 
@@ -266,8 +266,9 @@ void Mario::preparePhysics(float dt) {
   }
 
   // Apply player input before Box2D advances so the current frame reacts immediately.
-  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, false);
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested, m_jumpReleased);
   m_jumpRequested = false;
+  m_jumpReleased = false;
 }
 
 // DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
@@ -432,6 +433,10 @@ void Mario::jump() {
     return;
 
   m_jumpRequested = true;
+}
+
+void Mario::releaseJump() {
+  m_jumpReleased = true;
 }
 
 void Mario::moveLeft() {
@@ -801,6 +806,7 @@ void Mario::onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& no
     Item* item = static_cast<Item*>(other);
     if (item && !item->isCollected()) {
       item->onCollect(*this);
+      item->markForRemoval();
     }
     return;
   }
@@ -809,7 +815,23 @@ void Mario::onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& no
   if (other->getType() == EntityType::ENEMY) {
     Enemy* enemy = static_cast<Enemy*>(other);
     // Stomp check
-    if (contactNormal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(contactNormal.x) < MAX_WALL_NORMAL_X && marioVel.y >= -0.1f) {
+    bool isStomp = false;
+    if (contactNormal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(contactNormal.x) < MAX_WALL_NORMAL_X) {
+      isStomp = true;
+    } else {
+      b2Body* enemyBody = other->getBody();
+      if (enemyBody && m_body) {
+        float marioHalfHeight = PhysicsEngine::pixelsToMeters(getSize().y / 2.0f);
+        float marioBottomMeters = m_body->GetPosition().y + marioHalfHeight;
+        float enemyMidMeters = enemyBody->GetPosition().y;
+        float tolerance = PhysicsEngine::pixelsToMeters(other->getSize().y * 0.2f);
+        if (marioBottomMeters <= enemyMidMeters + tolerance) {
+          isStomp = true;
+        }
+      }
+    }
+
+    if (isStomp) {
       setGrounded(true);
       if (enemy) {
         enemy->onStomp();

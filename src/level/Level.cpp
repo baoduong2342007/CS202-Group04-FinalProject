@@ -88,6 +88,7 @@ void Level::spawnEntitiesFromTileMap() {
         sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
         m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
+        float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
         m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
@@ -209,11 +210,16 @@ void Level::checkItemCollisions() {
         if (!entity->isItem()) continue;
 
         Item* item = static_cast<Item*>(entity.get());
-        if (!item->isCollected()) {
-            if (item->checkOverlap(*m_mario)) {
-                item->onCollect(*m_mario);
+        if (item->isCollected()) {
+            if (!item->shouldRemove()) {
                 item->markForRemoval();
             }
+            continue;
+        }
+
+        if (item->checkOverlap(*m_mario)) {
+            item->onCollect(*m_mario);
+            item->markForRemoval();
         }
     }
 }

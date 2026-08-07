@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(SuperMario VERSION 1.0 LANGUAGES CXX)
 
 # ==============================================================================
@@ -109,30 +110,21 @@ FetchContent_MakeAvailable(box2d)
 # CONFIGURE_DEPENDS ensures CMake automatically detects newly created source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
-# S6-TV1-26: exclude demo files from the production target so the demo's
-# main() does not collide with src/main.cpp (duplicate symbol at link time).
+# Remove main.cpp and demo files from SOURCES to avoid multiple definition of main in game_lib and tests
+list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 list(FILTER SOURCES EXCLUDE REGEX "src/demo/.*\\.cpp$")
 
-add_executable(main ${SOURCES})
-
-# ==============================================================================
-# 4. TARGET BUILD CONFIGURATIONS
-# ==============================================================================
-# Include directories
-target_include_directories(main PRIVATE include)
-
-# Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
-
-# Compiler flags
+# Add global compiler options (must be set before targets)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(main PRIVATE -Wall -Wextra -pedantic)
+    add_compile_options(-Wall -Wextra -pedantic)
 elseif(MSVC)
-    target_compile_options(main PRIVATE /W4 /permissive- /FS)
+    add_compile_options(/W4 /permissive- /FS)
 endif()
 
-# Link SFML and Box2D libraries
-target_link_libraries(main PRIVATE
+# Core logic static library
+add_library(game_lib STATIC ${SOURCES})
+target_include_directories(game_lib PUBLIC include)
+target_link_libraries(game_lib PUBLIC
     SFML::Graphics
     SFML::Window
     SFML::System
@@ -140,50 +132,41 @@ target_link_libraries(main PRIVATE
     box2d
 )
 
+# Executable target
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE game_lib)
+
+# ==============================================================================
+# 4. TARGET BUILD CONFIGURATIONS
+# ==============================================================================
+# Define DEBUG macro for debug builds
+target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(input_state_tests
         tests/InputStateTests.cpp
-        src/patterns/InputHandler.cpp
-        src/patterns/InputState.cpp
     )
-    target_include_directories(input_state_tests PRIVATE include)
-    target_link_libraries(input_state_tests PRIVATE SFML::Window)
+    target_link_libraries(input_state_tests PRIVATE game_lib)
     add_test(NAME input_state_tests COMMAND input_state_tests)
 
     add_executable(tile_collision_span_tests
         tests/TileCollisionSpanTests.cpp
-        src/level/TileCollisionSpans.cpp
-        src/physics/TileContactResolver.cpp
     )
-    target_include_directories(tile_collision_span_tests PRIVATE include)
-    target_link_libraries(tile_collision_span_tests PRIVATE box2d)
+    target_link_libraries(tile_collision_span_tests PRIVATE game_lib)
     add_test(NAME tile_collision_span_tests COMMAND tile_collision_span_tests)
 
     add_executable(mario_physics_tests
-    	tests/MarioPhysicsTests.cpp
-    	src/core/AnimationSystem.cpp
-    	src/core/TextureManager.cpp
-    	src/entities/Character.cpp
-    	src/entities/Entity.cpp
-    	src/entities/FireBall.cpp
-    	src/entities/Mario.cpp
-    	src/items/Item.cpp
-    	src/patterns/EventBus.cpp
-    	src/states/FireMarioState.cpp
-    	src/states/SmallMarioState.cpp
-    	src/states/SuperMarioState.cpp
-	)
-    target_include_directories(mario_physics_tests PRIVATE include)
-    target_link_libraries(mario_physics_tests PRIVATE SFML::Graphics box2d)
+        tests/MarioPhysicsTests.cpp
+    )
+    target_link_libraries(mario_physics_tests PRIVATE game_lib)
     add_test(NAME mario_physics_tests COMMAND mario_physics_tests)
 
     add_executable(play_state_tests
         tests/PlayStateTests.cpp
-        src/patterns/EventBus.cpp
     )
-    target_include_directories(play_state_tests PRIVATE include)
-    target_link_libraries(play_state_tests PRIVATE SFML::Graphics)
+    target_link_libraries(play_state_tests PRIVATE game_lib)
     add_test(NAME play_state_tests COMMAND play_state_tests)
 
     add_executable(game_manager_tests

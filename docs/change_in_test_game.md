@@ -194,4 +194,10 @@
   6. **Giải quyết xung đột 5 file**: Xử lý mượt mà conflict ở `PauseState.h/.cpp`, `GameOverState.cpp`, `WinState.cpp`, `TileMap.cpp`. Kết hợp menu `UIMenuWidget` với chức năng chỉnh âm lượng Music/SFX bằng phím Trái/Phải.
   7. **Biên dịch & CTest 9/9 Pass**: Biên dịch Debug/Release thành công 100%, tất cả 9/9 bài test CTest đều vượt qua.
 
+### Entry #18: [Clean Code & Warnings Fix] - Loại Bỏ `#include "core/DisplayConfig.h"` Thừa Trong Các State UI
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [GameOverState.cpp](../src/states/GameOverState.cpp), [PauseState.cpp](../src/states/PauseState.cpp), [WinState.cpp](../src/states/WinState.cpp)
+- **Mô tả:** Loại bỏ các câu lệnh `#include "core/DisplayConfig.h"` thừa không được sử dụng trực tiếp trong `GameOverState.cpp`, `PauseState.cpp`, và `WinState.cpp`, dọn sạch cảnh báo IDE và tối ưu hóa biên dịch.
+
+
 

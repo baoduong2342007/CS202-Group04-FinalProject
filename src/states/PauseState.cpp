@@ -7,7 +7,6 @@
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
 #include "patterns/InputState.h"
-#include "core/DisplayConfig.h"
 #include "ui/UILayoutHelper.h"
 #include "states/MenuState.h"
 #include <iomanip>

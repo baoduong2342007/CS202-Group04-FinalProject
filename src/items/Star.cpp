@@ -13,6 +13,7 @@
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float STAR_WIDTH  = 32.f;
@@ -20,8 +21,6 @@ constexpr float STAR_HEIGHT = 32.f;
 constexpr float DEFAULT_STAR_SPEED = 80.f;
 constexpr float DEFAULT_STAR_BOUNCE_VELOCITY = -300.f;
 constexpr float STAR_INVINCIBILITY_DURATION = 10.f;
-constexpr int   STAR_SCORE_VALUE  = 1000;
-
 constexpr const char* STAR_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
 } // namespace
@@ -87,8 +86,9 @@ void Star::onCollect(Mario& mario) {
     // Grant temporary invincibility regardless of current state
     mario.setInvincible(STAR_INVINCIBILITY_DURATION);
 
-    mario.addScore(STAR_SCORE_VALUE);
+    ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
 
     // Notify observers (SoundManager plays powerup.wav, HUD updates score)
     EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    EventBus::getInstance().notify(EventType::PLAYER_STAR_COLLECTED);
 }

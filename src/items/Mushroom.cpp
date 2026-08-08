@@ -12,13 +12,12 @@
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float MUSHROOM_WIDTH  = 32.f;
 constexpr float MUSHROOM_HEIGHT = 32.f;
 constexpr float DEFAULT_MUSHROOM_SPEED = 60.f;
-constexpr int   MUSHROOM_SCORE_VALUE  = 1000;
-
 constexpr const char* MUSHROOM_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
 } // namespace
@@ -79,15 +78,15 @@ void Mushroom::onCollect(Mario& mario) {
     bool eventPublished = false;
     if (m_type == MushroomType::ONE_UP) {
         mario.addLife(1);
-        mario.addScore(1000);
-        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
-        eventPublished = true;
+        ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
+        EventBus::getInstance().notify(EventType::ONE_UP_COLLECTED);
+        return;
     } else {
         if (mario.getMarioState() == MarioState::SMALL) {
             mario.powerUp(MarioState::SUPER);
             eventPublished = true;
         }
-        mario.addScore(MUSHROOM_SCORE_VALUE);
+        ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
     }
 
     // Mario::powerUp() owns the event for a state-changing pickup. For a

@@ -12,6 +12,8 @@
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 namespace {
 
@@ -196,6 +198,7 @@ void Koopa::kick(Direction direction) {
     }
 
     setVelocity(velocity);
+    EventBus::getInstance().notify(EventType::SHELL_KICKED);
 }
 
 bool Koopa::isInShell() const {

@@ -12,6 +12,7 @@
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float FIRE_FLOWER_WIDTH  = 32.f;
@@ -63,7 +64,7 @@ void FireFlower::onCollect(Mario& mario) {
         mario.powerUp(MarioState::FIRE);
     }
 
-    mario.addScore(FIRE_FLOWER_SCORE_VALUE);
+    ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
 
     // Mario::powerUp() publishes the event when the state changes. If Mario
     // is already FIRE, publish exactly one event for this pickup here.

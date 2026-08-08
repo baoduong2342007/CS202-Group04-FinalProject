@@ -9,6 +9,7 @@
 #include "entities/Mario.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float COIN_WIDTH  = 16.f;
@@ -95,7 +96,7 @@ void Coin::onCollect(Mario& mario) {
 }
 
 void Coin::awardTo(Mario& mario) {
-    mario.collectCoin(COIN_SCORE_VALUE);
+    mario.collectCoin(ScoreRules::pointsFor(ScoreEvent::COIN_COLLECTED));
 
     int coins = mario.getCoinCount();
     while (coins >= COINS_PER_LIFE) {

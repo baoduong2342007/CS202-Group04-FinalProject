@@ -24,6 +24,8 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 namespace {
 
@@ -605,10 +607,13 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
             entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f)));
             entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f)));
 
+            EventBus::getInstance().notify(EventType::BRICK_BROKEN);
+
             return true;
         } else {
             // Small Mario bump: Block bounces up slightly
             triggerTileBump(column, row);
+            EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
             return true;
         }
     }

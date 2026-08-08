@@ -22,6 +22,7 @@
 #include "physics/TileContactResolver.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
@@ -222,7 +223,13 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (target) {
             if (target->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(target);
-                enemy->takeDamage(100);
+                if (!enemy->isDead()) {
+                    enemy->takeDamage(100);
+                    if (enemy->isDead() && fireBall->getOwner()) {
+                        Mario* owner = fireBall->getOwner();
+                        ScoreRules::award(*owner, ScoreEvent::FIREBALL_DEFEATED);
+                    }
+                }
                 fireBall->deactivate();
                 return;
             }
@@ -389,6 +396,7 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                 Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
                 koopa->kick(kickDir);
                 EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+                ScoreRules::award(*mario, ScoreEvent::ENEMY_STOMPED);
 
                 float currentY = marioBody->GetLinearVelocity().y;
                 float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
@@ -400,6 +408,7 @@ void CollisionManager::handleMarioCollision(Mario* mario,
 
         enemy->onStomp();
         EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+        ScoreRules::award(*mario, ScoreEvent::ENEMY_STOMPED);
 
         float currentY = marioBody->GetLinearVelocity().y;
         float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);

@@ -15,6 +15,8 @@
 #include "items/FireFlower.h"
 #include "items/Star.h"
 #include "entities/Mario.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 namespace {
 constexpr float BLOCK_SIZE = 32.f;
@@ -68,6 +70,7 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
     m_bumpTimer = 0.f;
 
     playAnimation("empty");
+    EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
 
     // A '?' block resolves its content exactly once at hit time. SMALL Mario
     // gets a Mushroom; powered-up Mario gets a FireFlower.
@@ -112,6 +115,10 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
             star->setTextureManager(texMgr);
             star->setCollectibleDelay(ITEM_EMERGE_DELAY);
             entities->push_back(std::move(star));
+        }
+
+        if (resolvedContent != QuestionBlockContent::COIN) {
+            EventBus::getInstance().notify(EventType::ITEM_EMERGED);
         }
     }
 }

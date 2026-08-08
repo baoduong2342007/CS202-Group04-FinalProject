@@ -15,20 +15,20 @@ GameOverState::GameOverState(const GameProgress& progress)
         std::cerr << "Failed to load font in GameOverState\n";
     }
     m_text.setString("GAME OVER\n\nPRESS ENTER OR CLICK TO MENU");
-    m_text.setCharacterSize(32);
+    m_text.setCharacterSize(16);
     m_text.setFillColor(sf::Color::White);
     
     sf::FloatRect bounds = m_text.getLocalBounds();
     m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
-    m_text.setPosition({640.f, 360.f});
+    m_text.setPosition({320.f, 150.f});
 
     m_scoreText.setString("SCORE: " + std::to_string(m_progress.score));
-    m_scoreText.setCharacterSize(24);
+    m_scoreText.setCharacterSize(14);
     m_scoreText.setFillColor(sf::Color::Yellow);
     sf::FloatRect scoreBounds = m_scoreText.getLocalBounds();
     m_scoreText.setOrigin({scoreBounds.position.x + scoreBounds.size.x / 2.f,
                            scoreBounds.position.y + scoreBounds.size.y / 2.f});
-    m_scoreText.setPosition({640.f, 420.f});
+    m_scoreText.setPosition({320.f, 210.f});
 }
 
 void GameOverState::onEnter() {}

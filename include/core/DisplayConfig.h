@@ -24,12 +24,12 @@ namespace DisplayConfig {
      * @brief The internal logical rendering width. 
      * @details The game is drawn to a texture of this size, which is then scaled up to fit the window.
      */
-    constexpr unsigned int LOGICAL_WIDTH = 426;
+    constexpr unsigned int LOGICAL_WIDTH = 640;
 
     /**
      * @brief The internal logical rendering height.
      */
-    constexpr unsigned int LOGICAL_HEIGHT = 240;
+    constexpr unsigned int LOGICAL_HEIGHT = 360;
 
     /**
      * @brief The maximum allowed frame rate (FPS) for the application.

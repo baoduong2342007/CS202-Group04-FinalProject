@@ -293,6 +293,7 @@ void HUD::refreshText() {
                 powerLabel = "SUPER";
                 break;
             case MarioState::FIRE:
+            case MarioState::FIRE_SMALL:
                 powerLabel = "FIRE";
                 break;
         }

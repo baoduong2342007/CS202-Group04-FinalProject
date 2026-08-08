@@ -12,9 +12,13 @@ PauseState::PauseState() : m_font(), m_text(m_font) {
     if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
         std::cerr << "Failed to load font in PauseState\n";
     }
-    m_text.setString("PAUSED\nPress ESC to Resume");
-    m_text.setCharacterSize(40);
-    m_text.setPosition({400.f, 300.f});
+    m_text.setString("PAUSED\n\nPRESS ESC TO RESUME");
+    m_text.setCharacterSize(16);
+    m_text.setFillColor(sf::Color::White);
+    
+    sf::FloatRect bounds = m_text.getLocalBounds();
+    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+    m_text.setPosition({320.f, 180.f});
 }
 
 void PauseState::onEnter() {}

@@ -6,6 +6,8 @@
 #pragma once
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
+#include <memory>
+#include "ui/UIMenuWidget.h"
 
 class PauseState : public IGameState {
 public:
@@ -57,5 +59,6 @@ public:
 
 private:
     sf::Font m_font;
-    sf::Text m_text;
+    sf::Text m_titleText;
+    std::unique_ptr<UIMenuWidget> m_menu;
 };

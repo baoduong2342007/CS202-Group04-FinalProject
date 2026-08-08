@@ -199,5 +199,11 @@
 - **File ảnh hưởng:** [GameOverState.cpp](../src/states/GameOverState.cpp), [PauseState.cpp](../src/states/PauseState.cpp), [WinState.cpp](../src/states/WinState.cpp)
 - **Mô tả:** Loại bỏ các câu lệnh `#include "core/DisplayConfig.h"` thừa không được sử dụng trực tiếp trong `GameOverState.cpp`, `PauseState.cpp`, và `WinState.cpp`, dọn sạch cảnh báo IDE và tối ưu hóa biên dịch.
 
+### Entry #19: [Clean Code & Compiler Warning Fix] - Handle `MarioState::FIRE_SMALL` in `HUD::getPowerLabel()`
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [HUD.cpp](../src/ui/HUD.cpp)
+- **Mô tả:** Bổ sung `case MarioState::FIRE_SMALL` vào câu lệnh `switch` trong phương thức `HUD::getPowerLabel()`, dọn dứt điểm cảnh báo `-Wswitch` của trình biên dịch GCC/Clang.
+
+
 
 

@@ -220,6 +220,7 @@ std::string HUD::getPowerLabel() const {
         case MarioState::SUPER:
             return "SUPER";
         case MarioState::FIRE:
+        case MarioState::FIRE_SMALL:
             return "FIRE";
     }
 

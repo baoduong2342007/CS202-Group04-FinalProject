@@ -182,3 +182,16 @@
   6. **Giải quyết xung đột 9 file**: Xử lý mượt mà toàn bộ 9 file conflict và thêm block Header Comment cho `TileFrames.h` cùng sửa include order cho `Goomba.cpp`.
   7. **Biên dịch & CTest 9/9 Pass**: Dự án biên dịch sạch sẽ 100%, vượt qua toàn bộ 9/9 bài test CTest tự động.
 
+### Entry #17: [Merge Engine Core Systems & Clean Code] - Merge Branch TV2 (`origin/feature/engine-core-systems`) Về `develop` & Sửa Warning `Koopa.cpp`
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Koopa.cpp](../src/entities/Koopa.cpp), [UILayoutHelper.h](../include/ui/UILayoutHelper.h), [UILayoutHelper.cpp](../src/ui/UILayoutHelper.cpp), [UIMenuWidget.h](../include/ui/UIMenuWidget.h), [UIMenuWidget.cpp](../src/ui/UIMenuWidget.cpp), [Game.cpp](../src/core/Game.cpp), [PhysicsEngine.h](../include/physics/PhysicsEngine.h), [PhysicsEngine.cpp](../src/physics/PhysicsEngine.cpp), [TileMap.h](../include/level/TileMap.h), [TileMap.cpp](../src/level/TileMap.cpp), [Level.cpp](../src/level/Level.cpp), [Mario.cpp](../src/entities/Mario.cpp), [PauseState.h](../include/states/PauseState.h), [PauseState.cpp](../src/states/PauseState.cpp), [GameOverState.h](../include/states/GameOverState.h), [GameOverState.cpp](../src/states/GameOverState.cpp), [WinState.h](../include/states/WinState.h), [WinState.cpp](../src/states/WinState.cpp)
+- **Mô tả:** 
+  1. **Sửa warning IDE `Koopa.cpp`**: Loại bỏ `#include "core/SpriteFrames.h"` không sử dụng trực tiếp trong `src/entities/Koopa.cpp`.
+  2. **Tích hợp bộ helper giao diện UI (`UILayoutHelper` & `UIMenuWidget`)**: Thêm module định vị UI theo điểm neo (`UIAnchor`) và widget menu tương tác hỗ trợ phím mũi tên (`Up`/`Down`/`W`/`S`) + `Enter`.
+  3. **Tối ưu hóa game loop (`Game.cpp`)**: Bổ sung `MAX_DELTA_TIME` clamping (0.1s), xử lý an toàn khi đóng cửa sổ (`m_window.close(); return;`), và bắt buộc khóa tỉ lệ màn hình 16:9 khi resize window.
+  4. **Tách lớp Render Foreground (`TileMap` & `Level`)**: Bổ sung `renderForeground()` vẽ khối gạch, ống nước, cờ đè lên entity và Mario theo đúng chuẩn NES.
+  5. **Giới hạn Substep Physics (`PhysicsEngine`)**: Thêm giới hạn `MAX_SUBSTEPS = 8` để ngăn ngừa lặp vô hạn catch-up lag khi giật khung hình.
+  6. **Giải quyết xung đột 5 file**: Xử lý mượt mà conflict ở `PauseState.h/.cpp`, `GameOverState.cpp`, `WinState.cpp`, `TileMap.cpp`. Kết hợp menu `UIMenuWidget` với chức năng chỉnh âm lượng Music/SFX bằng phím Trái/Phải.
+  7. **Biên dịch & CTest 9/9 Pass**: Biên dịch Debug/Release thành công 100%, tất cả 9/9 bài test CTest đều vượt qua.
+
+

@@ -6,6 +6,7 @@
 #include "states/PauseState.h"
 #include "core/GameManager.h"
 #include "patterns/InputState.h"
+#include "core/DisplayConfig.h"
 #include <iostream>
 
 PauseState::PauseState() : m_font(), m_text(m_font) {
@@ -13,8 +14,11 @@ PauseState::PauseState() : m_font(), m_text(m_font) {
         std::cerr << "Failed to load font in PauseState\n";
     }
     m_text.setString("PAUSED\nPress ESC to Resume");
-    m_text.setCharacterSize(40);
-    m_text.setPosition({400.f, 300.f});
+    m_text.setCharacterSize(20);
+    
+    sf::FloatRect bounds = m_text.getLocalBounds();
+    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+    m_text.setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, DisplayConfig::LOGICAL_HEIGHT / 2.f});
 }
 
 void PauseState::onEnter() {}

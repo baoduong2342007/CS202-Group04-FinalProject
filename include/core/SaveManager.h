@@ -26,6 +26,7 @@ public:
     ~SaveManager() = default;
 
     // 2. Public methods
+    bool load();
     void resetToDefaults();
 
     // 3. Getters / Setters

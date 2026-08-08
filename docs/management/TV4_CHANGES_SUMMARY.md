@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-32
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-33
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1089,6 +1089,64 @@ Các chức năng trên được triển khai trong S6-TV4-39.
 - Music volume mặc định bằng 70.
 - Save path có thể được inject để phục vụ test.
 - Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 21. Load High Score
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-33 - Load high score từ save file
+
+`SaveManager` được bổ sung `load()` để đọc persistent data từ save path đã được cấu hình.
+
+Save file version 1 sử dụng định dạng key-value:
+
+``` test
+version 1
+highScore 12500
+highestUnlockedLevel 1
+soundVolume 80
+musicVolume 70
+```
+
+Dữ liệu không được đọc trực tiếp vào `m_data`.
+
+Thay và đó, `load()` đọc vào một `SaveData` tạm thời và chỉ cập nhật state của `SaveManager` sau khi quá trình đọc hoàn tất.
+
+Cách này tránh để `SaveManager` giữ dữ liệu chỉ được load một phần khi file không hợp lệ.
+
+Nếu save file không tồn tại, `SaveManager` quay về default data và không làm game crash.
+
+Version của file cũng được kiểm tra với `SAVE_DATA_VERSION`.
+
+### Phân chia trách nhiệm
+
+Task này tập trung vào việc đọc persistent save data, đặc biệt là `highScore`.
+
+Chưa xử lý:
+- ghi save file;
+- high score monotinic update;
+- level unlock update;
+- audio setting update;
+- atomic file replacement;
+- đầy đủ corrupted-save recovery tests.
+
+Các phần trên được xử lý trong S6-TV4-34 đến S6-TV4-39.
+
+### Kiểm tra
+
+- Save file hợp lệ được mở thành công.
+- High score được đọc đúng từ file.
+- High score vẫn đọc đúng sau khi khởi tạo lại `SaveManager`.
+- Missing save file sử dụng default data.
+- Save version hợp lệ được chấp nhận.
+- State chỉ được cập nhật sau khi quá trình đọc hoàn tất.
+- Project buld thành công.
 - Toàn bộ CTest hiện tại pass.
 
 ---

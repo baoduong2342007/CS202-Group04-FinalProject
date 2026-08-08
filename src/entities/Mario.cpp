@@ -16,6 +16,7 @@
 #include "level/TileMap.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/ScoreRules.h"
 #include "core/AnimationSystem.h"
 #include "states/SmallMarioState.h"
 #include "states/SuperMarioState.h"
@@ -645,9 +646,19 @@ void Mario::addScore(int points) {
   m_score += points;
 }
 
-void Mario::collectCoin(int scoreValue) {
+void Mario::addCoin() {
   ++m_coinCount;
-  addScore(scoreValue);
+}
+
+void Mario::collectCoin(int scoreValue) {
+  addCoin();
+  if (scoreValue == ScoreRules::pointsFor(ScoreEvent::COIN_COLLECTED)) {
+    ScoreRules::award(*this, ScoreEvent::COIN_COLLECTED);
+  } else {
+    // Keep the legacy overload useful for callers with a custom score while
+    // the normal collectible path uses the central score catalog above.
+    addScore(scoreValue);
+  }
   EventBus::getInstance().notify(EventType::COIN_COLLECTED);
 }
 
@@ -714,6 +725,7 @@ void Mario::updateInvincibility(float dt) {
       sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
       m_sprite->setColor(baseColor);
     }
+    EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED);
   }
 }
 
@@ -735,6 +747,10 @@ void Mario::setLives(int lives) {
 
 bool Mario::isRunning() const {
   return m_isRunning;
+}
+
+void Mario::setRunIntent(bool running) {
+  m_isRunning = running;
 }
 
 bool Mario::isSkidding() const {
@@ -806,12 +822,12 @@ void Mario::onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& no
   b2Vec2 marioVel = (m_body) ? m_body->GetLinearVelocity() : b2Vec2(0.f, 0.f);
 
   // 1. Collectible Item Pickup
-  if (other->getType() == EntityType::ITEM) {
-    Item* item = static_cast<Item*>(other);
-    if (item && !item->isCollected()) {
-      item->onCollect(*this);
-      item->markForRemoval();
-    }
+    if (other->getType() == EntityType::ITEM) {
+        Item* item = static_cast<Item*>(other);
+        if (item && item->isCollectible()) {
+            item->onCollect(*this);
+            item->markForRemoval();
+        }
     return;
   }
 

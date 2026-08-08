@@ -6,7 +6,10 @@
 
 #include "entities/FireBall.h"
 #include <iostream>
+#include <vector>
 #include "physics/PhysicsEngine.h"
+#include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
 
 namespace {
 const sf::Vector2f FIREBALL_SIZE(12.f, 12.f);
@@ -24,7 +27,18 @@ FireBall::FireBall()
       m_lifetime(0.f),
       m_bounceCooldown(0.f) {
     initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
-    setSprite("assets/textures/items/items_objects.png");
+    setSprite("assets/textures/mario/MarioLuigi.png");
+    m_animationSystem->addAnimation(
+        "idle",
+        AnimationSystem::createManualAnimation(
+            std::vector<sf::IntRect>{
+                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME1,
+                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME2,
+                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME3,
+                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME4
+            },
+            0.08f));
+    playAnimation("idle");
 }
 
 FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
@@ -38,6 +52,7 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     m_bounceCount = 0;
     m_lifetime = 0.f;
     m_bounceCooldown = 0.f;
+    m_owner = nullptr;
     m_active = true;
     m_pendingDestroy = false;
 

@@ -10,6 +10,8 @@
 #include "entities/Entity.h"
 #include "entities/Character.h" // For Direction enum
 
+class Mario;
+
 class FireBall : public Entity {
 public:
     // 1. Constructor / Destructor
@@ -29,6 +31,10 @@ public:
     /// Re-initialize FireBall for Object Pooling without re-allocating memory
     void spawn(const sf::Vector2f& position, Direction direction, b2World* world);
 
+    /// Record the Mario instance that owns this shot for score attribution.
+    void setOwner(Mario* owner) { m_owner = owner; }
+    Mario* getOwner() const { return m_owner; }
+
     // 4. Getters / Setters
     int getBounceCount() const;
     Direction getDirection() const;
@@ -39,4 +45,5 @@ private:
     int m_bounceCount;
     float m_lifetime;
     float m_bounceCooldown;
+    Mario* m_owner = nullptr; // non-owning; Level owns the projectile and Mario
 };

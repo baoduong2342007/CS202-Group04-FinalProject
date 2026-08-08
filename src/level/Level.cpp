@@ -12,11 +12,13 @@
 #include <cassert>
 
 #include "items/Item.h"
+#include "items/Coin.h"
 #include "patterns/EntityFactory.h"
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
+#include "entities/FireBall.h"
 #include "core/SpriteFrames.h"
 
 #include "core/DisplayConfig.h"
@@ -164,6 +166,23 @@ void Level::update(float dt) {
     }
 }
 
+bool Level::spawnFireBall() {
+    if (!m_mario || !m_world) {
+        return false;
+    }
+
+    std::unique_ptr<FireBall> fireBall = m_mario->shootFireBall(m_world.get());
+    if (!fireBall) {
+        return false;
+    }
+
+    fireBall->setOwner(m_mario.get());
+    fireBall->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(fireBall));
+    EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
+    return true;
+}
+
 void Level::render(sf::RenderTarget& target) {
     // Apply camera view
     target.setView(m_camera.getView());
@@ -209,6 +228,11 @@ void Level::checkItemCollisions() {
 
         Item* item = static_cast<Item*>(entity.get());
         if (item->isCollected()) {
+            if (const auto* coin = dynamic_cast<const Coin*>(item);
+                coin && coin->getCoinType() == CoinType::QUESTION_POPUP &&
+                !item->shouldRemove()) {
+                continue;
+            }
             if (!item->shouldRemove()) {
                 item->markForRemoval();
             }

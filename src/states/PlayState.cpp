@@ -12,6 +12,8 @@
 #include "patterns/MoveLeftCommand.h"
 #include "patterns/MoveRightCommand.h"
 #include "patterns/PauseCommand.h"
+#include "patterns/RunCommand.h"
+#include "patterns/ShootCommand.h"
 
 #include "states/GameOverState.h"
 #include "states/WinState.h"
@@ -80,6 +82,26 @@ void PlayState::rebindCommands() {
                                InputTrigger::Pressed);
         m_inputHandler.bindKey(sf::Keyboard::Key::Space,
                                std::make_unique<JumpCommand>(m_level->getMario()),
+                               InputTrigger::Pressed);
+
+        const auto requestRun = [this] {
+            if (m_level && m_level->getMario()) {
+                m_level->getMario()->setRunIntent(true);
+            }
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
+                               std::make_unique<RunCommand>(requestRun),
+                               InputTrigger::Held);
+        m_inputHandler.bindKey(sf::Keyboard::Key::RShift,
+                               std::make_unique<RunCommand>(requestRun),
+                               InputTrigger::Held);
+
+        m_inputHandler.bindKey(sf::Keyboard::Key::X,
+                               std::make_unique<ShootCommand>([this] {
+                                   if (m_level) {
+                                       m_level->spawnFireBall();
+                                   }
+                               }),
                                InputTrigger::Pressed);
         m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
                                std::make_unique<PauseCommand>(),
@@ -174,6 +196,12 @@ void PlayState::processEvents(const sf::Event& event) {
 }
 
 void PlayState::processInput(const InputState& inputState) {
+    if (m_level && m_level->getMario()) {
+        // Run is an edge-free per-frame intent. Resetting it before dispatch
+        // prevents Shift held during a transition/pause from being buffered.
+        m_level->getMario()->setRunIntent(false);
+    }
+
     // S6-TV1-12: block all gameplay input during a transition (freeze).
     if (m_transitionPhase != TransitionPhase::NONE) {
         return;
@@ -246,10 +274,22 @@ bool PlayState::loadLevel(int levelNumber) {
         m_hud->setTimeWarningCallback([] {
             SoundManager::getInstance().playSound("hurryup");
         });
+        m_hud->setTimeoutCallback([this] {
+            if (!m_level || !m_level->getMario() ||
+                m_transitionPhase != TransitionPhase::NONE ||
+                !m_level->getMario()->isActive() ||
+                m_level->getMario()->isDying()) {
+                return;
+            }
+            // HUD owns the one-shot timeout edge; Mario owns the death event
+            // and life decrement, keeping timeout/death behavior centralized.
+            m_level->getMario()->loseLife();
+        });
     }
 
     // LevelCatalog owns the level-to-MusicId mapping; SoundManager owns the
     // path resolution and streaming lifecycle.
+    SoundManager::getInstance().setLevelMusic(def->music);
     SoundManager::getInstance().playMusic(def->music);
 
     m_fadeOverlay.setFillColor(FADE_START_COLOR);

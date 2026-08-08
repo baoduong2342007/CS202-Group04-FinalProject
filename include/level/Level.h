@@ -35,6 +35,10 @@ public:
     void update(float dt);
     void render(sf::RenderTarget& target);
 
+    /// Spawn one FireBall owned by Mario. Returns false when FIRE/cooldown/pool
+    /// rules reject the request.
+    bool spawnFireBall();
+
     // 4. Getters / Setters
     Mario* getMario();
     const Mario* getMario() const;
@@ -63,4 +67,3 @@ private:
     bool m_levelCompleted = false;
     std::string m_levelPath;
 };
-

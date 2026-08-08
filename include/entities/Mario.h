@@ -48,7 +48,7 @@ public:
     void queuePowerDown();
     void addScore(int points);
     void addCoin();
-    void collectCoin(int scoreValue = 200);
+    void collectCoin(int scoreValue = 100);
     std::unique_ptr<FireBall> shootFireBall(b2World* world);
     void setInvincible(float duration);
     void updateInvincibility(float dt);
@@ -84,6 +84,8 @@ public:
     void setLives(int lives);
 
     bool isRunning() const;
+    /// Set the per-frame run intent consumed by preparePhysics().
+    void setRunIntent(bool running);
     bool isSkidding() const;
     bool isDying() const;
     bool isTransforming() const { return m_isTransforming; }
@@ -138,4 +140,3 @@ public:
     void setPitThreshold(float threshold) { m_pitThreshold = threshold; }
     float getPitThreshold() const { return m_pitThreshold; }
 };
-

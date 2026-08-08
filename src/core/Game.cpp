@@ -103,6 +103,10 @@ void Game::processEvents() {
 void Game::update(float dt) {
   GameManager::getInstance().processInput(m_inputState);
   GameManager::getInstance().update(dt);
+  
+  if (GameManager::getInstance().stackDepth() == 0) {
+      m_window.close();
+  }
 }
 void Game::render() {
   m_renderTexture.clear(DisplayConfig::BACKGROUND_COLOR); // Sky blue background

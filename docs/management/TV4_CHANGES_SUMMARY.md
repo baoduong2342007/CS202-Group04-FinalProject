@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-32
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1040,7 +1040,60 @@ Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn đượ
 
 ---
 
-## 20. Quy Ước Cập Nhật File Này
+## 20. SaveManager Version 1 Foundation
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-32 - Tạo SaveManager version 1
+
+`SaveManager` được tạo làm nơi quản lý dữ liệu persistent của game.
+
+`SaveData` sử dụng version 1 và cung cấp các giá trị mặc định an toàn:
+
+```text
+version = 1
+highScore = 0
+highestUnclockedLevel = 1
+soundVolume = 80
+musicVolume = 70
+```
+
+Save path được truyền vào thông qua constructor và mặc định là `saves/save.txt`
+
+Việc cho phép inject save path giúp các test của `SaveManager` sau này có thể sử dụng file tạm riêng mà không ghi đè lên save file thật của game
+
+### Phân chia trách nhiệm
+
+Task này chỉ tạo cấu trúc `SaveData`, `SaveManager` version 1 và default data.
+
+Chưa xử lý:
+
+- đọc dữ liệu từ save file;
+- ghi dữ liệu xuống save file;
+- cập nhật high score;
+- lưu sound/music volume;
+- atomic file replacement;
+- fallback khi save file bị corrupt hoặc sai version;
+
+Các chức năng trên được triển khai trong S6-TV4-39.
+
+### Kiểm tra
+
+- Save data version mặc định bằng 1.
+- High score mặc định bằng 0.
+- Highest unclocked level mặc định bằng 1.
+- Sound volume mặc định bằng 80.
+- Music volume mặc định bằng 70.
+- Save path có thể được inject để phục vụ test.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 21. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

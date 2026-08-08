@@ -24,6 +24,8 @@
 namespace {
 constexpr unsigned int TILE_SIZE = 32;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
+constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
+
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     const sf::Vector2f cameraCenter = cameraView.getCenter();
@@ -53,6 +55,21 @@ bool shouldCleanupEnemyBehindCamera(const Enemy& enemy, const sf::View& cameraVi
     const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
 
     return enemyRight < cleanupBoundary;
+}
+
+bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float levelHeight) {
+    const sf::FloatRect bounds = entity.getBoundingBox();
+
+    const float left = bounds.position.x;
+    const float right = bounds.position.x + bounds.size.x;
+
+    const float top = bounds.position.y;
+    const float bottom = bounds.position.y + bounds.size.y;
+
+    return right < -ENTITY_CLEANUP_MARGIN ||
+           left > levelWidth + ENTITY_CLEANUP_MARGIN ||
+           bottom < -ENTITY_CLEANUP_MARGIN ||
+           top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
@@ -205,6 +222,20 @@ void Level::update(float dt) {
         }
 
         enemy->update(dt);
+    }
+
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    for (auto& entity : m_entities) {
+        if (!entity || entity->shouldRemove() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        if (isEntityOutsideLevelBounds(*entity, levelWidth, levelHeight)) {
+            entity->markForRemoval();
+        }
     }
 
     // Check item-Mario collisions

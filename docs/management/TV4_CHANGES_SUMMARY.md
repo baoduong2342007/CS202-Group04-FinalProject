@@ -3,13 +3,13 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
 ---
 
-## **1. Tổng Quan**
+## 1. Tổng Quan
 
 Trong giai đoạn hiện tại của Sprint 6, TV4 đã tập trung vào việc:
 
@@ -983,9 +983,64 @@ Score và DefeatCause được để cho collision/score pipeline chung của TV
 - Shell không reverse như enemy thường sau khi đã xử lý shell collision.
 - Shell có thể tiếp tục defeat enemy khác.
 - Build và toàn bộ CTest pass.
+
 ---
 
-## 18. Quy Ước Cập Nhật File Này
+## 19. Generic Entity Bounds Cleanup
+
+### File liên quan
+
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`include/entities/Entity.h`](../../include/entities/Entity.h)
+- [`src/entities/Entity.cpp`](../../src/entities/Entity.cpp)
+
+### S6-TV4-31 — Cleanup entity ngoài level với margin 64 px
+
+`Level` hiện áp dụng một cleanup policy chung cho các entity nằm ngoài level bounds.
+
+Level bounds được tính từ kích thước `TileMap`:
+
+```text
+levelWidth  = mapWidth  × TILE_SIZE
+levelHeight = mapHeight × TILE_SIZE
+```
+
+Một entity chỉ được đánh dấu removal khi toàn bộ bounding box của nó đã đi ra ngoài level quá margin 64 px ở một trong bốn phía.
+
+```text
+level bounds + 64 px cleanup margin
+    ↓
+entity hoàn toàn vượt qua
+    ↓
+markForRemoval()
+```
+
+Cleanup sử dụng lifecycle mechanism có sẵn của `Entity`. Không erase entity trực tiếp trong update loop.
+
+`Level::removeDeadEntities()` chịu trách nhiệm xóa entity sau khi entity được đánh dấu removal.
+
+### Phân chia trách nhiệm
+
+S6-TV4-22 tiếp tục xử lý enemy đã đi quá một viewport phía sau camera.
+
+S6-TV4-31 xử lý generic out-of-level cleanup cho entity như enemy, item và projectile.
+
+Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn được giữ nguyên.
+
+### Kiểm tra
+
+- Entity trong level không bị cleanup.
+- Entity chỉ ra ngoài một phần vẫn được giữ lại.
+- Entity hoàn toàn vượt level bounds hơn 64 px được cleanup.
+- Mushroom và Star rơi khỏi level được cleanup.
+- Projectile bay khỏi level được cleanup.
+- Enemy rơi khỏi level được cleanup.
+- QuestionBlock và item còn nằm trong level không bị ảnh hưởng.
+- Build và toàn bộ CTest pass.
+
+---
+
+## 20. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

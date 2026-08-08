@@ -204,6 +204,16 @@ if(BUILD_TESTING)
     )
     target_link_libraries(save_manager_tests PRIVATE game_lib)
     add_test(NAME save_manager_tests COMMAND save_manager_tests)
+
+    add_executable(level_validator_tests
+        tests/LevelValidatorTests.cpp
+    )
+    target_link_libraries(level_validator_tests PRIVATE game_lib)
+    add_test(NAME level_validator_tests COMMAND level_validator_tests)
+
+    set_tests_properties(level_validator_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 endif()
 
 # Platform-specific Release build settings

@@ -1514,7 +1514,66 @@ Cuối test suite, toàn bộ temporary data được cleanup.
 
 ---
 
-## 28. Quy Ước Cập Nhật File Này
+## 28. Level FIxture and Validator Regression Tests
+
+### File liên quan
+
+- [`levels/level0.txt`](../../levels/level0.txt)
+- [`tests/LevelValidatorTests.cpp`](../../tests/LevelValidatorTests.cpp)
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+- [`CMakeLists.txt](../../CMakeLists.txt)
+
+### S6-TV4-01 - Level 0 trở thành test fixture
+
+`level0.txt` được giữ ngoài release catalog và dùng làm fixture cho automated level-validation tests.
+
+Một row có chiều rộng không nhất quán trong fixture được sử để toàn bộ 12 map rows đều có chiều rộng 100 tiles.
+
+Automated test xác nhận Level 0:
+
+- load thành công;
+- có kích thước 100x12;
+- có đúng một Mario spawn;
+- có đúng một finish point;
+
+Level 0 không được sử dụng trong New Game hoặc release progression.
+
+### S6-TV4-20 - Level validator regression tests
+
+Một test target mới `level_validator_tests` được bổ sung để bảo vệ các validation rule của `TileMap::loadFromFile()`.
+
+Test matrix bao gồm:
+
+```text
+valid Level 0 fixture
+inconsistent row width
+invalid symbol
+missing mario spawn
+duplicate Mario spawn
+missing finish
+duplicate finish
+invalid flag pole
+```
+
+Các invalid fixture được tạo trong temporary directory nên không làm thay đổi release level data.
+
+CTest chạy validator test với repository root làm working directory để `TileMap` có thể resolve tileset runtime bằng relative path.
+
+### Kiểm tra
+
+- Level 0 fixture load thành công.
+- Invalid row width bị reject.
+- Invalid tile symbol bị reject.
+- Missing/duplicate Mario spawn bị reject.
+- Missing/duplicate finish bị reject.
+- Invalid flag pole bị reject.
+- level_validator_tests được đăng ký với CTest.
+- Project build thành công.
+- Toàn bộ CTest pass.
+
+---
+
+## 29. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

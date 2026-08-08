@@ -27,7 +27,9 @@ public:
 
     // 2. Public methods
     bool load();
+    bool save() const;
     void resetToDefaults();
+    bool updateHighScore(int score);
 
     // 3. Getters / Setters
     const SaveData& getData() const;

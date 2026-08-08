@@ -53,9 +53,46 @@ bool SaveManager::load() {
     return true;
 }
 
+bool SaveManager::save() const {
+    std::ofstream output(m_savePath, std::ios::trunc);
+
+    if (!output.is_open()) {
+#ifdef DEBUG
+        std::cerr << "[SaveManager] Failed to open save file for writing." << std::endl;
+#endif
+        return false;
+    }
+
+    output << "version " << m_data.version << std::endl;
+    output << "highScore " << m_data.highScore << std::endl;
+    output << "highestUnlockedLevel " << m_data.highestUnlockedLevel << std::endl;
+    output << "soundVolume " << m_data.soundVolume << std::endl;
+    output << "musicVolume " << m_data.musicVolume << std::endl;
+
+    return output.good();
+}
+
 void SaveManager::resetToDefaults() {
     m_data = SaveData{};
 }
+
+bool SaveManager::updateHighScore(int score) {
+    if (score <= m_data.highScore) {
+        return false;
+    }
+
+    const int previousHighScore = m_data.highScore;
+
+    m_data.highScore = score;
+
+    if (!save()) {
+        m_data.highScore = previousHighScore;
+        return false;
+    }
+
+    return true;
+}
+
 
 const SaveData& SaveManager::getData() const {
     return m_data;

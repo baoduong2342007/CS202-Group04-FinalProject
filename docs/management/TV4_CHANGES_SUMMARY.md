@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-33
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-34
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1151,7 +1151,55 @@ Các phần trên được xử lý trong S6-TV4-34 đến S6-TV4-39.
 
 ---
 
-## 21. Quy Ước Cập Nhật File Này
+## 22. Monotonic High Score
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-34 - Chỉ cập nhật high score khi score mới cao hơn
+
+`SaveManager` được bổ sung `save()` để ghi `SaveData` hiện tại xuống save file version 1.
+
+High score được cập nhật thông qua:
+
+```cpp
+updateHighScore(score);
+```
+
+Score mới chỉ thay thế high score hiện tại khi:
+```text
+newScore > highScore
+```
+
+Nếu score mới nhỏ hơn hoặc bằng high score hiện tại, dữ liệu được giữ nguyên và save file không bị overwrite bởi giá trị thấp hơn.
+
+Khi score mới cao hơn, `SaveManager` cập nhật high score và ghi dữ liệu xuống file.
+
+Nếu quá trình ghi file thất bại, high score trong memory được rollback về giá trị trước đó.
+
+### Phân chia trách nhiệm
+
+Task này đảm bảo high score tăng đơn điệu và có thể persist xuống file.
+
+Việc ghi file hiện vẫn sử dụng direct write.
+
+Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng torng S6-TV4-37.
+
+### Kiểm tra
+
+- Score cao hơn cập nhật high score.
+- Score thất hơn không bị overwrite high score.
+- Score bằng high score hiện tại không overwrite dữ liệu.
+- High score mới được đọc lại dúng sau restart.
+- Save failure không giữ high score mới trong memory.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 23. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

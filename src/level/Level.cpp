@@ -310,6 +310,9 @@ void Level::render(sf::RenderTarget& target) {
     if (m_mario) {
         target.draw(*m_mario);
     }
+    
+    // Draw foreground tiles (blocks, flagpoles, pipes) on top of Mario and entities
+    m_tileMap.renderForeground(target);
 }
 
 void Level::checkItemCollisions() {

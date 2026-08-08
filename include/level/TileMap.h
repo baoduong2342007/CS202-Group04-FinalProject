@@ -29,6 +29,7 @@ public:
     bool loadFromFile(const std::string& path);
 
     void render(sf::RenderTarget& target) const;
+    void renderForeground(sf::RenderTarget& target) const;
 
     char getTileAt(int column, int row) const;
     bool isSolid(int column, int row) const;
@@ -88,6 +89,7 @@ private:
 
     std::vector<std::string> m_grid;
     sf::VertexArray m_vertices{sf::PrimitiveType::Triangles};
+    sf::VertexArray m_foregroundVertices{sf::PrimitiveType::Triangles};
     sf::Texture m_tileset;
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;

@@ -6,6 +6,8 @@
 #pragma once
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
+#include <memory>
+#include "ui/UIMenuWidget.h"
 
 enum class PauseVolumeSelection {
     MUSIC,
@@ -65,6 +67,8 @@ private:
     void adjustSelectedVolume(float delta);
 
     sf::Font m_font;
-    sf::Text m_text;
+    sf::Text m_titleText;
+    sf::Text m_volumeText;
     PauseVolumeSelection m_selectedVolume = PauseVolumeSelection::MUSIC;
+    std::unique_ptr<UIMenuWidget> m_menu;
 };

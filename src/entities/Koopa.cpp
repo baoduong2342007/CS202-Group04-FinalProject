@@ -14,7 +14,6 @@
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
 #include "core/SoundManager.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"

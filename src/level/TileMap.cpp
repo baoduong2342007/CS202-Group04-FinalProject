@@ -37,7 +37,7 @@ constexpr float TILE_FRICTION = 0.6f;
 
 bool isSolidTileSymbol(char tile) {
     return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
-            tile == '[' || tile == ']' || tile == '{' || tile == '}';
+           tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
 int worldToGridCoordinate(float coordinate) {
@@ -119,7 +119,14 @@ bool isValidTileSymbol(char symbol) {
 
 bool isRenderableTile(char symbol) {
     return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
-    symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
+           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
+}
+
+bool isForegroundTile(char symbol) {
+    // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
+    return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
+           symbol == 'F' || symbol == '|' ||
+           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
@@ -377,6 +384,13 @@ void TileMap::render(sf::RenderTarget& target) const {
     target.draw(m_vertices, states);
 }
 
+void TileMap::renderForeground(sf::RenderTarget& target) const {
+    sf::RenderStates states;
+    states.texture = &m_tileset;
+
+    target.draw(m_foregroundVertices, states);
+}
+
 char TileMap::getTileAt(int column, int row) const {
     if (column < 0 || row < 0){
         return '.';
@@ -441,6 +455,7 @@ void TileMap::update(float dt) {
 
 void TileMap::buildVertices() {
     m_vertices.clear();
+    m_foregroundVertices.clear();
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
         for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
@@ -473,24 +488,27 @@ void TileMap::buildVertices() {
             const float textureRight = textureLeft + static_cast<float>(rect.size.x);
             const float textureBottom = textureTop + static_cast<float>(rect.size.y);
 
+            // Route to correct vertex array based on layer classification
+            sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;
+
             // First triangle: top-left, bottom-left, bottom-right.
-            appendTexturedVertex(m_vertices, left, top,
+            appendTexturedVertex(targetArray, left, top,
                                  textureLeft, textureTop);
 
-            appendTexturedVertex(m_vertices, left, bottom,
+            appendTexturedVertex(targetArray, left, bottom,
                                  textureLeft, textureBottom);
             
-            appendTexturedVertex(m_vertices, right, bottom,
+            appendTexturedVertex(targetArray, right, bottom,
                                  textureRight, textureBottom);
 
             // Second triangle: top-left, bottom-right, top-right.
-            appendTexturedVertex(m_vertices, left, top,
+            appendTexturedVertex(targetArray, left, top,
                                  textureLeft, textureTop);
             
-            appendTexturedVertex(m_vertices, right, bottom,
+            appendTexturedVertex(targetArray, right, bottom,
                                  textureRight, textureBottom);
             
-            appendTexturedVertex(m_vertices, right, top,
+            appendTexturedVertex(targetArray, right, top,
                                  textureRight, textureTop);
         }
     }

@@ -22,6 +22,7 @@
 #include "states/SuperMarioState.h"
 #include "states/FireMarioState.h"
 #include "core/SpriteFrames.h"
+#include "core/DisplayConfig.h"
 
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
@@ -349,7 +350,7 @@ void Mario::handleInput() {
     return;
 
   // Input polling decoupled — actions are handled via InputHandler commands (Task 3.2).
-  constexpr float FIXED_DT = 1.0f / 60.0f;
+  constexpr float FIXED_DT = 1.0f / static_cast<float>(DisplayConfig::FRAMERATE_LIMIT);
   applyMovementPhysics(FIXED_DT, 0.0f, m_isRunning, false, false);
 }
 

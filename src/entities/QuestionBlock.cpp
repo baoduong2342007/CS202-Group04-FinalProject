@@ -22,18 +22,39 @@ constexpr const char* QUESTION_BLOCK_TEXTURE = "assets/textures/items/items_bloc
 constexpr float ANIM_FRAME_DURATION = 0.2f;
 } // namespace
 
-QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content)
+QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content, BlockTheme theme)
     : Entity(position, sf::Vector2f(BLOCK_SIZE, BLOCK_SIZE)),
-      m_content(content) {
+      m_content(content),
+      m_theme(theme) {
     m_contentResolved = content != QuestionBlockContent::ADAPTIVE;
     initPhysics(world, b2_staticBody, sf::Vector2f(BLOCK_SIZE, BLOCK_SIZE), false);
     setSprite(QUESTION_BLOCK_TEXTURE);
+
+    const auto& animFrames = [theme]() -> const std::vector<sf::IntRect>& {
+        switch (theme) {
+            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::ugQuestionBlockFrames();
+            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::castleQuestionBlockFrames();
+            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::uwQuestionBlockFrames();
+            case BlockTheme::OVERWORLD:
+            default:                      return SpriteFrames::Blocks::questionBlockFrames();
+        }
+    }();
+
+    const sf::IntRect emptyRect = [theme]() -> sf::IntRect {
+        switch (theme) {
+            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::UG_EMPTY;
+            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::CASTLE_EMPTY;
+            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::UW_EMPTY;
+            case BlockTheme::OVERWORLD:
+            default:                      return SpriteFrames::Blocks::EMPTY;
+        }
+    }();
+
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(
-            SpriteFrames::Blocks::questionBlockFrames(), ANIM_FRAME_DURATION));
+        AnimationSystem::createManualAnimation(animFrames, ANIM_FRAME_DURATION));
     m_animationSystem->addAnimation("empty",
         AnimationSystem::createManualAnimation(
-            std::vector<sf::IntRect>{SpriteFrames::Blocks::EMPTY}, 1.f));
+            std::vector<sf::IntRect>{emptyRect}, 1.f));
     playAnimation("idle");
 }
 

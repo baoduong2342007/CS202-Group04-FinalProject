@@ -21,10 +21,17 @@ enum class QuestionBlockContent {
     STAR
 };
 
+enum class BlockTheme {
+    OVERWORLD,
+    UNDERGROUND,
+    CASTLE,
+    UNDERWATER
+};
+
 class QuestionBlock : public Entity {
 public:
     // 1. Constructor / Destructor
-    QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content = QuestionBlockContent::ADAPTIVE);
+    QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content = QuestionBlockContent::ADAPTIVE, BlockTheme theme = BlockTheme::OVERWORLD);
     ~QuestionBlock() override = default;
 
     // 2. Override methods
@@ -37,10 +44,11 @@ public:
     void onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities = nullptr, TextureManager* textureManager = nullptr);
     bool isHit() const { return m_isHit; }
     QuestionBlockContent getContent() const { return m_content; }
-
+    BlockTheme getTheme() const { return m_theme; }
 
 private:
     QuestionBlockContent m_content = QuestionBlockContent::ADAPTIVE;
+    BlockTheme m_theme = BlockTheme::OVERWORLD;
     bool m_contentResolved = false;
     bool m_isHit = false;
     bool m_isBumping = false;

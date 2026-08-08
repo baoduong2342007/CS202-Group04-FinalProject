@@ -112,8 +112,11 @@ void Entity::updateAnimation(float dt) {
 
 void Entity::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor) {
     if (!world) {
+        return;
+    }
+    if (world->IsLocked()) {
 #ifdef DEBUG
-        std::cerr << "[DEBUG][Entity] PhysicsEngine world not initialized!" << std::endl;
+        std::cerr << "[DEBUG][Entity] PhysicsEngine world is locked!" << std::endl;
 #endif
         return;
     }

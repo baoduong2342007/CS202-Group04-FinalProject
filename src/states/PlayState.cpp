@@ -12,6 +12,7 @@
 #include "patterns/MoveLeftCommand.h"
 #include "patterns/MoveRightCommand.h"
 #include "patterns/PauseCommand.h"
+#include "patterns/ShootCommand.h"
 
 #include "states/GameOverState.h"
 #include "states/WinState.h"
@@ -83,6 +84,30 @@ void PlayState::rebindCommands() {
                                InputTrigger::Pressed);
         m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
                                std::make_unique<PauseCommand>(),
+                               InputTrigger::Pressed);
+
+        auto makeShootCmd = [this]() {
+            if (m_level) {
+                m_level->shootFireBall();
+            }
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::J,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::F,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::X,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::LControl,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::RShift,
+                               std::make_unique<ShootCommand>(makeShootCmd),
                                InputTrigger::Pressed);
     }
 }
@@ -227,6 +252,9 @@ void PlayState::restoreProgress() {
     if (m_hud) {
         m_hud->setWorldLevel(1, m_progress.currentLevel);
     }
+
+    // Synchronize initial sprite transforms and camera frame 0 with restored MarioState
+    m_level->update(0.f);
 }
 
 bool PlayState::loadLevel(int levelNumber) {

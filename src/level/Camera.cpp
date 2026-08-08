@@ -24,10 +24,10 @@ namespace {
     constexpr float HORIZONTAL_DEADZONE_RATIO = 0.05f;
 
     /**
-     * @brief The padding below the bottom of the level bounds to leave space for blocks.
-     * @details A value of 32.0f equates to exactly 2 layers of standard 16px bricks.
+     * @brief The padding below the bottom of the level bounds.
+     * @details Zero keeps the camera's resting bottom edge flush with the map.
      */
-    constexpr float BOTTOM_TILE_PADDING = 32.0f;
+    constexpr float BOTTOM_TILE_PADDING = 0.0f;
 
     /**
      * @brief The fixed distance maintained between the target and the top of the screen when tracking upwards.
@@ -71,7 +71,7 @@ void Camera::update(float dt, const sf::Vector2f &targetPosition) {
 
   // Vertical tracking: Rigid top buffer with an absolute baseline
   // Calculate the default camera Y position so that the bottom of the screen
-  // is exactly 32 pixels (2 layers of brick) below the bottom of the level.
+  // is flush with the bottom of the level.
   float defaultCenterY = m_levelBounds.position.y + m_levelBounds.size.y + BOTTOM_TILE_PADDING - (m_view.getSize().y / 2.0f);
 
   // The camera strictly maintains a 40-pixel buffer between Mario and the TOP of the screen
@@ -130,9 +130,8 @@ void Camera::clampToBoundaries() {
     currentCenter.x = std::clamp(currentCenter.x, minX, maxX);
   }
 
-  // Y bounds clamping removed.
-  // This allows the camera to drop below the level boundaries
-  // to fulfill the "2 layers of brick below Mario" requirement.
+  // Y bounds clamping remains disabled so vertical tracking can follow jumps;
+  // the resting baseline above keeps the bottom edge aligned with the map.
 
   m_view.setCenter(currentCenter);
 }

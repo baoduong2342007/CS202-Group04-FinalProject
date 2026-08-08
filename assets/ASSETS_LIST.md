@@ -24,8 +24,9 @@ tính từ thư mục executable sau khi CMake copy runtime assets; đường d�
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Coin, FireFlower và Star frames. |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
 | `assets/textures/tiles/tileset.png` | 128×32 | `Runtime` | TileMap dùng 4 frame terrain 32×32: ground/brick/question/used. |
+| `assets/ui/bg_world.png` | 1857×847 | `Runtime` | Full-frame modern pixel-art overworld; uniformly scaled to the logical view and repeated with alternating mirroring behind every level. |
 | `assets/textures/ui/bg_clouds.png` | 768×1129 | `Runtime` | Menu/background asset. |
-| `assets/textures/ui/bg_mountains.png` | 768×1660 | `Runtime` | Overworld background strip. |
+| `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld background kept as a reference asset. |
 | `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | Chưa có runtime render path. |
 | `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu/HUD bitmap UI asset. |
 

@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
+> **Phạm vi implementation hiện tại:** S6-TV4-01 đến S6-TV4-13, S6-TV4-15, S6-TV4-17, S6-TV4-19 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -339,11 +339,12 @@ Trước đây các tile `U` và `O` có hai đường xử lý:
 
 Hiện tại `QuestionBlock::onHit()` là source of truth duy nhất cho:
 
-| Tile | QuestionBlock content |
-| ---- | --------------------- |
-| `?`  | Coin                  |
-| `U`  | Super Mushroom        |
-| `O`  | 1-Up Mushroom         |
+| Tile  | QuestionBlock content |
+| ----  | --------------------- |
+| `?`.  | Super Mushroom        |
+| `U/u` | 1-Up Mushroom         |
+| `f/h` | Fire Flower           |
+| `O/o` | Starman / Star        |
 
 ### Phương pháp được sử dụng
 
@@ -493,7 +494,7 @@ Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, n
 
 ---
 
-## 8. Four-Tile TileMap Spritesheet
+## 8. Consolidated TileMap Tileset
 
 ### File liên quan
 
@@ -502,25 +503,32 @@ Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, n
 - [`levels/level2.txt`](../../levels/level2.txt)
 - [`assets/textures/tiles/tileset.png`](../../assets/textures/tiles/tileset.png)
 
-### S6-TV4-09 — Chuyển TileMap sang tileset bốn frame
+### S6-TV4-09 — Chuyển TileMap sang consolidated tileset
 
-`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong `SpriteFrames::Blocks` để render terrain. Điều này khiến ground, brick và finish pole phụ thuộc vào spritesheet dành cho item/block, đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
-
-Theo cấu trúc asset mới của nhóm, `TileMap` hiện sử dụng:
+`TileMap` sử dụng:
 
 ```text
 assets/textures/tiles/tileset.png
 ```
 
-Tileset gồm đúng bốn frame nằm ngang, mỗi frame có kích thước 32×32:
+làm source terrain chung.
 
-| Index | Nội dung       |
-| ----- | -------------- |
-| 0     | Ground         |
-| 1     | Brick          |
-| 2     | Question block |
-| 3     | Finish pole    |
+Source frame có kích thước 16×16 và được render ở world tile size 32×32.
 
+Các terrain symbol có frame riêng gồm:
+
+```text
+1       Ground
+B       Brick
+E       Used block
+[ ]     Pipe top
+{ }     Pipe body
+F       Finish top
+|       Finish pole
+```
+
+QuestionBlock vẫn được quản lý bởi `QuestionBlock` entity để tránh duplicate rendering hoặc item spawning.
+Các pipe symbol `[ ] { }` tiếp tục thuộc grammar hợp lệ và được sử dụng trong Level 2.
 ### Phương pháp được sử dụng
 
 Các frame trong tileset được truy cập thông qua named indices thay vì hardcode trực tiếp texture coordinates.
@@ -537,25 +545,6 @@ Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect` tương ứn
 `TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render terrain.
 
 Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
-
-### Loại bỏ pipe tile cũ
-
-Các ký hiệu pipe:
-
-```
-[ ] { }
-```
-
-đã được loại khỏi level format vì tileset mới không còn chứa các frame pipe và thiết kế level hiện tại không sử dụng pipe.
-
-Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile `.` để giữ nguyên kích thước từng hàng của level.
-
-Các symbol tương ứng cũng được loại khỏi:
-
-- level validation;
-- solid tile semantics;
-- TileMap rendering;
-- tileset frame mapping.
 
 ### Kết quả
 
@@ -584,7 +573,8 @@ Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã 
 - Mario có khoảng trống để làm quen movement ngay sau spawn.
 - Coin xuất hiện trước enemy đầu tiên.
 - QuestionBlock xuất hiện trước combat.
-- `U` cung cấp Super Mushroom trước Goomba đầu tiên.
+- `?` cung cấp Super Mushroom trong phần tutorial.
+- Level cũng có Fire Flower, 1-Up và Star ở các khu vực sau để giới thiệu item mechanics có chủ đích.
 - Level có thể hoàn thành từ spawn tới flag.
 - Không cần damage boost để hoàn thành.
 - Build và toàn bộ CTest hiện tại pass.
@@ -597,22 +587,23 @@ Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã 
 
 - [`levels/level1.txt`](../../levels/level1.txt)
 
-- ### S6-TV4-14 — Kiểm tra Level 1 gaps
+### S6-TV4-14 — Level 1 gap verification pending
 
-  Level 1 được kiểm tra dựa trên các bề mặt Mario thực sự có thể đứng, không chỉ dựa trên khoảng trống ở hàng ground thấp nhất.
+Level 1 được kiểm tra dựa trên các bề mặt Mario thực sự có thể đứng, không chỉ dựa trên khoảng trống ở hàng ground thấp nhất.
 
-  Các gap bắt buộc trên completion route được thử trực tiếp với movement và jump hiện tại của Mario.
+Các gap bắt buộc trên completion route được thử trực tiếp với movement và jump hiện tại của Mario.
 
-  Kết quả:
+### Kết quả:
 
-  - Không có jump bắt buộc vượt ngoài jump envelope hiện tại.
-  - Không có frame-perfect jump.
-  - Không cần damage boost để vượt gap.
-  - Các staircase/platform phía trên được tính là một phần của traversal route.
-  - Nếu một jump yêu cầu run, run phải được expose qua input và được giới thiệu
-    trước obstacle đó.
+- Không có jump bắt buộc vượt ngoài jump envelope hiện tại.
+- Không có frame-perfect jump.
+- Không cần damage boost để vượt gap.
+- Các staircase/platform phía trên được tính là một phần của traversal route.
+- Nếu một jump yêu cầu run, run phải được expose qua input và được giới thiệu trước obstacle đó.
 
-  Không cần thay đổi geometry nếu toàn bộ manual checks trên pass.
+Task này chưa được claim DONE trong vòng sửa hiện tại.
+
+Các geometry check trên sẽ được xác nhận bằng jump-envelope measurement và manual playthrough log trước khi đóng S6-TV4-14.
 
 ---
 
@@ -692,6 +683,23 @@ Các pipe:
 - tham gia TileMap collision như terrain;
 - tạo thêm các bề mặt đứng/nhảy mà không thay đổi completion route chính.
 
+Level 2 cũng được bổ sung một Fire Flower block `f` trong khu pipe giữa level.
+
+Vị trí này được chọn sau phần mở đầu và trước các encounter tiếp theo để
+Fire Flower đóng vai trò mid-level reward thay vì xuất hiện quá sớm hoặc
+quá sát finish.
+
+Level 2 hiện có:
+
+```text
+pipe traversal
+Goomba
+Koopa
+shell gameplay
+Fire Flower
+finish route
+```
+
 ### Kiểm tra
 
 - Pipe render đúng từ consolidated tileset.
@@ -727,7 +735,71 @@ vào enemy activation policy của S6-TV4-21.
 
 ---
 
-## 14. Off-screen Enemy Cleanup
+## 14. Release Level Data Normalization
+
+### File liên quan
+
+- [`levels/level1.txt`](../../levels/level1.txt)
+- [`levels/level2.txt`](../../levels/level2.txt)
+- [`levels/level3.txt`](../../levels/level3.txt)
+
+### S6-TV4-13/15/17/19 — Chuẩn hóa ba release level
+
+Ba release level được rà soát lại để sử dụng cùng level grammar và có
+row width nhất quán.
+
+Kích thước hiện tại:
+
+```text
+Level 1: 183 × 12
+Level 2: 250 × 12
+Level 3: 281 × 12
+```
+
+Mỗi level có đúng:
+
+```text
+1 Mario spawn M
+1 finish F
+continuous finish pole |
+```
+
+Các level sử dụng chung item symbol contract:
+
+```text
+?     Super Mushroom
+U/u   1-Up Mushroom
+f/h   Fire Flower
+O/o   Starman / Star
+```
+
+### Level 1
+
+Level 1 giữ vai trò tutorial và giới thiệu movement, coin, QuestionBlock, Mushroom, Goomba và finish route trước khi tăng dần mật độ enemy và item.
+
+
+### Level 2
+
+Level 2 tập trung vào underground-style traversal với pipe, Goomba, Koopa và shell gameplay.
+
+Một Fire Flower block được đặt trong khu pipe giữa level để đáp ứng power-up progression của level và cho người chơi đủ thời gian sử dụng Fire Mario trước finish.
+
+### Level 3
+
+Level 3 được sửa lại thành map hợp lệ 281×12 thay vì các row có chiều dài không nhất quán.
+
+Level giữ layout challenge hiện tại và có:
+
+```text
+mixed Goomba / Koopa encounters
+Star block
+platform / stone gauntlet
+final finish-pole section
+```
+
+Star được đặt trước phần challenge cuối để item xuất hiện có mục đích thay vì chỉ tồn tại để thỏa symbol requirement.
+
+## 15. Off-screen Enemy Cleanup
 
 ### S6-TV4-22 — Cleanup enemy quá xa phía sau viewport
 
@@ -781,7 +853,7 @@ Các trường hợp generic entity cleanup được xử lý riêng trong S6-TV
 
 ---
 
-## 15. Koopa Ledge Detection
+## 16. Koopa Ledge Detection
 
 ### File liên quan
 
@@ -823,7 +895,7 @@ Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
 
 ---
 
-## 16. Koopa Shell Fixture
+## 17. Koopa Shell Fixture
 
 ## File liên quan
 - [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
@@ -867,7 +939,7 @@ Sprite rendering sử dụng scale cố định 2× và bottom alignment thông 
 
 ---
 
-## 17. Koopa State Transitions
+## 18. Koopa State Transitions
 
 ### File liên quan
 
@@ -949,7 +1021,7 @@ Shared collision dispatch architecture không được thay đổi trong hai tas
 
 ---
 
-## 18. Koopa Shell Enemy Defeat
+## 19. Koopa Shell Enemy Defeat
 
 ### File liên quan
 
@@ -986,7 +1058,7 @@ Score và DefeatCause được để cho collision/score pipeline chung của TV
 
 ---
 
-## 19. Generic Entity Bounds Cleanup
+## 20. Generic Entity Bounds Cleanup
 
 ### File liên quan
 
@@ -1040,7 +1112,7 @@ Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn đượ
 
 ---
 
-## 20. SaveManager Version 1 Foundation
+## 21. SaveManager Version 1 Foundation
 
 ### File liên quan
 
@@ -1056,7 +1128,7 @@ Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn đượ
 ```text
 version = 1
 highScore = 0
-highestUnclockedLevel = 1
+highestUnlockedLevel = 1
 soundVolume = 80
 musicVolume = 70
 ```
@@ -1093,7 +1165,7 @@ Các chức năng trên được triển khai trong S6-TV4-39.
 
 ---
 
-## 21. Load High Score
+## 22. Load High Score
 
 ### File liên quan
 
@@ -1130,7 +1202,7 @@ Task này tập trung vào việc đọc persistent save data, đặc biệt là
 
 Chưa xử lý:
 - ghi save file;
-- high score monotinic update;
+- high score monotonic update;
 - level unlock update;
 - audio setting update;
 - atomic file replacement;
@@ -1146,12 +1218,12 @@ Các phần trên được xử lý trong S6-TV4-34 đến S6-TV4-39.
 - Missing save file sử dụng default data.
 - Save version hợp lệ được chấp nhận.
 - State chỉ được cập nhật sau khi quá trình đọc hoàn tất.
-- Project buld thành công.
+- Project build thành công.
 - Toàn bộ CTest hiện tại pass.
 
 ---
 
-## 22. Monotonic High Score
+## 23. Monotonic High Score
 
 ### File liên quan
 
@@ -1185,21 +1257,21 @@ Task này đảm bảo high score tăng đơn điệu và có thể persist xu�
 
 Việc ghi file hiện vẫn sử dụng direct write.
 
-Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng torng S6-TV4-37.
+Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng trong S6-TV4-37.
 
 ### Kiểm tra
 
 - Score cao hơn cập nhật high score.
 - Score thất hơn không bị overwrite high score.
 - Score bằng high score hiện tại không overwrite dữ liệu.
-- High score mới được đọc lại dúng sau restart.
+- High score mới được đọc lại đúng sau restart.
 - Save failure không giữ high score mới trong memory.
 - Project build thành công.
 - Toàn bộ CTest hiện tại pass.
 
 ---
 
-## 23. Highest Unlocked level Persistence
+## 24. Highest Unlocked level Persistence
 
 ### File liên quan
 
@@ -1248,7 +1320,7 @@ Việc xác định level kế tiếp sau khi hoàn thành một màn và chuy�
 
 ---
 
-## 24. Audio Settings Persistence
+## 25. Audio Settings Persistence
 
 ### File liên quan
 
@@ -1304,7 +1376,7 @@ Cách tách này giữ `SaveManager` chịu trách nhiệm persistence và `Soun
 
 ---
 
-## 25. Atomic Save File Replacement
+## 26. Atomic Save File Replacement
 
 ### File liên quan
 
@@ -1335,7 +1407,7 @@ close temporary file
 replace production save
 ```
 
-Production `save.txt` chỉ được thay thế sau khi temporary ile đã được ghi hoàn chỉnh.
+Production `save.txt` chỉ được thay thế sau khi temporary file đã được ghi hoàn chỉnh.
 
 Nếu quá trình ghi temporary file hoặc replace thất bại:
 
@@ -1344,9 +1416,9 @@ Nếu quá trình ghi temporary file hoặc replace thất bại:
 - temporary file được cleanup;
 - các update method rollback state trong memory về giá trị trước đó.
 
-Temporary file được đặt cùng direction với production save để việc replace diễn ra trên cùng filesystem.
+Temporary file được đặt cùng directory với production save để việc replace diễn ra trên cùng filesystem.
 
-`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuco16 production `saves/` directory.
+`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuộc production `saves/` directory.
 
 ### Phân chia trách nhiệm
 
@@ -1369,7 +1441,7 @@ Validation đầy dủ cho missing, corrupt và wrong-version save được xử
 
 ---
 
-## 26. Corrupted Save Fallback
+## 27. Corrupted Save Fallback
 
 ### File liên quan
 
@@ -1438,7 +1510,7 @@ Automated regression tests cho missing, valid, corrupt, version mismatch và hig
 
 ---
 
-## 27. SaveManager Regression Tests
+## 28. SaveManager Regression Tests
 
 ### File liên quan
 
@@ -1514,7 +1586,7 @@ Cuối test suite, toàn bộ temporary data được cleanup.
 
 ---
 
-## 28. Level FIxture and Validator Regression Tests
+## 29. Level FIxture and Validator Regression Tests
 
 ### File liên quan
 
@@ -1573,7 +1645,7 @@ CTest chạy validator test với repository root làm working directory để `
 
 ---
 
-## 29. Quy Ước Cập Nhật File Này
+## 30. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

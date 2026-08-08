@@ -1,15 +1,14 @@
 # Level 1
-# Width: 184 tiles
+# Width: 183 tiles
 # Height: 12 tiles
 # Symbols:
 # . = empty (air)
 # 1 = ground tile (solid)
 # B = breakable brick block (solid)
-# ? = question block (solid)
-# U = question block containing Super Mushroom
-# f = question block containing Fire Flower (solid)
-# u = question block containing 1-Up Mushroom (solid)
-# o = question block containing Starman / Star (solid)
+# ? = question block containing Super Mushroom (solid)
+# U/u = question block containing 1-Up Mushroom
+# f/h = question block containing Fire Flower
+# O/o = question block containing Starman / Star
 # S = unbreakable stone block (solid)
 # F = finish pole top and finish marker (non-solid)
 # | = finish pole body (non-solid)

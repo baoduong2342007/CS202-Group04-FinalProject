@@ -110,8 +110,8 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
     EventBus& bus = EventBus::getInstance();
     bus.subscribe(EventType::COIN_COLLECTED, this);
     bus.subscribe(EventType::PLAYER_DIED, this);
-    bus.subscribe(EventType::PLAYER_LOST_LIFE, this);
     bus.subscribe(EventType::PLAYER_POWER_UP, this);
+    bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
     bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.subscribe(EventType::ONE_UP_COLLECTED, this);
@@ -128,8 +128,8 @@ HUD::~HUD() {
     EventBus& bus = EventBus::getInstance();
     bus.unsubscribe(EventType::COIN_COLLECTED, this);
     bus.unsubscribe(EventType::PLAYER_DIED, this);
-    bus.unsubscribe(EventType::PLAYER_LOST_LIFE, this);
     bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
+    bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
     bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.unsubscribe(EventType::ONE_UP_COLLECTED, this);
@@ -146,12 +146,14 @@ void HUD::onNotify(EventType event) {
             refreshText();
             break;
         case EventType::PLAYER_DIED:
-        case EventType::PLAYER_LOST_LIFE:
-            // Refresh the display.
+            m_starPowerActive = false;
             refreshText();
             break;
         case EventType::PLAYER_POWER_UP:
-            // Power-up may change score; refresh to be safe.
+            refreshText();
+            break;
+        case EventType::PLAYER_POWER_DOWN:
+            m_starPowerActive = false;
             refreshText();
             break;
         case EventType::PLAYER_STAR_COLLECTED:
@@ -174,6 +176,7 @@ void HUD::onNotify(EventType event) {
             m_timerEnabled = false;
             break;
         case EventType::LEVEL_STARTED:
+            m_starPowerActive = false;
             resetTimer();
             break;
         default:
@@ -210,7 +213,7 @@ void HUD::draw(sf::RenderTarget& target) const {
 int HUD::getCoinCount() const { return m_mario.getCoinCount(); }
 
 std::string HUD::getPowerLabel() const {
-    if (m_starPowerActive) {
+    if (m_starPowerActive && m_mario.isStarInvincible()) {
         return "STAR";
     }
 
@@ -220,7 +223,6 @@ std::string HUD::getPowerLabel() const {
         case MarioState::SUPER:
             return "SUPER";
         case MarioState::FIRE:
-        case MarioState::FIRE_SMALL:
             return "FIRE";
     }
 

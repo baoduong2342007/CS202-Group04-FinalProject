@@ -71,7 +71,7 @@ void testPowerUpAndOneUpEvents() {
 
     FireFlower fireFlower;
     fireFlower.onCollect(mario);
-    assert(mario.getMarioState() == MarioState::FIRE || mario.getMarioState() == MarioState::FIRE_SMALL);
+    assert(mario.getMarioState() == MarioState::FIRE);
     assert(mario.canShootFireBall());
     assert(mario.getScore() == 1000);
     assert(events.powerUpEvents == 1);
@@ -89,9 +89,20 @@ void testHudPowerLabelAndVolumeClamp() {
     HUD hud(mario);
 
     assert(hud.getPowerLabel() == "SMALL");
+    mario.setStarInvincible(10.f);
     EventBus::getInstance().notify(EventType::PLAYER_STAR_COLLECTED);
     assert(hud.getPowerLabel() == "STAR");
     EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED);
+    assert(hud.getPowerLabel() == "SMALL");
+
+    mario.setStarInvincible(10.f);
+    EventBus::getInstance().notify(EventType::PLAYER_STAR_COLLECTED);
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
+    assert(hud.getPowerLabel() == "SMALL");
+
+    mario.setStarInvincible(10.f);
+    EventBus::getInstance().notify(EventType::PLAYER_STAR_COLLECTED);
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
     assert(hud.getPowerLabel() == "SMALL");
 
     assert(SoundManager::clampVolume(-10.f) == 0.f);

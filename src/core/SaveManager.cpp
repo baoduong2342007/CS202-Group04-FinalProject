@@ -7,8 +7,10 @@
 
 #include "core/SaveManager.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <system_error>
 #include <string>
 #include <algorithm>
 #include <cmath>
@@ -26,7 +28,9 @@ float clampVolume(float volume) {
     return std::clamp(volume, MIN_VOLUME, MAX_VOLUME);
 }
 
-}
+constexpr const char* TEMP_FILE_SUFFIX = ".tmp";
+
+} // namespace
 
 SaveManager::SaveManager(const std::string& savePath)
     : m_savePath(savePath),
@@ -71,22 +75,23 @@ bool SaveManager::load() {
 }
 
 bool SaveManager::save() const {
-    std::ofstream output(m_savePath, std::ios::trunc);
+    const std::string temporaryPath = m_savePath + TEMP_FILE_SUFFIX;
 
-    if (!output.is_open()) {
-#ifdef DEBUG
-        std::cerr << "[SaveManager] Failed to open save file for writing." << std::endl;
-#endif
+    if (!writeSaveFile(temporaryPath)) {
+        std::error_code errorCode;
+        std::filesystem::remove(temporaryPath, errorCode);
+
         return false;
     }
 
-    output << "version " << m_data.version << std::endl;
-    output << "highScore " << m_data.highScore << std::endl;
-    output << "highestUnlockedLevel " << m_data.highestUnlockedLevel << std::endl;
-    output << "soundVolume " << m_data.soundVolume << std::endl;
-    output << "musicVolume " << m_data.musicVolume << std::endl;
+    if (!replaceSaveFile(temporaryPath)) {
+        std::error_code errorCode;
+        std::filesystem::remove(temporaryPath, errorCode);
 
-    return output.good();
+        return false;
+    }
+
+    return true;
 }
 
 void SaveManager::resetToDefaults() {
@@ -150,4 +155,60 @@ const SaveData& SaveManager::getData() const {
 
 const std::string& SaveManager::getSavePath() const {
     return m_savePath;
+}
+
+bool SaveManager::replaceSaveFile(const std::string& temporaryPath) const {
+    std::error_code errorCode;
+
+    std::filesystem::rename(temporaryPath, m_savePath, errorCode);
+
+    if (errorCode) {
+#ifdef DEBUG
+        std::cerr << "[SaveManager] Failed to replace save file." << std::endl;
+#endif
+        return false;
+    }
+
+    return true;
+}
+
+bool SaveManager::writeSaveFile(const std::string& path) const {
+    const std::filesystem::path savePath(path);
+
+    const std::filesystem::path parentPath = savePath.parent_path();
+
+    if (!parentPath.empty()) {
+        std::error_code errorCode;
+
+        std::filesystem::create_directories(parentPath, errorCode);
+
+        if (errorCode) {
+#ifdef DEBUG
+            std::cerr << "[SaveManager] Failed to create save directory." << std::endl;
+#endif
+            return false;
+        }
+    }
+
+    std::ofstream output(path, std::ios::trunc);
+
+    if (!output.is_open()) {
+#ifdef DEBUG
+        std::cerr << "[SaveManager] Failed to open temporary save file." << std::endl;
+#endif
+        return false;
+    }
+
+    output << "version " << m_data.version << std::endl;
+    output << "highScore " << m_data.highScore << std::endl;
+    output << "highestUnlockedLevel " << m_data.highestUnlockedLevel << std::endl;
+    output << "soundVolume " << m_data.soundVolume << std::endl;
+    output << "musicVolume " << m_data.musicVolume << std::endl;
+
+    output.flush();
+
+    const bool writeSucceeded = output.good();
+    output.close();
+
+    return writeSucceeded;
 }

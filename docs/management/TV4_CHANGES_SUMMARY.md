@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-36
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-37
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1301,6 +1301,72 @@ Cách tách này giữ `SaveManager` chịu trách nhiệm persistence và `Soun
 - Existing high score và unlocked-level data không bị mất khi lưu audio.
 - Project build thành công.
 - Toàn bộ CTest hiện tại pass.
+
+---
+
+## 25. Atomic Save File Replacement
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-37 - Ghi save bằng temporary file và safe replace
+
+`SaveManager::save()` không còn ghi trực tiếp vào production save file bằng `std::ios::trunc`.
+
+Thay vào đó, dữ liệu được ghi trước vào:
+
+```text
+save.txt.tmp
+```
+
+Luồng save mới:
+
+```text
+SaveData
+    ↓
+write temporary file
+    ↓
+flush và kiểm tra write state
+    ↓
+close temporary file
+    ↓
+replace production save
+```
+
+Production `save.txt` chỉ được thay thế sau khi temporary ile đã được ghi hoàn chỉnh.
+
+Nếu quá trình ghi temporary file hoặc replace thất bại:
+
+- `save()` trả về `false`;
+- save file cũ không bị ghi trực tiếp;
+- temporary file được cleanup;
+- các update method rollback state trong memory về giá trị trước đó.
+
+Temporary file được đặt cùng direction với production save để việc replace diễn ra trên cùng filesystem.
+
+`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuco16 production `saves/` directory.
+
+### Phân chia trách nhiệm
+
+Task này tập trung vào safe file writing và replacement.
+
+Validation đầy dủ cho missing, corrupt và wrong-version save được xử lý trong S6-TV4-38 và automated test matrix được bổ sung ở S6-TV4-39.
+
+### Kiểm tra
+
+- Save data được ghi vào `.tmp` trước.
+- Production save chỉ được replace sau khi temporary write thành công.
+- Save thành công không để lại `.tmp`.
+- Save thất bại trả về `false`.
+- Existing save không bị truncate trực tiếp khi temporary write fail.
+- High score vẫn giữ monotonic behaviour.
+- Highest unlocked level vẫn giữ monotonic behaviour.
+- Audio settings vẫn persist đúng.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
 ---
 
 ## 24. Quy Ước Cập Nhật File Này

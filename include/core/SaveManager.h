@@ -39,6 +39,10 @@ public:
 
 private:
     // 4. Private members
+    bool replaceSaveFile(const std::string& temporaryPath) const;
+    bool writeSaveFile(const std::string& path) const;
+
+    // 5. Private members
     std::string m_savePath;
     SaveData m_data;
 };

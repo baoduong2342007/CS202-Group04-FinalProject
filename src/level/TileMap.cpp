@@ -135,7 +135,6 @@ sf::IntRect getTilesetRect(char symbol) {
         case 'B':
             return TileFrames::BRICK;
 
-<<<<<<< HEAD
         case '?':
         case 'U':
         case 'u':

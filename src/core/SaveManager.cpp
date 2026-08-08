@@ -93,6 +93,22 @@ bool SaveManager::updateHighScore(int score) {
     return true;
 }
 
+bool SaveManager::updateHighestUnlockedLevel(int level) {
+    if (level <= m_data.highestUnlockedLevel) {
+        return false;
+    }
+
+    const int previousHighestUnlockedLevel = m_data.highestUnlockedLevel;
+
+    m_data.highestUnlockedLevel = level;
+
+    if (!save()) {
+        m_data.highestUnlockedLevel = previousHighestUnlockedLevel;
+        return false;
+    }
+
+    return true;
+}
 
 const SaveData& SaveManager::getData() const {
     return m_data;

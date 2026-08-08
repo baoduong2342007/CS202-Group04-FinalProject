@@ -30,6 +30,7 @@ public:
     bool save() const;
     void resetToDefaults();
     bool updateHighScore(int score);
+    bool updateHighestUnlockedLevel(int level);
 
     // 3. Getters / Setters
     const SaveData& getData() const;

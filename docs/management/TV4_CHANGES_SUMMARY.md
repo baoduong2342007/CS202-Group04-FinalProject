@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-34
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-35
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1199,7 +1199,55 @@ Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình g
 
 ---
 
-## 23. Quy Ước Cập Nhật File Này
+## 23. Highest Unlocked level Persistence
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-35 - lưu highest unlocked level
+
+`SaveManager` được bổ sung API:
+
+```cpp
+updateHighestUnlockedLevel(level);
+```
+
+để lưu level cao nhất mà người chơi đã mở khóa.
+
+Giá trị `highestUnlockedlevel` chỉ được cập nhật khi level mới lớn hơn giá trị hiện tại.
+
+```text
+newLevel > highestUnlockedlevel -> update và save
+newLevel <= highestUnlockedlevel -> giữ nguyên
+```
+
+Cách xử lý monotonic này bảo đảm tiến độ đã mở khóa không bị giảm khi người chơi chơi lại một level cũ.
+
+Nếu quá trình ghi save thất bại, giá trị trong memory được rollback về `highestUnlockedlevel` trước đó.
+
+Sau khi load lại ứng dụng, level đã mở khóa được đọc lại từ save file thông qua `SaveManager::load()`.
+
+### Phân chia trách nhiệm
+
+`SaveManager` chỉ chịu trách nhiệm persist level cao nhất đã mở khóa.
+
+Việc xác định level kế tiếp sau khi hoàn thành một màn và chuyển Level 3 sang Win thuộc state/progression flow và được tích hợp cùng TV1.
+
+### Kiểm tra
+
+- Default highest unlocked level bằng 1.
+- Unlock level 2 cập nhật giá trị thành 2.
+- Chơi lại Level 1 không làm giá trị giảm/
+- Unlock Level 3 cập nhật giá trị thành 3.
+- Giá trị vẫn đúng sau restart và `load()`.
+- Save failure rollback giá trị trong memory.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+---
+
+## 24. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

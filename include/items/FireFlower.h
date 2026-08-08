@@ -21,7 +21,4 @@ public:
     void update(float dt) override;
     void onCollect(Mario& mario) override;
 
-private:
-    // 6. Private members
-    static constexpr int FIRE_FLOWER_SCORE_VALUE = 1000;
 };

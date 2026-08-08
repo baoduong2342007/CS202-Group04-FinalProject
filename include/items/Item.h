@@ -31,6 +31,7 @@ public:
     /// Delay collection briefly while an item is emerging from a block.
     void setCollectibleDelay(float seconds);
     float getCollectibleDelay() const { return m_collectibleDelay; }
+    bool isCollectible() const { return !m_isCollected && m_collectibleDelay <= 0.f; }
 
     // 4. Getters / Setters
     bool isCollected() const;

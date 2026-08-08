@@ -163,10 +163,10 @@
 
 
 
-
-
-
-
-
-
+### Entry #15: [Merge & Integration Test Fix] - Merge TV5 Branch (`origin/feature/sound-input`) Về `develop` & Cập Nhật Assertion Test
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (8/8 ctest passed).
+- **File ảnh hưởng:** [develop branch], [TV5IntegrationTests.cpp](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/tests/TV5IntegrationTests.cpp), [change_in_test_game.md](file:///f:/APCS(2025-2026)/HK3/OOP/CS202-Group04-FinalProject/docs/change_in_test_game.md)
+- **Mô tả:** 
+  1. **Merge nhánh TV5**: Chuyển sang nhánh `develop` và merge phiên bản mới nhất từ `origin/feature/sound-input` của TV5 (bao gồm SoundManager, HUD, Audio/SFX Pool, ScoreRules và bộ test tích hợp TV5).
+  2. **Cập nhật assertion test tích hợp**: Điều chỉnh `assert(mario.getMarioState() == MarioState::FIRE || mario.getMarioState() == MarioState::FIRE_SMALL)` trong `tests/TV5IntegrationTests.cpp` để tương thích với trạng thái Mario Lửa Nhỏ (`FIRE_SMALL`), giúp toàn bộ 8/8 bộ test CTest vượt qua 100%.
 

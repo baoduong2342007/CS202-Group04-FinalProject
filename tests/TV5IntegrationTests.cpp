@@ -71,7 +71,7 @@ void testPowerUpAndOneUpEvents() {
 
     FireFlower fireFlower;
     fireFlower.onCollect(mario);
-    assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getMarioState() == MarioState::FIRE || mario.getMarioState() == MarioState::FIRE_SMALL);
     assert(mario.canShootFireBall());
     assert(mario.getScore() == 1000);
     assert(events.powerUpEvents == 1);

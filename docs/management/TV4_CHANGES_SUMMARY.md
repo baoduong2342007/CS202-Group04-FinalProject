@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-24
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-26kay
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -867,7 +867,58 @@ Sprite rendering sử dụng scale cố định 2× và bottom alignment thông 
 
 ---
 
-## 16. Quy Ước Cập Nhật File Này
+## 17. Koopa Walking To Shell Idle Transition
+
+### File liên quan
+
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`src/physics/CollisionManager.cpp`](../../src/physics/CollisionManager.cpp)
+
+### S6-TV4-26 — Walking → Shell Idle
+
+Koopa stomp handling được chuẩn hóa để lần stomp đầu tiên chỉ thực hiện một state transition:
+
+```text
+WALKING -> SHELL_IDLE
+```
+
+`CollisionManager` snapshot `KoopaState` trước khi xử lý contact.
+
+Nếu state ban đầu là `WALKING`, hệ thống chỉ gọi `Koopa::onStomp()`. State mới `SHELL_IDLE` không được kiểm tra lại để kick shell trong cùng contact.
+
+Các trường hợp được tách rõ:
+
+```text
+WALKING + stomp -> SHELL_IDLE
+SHELL_IDLE + stompr -> SHELL_IDLE
+SHELL_SLIDING + stomp -> SHELL_IDLE
+SHELL_IDLE + lateral contact -> SHELL_SLIDING
+```
+
+Nhờ đó một collision không thể vừa biến Walking Koopa thành shell vừa làm shell chạy ngay.
+
+### Phân chia trách nhiệm
+
+Task này chỉ chuẩn hóa transition khi Mario stomp Koopa.
+
+`SHELL_IDLE -> SHELL_SLIDING` bằng lateral contact được hoàn thiện ở S6-TV4-27.
+
+Shared collision dispatch architecture không được thay đổi trong task này.
+
+### Kiểm tra
+
+- Stomp Walking Koopa một lần chuey63n sang `SHELL_IDLE`.
+- Shell không chạy ngay sau stomp đầu.
+- Horizontal velocity của shell idle bằng 0.
+- Stomp lại shell idle không làm shell chạy.
+- Stomp shell đang sliding làm shell dừng lại.
+- Mario vẫn bounce sau stomp.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 18. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

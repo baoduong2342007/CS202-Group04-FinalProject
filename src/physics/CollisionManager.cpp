@@ -382,29 +382,41 @@ void CollisionManager::handleMarioCollision(Mario* mario,
     if (isStomp) {
         Enemy* enemy = static_cast<Enemy*>(other);
 
-        // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
         if (enemy->isKoopa()) {
             Koopa* koopa = static_cast<Koopa*>(enemy);
-            if (koopa->isInShell() && !koopa->isShellSliding()) {
-                Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
-                koopa->kick(kickDir);
-                EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
-                float currentY = marioBody->GetLinearVelocity().y;
-                float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
-                marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
-                mario->clearGroundedState();
-                return;
+            const KoopaState stateBefore = koopa->getState();
+
+            if (stateBefore == KoopaState::WALKING) {
+                // First stomp:
+                // WALKING -> SHELL_IDLE only.
+                koopa->onStomp();
+            }
+            else if (stateBefore == KoopaState::SHELL_SLIDING) {
+                // Stomping a moving shell stops it.
+                koopa->onStomp();
+            }
+            else if (stateBefore == KoopaState::SHELL_IDLE) {
+                // Already idle shell:
+                // keep it idle when stomped from above.
             }
         }
+        else {
+            enemy->onStomp();
+        }
 
-        enemy->onStomp();
         EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
 
         float currentY = marioBody->GetLinearVelocity().y;
-        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
+
+        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0
+                                                         ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW
+                                                         );
+
         marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+
         mario->clearGroundedState();
+        return;
     }
     // Bottom collision (block above Mario hit from below)
     else if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {

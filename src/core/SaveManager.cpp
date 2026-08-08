@@ -30,6 +30,63 @@ float clampVolume(float volume) {
 
 constexpr const char* TEMP_FILE_SUFFIX = ".tmp";
 
+bool readExpectedKey(std::istream& input, const char* expectedKey) {
+    std::string key;
+
+    if (!(input >> key)) {
+        return false;
+    }
+
+    return key == expectedKey;
+}
+
+bool parseSaveData(std::istream& input, SaveData& data) {
+    if (!readExpectedKey(input, "version") || !(input >> data.version)) {
+        return false;
+    }
+
+    if (!readExpectedKey(input, "highScore") || !(input >> data.highScore)) {
+        return false;
+    }
+
+    if (!readExpectedKey(input, "highestUnlockedLevel") || !(input >> data.highestUnlockedLevel)) {
+        return false;
+    }
+
+    if (!readExpectedKey(input, "soundVolume") || !(input >> data.soundVolume)) {
+        return false;
+    }
+
+    if (!readExpectedKey(input, "musicVolume") || !(input >> data.musicVolume)) {
+        return false;
+    }
+
+    std::string extraToken;
+
+    if (input >> extraToken) {
+        return false;
+    }
+
+    return input.eof();
+}
+
+bool hasValidSaveValues(const SaveData& data) {
+    const bool soundVolumeValid = std::isfinite(data.soundVolume) &&
+                                  data.soundVolume >= MIN_VOLUME &&
+                                  data.soundVolume <= MAX_VOLUME;
+
+    const bool musicVolumeValid = std::isfinite(data.musicVolume) &&
+                                  data.musicVolume >= MIN_VOLUME &&
+                                  data.musicVolume <= MAX_VOLUME;
+
+    return data.highScore >= 0 && data.highestUnlockedLevel >= 1 &&
+           soundVolumeValid && musicVolumeValid;
+}
+
+void logSaveFallback(const char* reason) {
+    std::cerr << "[SaveManager] " << reason << " Using default save data." << std::endl;
+}
+
 } // namespace
 
 SaveManager::SaveManager(const std::string& savePath)
@@ -42,31 +99,27 @@ bool SaveManager::load() {
 
     if (!input.is_open()) {
         resetToDefaults();
+        logSaveFallback("Save file was not found.");
         return false;
     }
 
     SaveData loadedData{};
-    std::string key;
 
-    while (input >> key) {
-        if (key == "version") {
-            input >> loadedData.version;
-        } else if (key == "highScore") {
-            input >> loadedData.highScore;
-        } else if (key == "highestUnlockedLevel") {
-            input >> loadedData.highestUnlockedLevel;
-        } else if (key == "soundVolume") {
-            input >> loadedData.soundVolume;
-        } else if (key == "musicVolume") {
-            input >> loadedData.musicVolume;
-        }
+    if (!parseSaveData(input, loadedData)) {
+        resetToDefaults();
+        logSaveFallback("Save file is corrupted.");
+        return false;
     }
 
-    if (!input.eof() || loadedData.version != SAVE_DATA_VERSION) {
-#ifdef DEBUG
-        std::cerr << "[SaveManager] Failed to load valid save data." << std::endl;
-#endif
+    if (loadedData.version != SAVE_DATA_VERSION) {
         resetToDefaults();
+        logSaveFallback("Save file version is not supported.");
+        return false;
+    }
+
+    if (!hasValidSaveValues(loadedData)) {
+        resetToDefaults();
+        logSaveFallback("Save file contains invalid values.");
         return false;
     }
 

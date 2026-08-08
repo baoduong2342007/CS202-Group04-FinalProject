@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-37
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-38
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1369,7 +1369,76 @@ Validation đầy dủ cho missing, corrupt và wrong-version save được xử
 
 ---
 
-## 24. Quy Ước Cập Nhật File Này
+## 26. Corrupted Save Fallback
+
+### File liên quan
+
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+
+### S6-TV4-38 — Fallback an toàn khi save file không hợp lệ
+
+`SaveManager::load()` được tăng cường validation để save file thiếu,
+hỏng hoặc sai version không làm game crash hoặc tạo partial state.
+
+Save version 1 yêu cầu đầy đủ các field:
+
+```text
+version
+highScore
+highestUnlockedLevel
+soundVolume
+musicVolume
+```
+
+Parser kiểm tra đúng key, đúng kiểu dữ liệu và không chấp nhận token dư sau cấu trúc version 1.
+
+Sau khi parse, dữ liệu tiếp tục được kiểm tra:
+
+```text
+version == SAVE_DATA_VERSION
+highScore >= 0
+highestUnlockedLevel >= 1
+0 <= soundVolume <= 100
+0 <= musicVolume <= 100
+```
+
+Volume cũng phải là giá trị hữu hạn.
+
+Nếu bất kỳ bước validation nào thất bại, SaveManager gọi `resetToDefaults()` và `load()` trả về `false`.
+
+Các failure path có log riêng để phân biệt:
+
+```text
+missing save
+corrupted format
+unsupported version
+invalid values
+```
+
+### Phân chia trách nhiệm
+
+Task này xử lý fallback an toàn trong production `SaveManager`.
+
+Automated regression tests cho missing, valid, corrupt, version mismatch và high-score monotonicity được bổ sung trong S6-TV4-39.
+
+### Kiểm tra
+
+- Missing file không làm game crash và dùng default data.
+- File thiếu field bị reject.
+- Key sai hoặc value sai kiểu bị reject.
+- Wrong version bị reject.
+- High score âm bị reject.
+- Highest unlocked level nhỏ hơn 1 bị reject.
+- Volume ngoài khoảng 0–100 bị reject.
+- Valid version 1 save vẫn load đúng.
+- Failure không để lại partial loaded state.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 27. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

@@ -6,6 +6,7 @@
 #include "states/WinState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "patterns/InputState.h"
 #include <iostream>
 
@@ -32,8 +33,12 @@ WinState::WinState(const GameProgress& progress)
     m_scoreText.setPosition({640.f, 380.f});
 }
 
-void WinState::onEnter() {}
-void WinState::onExit() {}
+void WinState::onEnter() {
+    SoundManager::getInstance().playMusic(MusicId::WIN);
+}
+void WinState::onExit() {
+    SoundManager::getInstance().stopMusic();
+}
 
 void WinState::processEvents(const sf::Event& event) {
     (void)event;

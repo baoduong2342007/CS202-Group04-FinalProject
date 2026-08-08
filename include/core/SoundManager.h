@@ -73,6 +73,12 @@ public:
     /// Switch to a named track. Replaying the current paused track resumes it.
     void playMusic(MusicId id);
 
+    /// Set the track to restore after a temporary Star override.
+    void setLevelMusic(MusicId id);
+    void playStarMusic();
+    void restoreLevelMusic();
+    bool isStarMusicActive() const;
+
     /// Stop the currently playing background music
     void stopMusic();
 
@@ -98,6 +104,7 @@ public:
 
     bool isSoundLoaded(const std::string& id) const;
     bool isMusicLoaded() const { return m_musicLoaded; }
+    std::optional<MusicId> getCurrentMusicId() const { return m_currentMusicId; }
 
 private:
     // ── 4. Private constructor (Singleton) ───────────────────
@@ -121,6 +128,7 @@ private:
     sf::Music m_music;
     std::unordered_map<MusicId, std::string, MusicIdHash> m_musicPaths;
     std::optional<MusicId> m_currentMusicId;
+    std::optional<MusicId> m_levelMusicId;
     bool m_musicLoaded = false;
 
     float m_soundVolume;

@@ -6,6 +6,7 @@
 #include "states/GameOverState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "patterns/InputState.h"
 #include <iostream>
 
@@ -31,8 +32,12 @@ GameOverState::GameOverState(const GameProgress& progress)
     m_scoreText.setPosition({640.f, 420.f});
 }
 
-void GameOverState::onEnter() {}
-void GameOverState::onExit() {}
+void GameOverState::onEnter() {
+    SoundManager::getInstance().playMusic(MusicId::GAME_OVER);
+}
+void GameOverState::onExit() {
+    SoundManager::getInstance().stopMusic();
+}
 
 void GameOverState::processEvents(const sf::Event& event) {
     if (const auto* mouse = event.getIf<sf::Event::MouseButtonPressed>()) {

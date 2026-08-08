@@ -37,8 +37,16 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::PLAYER_DIED, this);
     bus.subscribe(EventType::PLAYER_POWER_UP, this);
     bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
+    bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
+    bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.subscribe(EventType::GAME_PAUSED, this);
     bus.subscribe(EventType::LEVEL_COMPLETED, this);
+    bus.subscribe(EventType::FIREBALL_SHOT, this);
+    bus.subscribe(EventType::SHELL_KICKED, this);
+    bus.subscribe(EventType::BLOCK_BUMPED, this);
+    bus.subscribe(EventType::BRICK_BROKEN, this);
+    bus.subscribe(EventType::ITEM_EMERGED, this);
+    bus.subscribe(EventType::ONE_UP_COLLECTED, this);
 
     // Event-to-SFX catalog. All paths are relative to the executable so the
     // same mapping works from a clean CMake build directory.
@@ -61,6 +69,7 @@ SoundManager::SoundManager()
     loadSound("hurryup", "assets/sounds/effects/hurryup.wav");
 
     registerDefaultMusicPaths();
+    setLevelMusic(MusicId::OVERWORLD);
     loadMusic(MusicId::OVERWORLD, "assets/sounds/music/overworld.flac");
 }
 
@@ -72,8 +81,16 @@ SoundManager::~SoundManager() {
     bus.unsubscribe(EventType::PLAYER_DIED, this);
     bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
     bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
+    bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
+    bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.unsubscribe(EventType::GAME_PAUSED, this);
     bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
+    bus.unsubscribe(EventType::FIREBALL_SHOT, this);
+    bus.unsubscribe(EventType::SHELL_KICKED, this);
+    bus.unsubscribe(EventType::BLOCK_BUMPED, this);
+    bus.unsubscribe(EventType::BRICK_BROKEN, this);
+    bus.unsubscribe(EventType::ITEM_EMERGED, this);
+    bus.unsubscribe(EventType::ONE_UP_COLLECTED, this);
 }
 
 void SoundManager::onNotify(EventType event) {
@@ -89,12 +106,37 @@ void SoundManager::onNotify(EventType event) {
             break;
         case EventType::PLAYER_DIED:
             playSound("death");
+            playMusic(MusicId::DEATH);
             break;
         case EventType::PLAYER_POWER_UP:
             playSound("powerup");
             break;
         case EventType::PLAYER_POWER_DOWN:
             playSound("powerdown");
+            break;
+        case EventType::PLAYER_STAR_COLLECTED:
+            playStarMusic();
+            break;
+        case EventType::PLAYER_INVINCIBILITY_EXPIRED:
+            restoreLevelMusic();
+            break;
+        case EventType::FIREBALL_SHOT:
+            playSound("fireball");
+            break;
+        case EventType::SHELL_KICKED:
+            playSound("kick");
+            break;
+        case EventType::BLOCK_BUMPED:
+            playSound("bump");
+            break;
+        case EventType::BRICK_BROKEN:
+            playSound("brick");
+            break;
+        case EventType::ITEM_EMERGED:
+            playSound("item");
+            break;
+        case EventType::ONE_UP_COLLECTED:
+            playSound("oneup");
             break;
         case EventType::GAME_PAUSED:
             playSound("pause");
@@ -186,6 +228,9 @@ bool SoundManager::loadMusic(const std::string& filepath) {
 
 bool SoundManager::loadMusic(MusicId id, const std::string& filepath) {
     m_musicPaths[id] = filepath;
+    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE) {
+        setLevelMusic(id);
+    }
     return openMusic(id);
 }
 
@@ -198,12 +243,34 @@ void SoundManager::playMusic() {
 }
 
 void SoundManager::playMusic(MusicId id) {
+    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE) {
+        setLevelMusic(id);
+    }
+
     if (!m_musicLoaded || !m_currentMusicId || *m_currentMusicId != id) {
         if (!openMusic(id)) {
             return;
         }
     }
     m_music.play();
+}
+
+void SoundManager::setLevelMusic(MusicId id) {
+    m_levelMusicId = id;
+}
+
+void SoundManager::playStarMusic() {
+    playMusic(MusicId::STAR);
+}
+
+void SoundManager::restoreLevelMusic() {
+    if (m_levelMusicId) {
+        playMusic(*m_levelMusicId);
+    }
+}
+
+bool SoundManager::isStarMusicActive() const {
+    return m_currentMusicId && *m_currentMusicId == MusicId::STAR;
 }
 
 void SoundManager::stopMusic() {

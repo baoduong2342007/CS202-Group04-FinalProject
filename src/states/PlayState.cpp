@@ -157,6 +157,17 @@ void PlayState::processInput(const InputState& inputState) {
         inputState.wasReleased(sf::Keyboard::Key::Space)) {
         m_level->getMario()->releaseJump();
     }
+
+    // Debug State Shortcuts for TV Testing: 1=Small, 2=Super, 3=Fire, 4=Star
+    if (inputState.wasPressed(sf::Keyboard::Key::Num1) || inputState.wasPressed(sf::Keyboard::Key::Numpad1)) {
+        m_level->getMario()->powerUp(MarioState::SMALL);
+    } else if (inputState.wasPressed(sf::Keyboard::Key::Num2) || inputState.wasPressed(sf::Keyboard::Key::Numpad2)) {
+        m_level->getMario()->powerUp(MarioState::SUPER);
+    } else if (inputState.wasPressed(sf::Keyboard::Key::Num3) || inputState.wasPressed(sf::Keyboard::Key::Numpad3)) {
+        m_level->getMario()->powerUp(MarioState::FIRE);
+    } else if (inputState.wasPressed(sf::Keyboard::Key::Num4) || inputState.wasPressed(sf::Keyboard::Key::Numpad4)) {
+        m_level->getMario()->activateStarman(10.0f);
+    }
 }
 
 void PlayState::snapshotProgress() {

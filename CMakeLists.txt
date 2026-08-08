@@ -184,6 +184,12 @@ if(BUILD_TESTING)
     )
     target_include_directories(event_bus_tests PRIVATE include)
     add_test(NAME event_bus_tests COMMAND event_bus_tests)
+
+    add_executable(save_manager_tests
+        tests/SaveManagerTests.cpp
+    )
+    target_link_libraries(save_manager_tests PRIVATE game_lib)
+    add_test(NAME save_manager_tests COMMAND save_manager_tests)
 endif()
 
 # Platform-specific Release build settings

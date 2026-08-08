@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-38
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1438,7 +1438,83 @@ Automated regression tests cho missing, valid, corrupt, version mismatch và hig
 
 ---
 
-## 27. Quy Ước Cập Nhật File Này
+## 27. SaveManager Regression Tests
+
+### File liên quan
+
+- [`tests/SaveManagerTests.cpp`](../../tests/SaveManagerTests.cpp)
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`CMakeLists.txt`](../../CMakeLists.txt)
+
+### S6-TV4-39 — Automated tests cho SaveManager
+
+Một test target riêng `save_manager_tests` được bổ sung để kiểm tra các failure path và persistence rule quan trọng của `SaveManager`.
+
+Các test sử dụng save path được inject vào temporary directory của hệ điều hành thay vì production path:
+
+```text
+saves/save.txt
+```
+
+Do đó automated tests không ghi đè dữ liệu save thật của người chơi.
+
+Test matrix bao gồm:
+
+```text
+missing save
+valid save
+corrupted save
+version mismatch
+high-score monotonicity
+temporary-file cleanup
+```
+
+Missing, corrupt và wrong-version save phải trả về `false` từ `load()`và phục hồi toàn bộ default `SaveData`.
+
+Valid save phải khôi phục đúng:
+
+```text
+highScore
+highestUnlockedLevel
+soundVolume
+musicVolume
+```
+
+High-score test xác nhận score mới cao hơn được persist, sau đó score thấp hơn không thể ghi đè high score hiện tại.
+
+Một regression test bổ sung xác nhận save thành công không để lại file:
+
+```text
+save.txt.tmp
+```
+
+sau safe replacement.
+
+### Phương pháp kiểm thử
+
+Test suite sử dụng `assert` giống các regression test hiện có của project.
+
+Mỗi test reset temporary directory trước khi chạy để không phụ thuộc state của test trước đó.
+
+Cuối test suite, toàn bộ temporary data được cleanup.
+
+### Kiểm tra
+
+- Missing save fallback pass.
+- Valid save load pass.
+- Corrupted save fallback pass.
+- Wrong-version fallback pass.
+- Lower score không overwrite high score.
+- Higher score vẫn persist đúng sau reload.
+- Successful atomic save không để lại temporary file.
+- `save_manager_tests` được đăng ký với CTest.
+- Project build thành công.
+- Toàn bộ CTest pass.
+
+---
+
+## 28. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

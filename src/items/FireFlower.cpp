@@ -56,9 +56,7 @@ void FireFlower::onCollect(Mario& mario) {
     m_isCollected = true;
 
     const MarioState currentState = mario.getMarioState();
-    const MarioState targetState = (currentState == MarioState::SMALL || currentState == MarioState::FIRE_SMALL)
-                                       ? MarioState::FIRE_SMALL
-                                       : MarioState::FIRE;
+    const MarioState targetState = MarioState::FIRE;
 
     const bool stateChanged = (currentState != targetState);
     if (stateChanged) {

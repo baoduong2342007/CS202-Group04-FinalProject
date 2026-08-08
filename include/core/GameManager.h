@@ -11,6 +11,7 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include "states/IGameState.h"
+#include "core/SaveManager.h"
 
 class InputState;
 
@@ -38,9 +39,11 @@ public:
     /// Number of states currently on the stack (used by regression tests).
     int stackDepth() const { return static_cast<int>(m_stateStack.size()); }
 
+    SaveManager& getSaveManager() { return m_saveManager; }
+
 private:
     // 1. Constructor / Destructor
-    GameManager() = default;
+    GameManager();
     ~GameManager() = default;
 
     GameManager(const GameManager&) = delete;
@@ -68,4 +71,5 @@ private:
     // on top (pausing the one below), POP removes the top and resumes the new one.
     std::vector<std::unique_ptr<IGameState>> m_stateStack;
     std::vector<PendingOp> m_pendingOps;
+    SaveManager m_saveManager;
 };

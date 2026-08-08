@@ -7,6 +7,10 @@
 
 #include "core/GameManager.h"
 
+GameManager::GameManager() {
+    m_saveManager.load();
+}
+
 GameManager& GameManager::getInstance() {
     static GameManager instance;
     return instance;

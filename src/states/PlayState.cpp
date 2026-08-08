@@ -106,36 +106,11 @@ void PlayState::rebindCommands() {
         m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
                                std::make_unique<PauseCommand>(),
                                InputTrigger::Pressed);
-
-        auto makeShootCmd = [this]() {
-            if (m_level) {
-                m_level->shootFireBall();
-            }
-        };
-        m_inputHandler.bindKey(sf::Keyboard::Key::J,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
-        m_inputHandler.bindKey(sf::Keyboard::Key::F,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
-        m_inputHandler.bindKey(sf::Keyboard::Key::X,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
-        m_inputHandler.bindKey(sf::Keyboard::Key::LControl,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
-        m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
-        m_inputHandler.bindKey(sf::Keyboard::Key::RShift,
-                               std::make_unique<ShootCommand>(makeShootCmd),
-                               InputTrigger::Pressed);
     }
 }
 
 void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
-    EventBus::getInstance().subscribe(EventType::PLAYER_LOST_LIFE, this);
     EventBus::getInstance().subscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
@@ -158,7 +133,6 @@ void PlayState::onEnter() {
 
 void PlayState::onExit() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
-    EventBus::getInstance().unsubscribe(EventType::PLAYER_LOST_LIFE, this);
     EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
@@ -192,13 +166,6 @@ void PlayState::onNotify(EventType event) {
         } else {
             m_isGameOverPending = true;
         }
-    } else if (event == EventType::PLAYER_LOST_LIFE) {
-        if (m_level) {
-            m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
-        }
-        m_terminalCommittedThisFrame = true;
-        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before reloading
-        m_isReloadPending = true;
     } else if (event == EventType::PLAYER_POWER_DOWN) {
         if (m_level) {
             m_level->getCamera().shake(DAMAGE_SHAKE_DURATION, DAMAGE_SHAKE_INTENSITY);
@@ -209,6 +176,7 @@ void PlayState::onNotify(EventType event) {
         // data from a Mario that is about to be destroyed.
         snapshotProgress();
         m_progress.currentLevel++;
+        GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(m_progress.currentLevel);
         // S6-TV1-12: start the transition state machine (freeze → fade → load → fade in).
         m_transitionIsWin = LevelCatalog::isPastFinalLevel(m_progress.currentLevel);
         m_transitionTargetLevel = m_progress.currentLevel;
@@ -278,6 +246,7 @@ void PlayState::restoreProgress() {
 
     if (m_hud) {
         m_hud->setWorldLevel(1, m_progress.currentLevel);
+        m_hud->update();
     }
 
     // Synchronize initial sprite transforms and camera frame 0 with restored MarioState

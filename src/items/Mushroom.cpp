@@ -97,9 +97,6 @@ void Mushroom::onCollect(Mario& mario) {
         if (mario.getMarioState() == MarioState::SMALL) {
             mario.powerUp(MarioState::SUPER);
             eventPublished = true;
-        } else if (mario.getMarioState() == MarioState::FIRE_SMALL) {
-            mario.powerUp(MarioState::FIRE);
-            eventPublished = true;
         }
         ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
     }

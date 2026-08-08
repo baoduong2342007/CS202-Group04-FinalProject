@@ -13,7 +13,7 @@
 enum class EventType {
     PLAYER_JUMPED,
     PLAYER_DIED,
-    PLAYER_LOST_LIFE,     // S6: Lost a life but has lives remaining
+
     PLAYER_POWER_UP,
     PLAYER_POWER_DOWN,
     PLAYER_STAR_COLLECTED,

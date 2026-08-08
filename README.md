@@ -70,12 +70,12 @@ cmake --build build
 
 **Windows:**
 ```bash
-.\build\main.exe
+.\build\SuperMario.exe
 ```
 
 **macOS / Linux:**
 ```bash
-./build/main
+./build/SuperMario
 ```
 
 > **Note:** The executable is built into the `build/` directory, and all required DLLs (on Windows) as well as the `assets/` and `levels/` folders are automatically copied there during the build.
@@ -140,5 +140,6 @@ For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STR
 - [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md) — 6-week plan by member
 - [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Folder & file structure
 - [`CODING_RULES.md`](CODING_RULES.md) — Coding conventions, Git, naming rules
+- [`docs/design_patterns.md`](docs/design_patterns.md) — Design patterns documentation
 - [`docs/class_diagram.md`](docs/class_diagram.md) — Class diagram _(Week 6)_
 - [`PLAN.md`](PLAN.md) — Sprint 6 plan (current sprint)

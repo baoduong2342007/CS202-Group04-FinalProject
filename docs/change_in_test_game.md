@@ -205,5 +205,63 @@
 - **Mô tả:** Bổ sung `case MarioState::FIRE_SMALL` vào câu lệnh `switch` trong phương thức `HUD::getPowerLabel()`, dọn dứt điểm cảnh báo `-Wswitch` của trình biên dịch GCC/Clang.
 
 
+### Entry #20: [Gate 0 Contract Compliance] - Purge FIRE_SMALL, Fix PLAYER_LOST_LIFE & Integrate SaveManager
+- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
+- **File ảnh hưởng:** `Mario.h`, `Mario.cpp`, `HUD.cpp`, `PlayState.cpp`, `FireFlower.cpp`, `Mushroom.cpp`, `GameManager.h`, `GameManager.cpp`, `MenuState.cpp`, `GameOverState.cpp`, `WinState.cpp`, `CMakeLists.txt`
+- **Mô tả:** 
+  1. **Purge FIRE_SMALL**: Xóa bỏ hoàn toàn trạng thái `FIRE_SMALL` (vi phạm Gate 0). Khi nhặt FireFlower ở trạng thái `SMALL`, Mario chuyển trực tiếp sang `FIRE` (tức Fire Big Mario).
+  2. **Remove PLAYER_LOST_LIFE**: Xóa `PLAYER_LOST_LIFE` event để tránh race condition, thay vào đó `HUD` dùng callback timeout trỏ thẳng tới `Mario::loseLife()`, và `PlayState` xử lý mạng trong loop.
+  3. **SaveManager Integration**: Đưa `SaveManager` vào trong `GameManager` singleton. Mọi truy cập vào save data đều thông qua `GameManager::getInstance().getSaveManager()`. `MenuState` hiển thị High Score, `WinState`/`GameOverState` cập nhật High Score.
+  4. **Rename target**: Đổi tên target từ `main` sang `SuperMario` trong `CMakeLists.txt`.
+
+### Entry #21: [Fix HUD & Character State Desync] - Đồng Bộ Trạng Thái Nhân Vật Với HUD Góc Trên Bên Trái
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [HUD.cpp](../src/ui/HUD.cpp), [PlayState.cpp](../src/states/PlayState.cpp), [Mario.h](../include/entities/Mario.h), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Khắc phục lỗi tồn đọng cờ Star Power (`m_starPowerActive`)**: Đăng ký `HUD` lắng nghe sự kiện `PLAYER_POWER_DOWN`. Tự động reset `m_starPowerActive = false` khi nhận sự kiện `PLAYER_DIED`, `PLAYER_POWER_DOWN`, hoặc `LEVEL_STARTED`. Giúp loại bỏ hoàn toàn lỗi góc trái hiển thị `POWER STAR` sau khi nhân vật qua đời / mất mạng / giảm trạng thái.
+  2. **Đồng bộ HUD khi restore progress (`PlayState::restoreProgress`)**: Thêm lời gọi `m_hud->update()` ngay sau khi gán lại điểm, xu, mạng và `MarioState` trong `restoreProgress()`, đảm bảo HUD hiển thị đúng ngay tại frame 0.
+  3. **Đồng bộ default initializer `m_characterType`**: Đưa giá trị mặc định của `m_characterType` trong `Mario.h` về `CharacterType::MARIO` khớp chuẩn xác với các constructor trong `Mario.cpp`.
+  4. **Bổ sung regression unit tests (`TV5IntegrationTests.cpp`)**: Thêm assertion kiểm thử tự động xác nhận `PLAYER_DIED` và `PLAYER_POWER_DOWN` reset nhãn `POWER` về đúng `SMALL`. Toàn bộ 9/9 bộ test CTest đều vượt qua.
+
+### Entry #22: [Fix Dead Enemy Collision] - Bỏ Qua Va Chạm & Gây Sát Thương Khi Quái Đã Chết/Đang Rơi
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Enemy.h](../include/entities/Enemy.h), [Goomba.h](../include/entities/Goomba.h), [Koopa.h](../include/entities/Koopa.h), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Thêm giao diện `Enemy::isDying()`**: Khai báo `virtual bool isDying() const` ở `Enemy.h` và override ở `Goomba.h` (`m_isStomped || m_isFlippedDead || isDead() || !isActive()`) cũng như `Koopa.h` (`m_isFlippedDead || isDead() || !isActive()`).
+  2. **Tắt va chạm vật lý Box2D (`CollisionManager::preSolve`)**: Gọi `contact->SetEnabled(false)` khi một trong hai entity va chạm là quái đang dying/dead, giúp Mario và các vật thể khác đi qua quái đang lơ lửng/rơi tự do mà không bị đẩy hay nảy.
+  3. **Bỏ qua gây sát thương cho Mario (`CollisionManager::handleMarioCollision`)**: Thêm kiểm tra `if (enemy->isDying()) return;` ngay đầu luồng xử lý va chạm Mario-quái. Mario không còn bị mất mạng hay bị trừ máu khi chạm trúng quái đã bị đạp bẹp hoặc quái đang ngửa bụng lơ lửng rơi xuống vực.
+
+### Entry #23: [Fix Goomba Squished Sprite Position] - Sửa Lỗi Lệch Vị Trí Frame Bẹp Của Goomba
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Goomba.cpp](../src/entities/Goomba.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Sửa tính toán chân Sprite Goomba (`syncSpriteToFeet`)**: Đổi tính toán vị trí đáy sprite từ `m_position.y + GOOMBA_SIZE.y` (32px cố định) thành `m_position.y + m_size.y` (16px khi bị đạp).
+  2. **Kết quả**: Loại bỏ hoàn toàn hiện tượng sprite Goomba bị dậm bẹp bị chìm 16px sâu bên dưới mặt đất/gạch. Sprite squished phẳng lì nằm chuẩn xác ngay trên mặt sàn.
+
+### Entry #24: [Fix Enemy Sprite Orientation] - Lật Sprite Hướng Mặt Quái Theo Hướng Di Chuyển
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Koopa.cpp](../src/entities/Koopa.cpp), [Goomba.cpp](../src/entities/Goomba.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Lật tỉ lệ scale & origin theo hướng di chuyển (`syncSpriteToFeet`)**: Khi `getFacingDirection() == Direction::RIGHT`, thiết lập `m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE})` và `setOrigin({rect.size.x, 0.f})`. Khi hướng `LEFT`, giữ `setScale({SPRITE_SCALE, SPRITE_SCALE})` và `setOrigin({0.f, 0.f})`.
+  2. **Kết quả**: Loại bỏ hoàn toàn lỗi Koopa / Goomba bị đi giật lùi (moonwalk) khi di chuyển sang phải. Quái luôn quay mặt về đúng hướng di chuyển 100%.
+
+### Entry #25: [Fix Star Invincibility Expiration Event] - Phát Sự Kiện PLAYER_INVINCIBILITY_EXPIRED Khi Hết Hạn Ngôi Sao
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp), [HUD.cpp](../src/ui/HUD.cpp), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Bổ sung phát sự kiện hết hạn tàng hình Sao (`Mario::updateInvincibility`)**: Thêm `EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED)` khi bộ đếm 10 giây Starman (`m_starInvincibilityTimer`) đếm về 0.
+  2. **Ràng buộc kiểm tra hai lớp ở HUD (`HUD::getPowerLabel`)**: Đổi điều kiện nhãn `STAR` thành `m_starPowerActive && m_mario.isStarInvincible()`.
+  3. **Kết quả**: Khi hiệu ứng Sao 10 giây kết thúc, HUD tự động chuyển nhãn `POWER STAR` về lại trạng thái chuẩn (`POWER SMALL` / `POWER SUPER` / `POWER FIRE`) ngay tức thì, loại bỏ dứt điểm hiện tượng treo nhãn `POWER STAR` vĩnh viễn.
+
+### Entry #26: [Tune Mario Skid Duration] - Tăng Thời Gian Hiệu Ứng Phanh Lại Khi Chạy Nhanh
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
+- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp), [change_in_test_game.md](change_in_test_game.md)
+- **Mô tả:** 
+  1. **Điều chỉnh ma sát phanh (`SKID_FRICTION`)**: Đổi hằng số `SKID_FRICTION` từ `2200.f` về `1200.f` trong `Mario.cpp`.
+  2. **Kết quả**: Khi Mario đang chạy nhanh (tốc độ tối đa 340 px/s) và bấm phím ngược hướng để phanh lại, thời gian trượt phanh và hiển thị animation `skid` kéo dài từ ~0.15s lên ~0.28s, mang lại cảm giác phanh trượt mượt mà và đúng chuẩn game Mario gốc.
+
+
+
+
 
 

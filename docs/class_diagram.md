@@ -68,6 +68,15 @@ classDiagram
         +setSfxVolume(float) void
     }
 
+    class SaveManager {
+        -SaveData m_data
+        +load() void
+        +save() void
+        +updateHighScore(int score) void
+        +updateHighestUnlockedLevel(int level) void
+        +getData() const SaveData&
+    }
+
     %% ============================================================
     %% STATE PATTERN (TV1 + TV2)
     %% ============================================================
@@ -472,7 +481,6 @@ classDiagram
         SMALL
         SUPER
         FIRE
-        FIRE_SMALL
     }
 
     class CharacterType {

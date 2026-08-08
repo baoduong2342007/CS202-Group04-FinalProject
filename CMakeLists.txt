@@ -133,14 +133,14 @@ target_link_libraries(game_lib PUBLIC
 )
 
 # Executable target
-add_executable(main src/main.cpp)
-target_link_libraries(main PRIVATE game_lib)
+add_executable(SuperMario src/main.cpp)
+target_link_libraries(SuperMario PRIVATE game_lib)
 
 # ==============================================================================
 # 4. TARGET BUILD CONFIGURATIONS
 # ==============================================================================
 # Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(SuperMario PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 include(CTest)
@@ -173,6 +173,7 @@ if(BUILD_TESTING)
     add_executable(game_manager_tests
         tests/GameManagerTests.cpp
         src/core/GameManager.cpp
+        src/core/SaveManager.cpp
     )
     target_include_directories(game_manager_tests PRIVATE include)
     target_link_libraries(game_manager_tests PRIVATE SFML::Graphics)
@@ -209,9 +210,9 @@ endif()
 # Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(WIN32)
-        set_property(TARGET main PROPERTY WIN32_EXECUTABLE TRUE)
+        set_property(TARGET SuperMario PROPERTY WIN32_EXECUTABLE TRUE)
     elseif(APPLE)
-        set_property(TARGET main PROPERTY MACOSX_BUNDLE TRUE)
+        set_property(TARGET SuperMario PROPERTY MACOSX_BUNDLE TRUE)
     endif()
 endif()
 
@@ -228,7 +229,7 @@ file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
 foreach(ASSET_FILE IN LISTS ASSET_FILES)
     file(RELATIVE_PATH ASSET_REL "${CMAKE_SOURCE_DIR}/assets" "${ASSET_FILE}")
     get_filename_component(ASSET_DEST_DIR "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}" DIRECTORY)
-    add_custom_command(TARGET main POST_BUILD
+    add_custom_command(TARGET SuperMario POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${ASSET_DEST_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASSET_FILE}" "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}"
         COMMENT "Syncing asset ${ASSET_REL}"
@@ -239,7 +240,7 @@ file(GLOB_RECURSE LEVEL_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/levels/*")
 foreach(LEVEL_FILE IN LISTS LEVEL_FILES)
     file(RELATIVE_PATH LEVEL_REL "${CMAKE_SOURCE_DIR}/levels" "${LEVEL_FILE}")
     get_filename_component(LEVEL_DEST_DIR "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}" DIRECTORY)
-    add_custom_command(TARGET main POST_BUILD
+    add_custom_command(TARGET SuperMario POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${LEVEL_DEST_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LEVEL_FILE}" "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}"
         COMMENT "Syncing level ${LEVEL_REL}"
@@ -267,8 +268,8 @@ if(WIN32)
     foreach(DLL_NAME IN LISTS SFML_DLL_NAMES)
         set(DLL_PATH "${SFML_DLL_DIR}/${DLL_NAME}")
         if(EXISTS "${DLL_PATH}")
-            add_custom_command(TARGET main POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_PATH}" "$<TARGET_FILE_DIR:main>/"
+            add_custom_command(TARGET SuperMario POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_PATH}" "$<TARGET_FILE_DIR:SuperMario>/"
                 COMMENT "Copying ${DLL_NAME} to build output folder..."
             )
         endif()

@@ -37,6 +37,7 @@ WinState::WinState(const GameProgress& progress)
 
 void WinState::onEnter() {
     SoundManager::getInstance().playMusic(MusicId::WIN);
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
 }
 void WinState::onExit() {
     SoundManager::getInstance().stopMusic();

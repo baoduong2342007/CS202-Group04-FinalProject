@@ -61,6 +61,8 @@ MenuState::MenuState(int score, int coins, int world, int level, int topScore)
       m_coinSprite(m_hudTexture) {}
 
 void MenuState::onEnter() {
+    m_topScore = GameManager::getInstance().getSaveManager().getData().highScore;
+
     try {
         m_hudTexture = sf::Texture("assets/textures/ui/hud.png");
     } catch (const std::exception& e) {

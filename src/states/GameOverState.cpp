@@ -42,6 +42,7 @@ GameOverState::GameOverState(const GameProgress& progress)
 
 void GameOverState::onEnter() {
     SoundManager::getInstance().playMusic(MusicId::GAME_OVER);
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
 }
 void GameOverState::onExit() {
     SoundManager::getInstance().stopMusic();

@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-26kay
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -828,7 +828,7 @@ Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
 ## File liên quan
 - [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
 - [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
-- [`assets/texture/enemies/enemies.png](../../assets/texture/enemies/enemies.png)
+- [`assets/textures/enemies/enemies.png`](../../assets/textures/enemies/enemies.png)
 
 ### S6-TV4-25 - Resize Koopa shell fixture
 
@@ -867,7 +867,7 @@ Sprite rendering sử dụng scale cố định 2× và bottom alignment thông 
 
 ---
 
-## 17. Koopa Walking To Shell Idle Transition
+## 17. Koopa State Transitions
 
 ### File liên quan
 
@@ -898,24 +898,91 @@ SHELL_IDLE + lateral contact -> SHELL_SLIDING
 
 Nhờ đó một collision không thể vừa biến Walking Koopa thành shell vừa làm shell chạy ngay.
 
+### S6-TV4-27 - Shell Idle -> Shell Sliding
+
+Koopa shell được kick khi Mario thực hiện lateral contact với Koopa đang ở trạng thái:
+
+```text
+SHELL_IDLE
+```
+
+Hướng kick được xác định từ vị trí tương đối giữa Mario và Koopa:
+
+```text
+Mario ở bên trái shell -> shell chạy sang phải
+Mario ở bên phải shell -> shell chạy sang trái
+```
+
+`Koopa::kick()` chỉ chấp nhận transition:
+
+```text
+SHELL_IDLE -> SHELL_SLIDING
+```
+và đặt horizontal velocity theo `KOOPA_SLIDE_SPEED`.
+
+Shell đang ở trạng thái `SHELL_SLIDING` không bị kick lại khi Mario va chạm ngang. Trường hợp này được xử lý như enemy damage đối với Mario.
+
+Nếu Mario stomp một shell đang sliding:
+
+```text
+SHELL_SLIDING -> SHELL_IDLE
+```
+Shell có thể được kick lại bằng một lateral contact sau đó.
+
 ### Phân chia trách nhiệm
-
-Task này chỉ chuẩn hóa transition khi Mario stomp Koopa.
-
-`SHELL_IDLE -> SHELL_SLIDING` bằng lateral contact được hoàn thiện ở S6-TV4-27.
-
-Shared collision dispatch architecture không được thay đổi trong task này.
+S6-TV4-26 xử lý transition khi Mario stomp Koopa.
+S6-TV4-27 xử lý transition khi Mario chạm ngang shell idle.
+Shared collision dispatch architecture không được thay đổi trong hai task này.
 
 ### Kiểm tra
-
-- Stomp Walking Koopa một lần chuey63n sang `SHELL_IDLE`.
+- Stomp Walking Koopa một lần chuyển sang `SHELL_IDLE`.
 - Shell không chạy ngay sau stomp đầu.
 - Horizontal velocity của shell idle bằng 0.
 - Stomp lại shell idle không làm shell chạy.
-- Stomp shell đang sliding làm shell dừng lại.
-- Mario vẫn bounce sau stomp.
+- Mario chạm ngang shell idle từ bên trái → shell chạy sang phải.
+- Mario chạm ngang shell idle từ bên phải → shell chạy sang trái.
+- Shell sliding không bị kick lại.
+- Lateral contact với shell sliding gây damage cho Mario.
+- Stomp shell sliding làm shell dừng lại.
+- Shell có thể được kick lại sau khi trở về `SHELL_IDLE`.
 - Build và toàn bộ CTest hiện tại pass.
 
+---
+
+## 18. Koopa Shell Enemy Defeat
+
+### File liên quan
+
+- [`src/physics/CollisionManager.cpp`](../../src/physics/CollisionManager.cpp)
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+
+### S6-TV4-29 - Shell hạ enemy khác đúng một lần
+
+Sliding Koopa shell có thể defeat enemy khác khi xảy ra Enemy-Enemy collision.
+
+Collision handler chỉ cho phép shell attack khi Koopa đang ở trạng thái `SHELL_SLIDING`, shell idle không gây damage.
+
+Trước khi xử lý defeat, handler kiểm tra victim đã chết, đã được đánh dấy remove, pending destroy hặc inactive hay chưa.
+
+Nếu victim đã được xử lý bởi một contact trước đó, collision được xem là đã handled nhưng không gọi takeDamage() hoặc defeat logic lần nữa.
+
+Điều này tránh duplicate defeat khi Box2D phát nhiều contact callback trước khi entity được erase khỏi Level.
+
+### Phân chia trách nhiệm
+
+Task này chỉ bảo đảm shell defeat được xử lý một lần trên mỗi victim.
+
+Score và DefeatCause được để cho collision/score pipeline chung của TV3 và TV5, tránh tạo nguồn score thứ hai trong TV4.
+
+### Kiểm tra
+- Shell idle không defeat enemy.
+- Shell sldiing defeat enemy khi va chạm.
+- Một victim không bị defeat nhiều lần.
+- Shell không reverse như enemy thường sau khi đã xử lý shell collision.
+- Shell có thể tiếp tục defeat enemy khác.
+- Build và toàn bộ CTest pass.
 ---
 
 ## 18. Quy Ước Cập Nhật File Này

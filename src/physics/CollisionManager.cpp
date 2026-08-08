@@ -265,6 +265,10 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         Enemy* enemyB = static_cast<Enemy*>(entityB);
 
         auto tryShellKill = [](Enemy* attacker, Enemy* victim) -> bool {
+            if (!attacker || !victim) {
+                return false;
+            }
+
             if (!attacker->isKoopa() || victim->isKoopa()) {
                 return false;
             }
@@ -275,8 +279,13 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
+            if (victim->isDead() || victim->shouldRemove() || victim->isPendingDestroy() || !victim->isActive()) {
+                return true;
+            }
+
             victim->takeDamage(victim->getHealth());
             victim->markForRemoval();
+
             return true;
         };
 

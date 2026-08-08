@@ -85,7 +85,7 @@ void Star::onCollect(Mario& mario) {
     m_isCollected = true;
 
     // Grant temporary invincibility regardless of current state
-    mario.setInvincible(STAR_INVINCIBILITY_DURATION);
+    mario.setStarInvincible(STAR_INVINCIBILITY_DURATION);
 
     mario.addScore(STAR_SCORE_VALUE);
 

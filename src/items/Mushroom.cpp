@@ -55,6 +55,18 @@ void Mushroom::update(float dt) {
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
     updateAnimation(dt);
+
+    // Auto-reverse if stuck against a wall/block seam while patrolling
+    if (m_collectibleDelay <= 0.f && std::abs(m_velocity.x) < 1.0f && m_patrolSpeed > 0.f) {
+        m_stuckTimer += dt;
+        if (m_stuckTimer >= 0.1f) {
+            onWallCollision();
+            m_stuckTimer = 0.f;
+        }
+    } else {
+        m_stuckTimer = 0.f;
+    }
+
     patrol();
 }
 
@@ -85,6 +97,9 @@ void Mushroom::onCollect(Mario& mario) {
     } else {
         if (mario.getMarioState() == MarioState::SMALL) {
             mario.powerUp(MarioState::SUPER);
+            eventPublished = true;
+        } else if (mario.getMarioState() == MarioState::FIRE_SMALL) {
+            mario.powerUp(MarioState::FIRE);
             eventPublished = true;
         }
         mario.addScore(MUSHROOM_SCORE_VALUE);

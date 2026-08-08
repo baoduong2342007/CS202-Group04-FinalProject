@@ -54,19 +54,18 @@ void FireFlower::onCollect(Mario& mario) {
 
     m_isCollected = true;
 
-    // Query Mario's current state directly — no EventBus payload required.
-    // SMALL Mario becomes FIRE directly; SUPER Mario also becomes FIRE.
-    // (In classic SMB, a mushroom would be spawned for SMALL Mario instead,
-    //  but here we apply the fire state for simplicity per the design doc.)
-    const bool stateChanged = mario.getMarioState() != MarioState::FIRE;
+    const MarioState currentState = mario.getMarioState();
+    const MarioState targetState = (currentState == MarioState::SMALL || currentState == MarioState::FIRE_SMALL)
+                                       ? MarioState::FIRE_SMALL
+                                       : MarioState::FIRE;
+
+    const bool stateChanged = (currentState != targetState);
     if (stateChanged) {
-        mario.powerUp(MarioState::FIRE);
+        mario.powerUp(targetState);
     }
 
     mario.addScore(FIRE_FLOWER_SCORE_VALUE);
 
-    // Mario::powerUp() publishes the event when the state changes. If Mario
-    // is already FIRE, publish exactly one event for this pickup here.
     if (!stateChanged) {
         EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
     }

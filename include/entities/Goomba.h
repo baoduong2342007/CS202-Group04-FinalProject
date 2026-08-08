@@ -23,6 +23,7 @@ public:
     void onStomp() override;
     void patrol() override;
     void onWallCollision() override;
+    void onFireHit() override;
 
     bool isStomped() const;
 
@@ -35,6 +36,7 @@ private:
     const TileMap* m_tileMap = nullptr;
 
     bool m_isStomped;
+    bool m_isFlippedDead = false;
     float m_patrolSpeed;
     float m_squishTimer = 0.f;
 

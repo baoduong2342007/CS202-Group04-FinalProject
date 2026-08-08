@@ -12,6 +12,8 @@
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
+#include "core/SoundManager.h"
 
 namespace {
 
@@ -86,18 +88,28 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
                                          false
                                          );
 
-    m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
-                                    walkAnimation
-                                    );
+    m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION, walkAnimation);
 
     m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION,
-                                    shellIdleAnimation
-                                    );
+                                    shellIdleAnimation);
 
     playAnimation(KOOPA_WALK_ANIMATION);
 }
 
 void Koopa::update(float dt) {
+    if (m_isFlippedDead) {
+        syncPhysics();
+        if (m_sprite) {
+            m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
+            m_sprite->setOrigin({8.f, 16.f});
+            m_sprite->setScale({2.f, -2.f}); // Upside down flip!
+        }
+        if (m_position.y > PIT_CLEANUP_Y) {
+            markForRemoval();
+        }
+        return;
+    }
+
     syncPhysics();
 
     if (m_position.y > PIT_CLEANUP_Y) {
@@ -125,6 +137,22 @@ void Koopa::update(float dt) {
     }
 
     updateAnimation(dt);
+}
+
+void Koopa::onFireHit() {
+    if (m_isFlippedDead) return;
+
+    m_isFlippedDead = true;
+    setHealth(0);
+    SoundManager::getInstance().playSound("kickkill");
+
+    b2Body* body = getBody();
+    if (body) {
+        for (b2Fixture* fixture = body->GetFixtureList(); fixture != nullptr; fixture = fixture->GetNext()) {
+            fixture->SetSensor(true);
+        }
+        body->SetLinearVelocity(b2Vec2(0.f, -8.f));
+    }
 }
 
 void Koopa::onStomp() {

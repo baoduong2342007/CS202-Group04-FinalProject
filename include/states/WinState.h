@@ -7,6 +7,8 @@
 #include "states/IGameState.h"
 #include "core/GameProgress.h"
 #include <SFML/Graphics.hpp>
+#include <memory>
+#include "ui/UIMenuWidget.h"
 
 class WinState : public IGameState {
 public:
@@ -22,7 +24,8 @@ public:
 
 private:
     sf::Font m_font;
-    sf::Text m_text;
+    sf::Text m_titleText;
     GameProgress m_progress;
     sf::Text m_scoreText;
+    std::unique_ptr<UIMenuWidget> m_menu;
 };

@@ -24,12 +24,13 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
+#include "core/SpriteFrames.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEO";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr int TILE_TEXTURE_SIZE = 32;
 constexpr float TILE_FRICTION = 0.6f;
@@ -100,8 +101,8 @@ void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities,
         }
     }
 
-    hitTile(bestGridPos.x,bestGridPos.y,
-            isBigMario, entities);
+    hitTile(bestGridPos.x, bestGridPos.y,
+            isBigMario, entities, &textureManager);
 
     m_pendingTileHits.clear();
 }
@@ -150,7 +151,11 @@ sf::IntRect getTilesetRect(char symbol) {
 
         case '?':
         case 'U':
+        case 'u':
         case 'O':
+        case 'o':
+        case 'f':
+        case 'h':
             return makeTilesetRect(QUESTION_TILE_INDEX);
 
         case 'F':
@@ -576,7 +581,8 @@ void TileMap::clearPhysicsBodies() {
 }
 
 bool TileMap::hitTile(int column, int row, bool isBigMario,
-                      std::vector<std::unique_ptr<Entity>>& entities) {
+                      std::vector<std::unique_ptr<Entity>>& entities,
+                      TextureManager* textureManager) {
     if (row < 0 || row >= static_cast<int>(m_grid.size())) {
         return false;
     }
@@ -600,12 +606,24 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
                 createPhysicsBodies(m_physicsWorld);
             }
 
-            // Spawn 4 flying debris particles
+            // Spawn 4 flying debris particles (4 corners)
             sf::Vector2f center = tileWorldPos + sf::Vector2f(8.f, 8.f);
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f)));
+            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_LEFT);
+            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_RIGHT);
+            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_LEFT);
+            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_RIGHT);
+
+            if (textureManager) {
+                d1->setTextureManager(*textureManager);
+                d2->setTextureManager(*textureManager);
+                d3->setTextureManager(*textureManager);
+                d4->setTextureManager(*textureManager);
+            }
+
+            entities.push_back(std::move(d1));
+            entities.push_back(std::move(d2));
+            entities.push_back(std::move(d3));
+            entities.push_back(std::move(d4));
 
             EventBus::getInstance().notify(EventType::BRICK_BROKEN);
 

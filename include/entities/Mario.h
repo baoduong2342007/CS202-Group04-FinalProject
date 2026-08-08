@@ -17,7 +17,14 @@ class FireBall;
 enum class MarioState {
     SMALL,
     SUPER,
-    FIRE
+    FIRE,
+    FIRE_SMALL
+};
+
+// Selectable player character identity (Mario / Luigi)
+enum class CharacterType {
+    MARIO,
+    LUIGI
 };
 
 class Mario : public Character {
@@ -79,9 +86,14 @@ public:
     /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
     void setCoinCount(int coins);
     bool isInvincible() const;
+    void setStarInvincible(float duration);
+    bool isStarInvincible() const;
     bool canShootFireBall() const;
     int getLives() const;
     void setLives(int lives);
+
+    CharacterType getCharacterType() const { return m_characterType; }
+    void setCharacterType(CharacterType type);
 
     bool isRunning() const;
     /// Set the per-frame run intent consumed by preparePhysics().
@@ -99,6 +111,7 @@ protected:
 
     // 6. Protected / Private members
     MarioState m_marioState;
+    CharacterType m_characterType = CharacterType::LUIGI;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
     float m_moveSpeed;
@@ -106,6 +119,8 @@ protected:
     int m_coinCount;
     bool m_isInvincible;
     float m_invincibilityTimer;
+    bool m_isStarInvincible = false;
+    float m_starInvincibilityTimer = 0.f;
     int m_lives;
 
     bool m_isDying;

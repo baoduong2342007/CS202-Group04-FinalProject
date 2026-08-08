@@ -12,7 +12,7 @@
 #include "core/SpriteFrames.h"
 
 namespace {
-const sf::Vector2f FIREBALL_SIZE(12.f, 12.f);
+const sf::Vector2f FIREBALL_SIZE(16.f, 16.f);
 constexpr float FIREBALL_SPEED = 360.f;
 constexpr float FIREBALL_BOUNCE_SPEED = 240.f;
 constexpr int MAX_BOUNCES = 3;
@@ -27,18 +27,10 @@ FireBall::FireBall()
       m_lifetime(0.f),
       m_bounceCooldown(0.f) {
     initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
-    setSprite("assets/textures/mario/MarioLuigi.png");
-    m_animationSystem->addAnimation(
-        "idle",
-        AnimationSystem::createManualAnimation(
-            std::vector<sf::IntRect>{
-                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME1,
-                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME2,
-                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME3,
-                SpriteFrames::FireShooting::FireMario::FIREBALL_FRAME4
-            },
-            0.08f));
-    playAnimation("idle");
+    setSprite("assets/textures/items/items_objects.png");
+    m_animationSystem->addAnimation("spin",
+        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireballFrames(), 0.06f));
+    playAnimation("spin");
 }
 
 FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
@@ -77,6 +69,11 @@ void FireBall::update(float dt) {
     if (!m_active || m_pendingDestroy) return;
 
     syncPhysics(); // CRITICAL: Sync first!
+    updateAnimation(dt);
+
+    if (m_sprite) {
+        m_sprite->setScale({2.f, 2.f});
+    }
 
     m_lifetime += dt;
     if (m_bounceCooldown > 0.0f) {

@@ -646,33 +646,33 @@ namespace Goomba {
 inline const sf::IntRect WALK1({0, 16},
                                {16, 16}); // STT #1: Walking frame 1 (left foot)
 inline const sf::IntRect
-    WALK2({18, 16}, {16, 16}); // STT #2: Walking frame 2 (right foot)
+    WALK2({ 18, 16 }, { 16, 16 }); // STT #2: Walking frame 2 (right foot)
 inline const sf::IntRect STOMPED({36, 24},
                                  {16, 8}); // STT #9: Squished flat by Mario
 
 // Underground Palette (Blue Goomba)
 inline const sf::IntRect
-    UG_WALK1({74, 16}, {16, 16}); // STT #3: Underground walking frame 1
+    UG_WALK1({ 74, 16 }, { 16, 16 }); // STT #3: Underground walking frame 1
 inline const sf::IntRect
-    UG_WALK2({92, 16}, {16, 16}); // STT #4: Underground walking frame 2
+    UG_WALK2({ 92, 16 }, { 16, 16 }); // STT #4: Underground walking frame 2
 inline const sf::IntRect
-    UG_STOMPED({110, 24}, {16, 8}); // STT #10: Underground squished flat
+    UG_STOMPED({ 110, 24 }, { 16, 8 }); // STT #10: Underground squished flat
 
 // Castle Palette (Grey Goomba)
 inline const sf::IntRect
-    CASTLE_WALK1({148, 16}, {16, 16}); // STT #5: Castle walking frame 1
+    CASTLE_WALK1({ 148, 16 }, { 16, 16 }); // STT #5: Castle walking frame 1
 inline const sf::IntRect
-    CASTLE_WALK2({166, 16}, {16, 16}); // STT #6: Castle walking frame 2
+    CASTLE_WALK2({ 166, 16 }, { 16, 16 }); // STT #6: Castle walking frame 2
 inline const sf::IntRect
-    CASTLE_STOMPED({184, 24}, {16, 8}); // STT #11: Castle squished flat
+    CASTLE_STOMPED({ 184, 24 }, { 16, 8 }); // STT #11: Castle squished flat
 
 // Underwater Palette (White/Blue Goomba)
 inline const sf::IntRect
-    UW_WALK1({222, 16}, {16, 16}); // STT #7: Underwater walking frame 1
+    UW_WALK1({ 222, 16 }, { 16, 16 }); // STT #7: Underwater walking frame 1
 inline const sf::IntRect
-    UW_WALK2({240, 16}, {16, 16}); // STT #8: Underwater walking frame 2
+    UW_WALK2({ 240, 16 }, { 16, 16 }); // STT #8: Underwater walking frame 2
 inline const sf::IntRect
-    UW_STOMPED({258, 24}, {16, 8}); // STT #12: Underwater squished flat
+    UW_STOMPED({ 258, 24 }, { 16, 8 }); // STT #12: Underwater squished flat
 
 inline const std::vector<sf::IntRect> &walkFrames() {
   static const std::vector<sf::IntRect> frames = {WALK1, WALK2};
@@ -703,7 +703,7 @@ inline const sf::IntRect WALK1({0, 34},
 inline const sf::IntRect WALK2({18, 34},
                                {16, 16}); // STT #13: Crawling frame 2 (16x16)
 inline const sf::IntRect
-    SHELL({36, 34}, {16, 16}); // STT #18: Retracted hard beetle shell (16x15)
+    SHELL({ 110, 34 }, { 16, 16 }); // STT #18: Retracted hard beetle shell (16x15)
 
 // Underground Palette
 inline const sf::IntRect UG_WALK1({74, 34},
@@ -711,7 +711,7 @@ inline const sf::IntRect UG_WALK1({74, 34},
 inline const sf::IntRect UG_WALK2({92, 34},
                                   {16, 16}); // STT #14: Underground crawling 2
 inline const sf::IntRect
-    UG_SHELL({110, 34}, {16, 16}); // STT #20: Underground beetle shell
+    UG_SHELL({ 166, 34 }, { 16, 16 }); // STT #20: Underground beetle shell
 
 // Castle Palette
 inline const sf::IntRect CASTLE_WALK1({148, 34},
@@ -751,32 +751,32 @@ namespace BuzzyBeetleClimb {
 // Buzzy Beetle climbing walls/vines and ceilings (perfect 16x16 grid for
 // rotation & alignment) Overworld Palette (Y=78)
 inline const sf::IntRect
-    CLIMB_LEFT_WALL({4, 78}, {8, 16}); // STT #37: Wall/Vine climbing
+    CLIMB_LEFT_WALL({ 4, 78 }, { 8, 16 }); // STT #37: Wall/Vine climbing
 inline const sf::IntRect CLIMB_CEIL_LEFT({18, 82},
                                          {16, 8}); // STT #45: Ceiling crawling
 inline const sf::IntRect
     CLIMB_RIGHT_WALL({40, 78},
                      {8, 16}); // STT #38: Wall/Vine climbing (reversed)
 inline const sf::IntRect
-    CLIMB_CEIL_RIGHT({54, 82}, {16, 8}); // STT #46: Ceiling crawling (reversed)
+    CLIMB_CEIL_RIGHT({ 54, 82 }, { 16, 8 }); // STT #46: Ceiling crawling (reversed)
 
 // Underground Palette (X + 74)
-inline const sf::IntRect UG_CLIMB_LEFT_WALL({78, 78}, {8, 16});   // STT #39
-inline const sf::IntRect UG_CLIMB_CEIL_LEFT({92, 82}, {16, 8});   // STT #47
-inline const sf::IntRect UG_CLIMB_RIGHT_WALL({114, 78}, {8, 16}); // STT #40
-inline const sf::IntRect UG_CLIMB_CEIL_RIGHT({128, 82}, {16, 8}); // STT #48
+inline const sf::IntRect UG_CLIMB_LEFT_WALL({ 78, 78 }, { 8, 16 });   // STT #39
+inline const sf::IntRect UG_CLIMB_CEIL_LEFT({ 92, 82 }, { 16, 8 });   // STT #47
+inline const sf::IntRect UG_CLIMB_RIGHT_WALL({ 114, 78 }, { 8, 16 }); // STT #40
+inline const sf::IntRect UG_CLIMB_CEIL_RIGHT({ 128, 82 }, { 16, 8 }); // STT #48
 
 // Castle Palette (X + 148)
-inline const sf::IntRect CASTLE_CLIMB_LEFT_WALL({152, 78}, {8, 16});  // STT #41
-inline const sf::IntRect CASTLE_CLIMB_CEIL_LEFT({166, 82}, {16, 8});  // STT #49
-inline const sf::IntRect CASTLE_CLIMB_RIGHT_WALL({188, 78}, {8, 16}); // STT #42
-inline const sf::IntRect CASTLE_CLIMB_CEIL_RIGHT({202, 82}, {16, 8}); // STT #50
+inline const sf::IntRect CASTLE_CLIMB_LEFT_WALL({ 152, 78 }, { 8, 16 });  // STT #41
+inline const sf::IntRect CASTLE_CLIMB_CEIL_LEFT({ 166, 82 }, { 16, 8 });  // STT #49
+inline const sf::IntRect CASTLE_CLIMB_RIGHT_WALL({ 188, 78 }, { 8, 16 }); // STT #42
+inline const sf::IntRect CASTLE_CLIMB_CEIL_RIGHT({ 202, 82 }, { 16, 8 }); // STT #50
 
 // Underwater Palette (X + 222)
-inline const sf::IntRect UW_CLIMB_LEFT_WALL({226, 78}, {8, 16});  // STT #43
-inline const sf::IntRect UW_CLIMB_CEIL_LEFT({240, 82}, {16, 8});  // STT #51
-inline const sf::IntRect UW_CLIMB_RIGHT_WALL({262, 78}, {8, 16}); // STT #44
-inline const sf::IntRect UW_CLIMB_CEIL_RIGHT({276, 82}, {16, 8}); // STT #52
+inline const sf::IntRect UW_CLIMB_LEFT_WALL({ 226, 78 }, { 8, 16 });  // STT #43
+inline const sf::IntRect UW_CLIMB_CEIL_LEFT({ 240, 82 }, { 16, 8 });  // STT #51
+inline const sf::IntRect UW_CLIMB_RIGHT_WALL({ 262, 78 }, { 8, 16 }); // STT #44
+inline const sf::IntRect UW_CLIMB_CEIL_RIGHT({ 276, 82 }, { 16, 8 }); // STT #52
 
 inline const std::vector<sf::IntRect> &climbFrames() {
   static const std::vector<sf::IntRect> frames = {
@@ -817,21 +817,21 @@ inline const sf::IntRect SWIM_CLOSED(
 
 // Underground Palette
 inline const sf::IntRect
-    UG_SWIM_OPEN({74, 52}, {16, 24}); // STT #27: Underground extended body
+    UG_SWIM_OPEN({ 54, 52 }, { 16, 16 }); // STT #27: Underground extended body
 inline const sf::IntRect
-    UG_SWIM_CLOSED({92, 52}, {16, 16}); // STT #28: Underground contracted body
+    UG_SWIM_CLOSED({ 74, 52 }, { 16, 24 }); // STT #28: Underground contracted body
 
 // Castle Palette
 inline const sf::IntRect
-    CASTLE_SWIM_OPEN({148, 52}, {16, 24}); // STT #29: Castle extended body
+    CASTLE_SWIM_OPEN({ 92, 52 }, { 16, 16 }); // STT #29: Castle extended body
 inline const sf::IntRect
-    CASTLE_SWIM_CLOSED({166, 52}, {16, 16}); // STT #30: Castle contracted body
+    CASTLE_SWIM_CLOSED({ 128, 52 }, { 16, 16 }); // STT #30: Castle contracted body
 
 // Underwater Palette
 inline const sf::IntRect
-    UW_SWIM_OPEN({222, 52}, {16, 24}); // STT #31: Underwater extended body
+    UW_SWIM_OPEN({ 148, 52 }, { 16, 24 }); // STT #31: Underwater extended body
 inline const sf::IntRect
-    UW_SWIM_CLOSED({240, 52}, {16, 16}); // STT #32: Underwater contracted body
+    UW_SWIM_CLOSED({ 166, 52 }, { 16, 16 }); // STT #32: Underwater contracted body
 
 // Backward-compatible aliases
 inline const sf::IntRect &UG_CASTLE_SWIM_OPEN = UG_SWIM_OPEN;
@@ -854,7 +854,7 @@ inline const sf::IntRect BULLET({54, 52},
 
 // Underground Palette
 inline const sf::IntRect
-    UG_BULLET({128, 52}, {16, 16}); // STT #34: Underground Bullet Bill
+    UG_BULLET({ 222, 52 }, { 16, 24 }); // STT #34: Underground Bullet Bill
 
 // Castle Palette
 inline const sf::IntRect CASTLE_BULLET({202, 52},
@@ -874,7 +874,7 @@ inline const sf::IntRect &UG_CASTLE_BULLET = CASTLE_BULLET;
  */
 namespace Podoboo {
 inline const sf::IntRect
-    BUBBLE({90, 370}, {16, 16}); // STT #157: Lava Bubble / Podoboo (14x16)
+    BUBBLE({ 90, 370 }, { 16, 16 }); // STT #157: Lava Bubble / Podoboo (14x16)
 inline const sf::IntRect BUBBLE_GRID({90, 370},
                                      {16, 16}); // Grid aligned box (16x16)
 } // namespace Podoboo
@@ -892,9 +892,9 @@ inline const sf::IntRect BUBBLE_GRID({90, 370},
 namespace GreenEnemiesBlock {
 // Overworld Palette Group
 inline const sf::IntRect
-    KOOPA_WALK1({0, 112}, {16, 24}); // STT #59: Koopa Troopa walking frame 1
+    KOOPA_WALK1({ 182, 112 }, { 16, 24 }); // STT #59: Koopa Troopa walking frame 1
 inline const sf::IntRect
-    KOOPA_WALK2({18, 112}, {16, 24}); // STT #53: Koopa Troopa walking frame 2
+    KOOPA_WALK2({ 0, 112 }, { 16, 24 }); // STT #53: Koopa Troopa walking frame 2
 inline const sf::IntRect
     PARATROOPA_FLY1({36, 112},
                     {16, 24}); // STT #60: Koopa Paratroopa winged flight 1
@@ -909,9 +909,9 @@ inline const sf::IntRect
 
 // Underground + Castle Palette Group
 inline const sf::IntRect
-    UG_KOOPA_WALK1({146, 112}, {16, 24}); // STT #61: Underground Koopa walk 1
+    UG_KOOPA_WALK1({ 292, 112 }, { 16, 24 }); // STT #61: Underground Koopa walk 1
 inline const sf::IntRect
-    UG_KOOPA_WALK2({164, 112}, {16, 24}); // STT #55: Underground Koopa walk 2
+    UG_KOOPA_WALK2({ 36, 112 }, { 16, 24 }); // STT #55: Underground Koopa walk 2
 inline const sf::IntRect
     UG_PARATROOPA_FLY1({182, 112},
                        {16, 24}); // STT #62: Underground Paratroopa fly 1
@@ -922,13 +922,13 @@ inline const sf::IntRect
     UG_SHELL_RETRACTED({218, 120},
                        {16, 16}); // STT #67: Underground retracted shell
 inline const sf::IntRect
-    UG_SHELL_WAKING({236, 120}, {16, 16}); // STT #68: Underground waking shell
+    UG_SHELL_WAKING({ 236, 120 }, { 16, 16 }); // STT #68: Underground waking shell
 
 // Underwater Palette Group
 inline const sf::IntRect
-    UW_KOOPA_WALK1({292, 112}, {16, 24}); // STT #63: Underwater Koopa walk 1
+    UW_KOOPA_WALK1({ 328, 112 }, { 16, 24 }); // STT #63: Underwater Koopa walk 1
 inline const sf::IntRect
-    UW_KOOPA_WALK2({310, 112}, {16, 24}); // STT #57: Underwater Koopa walk 2
+    UW_KOOPA_WALK2({ 146, 112 }, { 16, 24 }); // STT #57: Underwater Koopa walk 2
 inline const sf::IntRect
     UW_PARATROOPA_FLY1({328, 112},
                        {16, 24}); // STT #64: Underwater Paratroopa fly 1
@@ -939,7 +939,7 @@ inline const sf::IntRect
     UW_SHELL_RETRACTED({364, 120},
                        {16, 16}); // STT #69: Underwater retracted shell
 inline const sf::IntRect
-    UW_SHELL_WAKING({382, 120}, {16, 16}); // STT #70: Underwater waking shell
+    UW_SHELL_WAKING({ 382, 120 }, { 16, 16 }); // STT #70: Underwater waking shell
 } // namespace GreenEnemiesBlock
 
 /**
@@ -967,7 +967,7 @@ inline const sf::IntRect
 inline const sf::IntRect UW_SWIM_UP({292, 164},
                                     {16, 16}); // STT #87: Underwater fins up
 inline const sf::IntRect
-    UW_SWIM_DOWN({310, 164}, {16, 16}); // STT #88: Underwater fins down
+    UW_SWIM_DOWN({ 310, 164 }, { 16, 16 }); // STT #88: Underwater fins down
 
 inline const std::vector<sf::IntRect> &swimFrames() {
   static const std::vector<sf::IntRect> frames = {SWIM_UP, SWIM_DOWN};
@@ -1124,7 +1124,7 @@ inline const sf::IntRect
 inline const sf::IntRect UW_PEEK({346, 138},
                                  {16, 24}); // STT #76: Underwater peeking
 inline const sf::IntRect
-    UW_HIDE({364, 146}, {16, 16}); // STT #82: Underwater retracted/cloud
+    UW_HIDE({ 364, 146 }, { 16, 16 }); // STT #82: Underwater retracted/cloud
 
 inline const std::vector<sf::IntRect> &peekFrames() {
   static const std::vector<sf::IntRect> frames = {PEEK, UG_CASTLE_PEEK,
@@ -1140,7 +1140,7 @@ inline const std::vector<sf::IntRect> &peekFrames() {
 namespace PiranhaPlant {
 // Overworld Palette (Y=146, 16x24)
 inline const sf::IntRect
-    OPEN({0, 138}, {16, 24}); // STT #77: Overworld mouth open (showing teeth)
+    OPEN({ 292, 138 }, { 16, 24 }); // STT #77: Overworld mouth open (showing teeth)
 inline const sf::IntRect CLOSED({18, 138},
                                 {16, 24}); // STT #71: Overworld mouth closed
 
@@ -1156,7 +1156,7 @@ inline const sf::IntRect
 inline const sf::IntRect UW_OPEN({292, 138},
                                  {16, 24}); // STT #79: Underwater mouth open
 inline const sf::IntRect
-    UW_CLOSED({310, 138}, {16, 24}); // STT #75: Underwater mouth closed
+    UW_CLOSED({ 164, 138 }, { 16, 24 }); // STT #75: Underwater mouth closed
 
 inline const std::vector<sf::IntRect> &openFrames() {
   static const std::vector<sf::IntRect> frames = {OPEN, UG_CASTLE_OPEN,
@@ -1186,10 +1186,10 @@ inline const std::vector<sf::IntRect> &tallFrames() {
 
 namespace Bowser {
 // Normal (Overworld) Palette (Y=208 & 242)
-inline const sf::IntRect WALK_CLOSED({0, 208}, {32, 32});  // STT #113
-inline const sf::IntRect WALK_OPEN({34, 208}, {32, 32});   // STT #114
-inline const sf::IntRect FIRE_POSE1({68, 208}, {32, 32});  // STT #115
-inline const sf::IntRect FIRE_POSE2({102, 208}, {32, 32}); // STT #116
+inline const sf::IntRect WALK_CLOSED({ 0, 208 }, { 32, 32 });  // STT #113
+inline const sf::IntRect WALK_OPEN({ 34, 208 }, { 32, 32 });   // STT #114
+inline const sf::IntRect FIRE_POSE1({ 68, 208 }, { 32, 32 });  // STT #115
+inline const sf::IntRect FIRE_POSE2({ 102, 208 }, { 32, 32 }); // STT #116
 
 inline const sf::IntRect THROW_LEFT({34, 242},
                                     {30, 26}); // STT #125: Giơ búa, quay trái
@@ -1197,25 +1197,25 @@ inline const sf::IntRect THROW_RIGHT({70, 242},
                                      {30, 26}); // STT #126: Giơ búa, quay phải
 
 // Underground + Castle Palette (X + 146)
-inline const sf::IntRect UG_WALK_CLOSED({146, 208}, {32, 32}); // STT #117
-inline const sf::IntRect UG_WALK_OPEN({180, 208}, {32, 32});   // STT #118
-inline const sf::IntRect UG_FIRE_POSE1({214, 208}, {32, 32});  // STT #119
-inline const sf::IntRect UG_FIRE_POSE2({248, 208}, {32, 32});  // STT #120
+inline const sf::IntRect UG_WALK_CLOSED({ 146, 208 }, { 32, 32 }); // STT #117
+inline const sf::IntRect UG_WALK_OPEN({ 180, 208 }, { 32, 32 });   // STT #118
+inline const sf::IntRect UG_FIRE_POSE1({ 214, 208 }, { 32, 32 });  // STT #119
+inline const sf::IntRect UG_FIRE_POSE2({ 248, 208 }, { 32, 32 });  // STT #120
 
 inline const sf::IntRect
-    UG_THROW_LEFT({180, 242}, {30, 26}); // STT #128: Giơ búa màu xám, quay trái
+    UG_THROW_LEFT({ 180, 242 }, { 32, 26 }); // STT #128: Giơ búa màu xám, quay trái
 inline const sf::IntRect
     UG_THROW_RIGHT({216, 242},
                    {30, 26}); // STT #129: Giơ búa màu xám, quay phải
 
 // Underwater Palette (X + 292)
-inline const sf::IntRect UW_WALK_CLOSED({292, 208}, {32, 32}); // STT #121
-inline const sf::IntRect UW_WALK_OPEN({326, 208}, {32, 32});   // STT #122
-inline const sf::IntRect UW_FIRE_POSE1({360, 208}, {32, 32});  // STT #123
-inline const sf::IntRect UW_FIRE_POSE2({394, 208}, {32, 32});  // STT #124
+inline const sf::IntRect UW_WALK_CLOSED({ 292, 208 }, { 32, 32 }); // STT #121
+inline const sf::IntRect UW_WALK_OPEN({ 326, 208 }, { 32, 32 });   // STT #122
+inline const sf::IntRect UW_FIRE_POSE1({ 360, 208 }, { 32, 32 });  // STT #123
+inline const sf::IntRect UW_FIRE_POSE2({ 394, 208 }, { 32, 32 });  // STT #124
 
-inline const sf::IntRect UW_THROW_LEFT({326, 242}, {30, 26});  // STT #131
-inline const sf::IntRect UW_THROW_RIGHT({362, 242}, {30, 26}); // STT #132
+inline const sf::IntRect UW_THROW_LEFT({ 326, 242 }, { 32, 26 });  // STT #131
+inline const sf::IntRect UW_THROW_RIGHT({ 360, 242 }, { 32, 26 }); // STT #132
 
 inline const std::vector<sf::IntRect> &walkFrames() {
   static const std::vector<sf::IntRect> frames = {WALK_CLOSED, WALK_OPEN};
@@ -1229,24 +1229,24 @@ inline const std::vector<sf::IntRect> &fireFrames() {
 
 namespace BowserFireball {
 // Normal
-inline const sf::IntRect FIRE1({102, 242}, {24, 8}); // STT #127
-inline const sf::IntRect FIRE2({102, 252}, {24, 8}); // STT #134
+inline const sf::IntRect FIRE1({ 102, 242 }, { 24, 8 }); // STT #127
+inline const sf::IntRect FIRE2({ 102, 252 }, { 24, 8 }); // STT #134
 // Underground + Castle
-inline const sf::IntRect UG_FIRE1({248, 242}, {24, 8}); // STT #130
-inline const sf::IntRect UG_FIRE2({248, 252}, {24, 8}); // STT #135
+inline const sf::IntRect UG_FIRE1({ 248, 242 }, { 24, 8 }); // STT #130
+inline const sf::IntRect UG_FIRE2({ 248, 252 }, { 24, 8 }); // STT #135
 // Underwater
-inline const sf::IntRect UW_FIRE1({394, 242}, {24, 8}); // STT #133
-inline const sf::IntRect UW_FIRE2({394, 252}, {24, 8}); // STT #136
+inline const sf::IntRect UW_FIRE1({ 394, 242 }, { 24, 8 }); // STT #133
+inline const sf::IntRect UW_FIRE2({ 394, 252 }, { 24, 8 }); // STT #136
 } // namespace BowserFireball
 
 namespace HammerBro {
 // Hammer Bro giơ búa (Y=276)
-inline const sf::IntRect THROW_HIGH_LEFT1({34, 276}, {30, 26});   // STT #137
-inline const sf::IntRect THROW_HIGH_LEFT2({70, 276}, {30, 26});   // STT #138
-inline const sf::IntRect THROW_SOMETHING1({145, 276}, {15, 26});  // STT #139
-inline const sf::IntRect THROW_SOMETHING2({162, 276}, {15, 26});  // STT #140
-inline const sf::IntRect THROW_HIGH_RIGHT1({180, 276}, {30, 26}); // STT #141
-inline const sf::IntRect THROW_HIGH_RIGHT2({216, 276}, {30, 26}); // STT #142
+inline const sf::IntRect THROW_HIGH_LEFT1({ 34, 276 }, { 32, 26 });   // STT #137
+inline const sf::IntRect THROW_HIGH_LEFT2({ 68, 276 }, { 32, 26 });   // STT #138
+inline const sf::IntRect THROW_SOMETHING1({ 144, 276 }, { 16, 26 });  // STT #139
+inline const sf::IntRect THROW_SOMETHING2({ 162, 276 }, { 16, 26 });  // STT #140
+inline const sf::IntRect THROW_HIGH_RIGHT1({ 180, 276 }, { 32, 26 }); // STT #141
+inline const sf::IntRect THROW_HIGH_RIGHT2({ 214, 276 }, { 32, 26 }); // STT #142
 } // namespace HammerBro
 
 // ────────────────────────────────────────────────────────────────────────
@@ -1264,11 +1264,11 @@ inline const sf::IntRect WALK1({0, 318},
 inline const sf::IntRect WALK2({18, 318},
                                {16, 24}); // STT #143: Red Koopa walking frame 2
 inline const sf::IntRect
-    PARATROOPA1({36, 318}, {16, 24}); // STT #146: Red Paratroopa flying frame 1
+    PARATROOPA1({ 54, 318 }, { 16, 24 }); // STT #146: Red Paratroopa flying frame 1
 inline const sf::IntRect
-    PARATROOPA2({54, 318}, {16, 24}); // STT #144: Red Paratroopa flying frame 2
+    PARATROOPA2({ 18, 318 }, { 16, 24 }); // STT #144: Red Paratroopa flying frame 2
 inline const sf::IntRect
-    SHELL({72, 326}, {16, 16}); // STT #147: Red Shell stomped / retracted
+    SHELL({ 72, 326 }, { 16, 16 }); // STT #147: Red Shell stomped / retracted
 inline const sf::IntRect
     SHELL_WAKING({90, 326},
                  {16, 16}); // STT #148: Red Shell waking up / extending legs
@@ -1285,17 +1285,17 @@ inline const std::vector<sf::IntRect> &walkFrames() {
  */
 namespace RedRow2 {
 inline const sf::IntRect
-    PIRANHA_OPEN({0, 344}, {16, 24}); // STT #150: Red Piranha open mouth
+    PIRANHA_OPEN({ 18, 344 }, { 16, 24 }); // STT #150: Red Piranha open mouth
 inline const sf::IntRect
-    PIRANHA_CLOSED({18, 344}, {16, 24}); // STT #149: Red Piranha closed mouth
+    PIRANHA_CLOSED({ 0, 344 }, { 16, 24 }); // STT #149: Red Piranha closed mouth
 inline const sf::IntRect
-    SPINY_EGG1({36, 352}, {16, 16}); // STT #151: Red Spiny egg rolling frame 1
+    SPINY_EGG1({ 36, 352 }, { 16, 16 }); // STT #151: Red Spiny egg rolling frame 1
 inline const sf::IntRect
-    SPINY_EGG2({54, 352}, {16, 16}); // STT #152: Red Spiny egg rolling frame 2
+    SPINY_EGG2({ 54, 352 }, { 16, 16 }); // STT #152: Red Spiny egg rolling frame 2
 inline const sf::IntRect
-    SPINY_WALK1({72, 352}, {16, 16}); // STT #154: Red Spiny walking frame 1
+    SPINY_WALK1({ 90, 352 }, { 16, 16 }); // STT #154: Red Spiny walking frame 1
 inline const sf::IntRect
-    SPINY_WALK2({90, 352}, {16, 16}); // STT #153: Red Spiny walking frame 2
+    SPINY_WALK2({ 72, 352 }, { 16, 16 }); // STT #153: Red Spiny walking frame 2
 } // namespace RedRow2
 
 namespace RedSpiny {
@@ -1319,11 +1319,11 @@ inline const std::vector<sf::IntRect> &eggFrames() {
  */
 namespace RedRow3 {
 inline const sf::IntRect
-    CHEEP_UP({0, 370}, {16, 16}); // STT #155: Red Cheep Cheep fins up
+    CHEEP_UP({ 0, 370 }, { 16, 16 }); // STT #155: Red Cheep Cheep fins up
 inline const sf::IntRect
-    CHEEP_DOWN({18, 370}, {16, 16}); // STT #156: Red Cheep Cheep fins down
+    CHEEP_DOWN({ 18, 370 }, { 16, 16 }); // STT #156: Red Cheep Cheep fins down
 inline const sf::IntRect
-    PODOBOO({90, 370}, {16, 16}); // STT #157: Podoboo lava bubble rising flame
+    PODOBOO({ 90, 370 }, { 16, 16 }); // STT #157: Podoboo lava bubble rising flame
 } // namespace RedRow3
 
 namespace RedCheepCheep {
@@ -1341,55 +1341,110 @@ inline const std::vector<sf::IntRect> &swimFrames() {
 // ── Items (from items_objects.png) ─────────────────────────
 
 namespace Items {
-// Overworld Objects row Y=8
-constexpr int Y = 8;
-constexpr int W = 16;
-constexpr int H = 16;
 
-// Mushroom 1 (Super Mushroom — Red) — top sprite in column X=0..15, Y=8..23
-// (16×16)
-inline const sf::IntRect MUSHROOM({0, 8}, {16, 16});
+// Mushrooms (OW)
 inline const sf::IntRect SUPER_MUSHROOM({0, 8}, {16, 16});
-
-// Mushroom 2 (1UP Mushroom — Green) — bottom sprite in column X=0..15, Y=26..41
-// (16×16)
 inline const sf::IntRect ONE_UP_MUSHROOM({0, 26}, {16, 16});
 
-// Fire Flower — 4-frame animation
-inline const sf::IntRect FIRE_FLOWER1({50, Y}, {W, H});
-inline const sf::IntRect FIRE_FLOWER2({68, Y}, {W, H});
-inline const sf::IntRect FIRE_FLOWER3({86, Y}, {W, H});
-inline const sf::IntRect FIRE_FLOWER4({106, Y}, {W, H});
+// Mushrooms (UG)
+inline const sf::IntRect SUPER_MUSHROOM_UG({0, 116}, {16, 16});
+inline const sf::IntRect ONE_UP_MUSHROOM_UG({0, 134}, {16, 16});
 
-inline const std::vector<sf::IntRect> &fireFlowerFrames() {
-  static const std::vector<sf::IntRect> frames = {FIRE_FLOWER1, FIRE_FLOWER2,
-                                                  FIRE_FLOWER3, FIRE_FLOWER4};
-  return frames;
+// Mushrooms (Castle)
+inline const sf::IntRect SUPER_MUSHROOM_CASTLE({0, 224}, {16, 16});
+inline const sf::IntRect ONE_UP_MUSHROOM_CASTLE({0, 242}, {16, 16});
+
+// Mushrooms (UW)
+inline const sf::IntRect SUPER_MUSHROOM_UW({0, 332}, {16, 16});
+inline const sf::IntRect ONE_UP_MUSHROOM_UW({0, 350}, {16, 16});
+
+// Fire Flower
+inline const sf::IntRect FIRE_FLOWER_1({32, 8}, {16, 16});
+inline const sf::IntRect FIRE_FLOWER_2({50, 8}, {16, 16});
+inline const sf::IntRect FIRE_FLOWER_3({68, 8}, {16, 16});
+inline const sf::IntRect FIRE_FLOWER_4({86, 8}, {16, 16});
+inline const std::vector<sf::IntRect>& fireFlowerFrames() {
+    static const std::vector<sf::IntRect> frames = {FIRE_FLOWER_1, FIRE_FLOWER_2, FIRE_FLOWER_3, FIRE_FLOWER_4};
+    return frames;
 }
 
-// Starman — 4-frame animation (cycling colors)
-inline const sf::IntRect STAR1({124, Y}, {W, H});
-inline const sf::IntRect STAR2({142, Y}, {W, H});
-inline const sf::IntRect STAR3({160, Y}, {W, H});
-inline const sf::IntRect STAR4({124, Y}, {W, H}); // loops back
-
-inline const std::vector<sf::IntRect> &starFrames() {
-  static const std::vector<sf::IntRect> frames = {STAR1, STAR2, STAR3};
-  return frames;
+// Super Star
+inline const sf::IntRect SUPER_STAR_1({106, 8}, {16, 16});
+inline const sf::IntRect SUPER_STAR_2({124, 8}, {16, 16});
+inline const sf::IntRect SUPER_STAR_3({142, 8}, {16, 16});
+inline const sf::IntRect SUPER_STAR_4({160, 8}, {16, 16});
+inline const std::vector<sf::IntRect>& superStarFrames() {
+    static const std::vector<sf::IntRect> frames = {SUPER_STAR_1, SUPER_STAR_2, SUPER_STAR_3, SUPER_STAR_4};
+    return frames;
+}
+inline const std::vector<sf::IntRect>& starFrames() {
+    return superStarFrames();
 }
 
-// Coin — 4-frame animation from items_objects.png (180, 36) to (217, 51)
-// Each frame is 8x16 px, separated by 2px dark blue background columns
-// (x=188..189, 198..199, 208..209)
-inline const sf::IntRect COIN1({180, 36}, {8, 16});
-inline const sf::IntRect COIN2({190, 36}, {8, 16});
-inline const sf::IntRect COIN3({200, 36}, {8, 16});
-inline const sf::IntRect COIN4({210, 36}, {8, 16});
-
-inline const std::vector<sf::IntRect> &coinFrames() {
-  static const std::vector<sf::IntRect> frames = {COIN1, COIN2, COIN3, COIN4};
-  return frames;
+// Spinning Coin (Loose Coin on ground / from block)
+inline const sf::IntRect SPINNING_COIN_1({180, 36}, {8, 16});
+inline const sf::IntRect SPINNING_COIN_2({190, 36}, {8, 16});
+inline const sf::IntRect SPINNING_COIN_3({200, 36}, {8, 16});
+inline const sf::IntRect SPINNING_COIN_4({210, 36}, {8, 16});
+inline const std::vector<sf::IntRect>& spinningCoinFrames() {
+    static const std::vector<sf::IntRect> frames = {SPINNING_COIN_1, SPINNING_COIN_2, SPINNING_COIN_3, SPINNING_COIN_4};
+    return frames;
 }
+inline const std::vector<sf::IntRect>& coinFrames() {
+    return spinningCoinFrames();
+}
+
+// Fireball (Mario)
+inline const sf::IntRect FIREBALL_1({180, 54}, {8, 8});
+inline const sf::IntRect FIREBALL_2({190, 54}, {8, 8});
+inline const sf::IntRect FIREBALL_3({200, 54}, {8, 8});
+inline const sf::IntRect FIREBALL_4({210, 54}, {8, 8});
+inline const std::vector<sf::IntRect>& fireballFrames() {
+    static const std::vector<sf::IntRect> frames = {FIREBALL_1, FIREBALL_2, FIREBALL_3, FIREBALL_4};
+    return frames;
+}
+
+// Fireball Explosion
+inline const sf::IntRect FIREBALL_EXPLOSION_1({180, 64}, {16, 16});
+inline const sf::IntRect FIREBALL_EXPLOSION_2({198, 64}, {16, 16});
+inline const sf::IntRect FIREBALL_EXPLOSION_3({216, 64}, {16, 16});
+inline const std::vector<sf::IntRect>& fireballExplosionFrames() {
+    static const std::vector<sf::IntRect> frames = {FIREBALL_EXPLOSION_1, FIREBALL_EXPLOSION_2, FIREBALL_EXPLOSION_3};
+    return frames;
+}
+
+// Score Text
+inline const sf::IntRect SCORE_100({234, 26}, {16, 8});
+inline const sf::IntRect SCORE_200({252, 26}, {16, 8});
+inline const sf::IntRect SCORE_400({270, 26}, {16, 8});
+inline const sf::IntRect SCORE_800({288, 26}, {16, 8});
+inline const sf::IntRect SCORE_1000({234, 36}, {16, 8});
+inline const sf::IntRect SCORE_2000({252, 36}, {16, 8});
+inline const sf::IntRect SCORE_4000({270, 36}, {16, 8});
+inline const sf::IntRect SCORE_5000({288, 36}, {16, 8});
+inline const sf::IntRect SCORE_8000({234, 46}, {16, 8});
+inline const sf::IntRect SCORE_1UP({252, 46}, {16, 8});
+
+// Trampoline / Springboard
+inline const sf::IntRect SPRING_IDLE({32, 44}, {16, 16});
+inline const sf::IntRect SPRING_COMPRESSED({32, 64}, {16, 8});
+inline const sf::IntRect SPRING_EXTENDED({32, 75}, {16, 31});
+inline const sf::IntRect SPRING_MID({50, 83}, {16, 23});
+
+// Firebar Base
+inline const sf::IntRect FIREBAR_BASE({80, 64}, {32, 8});
+
+// Moving Platform / Lift
+inline const sf::IntRect PLATFORM_SHORT({52, 64}, {24, 8});
+inline const sf::IntRect PLATFORM_LONG({116, 64}, {48, 8});
+
+// Flags and Vines
+inline const sf::IntRect FLAGPOLE_FLAG({68, 91}, {16, 15});
+inline const sf::IntRect CASTLE_FLAG({92, 90}, {16, 16});
+inline const sf::IntRect VINE_TOP({110, 90}, {16, 16});
+inline const sf::IntRect VINE_STEM_1({130, 90}, {16, 16});
+inline const sf::IntRect VINE_STEM_2({148, 90}, {16, 16});
+
 } // namespace Items
 
 // ── Tiles (from items_objects.png, bounding box (180,8) -> (249,23)) ──
@@ -1427,6 +1482,66 @@ inline const std::vector<sf::IntRect> &questionBlockFrames() {
                                                   QUESTION3};
   return frames;
 }
+
+// 8x8 px Sub-rects for 4-corner Debris particle effect (BlockDebris)
+inline const sf::IntRect DEBRIS_TOP_LEFT({304, 112}, {8, 8});
+inline const sf::IntRect DEBRIS_TOP_RIGHT({312, 112}, {8, 8});
+inline const sf::IntRect DEBRIS_BOTTOM_LEFT({304, 120}, {8, 8});
+inline const sf::IntRect DEBRIS_BOTTOM_RIGHT({312, 120}, {8, 8});
+
+inline const sf::IntRect UG_DEBRIS_TOP_LEFT({304, 128}, {8, 8});
+inline const sf::IntRect UG_DEBRIS_TOP_RIGHT({312, 128}, {8, 8});
+inline const sf::IntRect UG_DEBRIS_BOTTOM_LEFT({304, 136}, {8, 8});
+inline const sf::IntRect UG_DEBRIS_BOTTOM_RIGHT({312, 136}, {8, 8});
+
+inline const sf::IntRect CASTLE_DEBRIS_TOP_LEFT({304, 144}, {8, 8});
+inline const sf::IntRect CASTLE_DEBRIS_TOP_RIGHT({312, 144}, {8, 8});
+inline const sf::IntRect CASTLE_DEBRIS_BOTTOM_LEFT({304, 152}, {8, 8});
+inline const sf::IntRect CASTLE_DEBRIS_BOTTOM_RIGHT({312, 152}, {8, 8});
+
+inline const sf::IntRect UW_DEBRIS_TOP_LEFT({304, 160}, {8, 8});
+inline const sf::IntRect UW_DEBRIS_TOP_RIGHT({312, 160}, {8, 8});
+inline const sf::IntRect UW_DEBRIS_BOTTOM_LEFT({304, 168}, {8, 8});
+inline const sf::IntRect UW_DEBRIS_BOTTOM_RIGHT({312, 168}, {8, 8});
+
+inline const std::vector<sf::IntRect> &debris4Corners() {
+  static const std::vector<sf::IntRect> frames = {
+      DEBRIS_TOP_LEFT, DEBRIS_TOP_RIGHT, DEBRIS_BOTTOM_LEFT, DEBRIS_BOTTOM_RIGHT};
+  return frames;
+}
+
+
+inline const sf::IntRect UG_QUESTION1({80, 128}, {16, 16});
+inline const sf::IntRect UG_QUESTION2({96, 128}, {16, 16});
+inline const sf::IntRect UG_QUESTION3({112, 128}, {16, 16});
+inline const sf::IntRect UG_HIT({128, 128}, {16, 16});
+inline const sf::IntRect UG_EMPTY({144, 128}, {16, 16});
+
+inline const sf::IntRect CASTLE_QUESTION1({80, 144}, {16, 16});
+inline const sf::IntRect CASTLE_QUESTION2({96, 144}, {16, 16});
+inline const sf::IntRect CASTLE_QUESTION3({112, 144}, {16, 16});
+inline const sf::IntRect CASTLE_HIT({128, 144}, {16, 16});
+inline const sf::IntRect CASTLE_EMPTY({144, 144}, {16, 16});
+
+inline const sf::IntRect UW_QUESTION1({80, 160}, {16, 16});
+inline const sf::IntRect UW_QUESTION2({96, 160}, {16, 16});
+inline const sf::IntRect UW_QUESTION3({112, 160}, {16, 16});
+inline const sf::IntRect UW_HIT({128, 160}, {16, 16});
+inline const sf::IntRect UW_EMPTY({144, 160}, {16, 16});
+
+inline const std::vector<sf::IntRect> &ugQuestionBlockFrames() {
+  static const std::vector<sf::IntRect> frames = {UG_QUESTION1, UG_QUESTION2, UG_QUESTION3};
+  return frames;
+}
+inline const std::vector<sf::IntRect> &castleQuestionBlockFrames() {
+  static const std::vector<sf::IntRect> frames = {CASTLE_QUESTION1, CASTLE_QUESTION2, CASTLE_QUESTION3};
+  return frames;
+}
+inline const std::vector<sf::IntRect> &uwQuestionBlockFrames() {
+  static const std::vector<sf::IntRect> frames = {UW_QUESTION1, UW_QUESTION2, UW_QUESTION3};
+  return frames;
+}
+
 } // namespace Blocks
 
 // ── Backgrounds (from bg_mountains.png, bounding box (0,40) -> (767,215)) ──

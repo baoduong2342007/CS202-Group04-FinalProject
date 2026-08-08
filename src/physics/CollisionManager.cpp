@@ -220,11 +220,17 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
             normal = -normal; // Flip so normal points away from FireBall
         }
 
+        // Ignore collisions between FireBall and Mario
+        if (target && target->isMario()) {
+            return;
+        }
+
         if (target) {
             if (target->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(target);
                 if (!enemy->isDead()) {
-                    enemy->takeDamage(100);
+                    enemy->onFireHit();
+                    EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
                     if (enemy->isDead() && fireBall->getOwner()) {
                         Mario* owner = fireBall->getOwner();
                         ScoreRules::award(*owner, ScoreEvent::FIREBALL_DEFEATED);
@@ -239,9 +245,11 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (normal.y > 0.5f) {
             fireBall->bounce(sf::Vector2f(normal.x, normal.y));
         }
-        // Wall contact: Deactivate FireBall
+        // Wall contact: Deactivate FireBall (require small lifetime grace period so initial spawn doesn't instantly die)
         else if (std::abs(normal.x) > 0.5f) {
-            fireBall->deactivate();
+            if (fireBall->getLifetime() > 0.05f) {
+                fireBall->deactivate();
+            }
         }
         return;
     }
@@ -317,20 +325,20 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         b2Vec2 itemNormal = normal;
         if (entityA->isMushroom()) {
             Mushroom* mushroom = static_cast<Mushroom*>(entityA);
-            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) mushroom->onWallCollision();
         } else if (entityA->isStar()) {
             Star* star = static_cast<Star*>(entityA);
-            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) star->onWallCollision();
             if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     } else if (entityB && entityB->isItem()) {
         b2Vec2 itemNormal = -normal;
         if (entityB->isMushroom()) {
             Mushroom* mushroom = static_cast<Mushroom*>(entityB);
-            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) mushroom->onWallCollision();
         } else if (entityB->isStar()) {
             Star* star = static_cast<Star*>(entityB);
-            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) star->onWallCollision();
             if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     }

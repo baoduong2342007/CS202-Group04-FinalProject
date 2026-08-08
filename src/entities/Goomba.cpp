@@ -12,6 +12,8 @@
 
 #include <box2d/box2d.h>
 #include "core/AnimationSystem.h"
+#include "core/SpriteFrames.h"
+#include "core/SoundManager.h"
 
 namespace {
 
@@ -19,7 +21,7 @@ constexpr int DEFAULT_GOOMBA_HEALTH = 1;
 constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
 constexpr float PIT_CLEANUP_Y = 800.f;
 
-constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/goomba.png";
+constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/enemies.png";
 
 const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
@@ -37,35 +39,49 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
       initPhysics(world, b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
       
-      m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 2, 0.15f));
-      m_animationSystem->addAnimation("squish", AnimationSystem::createGridAnimation(64, 0, 32, 32, 1, 1.f));
+      m_animationSystem->addAnimation("walk", AnimationSystem::createManualAnimation(SpriteFrames::Enemies::Goomba::walkFrames(), 0.15f));
+      m_animationSystem->addAnimation("squish", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Enemies::Goomba::STOMPED}, 1.f, false));
       playAnimation("walk");
 }
 
 void Goomba::update(float dt) {
-    syncPhysics();
-
-    if (m_position.y > PIT_CLEANUP_Y) {
-        markForRemoval();
+    if (m_isFlippedDead) {
+        syncPhysics();
+        if (m_sprite) {
+            m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
+            m_sprite->setOrigin({8.f, 8.f});
+            m_sprite->setScale({2.f, -2.f}); // Upside down flip!
+        }
+        if (m_position.y > PIT_CLEANUP_Y) {
+            markForRemoval();
+        }
         return;
     }
 
     if (m_isStomped) {
-        // Disable the body after the Box2D physics step.
-        // This lets the squish sprite remain visible without blocking Mario.
         b2Body* body = getBody();
-
         if (body && body->IsEnabled()) {
             body->SetEnabled(false);
         }
 
         m_squishTimer += dt;
         updateAnimation(dt);
+        if (m_sprite) {
+            m_sprite->setPosition(m_position);
+            m_sprite->setScale({2.f, 2.f});
+        }
 
         if (m_squishTimer >= SQUISH_DURATION) {
             markForRemoval();
         }
 
+        return;
+    }
+
+    syncPhysics();
+
+    if (m_position.y > PIT_CLEANUP_Y) {
+        markForRemoval();
         return;
     }
 
@@ -76,15 +92,36 @@ void Goomba::update(float dt) {
     updateAnimation(dt);
 }
 
+void Goomba::onFireHit() {
+    if (m_isFlippedDead || m_isStomped) return;
+
+    m_isFlippedDead = true;
+    setHealth(0);
+    SoundManager::getInstance().playSound("kickkill");
+
+    b2Body* body = getBody();
+    if (body) {
+        for (b2Fixture* fixture = body->GetFixtureList(); fixture != nullptr; fixture = fixture->GetNext()) {
+            fixture->SetSensor(true);
+        }
+        body->SetLinearVelocity(b2Vec2(0.f, -8.f));
+    }
+}
+
 void Goomba::onStomp() {
     if (m_isStomped) {
         return;
     }
 
+    float groundY = m_position.y + m_size.y;
+
     m_isStomped = true;
     m_squishTimer = 0.f;
     setHealth(0);
     setVelocity({0.f, 0.f});
+
+    m_size = {32.f, 16.f};
+    m_position.y = groundY - 16.f; // Align bottom edge of 16px height squish sprite to ground
 
     b2Body* body = getBody();
 
@@ -96,6 +133,10 @@ void Goomba::onStomp() {
 
     playAnimation("squish");
     updateAnimation(0.f);
+    if (m_sprite) {
+        m_sprite->setPosition(m_position);
+        m_sprite->setScale({2.f, 2.f});
+    }
 }
 
 void Goomba::patrol() {

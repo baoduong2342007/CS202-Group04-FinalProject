@@ -13,4 +13,9 @@ void Enemy::onSideCollision(Entity* other) {
     (void)other;
 }
 
+void Enemy::onFireHit() {
+    takeDamage(100);
+    markForRemoval();
+}
+
 

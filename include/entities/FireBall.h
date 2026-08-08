@@ -38,6 +38,7 @@ public:
     // 4. Getters / Setters
     int getBounceCount() const;
     Direction getDirection() const;
+    float getLifetime() const { return m_lifetime; }
 
 private:
     // 5. Private members

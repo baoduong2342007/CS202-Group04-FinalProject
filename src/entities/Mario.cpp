@@ -28,7 +28,6 @@ constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr int DEFAULT_MARIO_LIVES = 3;
 constexpr float DEFAULT_JUMP_FORCE = 460.f;
 constexpr float MAX_FALL_SPEED = 600.f;
-constexpr float PIT_DEATH_Y_THRESHOLD = 800.f;
 constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
@@ -59,36 +58,90 @@ constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
 
 constexpr const char* MARIO_TEXTURE_PATH = "assets/textures/mario/MarioLuigi.png";
 
-// Helper: register animation clips for the current MarioState
-void setupAnimationsForState(AnimationSystem& animSys, MarioState state) {
-    switch (state) {
-    case MarioState::SMALL: {
-        namespace F = SpriteFrames::SmallMario;
-        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
-        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
-        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
-        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
-        break;
-    }
-    case MarioState::SUPER: {
-        namespace F = SpriteFrames::BigMario;
-        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
-        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
-        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
-        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
-        break;
-    }
-    case MarioState::FIRE: {
-        namespace F = SpriteFrames::FireBigMario;
-        animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
-        animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
-        animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
-        animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-        animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
-        break;
-    }
+// Helper: register animation clips for the current MarioState and CharacterType
+void setupAnimationsForState(AnimationSystem& animSys, MarioState state, CharacterType charType) {
+    if (charType == CharacterType::LUIGI) {
+        switch (state) {
+        case MarioState::SMALL: {
+            namespace F = SpriteFrames::SmallLuigi;
+            animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+            animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+            animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::SUPER: {
+            namespace F = SpriteFrames::BigLuigi;
+            animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+            animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+            animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::FIRE: {
+            namespace F = SpriteFrames::FireBigMario;
+            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
+            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
+            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
+            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::FIRE_SMALL: {
+            namespace F = SpriteFrames::FireSmallMario;
+            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
+            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
+            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
+            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   0.15f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH},  1.f, false));
+            break;
+        }
+        }
+    } else {
+        switch (state) {
+        case MarioState::SMALL: {
+            namespace F = SpriteFrames::SmallMario;
+            animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+            animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+            animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::SUPER: {
+            namespace F = SpriteFrames::BigMario;
+            animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
+            animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
+            animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::FIRE: {
+            namespace F = SpriteFrames::FireBigMario;
+            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
+            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
+            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
+            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            break;
+        }
+        case MarioState::FIRE_SMALL: {
+            namespace F = SpriteFrames::FireSmallMario;
+            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
+            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
+            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
+            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
+            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   0.15f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH},  1.f, false));
+            break;
+        }
+        }
     }
 }
 } // namespace
@@ -96,6 +149,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state) {
 Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
+      m_characterType(CharacterType::LUIGI),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
@@ -113,7 +167,7 @@ Mario::Mario()
       m_transformTimer(0.f),
       m_pendingPowerDown(false),
       m_respawnPosition(DEFAULT_MARIO_POSITION) {
-    setupAnimationsForState(*m_animationSystem, m_marioState);
+    setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
     playAnimation("idle");
     setSprite(MARIO_TEXTURE_PATH);
 }
@@ -121,6 +175,7 @@ Mario::Mario()
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
+      m_characterType(CharacterType::LUIGI),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
@@ -138,7 +193,7 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_transformTimer(0.f),
       m_pendingPowerDown(false),
       m_respawnPosition(position) {
-    setupAnimationsForState(*m_animationSystem, m_marioState);
+    setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
     playAnimation("idle");
     setSprite(MARIO_TEXTURE_PATH);
 }
@@ -165,7 +220,7 @@ void Mario::update(float dt) {
       m_isTransforming = false;
       m_transformTimer = 0.f;
       if (m_sprite) {
-        m_sprite->setColor(m_marioState == MarioState::FIRE ? sf::Color(255, 140, 0) : sf::Color::White);
+        m_sprite->setColor((m_marioState == MarioState::FIRE && m_characterType == CharacterType::MARIO) ? sf::Color(255, 140, 0) : sf::Color::White);
       }
     }
     return;
@@ -229,6 +284,21 @@ void Mario::update(float dt) {
       playAnimation("idle");
   }
   updateAnimation(dt);
+  updateInvincibility(dt);
+
+  if (m_sprite) {
+    sf::IntRect texRect = m_sprite->getTextureRect();
+    if (texRect.size.x > 0 && texRect.size.y > 0) {
+      float spriteWidth = static_cast<float>(texRect.size.x) * 2.f;
+      float spriteHeight = static_cast<float>(texRect.size.y) * 2.f;
+      float groundY = m_position.y + m_size.y;
+      float spriteX = m_position.x + (m_size.x - spriteWidth) / 2.f;
+      float spriteY = groundY - spriteHeight;
+
+      m_sprite->setScale({2.f, 2.f});
+      m_sprite->setPosition({spriteX, spriteY});
+    }
+  }
 
   // Left world boundary clamp (S6-TV3-08): prevent Mario from moving left off-screen past X = 0
   constexpr float MIN_WORLD_X = 16.0f; // Half Mario's width (32/2)
@@ -377,7 +447,7 @@ void Mario::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& siz
 }
 
 void Mario::rebuildFixture() {
-  sf::Vector2f targetSize = (m_marioState == MarioState::SMALL)
+  sf::Vector2f targetSize = (m_marioState == MarioState::SMALL || m_marioState == MarioState::FIRE_SMALL)
                                 ? SMALL_MARIO_SIZE
                                 : SUPER_MARIO_SIZE;
   m_size = targetSize;
@@ -494,40 +564,44 @@ bool Mario::hasCeilingClearance() const {
 void Mario::powerUp(MarioState state) {
   if (m_marioState == state) return;
 
-  bool wasSmall = (m_marioState == MarioState::SMALL);
+  bool wasSmall = (m_marioState == MarioState::SMALL || m_marioState == MarioState::FIRE_SMALL);
   m_marioState = state;
 
   if (state == MarioState::SMALL) {
     m_statePattern = std::make_unique<SmallMarioState>();
   } else if (state == MarioState::SUPER) {
     m_statePattern = std::make_unique<SuperMarioState>();
-  } else if (state == MarioState::FIRE) {
+  } else if (state == MarioState::FIRE || state == MarioState::FIRE_SMALL) {
     m_statePattern = std::make_unique<FireMarioState>();
   }
 
   // If growing from Small to Super/Fire, offset Box2D body upward by 16px (0.5m)
   // ONLY if overhead clearance exists, otherwise anchor to current position to avoid geometry clipping
   if (wasSmall && (state == MarioState::SUPER || state == MarioState::FIRE) && m_body) {
-    if (hasCeilingClearance()) {
+    if (m_body->GetWorld() && !m_body->GetWorld()->IsLocked() && hasCeilingClearance()) {
       b2Vec2 currentPos = m_body->GetPosition();
       m_body->SetTransform(b2Vec2(currentPos.x, currentPos.y - PhysicsEngine::pixelsToMeters(16.f)), m_body->GetAngle());
     }
   }
 
-  setupAnimationsForState(*m_animationSystem, m_marioState);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
 
   EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
   rebuildFixture();
 
   if (m_sprite) {
-    if (m_marioState == MarioState::FIRE) {
-      m_sprite->setColor(sf::Color(255, 140, 0)); // Fire Orange visual tint
-    } else {
-      m_sprite->setColor(sf::Color::White);
-    }
+    m_sprite->setColor(sf::Color::White);
   }
 }
+
+void Mario::setCharacterType(CharacterType type) {
+  if (m_characterType == type) return;
+  m_characterType = type;
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
+  playAnimation("idle");
+}
+
 
 void Mario::powerDown() {
   if (m_isInvincible || m_isDying || m_isTransforming) {
@@ -540,6 +614,11 @@ void Mario::powerDown() {
 
   if (m_marioState == MarioState::FIRE) {
     powerUp(MarioState::SUPER);
+    rebuildFixture();
+    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
+  } else if (m_marioState == MarioState::FIRE_SMALL) {
+    powerUp(MarioState::SMALL);
     rebuildFixture();
     setInvincible(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
@@ -564,14 +643,22 @@ void Mario::loseLife() {
 
   m_isDying = true;
   m_deathTimer = 0.5f;
-  playAnimation("death");
-
-  if (m_body) {
-    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-  }
 
   if (m_lives > 0) {
     m_lives--;
+  }
+
+  // Reset to SMALL state and reload animations for character type immediately
+  m_marioState = MarioState::SMALL;
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
+  playAnimation("death");
+
+  if (m_sprite) {
+    m_sprite->setColor(sf::Color::White);
+  }
+
+  if (m_body) {
+    m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
   }
 
 #ifdef DEBUG
@@ -584,9 +671,6 @@ void Mario::loseLife() {
   EventBus::getInstance().notify(EventType::PLAYER_DIED);
 
   if (m_lives > 0) {
-    // We lost a life but have more. Set to SMALL so the snapshot saves it correctly,
-    // and deactivate Mario to freeze him during the camera shake delay.
-    m_marioState = MarioState::SMALL;
     m_active = false;
     EventBus::getInstance().notify(EventType::PLAYER_LOST_LIFE);
   } else {
@@ -610,7 +694,7 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
     m_body->SetAngularVelocity(0.f);
     m_body->SetAwake(true);
   }
-  setupAnimationsForState(*m_animationSystem, m_marioState);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
   rebuildFixture();
 
@@ -630,11 +714,11 @@ void Mario::setMarioState(MarioState state) {
   // S6-TV1-10: rebuilding just the fixture leaves the previous power state's
   // animation clips registered. Rebuild the clips too so an SMALL/SUPER/FIRE
   // restore from GameProgress uses the correct sprites.
-  setupAnimationsForState(*m_animationSystem, m_marioState);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
   rebuildFixture();
   if (m_sprite) {
-    if (m_marioState == MarioState::FIRE) {
+    if (m_marioState == MarioState::FIRE && m_characterType == CharacterType::MARIO) {
       m_sprite->setColor(sf::Color(255, 140, 0));
     } else {
       m_sprite->setColor(sf::Color::White);
@@ -684,9 +768,10 @@ std::unique_ptr<FireBall> Mario::shootFireBall(b2World* world) {
   }
 
   m_fireCooldown = FIRE_COOLDOWN_DURATION;
+  playAnimation("action");
 
   float spawnX = m_position.x + (getFacingDirection() == Direction::RIGHT ? m_size.x + 4.f : -16.f);
-  float spawnY = m_position.y + m_size.y * 0.4f;
+  float spawnY = m_position.y + 4.f;
   sf::Vector2f spawnPos(spawnX, spawnY);
 
   return std::make_unique<FireBall>(spawnPos, getFacingDirection(), world);
@@ -697,7 +782,47 @@ void Mario::setInvincible(float duration) {
   m_invincibilityTimer = duration;
 }
 
+void Mario::setStarInvincible(float duration) {
+  m_isStarInvincible = true;
+  m_starInvincibilityTimer = duration;
+  m_isInvincible = true;
+}
+
+bool Mario::isStarInvincible() const {
+  return m_isStarInvincible;
+}
+
 void Mario::updateInvincibility(float dt) {
+  // 1. Starman Rainbow Invincibility (100% opaque, 6-color NES cycle)
+  if (m_isStarInvincible) {
+    m_starInvincibilityTimer -= dt;
+    if (m_sprite) {
+      static const sf::Color rainbow[] = {
+        sf::Color(255, 60, 60),   // Bright Red
+        sf::Color(255, 200, 40),  // Bright Yellow
+        sf::Color(60, 255, 60),   // Bright Green
+        sf::Color(60, 220, 255),  // Bright Cyan
+        sf::Color(255, 100, 255), // Bright Magenta
+        sf::Color::White
+      };
+      int colorIdx = static_cast<int>((10.f - m_starInvincibilityTimer) * 15.f) % 6;
+      if (colorIdx < 0) colorIdx = 0;
+      m_sprite->setColor(rainbow[colorIdx]);
+    }
+
+    if (m_starInvincibilityTimer <= 0.f) {
+      m_isStarInvincible = false;
+      m_starInvincibilityTimer = 0.f;
+      m_isInvincible = false;
+      if (m_sprite) {
+        sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
+        m_sprite->setColor(baseColor);
+      }
+    }
+    return;
+  }
+
+  // 2. Damage Invincibility (short blink)
   if (!m_isInvincible) {
     if (m_sprite && m_marioState != MarioState::FIRE) {
       m_sprite->setColor(sf::Color::White); // Ensure visible
@@ -730,11 +855,11 @@ void Mario::updateInvincibility(float dt) {
 }
 
 bool Mario::isInvincible() const {
-  return m_isInvincible;
+  return m_isInvincible || m_isStarInvincible;
 }
 
 bool Mario::canShootFireBall() const {
-  return m_marioState == MarioState::FIRE && m_fireCooldown <= 0.0f;
+  return (m_marioState == MarioState::FIRE || m_marioState == MarioState::FIRE_SMALL) && m_fireCooldown <= 0.0f;
 }
 
 int Mario::getLives() const {

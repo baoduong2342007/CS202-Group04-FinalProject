@@ -27,6 +27,7 @@ public:
     void onStomp() override;
     void onWallCollision() override;
     void patrol() override;
+    void onFireHit() override;
 
     void kick(Direction direction);
 
@@ -39,6 +40,7 @@ private:
     void reverseDirection();
 
     KoopaState m_state;
+    bool m_isFlippedDead = false;
     float m_patrolSpeed;
 };
 

@@ -94,13 +94,16 @@ SuperMario/
 │   ├── TileCollisionSpanTests.cpp
 │   ├── PlayStateTests.cpp
 │   ├── GameManagerTests.cpp
-│   └── EventBusTests.cpp
+│   ├── EventBusTests.cpp
+│   └── TestSpawnDeath.cpp      ← local diagnostic (manual/UNTESTED in CTest)
 │
 ├── include/                    ← all .h header files
 │   ├── core/
 │   │   ├── AnimationSystem.h   ← TV2 (Nhật): sprite animation management
 │   │   ├── Game.h              ← TV2 (Nhật): main loop, window, delta time
 │   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host
+│   │   ├── GameProgress.h      ← TV1 (Dương): session progress (score/coin/lives/power)
+│   │   ├── LevelCatalog.h      ← TV1 (Dương): centralized release-level catalog (1-based)
 │   │   ├── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
 │   │   └── TextureManager.h    ← TV1 (Dương): centralized texture cache
 │   │
@@ -141,9 +144,13 @@ SuperMario/
 │   │   ├── IObserver.h         ← TV1 (Dương): Observer interface
 │   │   ├── ISubject.h          ← TV1 (Dương)
 │   │   ├── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── InputState.h        ← TV5 (Truyền): Pressed/Held/Released trigger states
 │   │   ├── JumpCommand.h       ← concrete Command
+│   │   ├── JumpReleaseCommand.h← TV5 (Truyền): jump-release trigger
 │   │   ├── MoveLeftCommand.h   ← concrete Command
 │   │   ├── MoveRightCommand.h  ← concrete Command
+│   │   ├── RunCommand.h        ← TV5 (Truyền): run modifier
+│   │   ├── ShootCommand.h      ← TV5 (Truyền): FireBall shoot trigger
 │   │   └── PauseCommand.h      ← concrete Command
 │   │
 │   ├── physics/                ← TV3 (Bảo)
@@ -192,9 +199,13 @@ SuperMario/
     │   ├── EntityFactory.cpp
     │   ├── EventBus.cpp
     │   ├── InputHandler.cpp
+    │   ├── InputState.cpp
     │   ├── JumpCommand.cpp
+    │   ├── JumpReleaseCommand.cpp
     │   ├── MoveLeftCommand.cpp
     │   ├── MoveRightCommand.cpp
+    │   ├── RunCommand.cpp
+    │   ├── ShootCommand.cpp
     │   └── PauseCommand.cpp
     ├── physics/
     │   ├── CollisionManager.cpp

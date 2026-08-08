@@ -106,6 +106,30 @@ void PlayState::rebindCommands() {
         m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
                                std::make_unique<PauseCommand>(),
                                InputTrigger::Pressed);
+
+        auto makeShootCmd = [this]() {
+            if (m_level) {
+                m_level->shootFireBall();
+            }
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::J,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::F,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::X,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::LControl,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::RShift,
+                               std::make_unique<ShootCommand>(makeShootCmd),
+                               InputTrigger::Pressed);
     }
 }
 
@@ -162,8 +186,12 @@ void PlayState::onNotify(EventType event) {
             m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
         }
         m_terminalCommittedThisFrame = true;
-        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before game over
-        m_isGameOverPending = true;
+        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before state change
+        if (m_level && m_level->getMario() && m_level->getMario()->getLives() > 0) {
+            m_isReloadPending = true;
+        } else {
+            m_isGameOverPending = true;
+        }
     } else if (event == EventType::PLAYER_LOST_LIFE) {
         if (m_level) {
             m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
@@ -251,6 +279,9 @@ void PlayState::restoreProgress() {
     if (m_hud) {
         m_hud->setWorldLevel(1, m_progress.currentLevel);
     }
+
+    // Synchronize initial sprite transforms and camera frame 0 with restored MarioState
+    m_level->update(0.f);
 }
 
 bool PlayState::loadLevel(int levelNumber) {

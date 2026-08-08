@@ -20,6 +20,8 @@
 #include "entities/Enemy.h"
 #include "entities/FireBall.h"
 #include "core/SpriteFrames.h"
+#include "core/SoundManager.h"
+#include "entities/FireBall.h"
 
 #include "core/DisplayConfig.h"
 
@@ -27,7 +29,7 @@ namespace {
 constexpr unsigned int TILE_SIZE = 32;
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
+constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
 
 float calculateBackgroundTop(std::size_t levelHeightInTiles) {
     const float levelHeight = static_cast<float>(levelHeightInTiles * TILE_SIZE);
@@ -134,6 +136,9 @@ void Level::update(float dt) {
             m_mario->refreshGroundedState();
         }
     }
+
+    // Flush any pending fireball creation requests queued while Box2D world was locked
+    processPendingFireballs();
 
     // Update tilemap bump animations
     m_tileMap.update(dt);
@@ -312,3 +317,49 @@ bool Level::isLevelCompleted() const {
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
 TextureManager& Level::getTextureManager() { return m_textureManager; }
+
+constexpr int MAX_ACTIVE_FIREBALLS = 4;
+
+void Level::shootFireBall() {
+    if (!m_mario || !m_world || !m_mario->canShootFireBall()) return;
+
+    int activeFireballs = 0;
+    for (const auto& entity : m_entities) {
+        if (entity && entity->isFireBall() && entity->isActive()) {
+            activeFireballs++;
+        }
+    }
+    activeFireballs += static_cast<int>(m_pendingFireBallRequests.size());
+
+    if (activeFireballs >= MAX_ACTIVE_FIREBALLS) {
+        return;
+    }
+
+    if (m_world->IsLocked()) {
+        float spawnX = m_mario->getPosition().x + (m_mario->getFacingDirection() == Direction::RIGHT ? m_mario->getSize().x + 4.f : -16.f);
+        float spawnY = m_mario->getPosition().y + 4.f;
+        m_pendingFireBallRequests.push_back({sf::Vector2f(spawnX, spawnY), m_mario->getFacingDirection()});
+        return;
+    }
+
+    auto fireball = m_mario->shootFireBall(m_world.get());
+    if (fireball) {
+        fireball->setTextureManager(m_textureManager);
+        m_entities.push_back(std::move(fireball));
+        SoundManager::getInstance().playSound("fireball");
+    }
+}
+
+void Level::processPendingFireballs() {
+    if (!m_world || m_world->IsLocked() || m_pendingFireBallRequests.empty()) return;
+
+    for (const auto& req : m_pendingFireBallRequests) {
+        auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
+        if (fireball) {
+            fireball->setTextureManager(m_textureManager);
+            m_entities.push_back(std::move(fireball));
+            SoundManager::getInstance().playSound("fireball");
+        }
+    }
+    m_pendingFireBallRequests.clear();
+}

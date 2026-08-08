@@ -158,6 +158,23 @@ void PlayState::processInput(const InputState& inputState) {
         m_level->getMario()->releaseJump();
     }
 
+    // FireBall Shooting: X, F, or J key
+    if (inputState.wasPressed(sf::Keyboard::Key::X) ||
+        inputState.wasPressed(sf::Keyboard::Key::F) ||
+        inputState.wasPressed(sf::Keyboard::Key::J)) {
+        Mario* mario = m_level->getMario();
+        if (mario && mario->canShootFireBall()) {
+            sf::Vector2f marioPos = mario->getPosition();
+            sf::Vector2f marioSize = mario->getSize();
+            Direction dir = mario->getFacingDirection();
+            float spawnX = marioPos.x + (dir == Direction::RIGHT ? marioSize.x + 4.f : -16.f);
+            float spawnY = marioPos.y + marioSize.y * 0.4f;
+            b2World* world = mario->getBody() ? mario->getBody()->GetWorld() : nullptr;
+            m_level->getFireBallPool().acquire(sf::Vector2f(spawnX, spawnY), dir, world);
+            mario->shootFireBall(world); // Trigger cooldown
+        }
+    }
+
     // Debug State Shortcuts for TV Testing: 1=Small, 2=Super, 3=Fire, 4=Star
     if (inputState.wasPressed(sf::Keyboard::Key::Num1) || inputState.wasPressed(sf::Keyboard::Key::Numpad1)) {
         m_level->getMario()->powerUp(MarioState::SMALL);

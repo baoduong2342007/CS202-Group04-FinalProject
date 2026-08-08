@@ -88,6 +88,7 @@ public:
     void setLives(int lives);
 
     bool isRunning() const;
+    void setRunning(bool running) { m_isRunning = running; }
     bool isSkidding() const;
     bool isDying() const;
     bool isTransforming() const { return m_isTransforming; }

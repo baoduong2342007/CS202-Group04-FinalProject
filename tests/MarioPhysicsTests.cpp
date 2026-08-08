@@ -285,6 +285,42 @@ bool testFireBallPoolLimitAndMasks() {
 
     return true;
 }
+
+bool testWalkingVsSprintingSeparatedByShift() {
+    b2World world({0.0f, 25.0f});
+    createPlatform(world);
+
+    Mario marioWalk({134.0f, 0.0f}, {28.0f, 30.0f});
+    marioWalk.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(world, marioWalk);
+
+    marioWalk.setRunning(false);
+    marioWalk.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        marioWalk.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+    }
+    float walkVx = std::abs(PhysicsEngine::metersToPixels(marioWalk.getBody()->GetLinearVelocity().x));
+
+    Mario marioRun({134.0f, 0.0f}, {28.0f, 30.0f});
+    marioRun.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(world, marioRun);
+
+    marioRun.setRunning(true);
+    marioRun.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        marioRun.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+    }
+    float runVx = std::abs(PhysicsEngine::metersToPixels(marioRun.getBody()->GetLinearVelocity().x));
+
+    std::cout << "[TEST] Walk velocity: " << walkVx << " px/s, Run velocity: " << runVx << " px/s" << std::endl;
+
+    return check(marioRun.isRunning(), "Holding shift must set isRunning to true") &&
+           check(!marioWalk.isRunning(), "Releasing shift must keep isRunning as false") &&
+           check(walkVx <= 181.0f, "Walking max speed must be capped at WALK_MAX_SPEED (180 px/s)") &&
+           check(runVx > walkVx + 100.0f, "Sprinting with shift must achieve significantly higher velocity than walking");
+}
 } // namespace
 
 int main() {
@@ -295,6 +331,7 @@ int main() {
                          testSuperMarioTraversesTwoBlockPassage() &&
                          testTimestepSubstepClamp() &&
                          testStarmanVsDamageGraceIndependence() &&
-                         testFireBallPoolLimitAndMasks();
+                         testFireBallPoolLimitAndMasks() &&
+                         testWalkingVsSprintingSeparatedByShift();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

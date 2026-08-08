@@ -3,7 +3,7 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-35
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-36
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
@@ -1243,6 +1243,62 @@ Việc xác định level kế tiếp sau khi hoàn thành một màn và chuy�
 - Unlock Level 3 cập nhật giá trị thành 3.
 - Giá trị vẫn đúng sau restart và `load()`.
 - Save failure rollback giá trị trong memory.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 24. Audio Settings Persistence
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`include/core/SoundManager.h`](../../include/core/SoundManager.h)
+- [`src/core/SoundManager.cpp`](../../src/core/SoundManager.cpp)
+
+### S6-TV4-36 - Lưu SFX và music volume
+
+`SaveManager` được bổ sung:
+
+```cpp
+updateAudioSettings(soundVolume, musicVolume);
+```
+
+để persist hai thiết lập âm thanh trong `SaveData`.
+
+Các giá trị volume được giới hạn trong khoảng:
+
+```text
+0 <= volume <= 100
+```
+
+trước khi ghi xuống save file.
+
+Nếu giá trị không hữu hạn hoặc nằm ngoài khoảng hợp lệ, dữ liệu được đưa về phạm vi an toàn trước khi lưu.
+
+Khi quá trình ghi file thất bại, cả `soundVolume` và `musicVolume` trong memory được rollback về giá trị trước đó.
+
+Sau khi restart, `SaveManager::load()` khôi phục hai giá trị từ save file.
+
+`SaveManager` không trực tiếp điều khiển audio runtime. Integration layer sử dụng dữ liệu đã load để gọi:
+
+```cpp
+SoundManager::setSoundVolume(...)
+SoundManager::setMusicVolume(...)
+```
+
+Cách tách này giữ `SaveManager` chịu trách nhiệm persistence và `SoundManager` chịu trách nhiệm audio playback.
+
+### Kiểm tra
+
+- Sound volume được ghi đúng xuống save file.
+- Music volume được ghi đúng xuống save file.
+- Hai giá trị được đọc lại đúng sau restart.
+- Volume nhỏ hơn 0 được clamp về 0.
+- Volume lớn hơn 100 được clamp về 100.
+- Save failure rollback cả hai giá trị trong memory.
+- Existing high score và unlocked-level data không bị mất khi lưu audio.
 - Project build thành công.
 - Toàn bộ CTest hiện tại pass.
 ---

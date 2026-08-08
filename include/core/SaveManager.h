@@ -29,6 +29,7 @@ public:
     bool load();
     bool save() const;
     void resetToDefaults();
+    bool updateAudioSettings(float soundVolume, float musicVolume);
     bool updateHighScore(int score);
     bool updateHighestUnlockedLevel(int level);
 

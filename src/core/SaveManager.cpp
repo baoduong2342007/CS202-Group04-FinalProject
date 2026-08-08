@@ -10,6 +10,23 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include <cmath>
+
+namespace {
+
+constexpr float MIN_VOLUME = 0.0f;
+constexpr float MAX_VOLUME = 100.0f;
+
+float clampVolume(float volume) {
+    if (!std::isfinite(volume)) {
+        return MIN_VOLUME;
+    }
+
+    return std::clamp(volume, MIN_VOLUME, MAX_VOLUME);
+}
+
+}
 
 SaveManager::SaveManager(const std::string& savePath)
     : m_savePath(savePath),
@@ -74,6 +91,23 @@ bool SaveManager::save() const {
 
 void SaveManager::resetToDefaults() {
     m_data = SaveData{};
+}
+
+bool SaveManager::updateAudioSettings(float soundVolume, float musicVolume) {
+    const float previousSoundVolume = m_data.soundVolume;
+    const float previousMusicVolume = m_data.musicVolume;
+
+    m_data.soundVolume = clampVolume(soundVolume);
+    m_data.musicVolume = clampVolume(musicVolume);
+
+    if (!save()) {
+        m_data.soundVolume = previousSoundVolume;
+        m_data.musicVolume = previousMusicVolume;
+
+        return false;
+    }
+
+    return true;
 }
 
 bool SaveManager::updateHighScore(int score) {

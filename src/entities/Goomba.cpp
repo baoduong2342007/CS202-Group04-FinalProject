@@ -19,7 +19,7 @@ constexpr int DEFAULT_GOOMBA_HEALTH = 1;
 constexpr float DEFAULT_GOOMBA_SPEED = 60.f;
 constexpr float PIT_CLEANUP_Y = 800.f;
 
-constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/goomba.png";
+constexpr const char* GOOMBA_TEXTURE_PATH = "assets/textures/enemies/enemies.png";
 
 const sf::Vector2f GOOMBA_SIZE{32.f, 32.f};
 
@@ -37,8 +37,18 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world)
       initPhysics(world, b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
       
-      m_animationSystem->addAnimation("walk", AnimationSystem::createGridAnimation(0, 0, 32, 32, 2, 0.15f));
-      m_animationSystem->addAnimation("squish", AnimationSystem::createGridAnimation(64, 0, 32, 32, 1, 1.f));
+      m_animationSystem->addAnimation("walk",
+                                      AnimationSystem::createManualAnimation({sf::IntRect({0, 16}, {16, 16}),
+                                                                              sf::IntRect({18, 16}, {16, 16})},
+                                                                             0.15f, true
+                                                                             )
+                                      );
+      m_animationSystem->addAnimation("squish",
+                                      AnimationSystem::createManualAnimation({sf::IntRect({36, 24}, {16, 8})},
+                                                                             1.f, false
+                                                                             )
+                                      );
+
       playAnimation("walk");
 }
 
@@ -61,6 +71,7 @@ void Goomba::update(float dt) {
 
         m_squishTimer += dt;
         updateAnimation(dt);
+        syncSpriteToFeet();
 
         if (m_squishTimer >= SQUISH_DURATION) {
             markForRemoval();
@@ -74,6 +85,7 @@ void Goomba::update(float dt) {
     }
 
     updateAnimation(dt);
+    syncSpriteToFeet();
 }
 
 void Goomba::onStomp() {
@@ -162,4 +174,22 @@ bool Goomba::isApproachingLedge() const {
     const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
 
     return hasCurrentGround && !hasFrontGround;
+}
+
+void Goomba::syncSpriteToFeet() {
+    if (!m_sprite) {
+        return;
+    }
+
+    constexpr float SPRITE_SCALE = 2.f;
+
+    const sf::IntRect rect = m_sprite->getTextureRect();
+
+    m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+
+    const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
+
+    const float footY = m_position.y + GOOMBA_SIZE.y;
+
+    m_sprite->setPosition({m_position.x, footY - renderedHeight});
 }

@@ -31,6 +31,7 @@ public:
 private:
     void reverseDirection();
     bool isApproachingLedge() const;
+    void syncSpriteToFeet();
 
     const TileMap* m_tileMap = nullptr;
 

@@ -823,6 +823,50 @@ Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
 
 ---
 
+## 16. Koopa Shell Fixture
+
+## File liên quan
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`assets/texture/enemies/enemies.png](../../assets/texture/enemies/enemies.png)
+
+### S6-TV4-25 - Resize Koopa shell fixture
+
+Koopa đã được chuyển sang sử dụng sprite atlas chung `assets/texture/enemies/enemies.png` thay cho texture Koopa riêng
+
+Walking animation sử dụng manual frame coordinates từ `enemies_coordinate.md`, do các frame trong atlas không nằm trên một grid liên tục.
+
+Koopa walking sử dụng runtime size khoảng 32×48, tương ứng với source sprite khoảng 16×24 được scale 2 lần.
+
+Khi Koopa chuyển từ `WALKING` sang `SHELL_IDLE`, physics fixture được thu nhỏ từ 32×48 xuống 32×28 để phù hợp với shell source sprite 16×14.
+
+Fixture rebuild được defer khỏi collision callback bằng `m_pendingShellFixtureRebuild`, sau đó thực hiện trong `Koopa::update()` khi Box2D world không còn locked.
+
+Shell fixture được offset xuống 10 px:
+
+```text
+(48 - 28) / 2 = 10 px
+```
+
+nhằm giữ đáy fixture tại cùng vị trí chân với Walking Koopa.
+
+Sprite rendering sử dụng scale cố định 2× và bottom alignment thông qua `syncSpriteToFeet()`, vì vậy các walking frame có chiều cao khác nhau và shell frame thấp hơn vẫn giữ chung vị trí chân.
+
+### Kiểm tra
+
+- Koopa walking hiển thị đúng frame từ `enemies.png`.
+- Walking sprite không bị stretch sai tỉ lệ.
+- Stomp đầu chuyển Koopa sang `SHELL_IDLE`.
+- Shell hiển thị đúng kích thước khoảng 32×28.
+- Shell fixture được resize thành 32×28.
+- Chân Koopa không nhảy lên hoặc chìm xuống khi chuyển sang shell.
+- Fixture rebuild không thực hiện khi Box2D world đang locked.
+- Shell idle đứng yên.
+- Shell sliding tiếp tục dùng shell fixture đã resize.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
 ## 16. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:

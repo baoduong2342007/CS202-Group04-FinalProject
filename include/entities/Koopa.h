@@ -40,9 +40,13 @@ public:
 private:
     void reverseDirection();
     bool isApproachingLedge() const;
+    void rebuildShellFixture();
+    void syncSpriteToFeet();
 
     KoopaState m_state;
     float m_patrolSpeed;
 
     const TileMap* m_tileMap = nullptr;
+
+    bool m_pendingShellFixtureRebuild = false;
 };

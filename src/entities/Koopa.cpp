@@ -14,6 +14,7 @@
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
+#include "physics/PhysicsEngine.h"
 
 namespace {
 
@@ -23,7 +24,7 @@ constexpr float KOOPA_SLIDE_SPEED = 240.f;
 constexpr float PIT_CLEANUP_Y = 800.f;
 constexpr float EDGE_PROBE_OFFSET = 2.f;
 
-constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/koopa.png";
+constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/enemies.png";
 
 constexpr float TILE_SIZE = 32.f;
 constexpr float KOOPA_HEIGHT = 48.f;
@@ -31,18 +32,12 @@ constexpr float KOOPA_VERTICAL_SPAWN_OFFSET = KOOPA_HEIGHT - TILE_SIZE;
 
 const sf::Vector2f KOOPA_SIZE{32.f, KOOPA_HEIGHT};
 
-constexpr int KOOPA_FRAME_START_X = 0;
-constexpr int KOOPA_FRAME_START_Y = 0;
-constexpr int KOOPA_FRAME_WIDTH = 32;
-constexpr int KOOPA_FRAME_HEIGHT = 48;
-constexpr int KOOPA_WALK_FRAME_COUNT = 2;
+constexpr float KOOPA_SHELL_WIDTH = 32.f;
+constexpr float KOOPA_SHELL_HEIGHT = 28.f;
 
 constexpr float KOOPA_WALK_FRAME_DURATION = 0.15f;
 
 constexpr const char* KOOPA_WALK_ANIMATION = "walk";
-
-constexpr int KOOPA_SHELL_FRAME_START_X = 64;
-constexpr int KOOPA_SHELL_FRAME_COUNT = 1;
 
 constexpr float KOOPA_SHELL_FRAME_DURATION = 0.15f;
 
@@ -70,24 +65,17 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
     m_animationSystem = std::make_unique<AnimationSystem>();
 
     const Animation walkAnimation =
-    AnimationSystem::createGridAnimation(KOOPA_FRAME_START_X,
-                                         KOOPA_FRAME_START_Y,
-                                         KOOPA_FRAME_WIDTH,
-                                         KOOPA_FRAME_HEIGHT,
-                                         KOOPA_WALK_FRAME_COUNT,
-                                         KOOPA_WALK_FRAME_DURATION,
-                                         true
-                                         );
+          AnimationSystem::createManualAnimation({sf::IntRect({0, 113}, {16, 23}),
+                                                sf::IntRect({18, 112}, {16, 24})},
+                                                 KOOPA_WALK_FRAME_DURATION,
+                                                 true
+                                                 );
 
     const Animation shellIdleAnimation =
-    AnimationSystem::createGridAnimation(KOOPA_SHELL_FRAME_START_X,
-                                         KOOPA_FRAME_START_Y,
-                                         KOOPA_FRAME_WIDTH,
-                                         KOOPA_FRAME_HEIGHT,
-                                         KOOPA_SHELL_FRAME_COUNT,
-                                         KOOPA_SHELL_FRAME_DURATION,
-                                         false
-                                         );
+          AnimationSystem::createManualAnimation({sf::IntRect({72, 120}, {16, 14})},
+                                                 KOOPA_SHELL_FRAME_DURATION,
+                                                 false
+                                                 );
 
     m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION,
                                     walkAnimation
@@ -101,6 +89,10 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
 }
 
 void Koopa::update(float dt) {
+    if (m_pendingShellFixtureRebuild) {
+        rebuildShellFixture();
+    }
+
     syncPhysics();
 
     if (m_position.y > PIT_CLEANUP_Y) {
@@ -110,6 +102,7 @@ void Koopa::update(float dt) {
 
     if (isDead()) {
         updateAnimation(dt);
+        syncSpriteToFeet();
         return;
     }
 
@@ -128,11 +121,13 @@ void Koopa::update(float dt) {
     }
 
     updateAnimation(dt);
+    syncSpriteToFeet();
 }
 
 void Koopa::onStomp() {
     if (m_state == KoopaState::WALKING) {
         m_state = KoopaState::SHELL_IDLE;
+        m_pendingShellFixtureRebuild = true;
 
         const sf::Vector2f currentVelocity = getVelocity();
         setVelocity({0.f, currentVelocity.y});
@@ -263,4 +258,69 @@ bool Koopa::isApproachingLedge() const {
     const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
 
     return hasCurrentGround && !hasFrontGround;
+}
+
+void Koopa::rebuildShellFixture() {
+    if (!m_body) {
+        m_pendingShellFixtureRebuild = false;
+        return;
+    }
+
+    b2World* world = m_body->GetWorld();
+
+    if (!world || world->IsLocked()) {
+        return;
+    }
+
+    b2Fixture* oldFixture = m_body->GetFixtureList();
+
+    if (!oldFixture) {
+        m_pendingShellFixtureRebuild = false;
+        return;
+    }
+
+    b2FixtureDef fixtureDef;
+    fixtureDef.density = oldFixture->GetDensity();
+    fixtureDef.friction = oldFixture->GetFriction();
+    fixtureDef.restitution = oldFixture->GetRestitution();
+    fixtureDef.isSensor = oldFixture->IsSensor();
+    fixtureDef.filter = oldFixture->GetFilterData();
+
+    const float halfWidth = PhysicsEngine::pixelsToMeters(KOOPA_SHELL_WIDTH / 2.f);
+    const float halfHeight = PhysicsEngine::pixelsToMeters(KOOPA_SHELL_HEIGHT / 2.f);
+
+    const float footOffset = PhysicsEngine::pixelsToMeters((KOOPA_HEIGHT - KOOPA_SHELL_HEIGHT) / 2.f);
+
+    b2PolygonShape shellShape;
+
+    shellShape.SetAsBox(halfWidth, halfHeight,
+                        b2Vec2(0.f, footOffset),
+                        0.f
+                        );
+
+    fixtureDef.shape = &shellShape;
+
+    m_body->DestroyFixture(oldFixture);
+    m_body->CreateFixture(&fixtureDef);
+    m_body->ResetMassData();
+
+    m_pendingShellFixtureRebuild = false;
+}
+
+void Koopa::syncSpriteToFeet() {
+    if (!m_sprite) {
+        return;
+    }
+
+    constexpr float SPRITE_SCALE = 2.f;
+
+    const sf::IntRect rect = m_sprite->getTextureRect();
+
+    m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+
+    const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
+
+    const float footY = m_position.y + KOOPA_HEIGHT;
+
+    m_sprite->setPosition({m_position.x, footY - renderedHeight});
 }

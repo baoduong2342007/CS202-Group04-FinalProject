@@ -303,3 +303,32 @@ phím và callback request của Run/Shoot command.
 Khi review hoặc mở rộng các hệ thống này, cần kiểm tra state mới đã implement
 `processInput`, asset animation mới dùng named `SpriteFrames` rect, và thay đổi
 TileMap vẫn giữ đúng cơ chế rebuild collision span.
+
+## Reopened TV5 implementation update (2026-08-07)
+
+This addendum supersedes the earlier notes that described Run/Shoot and the
+audio producers as callback/catalog-only:
+
+- `PlayState` now binds Shift to `RunCommand` and X to `ShootCommand`. Run is a
+  per-frame Mario intent, and Shoot calls the level-owned `spawnFireBall()`
+  adapter so input does not own projectile lifetime.
+- FireBall instances carry a non-owning Mario owner for defeat-score
+  attribution and publish `FIREBALL_SHOT`; Koopa publishes `SHELL_KICKED` only
+  when an idle shell transitions to sliding.
+- Question blocks, TileMap brick/block hits and item emergence publish the
+  runtime events consumed by `SoundManager`. Star start/expiry restores the
+  level track, while death/GameOver/Win states select their own music.
+- `ScoreRules` is the shared catalog: coin 100, power-up 1000, stomp 100 and
+  shell/FireBall/Star defeat 200. Current TV5 producers and the FireBall path
+  use the API; the remaining DefeatCause owner contract is intentionally left
+  for TV3.
+- HUD timeout is one-shot and calls Mario's death/life API. Pause exposes
+  immediate independent music/SFX controls with `[0,100]` clamping; volume
+  persistence remains a TV4 SaveManager integration point.
+- Runtime enemy textures are present at `assets/textures/enemies/`, and
+  `assets/ASSETS_LIST.md` is the checked-in manifest for their dimensions and
+  usage.
+
+The clean verification build registered seven tests, including
+`tv5_integration_tests`; `ctest --test-dir build-tv5-clean --output-on-failure`
+passed all seven.

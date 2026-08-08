@@ -18,12 +18,12 @@ tính từ thư mục executable sau khi CMake copy runtime assets; đường d�
 | Path | Kích thước | Usage | Ghi chú |
 |---|---:|---|---|
 | `assets/fonts/mario.ttf` | 116,008 bytes | `Runtime` | Font dùng cho HUD và các state UI. |
-| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Goomba walk/squish. |
-| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Koopa walk/shell. |
+| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Goomba walk/squish; 3 frames × 32×32. |
+| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Koopa walk/shell; 4 frames × 32×48. |
 | `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | Mushroom, QuestionBlock và block frames. |
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Coin, FireFlower và Star frames. |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
-| `assets/textures/tiles/tileset.png` | 320×32 | `Future` | Legacy tile sheet; gameplay TileMap hiện dùng block sheet. |
+| `assets/textures/tiles/tileset.png` | 128×32 | `Runtime` | TileMap dùng 4 frame terrain 32×32: ground/brick/question/used. |
 | `assets/textures/ui/bg_clouds.png` | 768×1129 | `Runtime` | Menu/background asset. |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Runtime` | Overworld background strip. |
 | `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | Chưa có runtime render path. |
@@ -40,19 +40,19 @@ runtime asset.
 | `assets/sounds/effects/beep.wav` | `Future` — chưa có event mapping. |
 | `assets/sounds/effects/billfirework.wav` | `Future` — chưa có Bullet Bill path. |
 | `assets/sounds/effects/bowserfall.wav` | `Future` — chưa có Bowser path. |
-| `assets/sounds/effects/brick.wav` | `Runtime` — brick break mapping. |
-| `assets/sounds/effects/bump.wav` | `Runtime` — block bump mapping. |
+| `assets/sounds/effects/brick.wav` | `Runtime` — `BRICK_BROKEN`. |
+| `assets/sounds/effects/bump.wav` | `Runtime` — `BLOCK_BUMPED`. |
 | `assets/sounds/effects/coin.wav` | `Runtime` — `COIN_COLLECTED`. |
 | `assets/sounds/effects/death.wav` | `Runtime` — `PLAYER_DIED`. |
 | `assets/sounds/effects/fire.wav` | `Future` — reserved fire effect. |
-| `assets/sounds/effects/fireball.wav` | `Runtime` catalog — FireBall event producer belongs to TV3. |
+| `assets/sounds/effects/fireball.wav` | `Runtime` — `FIREBALL_SHOT` khi một FireBall được tạo. |
 | `assets/sounds/effects/flagpole.wav` | `Runtime` — `LEVEL_COMPLETED`. |
-| `assets/sounds/effects/gameover.wav` | `Runtime` catalog — GameOver state track/SFX. |
+| `assets/sounds/effects/gameover.wav` | `Runtime` — GameOver state SFX/catalog. |
 | `assets/sounds/effects/hurryup.wav` | `Runtime` — HUD time-warning callback. |
-| `assets/sounds/effects/item.wav` | `Runtime` catalog — item emerge event. |
+| `assets/sounds/effects/item.wav` | `Runtime` — `ITEM_EMERGED` khi item rời block. |
 | `assets/sounds/effects/jump.wav` | `Runtime` — `PLAYER_JUMPED`. |
 | `assets/sounds/effects/jumpsmall.wav` | `Runtime` catalog — small-Mario jump variant. |
-| `assets/sounds/effects/kickkill.wav` | `Runtime` catalog — shell/kick event producer belongs to TV3/TV4. |
+| `assets/sounds/effects/kickkill.wav` | `Runtime` — `SHELL_KICKED`, phát một lần khi shell bắt đầu trượt. |
 | `assets/sounds/effects/pause.wav` | `Runtime` — `GAME_PAUSED`. |
 | `assets/sounds/effects/pipepowerdown.wav` | `Runtime` — `PLAYER_POWER_DOWN`. |
 | `assets/sounds/effects/powerup.wav` | `Runtime` — `PLAYER_POWER_UP`. |

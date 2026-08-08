@@ -53,3 +53,31 @@ quyết định interface mới. Task còn cần consumer/event từ owner khác
 
 Các task `BLOCKED`/`HANDOFF READY` không được đổi thành `DONE` cho đến khi
 owner tương ứng nối consumer và chạy full-loop verification.
+
+## Reopened-TV5 fix update (2026-08-07)
+
+The table above is the original pre-fix assessment. The following records the
+implementation completed for the TV5-only reopened scope:
+
+| Task IDs | Updated status | Evidence |
+|---|---|---|
+| 02, 03 | IMPLEMENTED / HANDOFF READY | `PlayState::rebindCommands()` binds Shift to `RunCommand` and X to `ShootCommand`; the gameplay owner remains responsible for physics semantics. |
+| 06 | DONE | New `tv5_integration_tests` target plus the existing input regression target; full CTest run is 7/7. |
+| 09 | IMPLEMENTED / HANDOFF READY | FireFlower produces FIRE Mario and `Level::spawnFireBall()` is the runtime shoot adapter. |
+| 15 | DONE | `ScoreRules` centralizes coin scoring and `Coin::awardTo()` preserves the 100-coin life threshold/remainder. |
+| 16 | PARTIAL / HANDOFF READY | Coin, power-up, stomp and FireBall scoring use the central API; TV3 still owns the final DefeatCause contract for shell/star enemy kills. |
+| 19 | IMPLEMENTED / HANDOFF READY | HUD timeout is one-shot and calls Mario life/death flow; TV1/TV3 still own reload/GameOver state transitions. |
+| 21 | DONE | HUD exposes SMALL/SUPER/FIRE/STAR and reacts to Star start/expiry events. |
+| 27-29 | IMPLEMENTED / HANDOFF READY | Level music, Star restore, death, GameOver and Win track hooks are connected through `SoundManager`. |
+| 31-33 | IMPLEMENTED / HANDOFF READY | Runtime producers publish FireBall, shell-kick, block/brick/item/1-Up events; `SoundManager` maps each event to its catalogued SFX. |
+| 36 | PARTIAL / HANDOFF READY | Pause UI adjusts music/SFX immediately and clamps both ranges; SaveManager persistence remains TV4-owned. |
+| 37, 41, 43 | DONE | Runtime enemy textures were restored, `ASSETS_LIST.md` dimensions/usage were corrected, and this implementation note was refreshed. |
+
+Verification command:
+
+```powershell
+cmake --build build-tv5-clean --parallel 2
+ctest --test-dir build-tv5-clean --output-on-failure
+```
+
+The build completed successfully and all 7 registered tests passed.

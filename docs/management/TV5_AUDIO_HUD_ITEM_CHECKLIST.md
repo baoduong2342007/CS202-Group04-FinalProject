@@ -50,4 +50,4 @@ loop). Chạy từ clean executable directory sau build.
 
 | Ngày | Build/commit | Người chạy | Kết quả | Ghi chú |
 |---|---|---|---|---|
-| | | | `PASS` / `FAIL` | |
+| 2026-08-07 | `build-tv5-clean` | Codex | `PASS` | Automated: `ctest --test-dir build-tv5-clean --output-on-failure`, 7/7 tests passed, including `tv5_integration_tests`. Manual audio/render/full-loop rows remain pending a GUI playthrough. |

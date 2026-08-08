@@ -346,7 +346,13 @@ void Koopa::syncSpriteToFeet() {
 
     const sf::IntRect rect = m_sprite->getTextureRect();
 
-    m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+    if (getFacingDirection() == Direction::RIGHT) {
+        m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE});
+        m_sprite->setOrigin({static_cast<float>(rect.size.x), 0.f});
+    } else {
+        m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+        m_sprite->setOrigin({0.f, 0.f});
+    }
 
     const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
 

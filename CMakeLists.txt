@@ -184,6 +184,14 @@ if(BUILD_TESTING)
     )
     target_include_directories(event_bus_tests PRIVATE include)
     add_test(NAME event_bus_tests COMMAND event_bus_tests)
+
+    # S6-TV1-05/06/07/08 — New headless test for level-catalog & GameProgress contracts.
+    add_executable(level_catalog_tests
+        tests/LevelCatalogTests.cpp
+    )
+    target_include_directories(level_catalog_tests PRIVATE include)
+    target_link_libraries(level_catalog_tests PRIVATE game_lib)
+    add_test(NAME level_catalog_tests COMMAND level_catalog_tests)
 endif()
 
 # Platform-specific Release build settings

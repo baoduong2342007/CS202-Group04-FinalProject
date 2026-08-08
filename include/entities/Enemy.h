@@ -21,15 +21,30 @@ class TileMap;
 class Enemy : public Character {
 public:
     Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health);
+
     ~Enemy() override = default;
 
-    EntityType getType() const override { return EntityType::ENEMY; }
+    EntityType getType() const override {
+        return EntityType::ENEMY;
+    }
+
+    void activate();
+    bool isActivated() const;
 
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
     virtual void onFireHit();
-    virtual void setTileMap(const TileMap* tileMap) { (void)tileMap; }
+
+    virtual void setTileMap(const TileMap* tileMap) {
+        (void)tileMap;
+    }
     virtual void onSideCollision(Entity* other);
-    bool isEnemy() const override { return true; }
+
+    bool isEnemy() const override {
+        return true;
+    }
+
+private:
+    bool m_activated = false;
 };

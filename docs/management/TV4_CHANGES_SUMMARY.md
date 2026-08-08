@@ -1,13 +1,15 @@
+
+
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-09, S6-TV4-11
+> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
 > **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
 
 ---
 
-## **1. Tổng Quan**
+## 1. Tổng Quan
 
 Trong giai đoạn hiện tại của Sprint 6, TV4 đã tập trung vào việc:
 
@@ -385,11 +387,9 @@ Không gọi trực tiếp logic spawn Mushroom từ `TileMap`.
 
 ### S6-TV4-11 — Mở rộng vùng kích hoạt trên toàn bộ cột cờ
 
-Finish trigger trước đây chỉ có kích thước 32×32 tại tile `F`.
-Vì vậy, Mario phải chạm đúng phần đầu cột cờ mới có thể hoàn thành level.
+Finish trigger trước đây chỉ có kích thước 32×32 tại tile `F`. Vì vậy, Mario phải chạm đúng phần đầu cột cờ mới có thể hoàn thành level.
 
-Trigger hiện được tạo thành một hình chữ nhật bao phủ từ tile `F`
-đến tile pole `|` thấp nhất nằm trong cùng một cột.
+Trigger hiện được tạo thành một hình chữ nhật bao phủ từ tile `F`đến tile pole `|` thấp nhất nằm trong cùng một cột.
 
 ### Phương pháp được sử dụng
 
@@ -398,16 +398,13 @@ Trigger hiện được tạo thành một hình chữ nhật bao phủ từ til
 - Finish point `F`.
 - Toàn bộ pole tile `|`.
 
-Từ hàng chứa finish point và hàng pole thấp nhất, hệ thống tính chiều cao
-của vùng kích hoạt bằng:
+Từ hàng chứa finish point và hàng pole thấp nhất, hệ thống tính chiều cao của vùng kích hoạt bằng:
 
 ```cpp
 (bottomRow - finishPosition.y + 1) * TILE_SIZE
 ```
 
-Level validation đã bảo đảm mỗi level chỉ có đúng một finish point,
-các pole tile liên tục và nằm trong cùng một cột. Vì vậy, vùng trigger
-luôn tương ứng với đúng cột cờ của level.
+Level validation đã bảo đảm mỗi level chỉ có đúng một finish point, các pole tile liên tục và nằm trong cùng một cột. Vì vậy, vùng trigger luôn tương ứng với đúng cột cờ của level.
 
 ### Cách hoạt động
 
@@ -420,8 +417,7 @@ F
 |
 ```
 
-Vùng trigger bao phủ toàn bộ các tile trên, nhưng không bao gồm solid tile
-nằm bên dưới chân cột cờ.
+Vùng trigger bao phủ toàn bộ các tile trên, nhưng không bao gồm solid tile nằm bên dưới chân cột cờ.
 
 Mario có thể kích hoạt hoàn thành level khi chạm:
 
@@ -439,8 +435,7 @@ Gameplay code không cần gọi trực tiếp vùng finish trigger.
 checkFinishFlag();
 ```
 
-mỗi frame. Khi bounding box của Mario giao với bất kỳ phần nào trong vùng
-cột cờ, hệ thống đặt:
+mỗi frame. Khi bounding box của Mario giao với bất kỳ phần nào trong vùng cột cờ, hệ thống đặt:
 
 ```cpp
 m_levelCompleted = true;
@@ -466,6 +461,36 @@ Các trường hợp manual test:
 - Đứng cạnh nhưng không giao với cột cờ → chưa hoàn thành.
 - Sau khi hoàn thành, event không bị gửi lặp lại.
 
+### S6-TV4-12 — Ngăn finish event bị kích hoạt lặp
+
+`Level::update()` kiểm tra finish trigger ở mỗi frame. Vì Mario có thể ở trong vùng cột cờ trong nhiều frame liên tiếp, nếu không có guard thì `LEVEL_COMPLETED` có thể được phát nhiều lần.
+
+`Level` sử dụng `m_levelCompleted` như một completion latch.
+
+Trước khi kiểm tra collision:
+
+```cpp
+if (!m_mario || m_levelCompleted) {
+    return;
+}
+```
+
+Khi Mario chạm finish trigger lần đầu:
+
+```
+m_levelCompleted = true;
+
+EventBus::getInstance().notify(
+    EventType::LEVEL_COMPLETED
+);
+```
+
+Sau đó mọi lần gọi `checkFinishFlag()` tiếp theo đều return ngay.
+
+`PlayState` cũng có `m_terminalCommittedThisFrame` để tránh nhiều terminal event được commit trong cùng một frame.
+
+Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, nên completion state được reset về `false`.
+
 ---
 
 ## 8. Four-Tile TileMap Spritesheet
@@ -479,10 +504,7 @@ Các trường hợp manual test:
 
 ### S6-TV4-09 — Chuyển TileMap sang tileset bốn frame
 
-`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong
-`SpriteFrames::Blocks` để render terrain. Điều này khiến ground,
-brick và finish pole phụ thuộc vào spritesheet dành cho item/block,
-đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
+`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong `SpriteFrames::Blocks` để render terrain. Điều này khiến ground, brick và finish pole phụ thuộc vào spritesheet dành cho item/block, đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
 
 Theo cấu trúc asset mới của nhóm, `TileMap` hiện sử dụng:
 
@@ -501,8 +523,7 @@ Tileset gồm đúng bốn frame nằm ngang, mỗi frame có kích thước 32�
 
 ### Phương pháp được sử dụng
 
-Các frame trong tileset được truy cập thông qua named indices thay vì
-hardcode trực tiếp texture coordinates.
+Các frame trong tileset được truy cập thông qua named indices thay vì hardcode trực tiếp texture coordinates.
 
 ```
 GROUND_TILE_INDEX
@@ -511,14 +532,11 @@ QUESTION_TILE_INDEX
 FINISH_POLE_TILE_INDEX
 ```
 
-Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect`
-tương ứng trong spritesheet.
+Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect` tương ứng trong spritesheet.
 
-`TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render
-terrain.
+`TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render terrain.
 
-Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi
-`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
+Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
 
 ### Loại bỏ pipe tile cũ
 
@@ -528,11 +546,9 @@ Các ký hiệu pipe:
 [ ] { }
 ```
 
-đã được loại khỏi level format vì tileset mới không còn chứa các frame
-pipe và thiết kế level hiện tại không sử dụng pipe.
+đã được loại khỏi level format vì tileset mới không còn chứa các frame pipe và thiết kế level hiện tại không sử dụng pipe.
 
-Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile
-`.` để giữ nguyên kích thước từng hàng của level.
+Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile `.` để giữ nguyên kích thước từng hàng của level.
 
 Các symbol tương ứng cũng được loại khỏi:
 
@@ -543,14 +559,962 @@ Các symbol tương ứng cũng được loại khỏi:
 
 ### Kết quả
 
-`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame,
-không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
+`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame, không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
 
 Level files cũng được đồng bộ với tập tile symbol hiện tại.
 
 ---
 
-## 9. Quy Ước Cập Nhật File Này
+## 9. Level 1 Tutorial Flow Verification
+
+### S6-TV4-13 — Hoàn thiện Level 1 tutorial flow
+
+Level 1 được kiểm tra theo tutorial sequence của Sprint 6:
+
+```text
+Movement → Coin → Jump / QuestionBlock → Mushroom → Goomba → Flag
+```
+
+Level hiện có một coin gần khu vực spawn, QuestionBlock và Mushroom block trước enemy đầu tiên, sau đó mới giới thiệu Goomba và các obstacle tiếp theo.
+
+Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã đáp ứng mục tiêu của task.
+
+### Kiểm tra
+
+- Mario có khoảng trống để làm quen movement ngay sau spawn.
+- Coin xuất hiện trước enemy đầu tiên.
+- QuestionBlock xuất hiện trước combat.
+- `U` cung cấp Super Mushroom trước Goomba đầu tiên.
+- Level có thể hoàn thành từ spawn tới flag.
+- Không cần damage boost để hoàn thành.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 10. Level 1 Gap Validation
+
+### File liên quan
+
+- [`levels/level1.txt`](../../levels/level1.txt)
+
+- ### S6-TV4-14 — Kiểm tra Level 1 gaps
+
+  Level 1 được kiểm tra dựa trên các bề mặt Mario thực sự có thể đứng, không chỉ dựa trên khoảng trống ở hàng ground thấp nhất.
+
+  Các gap bắt buộc trên completion route được thử trực tiếp với movement và jump hiện tại của Mario.
+
+  Kết quả:
+
+  - Không có jump bắt buộc vượt ngoài jump envelope hiện tại.
+  - Không có frame-perfect jump.
+  - Không cần damage boost để vượt gap.
+  - Các staircase/platform phía trên được tính là một phần của traversal route.
+  - Nếu một jump yêu cầu run, run phải được expose qua input và được giới thiệu
+    trước obstacle đó.
+
+  Không cần thay đổi geometry nếu toàn bộ manual checks trên pass.
+
+---
+
+## 11. Enemy Activation
+
+### File liên quan
+
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+- [`src/entities/Enemy.cpp`](../../src/entities/Enemy.cpp)
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+
+### S6-TV4-21 — Activate enemy trong vùng 64 px phía trước viewport
+
+Enemy activation được điều chỉnh để tránh việc toàn bộ enemy trên map chạy patrol ngay từ lúc level vừa load.
+
+Enemy chưa được activate sẽ không chạy gameplay update cho đến khi bounding box của nó đi vào viewport hoặc nằm trong vùng 64 px phía trước cạnh phải của viewport.
+
+Khi điều kiện được thỏa mãn:
+
+```cpp
+enemy->activate();
+```
+
+sẽ chuyển enemy sang trạng thái activated.
+
+Activation là trạng thái một chiều:
+
+```
+inactive → activated
+```
+
+Sau khi đã activate, enemy tiếp tục được update bình thường và không bị reset hoặc freeze lại khi rời viewport.
+
+Việc cleanup enemy đã đi quá xa phía sau camera được tách sang S6-TV4-22.
+
+### Phân chia trách nhiệm
+
+S6-TV4-21 chỉ xử lý thời điểm enemy bắt đầu hoạt động.
+
+Không xử lý trong task này:
+
+- cleanup enemy phía sau camera;
+- pit cleanup;
+- ledge detection;
+- Koopa shell state;
+- sprite hoặc animation asset.
+
+### Kiểm tra
+
+- Enemy xa phía trước camera chưa chạy patrol.
+- Enemy bắt đầu hoạt động khi nằm trong vùng 64 px phía trước viewport.
+- Enemy chỉ activate một lần.
+- Enemy đã activate tiếp tục hoạt động khi rời viewport.
+- Item và QuestionBlock không bị activation gate.
+- Level 2 enemy không tự di chuyển từ đầu level trước khi Mario tới.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 12. Level 2 Underground / Vertical Section
+
+### S6-TV4-15 — Bổ sung pipe và vertical traversal cho Level 2
+
+Level 2 được bổ sung các pipe tile để tạo thêm vertical variation và đáp ứng layout requirement của Sprint 6.
+
+Ba cụm pipe được tạo bằng các symbol:
+
+```text
+[] = pipe top
+{} = pipe body
+```
+
+Các pipe:
+
+- có top/body ghép đúng cột;
+- có solid terrain bên dưới;
+- tham gia TileMap collision như terrain;
+- tạo thêm các bề mặt đứng/nhảy mà không thay đổi completion route chính.
+
+### Kiểm tra
+
+- Pipe render đúng từ consolidated tileset.
+- Mario đứng và nhảy trên pipe được.
+- Mario không xuyên qua pipe.
+- Enemy không xuyên qua pipe.
+- Các khoảng giữa pipe vẫn vượt qua được bình thường.
+- Level 2 vẫn load và hoàn thành được.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 13. Level 2 Spawn Validation
+
+### S6-TV4-16 — Kiểm tra spawn fairness của Level 2
+
+Các spawn Koopa trong Level 2 được kiểm tra để bảo đảm enemy có terrain
+hợp lệ dưới vị trí spawn và không tạo unavoidable damage khi Mario tiếp cận.
+
+Layout hiện tại không cần thay đổi thêm nếu các Koopa vẫn đứng đúng platform
+khi bắt đầu xuất hiện trong viewport.
+
+Tuy nhiên, yêu cầu “Koopa không rơi hoặc attack trước khi thấy” còn phụ thuộc
+vào enemy activation policy của S6-TV4-21.
+
+### Kiểm tra
+
+- Koopa không spawn giữa không trung.
+- Koopa không spawn bên trong pipe hoặc solid terrain.
+- Spawn không nằm ngay tại blind landing bắt buộc.
+- Không có unavoidable damage ngay khi Mario tiến vào khu vực.
+- Enemy activation trước khi Mario tiếp cận hiện được kiểm soát bởi S6-TV4-21 với vùng activation 64 px phía trước viewport.
+
+---
+
+## 14. Off-screen Enemy Cleanup
+
+### S6-TV4-22 — Cleanup enemy quá xa phía sau viewport
+
+Enemy off-screen policy được điều chỉnh để tránh hai vấn đề:
+
+1. Enemy chưa được nhìn thấy chạy AI trên toàn bộ map.
+2. Enemy đã đi rất xa phía sau camera vẫn tồn tại vô thời hạn.
+
+S6-TV4-21 chịu trách nhiệm first-time activation trong vùng 64 px phía trước viewport.
+
+Sau khi được activate, enemy tiếp tục gameplay update bình thường và không bị freeze hoặc reset khi tạm rời viewport.
+
+Enemy chỉ được đánh dấu removal khi toàn bộ bounding box đã nằm xa hơn một chiều rộng viewport phía sau cạnh trái camera.
+
+```text
+inactive
+   ↓
+64 px activation range
+   ↓
+activated
+   ↓
+continue updating
+   ↓
+more than one viewport behind camera
+   ↓
+markForRemoval()
+```
+
+### Phân chia trách nhiệm
+
+Task này chỉ cleanup enemy phía sau camera.
+
+Không xử lý:
+
+- item/projectile cleanup;
+- entity dưới level bounds;
+- pit cleanup;
+- Koopa ledge hoặc shell behavior.
+
+Các trường hợp generic entity cleanup được xử lý riêng trong S6-TV4-31.
+
+### Kiểm tra
+
+- Enemy chưa activate không chạy AI.
+- Enemy activate đúng theo S6-TV4-21.
+- Enemy đã activate không bị reset khi rời viewport.
+- Enemy chưa quá một viewport phía sau vẫn tồn tại.
+- Enemy quá một viewport phía sau được cleanup.
+- Item và QuestionBlock không bị ảnh hưởng.
+- Build và toàn bộ CTest pass.
+
+---
+
+## 15. Koopa Ledge Detection
+
+### File liên quan
+
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+
+### S6-TV4-24 — Ngăn Walking Koopa rơi khỏi platform
+
+Koopa walking hiện sử dụng `TileMap` để kiểm tra terrain ngay phía trước hướng patrol.
+
+`Level` truyền `TileMap` cho enemy thông qua virtual `Enemy::setTileMap()`. `Koopa` override method này và giữ reference tới TileMap để thực hiện ledge detection.
+
+Trong `isApproachingLedge()`, Koopa kiểm tra:
+
+- solid terrain bên dưới vị trí hiện tại;
+- solid terrain ngay phía trước hướng di chuyển.
+
+Nếu Koopa vẫn đang đứng trên solid terrain nhưng phía trước không còn solid tile, Koopa đảo hướng trước khi rời platform.
+
+Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
+
+`SHELL_IDLE` không di chuyển và `SHELL_SLIDING` không sử dụng ledge detection, vì vậy shell vẫn có thể lao xuống pit theo gameplay bình thường.
+
+`reverseDirection()` trực tiếp cập nhật facing direction và horizontal velocity thay vì gọi lại `patrol()`, tránh recursive ledge checks.
+
+### Kiểm tra
+
+- Walking Koopa quay đầu ở mép trái platform.
+- Walking Koopa quay đầu ở mép phải platform.
+- Koopa không quay đầu sai trên continuous ground.
+- Wall collision vẫn đổi hướng bình thường.
+- Shell idle vẫn đứng yên.
+- Shell sliding không quay đầu tại ledge.
+- Enemy activation và off-screen cleanup vẫn hoạt động.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 16. Koopa Shell Fixture
+
+## File liên quan
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`assets/textures/enemies/enemies.png`](../../assets/textures/enemies/enemies.png)
+
+### S6-TV4-25 - Resize Koopa shell fixture
+
+Koopa đã được chuyển sang sử dụng sprite atlas chung `assets/texture/enemies/enemies.png` thay cho texture Koopa riêng
+
+Walking animation sử dụng manual frame coordinates từ `enemies_coordinate.md`, do các frame trong atlas không nằm trên một grid liên tục.
+
+Koopa walking sử dụng runtime size khoảng 32×48, tương ứng với source sprite khoảng 16×24 được scale 2 lần.
+
+Khi Koopa chuyển từ `WALKING` sang `SHELL_IDLE`, physics fixture được thu nhỏ từ 32×48 xuống 32×28 để phù hợp với shell source sprite 16×14.
+
+Fixture rebuild được defer khỏi collision callback bằng `m_pendingShellFixtureRebuild`, sau đó thực hiện trong `Koopa::update()` khi Box2D world không còn locked.
+
+Shell fixture được offset xuống 10 px:
+
+```text
+(48 - 28) / 2 = 10 px
+```
+
+nhằm giữ đáy fixture tại cùng vị trí chân với Walking Koopa.
+
+Sprite rendering sử dụng scale cố định 2× và bottom alignment thông qua `syncSpriteToFeet()`, vì vậy các walking frame có chiều cao khác nhau và shell frame thấp hơn vẫn giữ chung vị trí chân.
+
+### Kiểm tra
+
+- Koopa walking hiển thị đúng frame từ `enemies.png`.
+- Walking sprite không bị stretch sai tỉ lệ.
+- Stomp đầu chuyển Koopa sang `SHELL_IDLE`.
+- Shell hiển thị đúng kích thước khoảng 32×28.
+- Shell fixture được resize thành 32×28.
+- Chân Koopa không nhảy lên hoặc chìm xuống khi chuyển sang shell.
+- Fixture rebuild không thực hiện khi Box2D world đang locked.
+- Shell idle đứng yên.
+- Shell sliding tiếp tục dùng shell fixture đã resize.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 17. Koopa State Transitions
+
+### File liên quan
+
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`src/physics/CollisionManager.cpp`](../../src/physics/CollisionManager.cpp)
+
+### S6-TV4-26 — Walking → Shell Idle
+
+Koopa stomp handling được chuẩn hóa để lần stomp đầu tiên chỉ thực hiện một state transition:
+
+```text
+WALKING -> SHELL_IDLE
+```
+
+`CollisionManager` snapshot `KoopaState` trước khi xử lý contact.
+
+Nếu state ban đầu là `WALKING`, hệ thống chỉ gọi `Koopa::onStomp()`. State mới `SHELL_IDLE` không được kiểm tra lại để kick shell trong cùng contact.
+
+Các trường hợp được tách rõ:
+
+```text
+WALKING + stomp -> SHELL_IDLE
+SHELL_IDLE + stompr -> SHELL_IDLE
+SHELL_SLIDING + stomp -> SHELL_IDLE
+SHELL_IDLE + lateral contact -> SHELL_SLIDING
+```
+
+Nhờ đó một collision không thể vừa biến Walking Koopa thành shell vừa làm shell chạy ngay.
+
+### S6-TV4-27 - Shell Idle -> Shell Sliding
+
+Koopa shell được kick khi Mario thực hiện lateral contact với Koopa đang ở trạng thái:
+
+```text
+SHELL_IDLE
+```
+
+Hướng kick được xác định từ vị trí tương đối giữa Mario và Koopa:
+
+```text
+Mario ở bên trái shell -> shell chạy sang phải
+Mario ở bên phải shell -> shell chạy sang trái
+```
+
+`Koopa::kick()` chỉ chấp nhận transition:
+
+```text
+SHELL_IDLE -> SHELL_SLIDING
+```
+và đặt horizontal velocity theo `KOOPA_SLIDE_SPEED`.
+
+Shell đang ở trạng thái `SHELL_SLIDING` không bị kick lại khi Mario va chạm ngang. Trường hợp này được xử lý như enemy damage đối với Mario.
+
+Nếu Mario stomp một shell đang sliding:
+
+```text
+SHELL_SLIDING -> SHELL_IDLE
+```
+Shell có thể được kick lại bằng một lateral contact sau đó.
+
+### Phân chia trách nhiệm
+S6-TV4-26 xử lý transition khi Mario stomp Koopa.
+S6-TV4-27 xử lý transition khi Mario chạm ngang shell idle.
+Shared collision dispatch architecture không được thay đổi trong hai task này.
+
+### Kiểm tra
+- Stomp Walking Koopa một lần chuyển sang `SHELL_IDLE`.
+- Shell không chạy ngay sau stomp đầu.
+- Horizontal velocity của shell idle bằng 0.
+- Stomp lại shell idle không làm shell chạy.
+- Mario chạm ngang shell idle từ bên trái → shell chạy sang phải.
+- Mario chạm ngang shell idle từ bên phải → shell chạy sang trái.
+- Shell sliding không bị kick lại.
+- Lateral contact với shell sliding gây damage cho Mario.
+- Stomp shell sliding làm shell dừng lại.
+- Shell có thể được kick lại sau khi trở về `SHELL_IDLE`.
+- Build và toàn bộ CTest hiện tại pass.
+
+---
+
+## 18. Koopa Shell Enemy Defeat
+
+### File liên quan
+
+- [`src/physics/CollisionManager.cpp`](../../src/physics/CollisionManager.cpp)
+- [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
+- [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+
+### S6-TV4-29 - Shell hạ enemy khác đúng một lần
+
+Sliding Koopa shell có thể defeat enemy khác khi xảy ra Enemy-Enemy collision.
+
+Collision handler chỉ cho phép shell attack khi Koopa đang ở trạng thái `SHELL_SLIDING`, shell idle không gây damage.
+
+Trước khi xử lý defeat, handler kiểm tra victim đã chết, đã được đánh dấy remove, pending destroy hặc inactive hay chưa.
+
+Nếu victim đã được xử lý bởi một contact trước đó, collision được xem là đã handled nhưng không gọi takeDamage() hoặc defeat logic lần nữa.
+
+Điều này tránh duplicate defeat khi Box2D phát nhiều contact callback trước khi entity được erase khỏi Level.
+
+### Phân chia trách nhiệm
+
+Task này chỉ bảo đảm shell defeat được xử lý một lần trên mỗi victim.
+
+Score và DefeatCause được để cho collision/score pipeline chung của TV3 và TV5, tránh tạo nguồn score thứ hai trong TV4.
+
+### Kiểm tra
+- Shell idle không defeat enemy.
+- Shell sldiing defeat enemy khi va chạm.
+- Một victim không bị defeat nhiều lần.
+- Shell không reverse như enemy thường sau khi đã xử lý shell collision.
+- Shell có thể tiếp tục defeat enemy khác.
+- Build và toàn bộ CTest pass.
+
+---
+
+## 19. Generic Entity Bounds Cleanup
+
+### File liên quan
+
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`include/entities/Entity.h`](../../include/entities/Entity.h)
+- [`src/entities/Entity.cpp`](../../src/entities/Entity.cpp)
+
+### S6-TV4-31 — Cleanup entity ngoài level với margin 64 px
+
+`Level` hiện áp dụng một cleanup policy chung cho các entity nằm ngoài level bounds.
+
+Level bounds được tính từ kích thước `TileMap`:
+
+```text
+levelWidth  = mapWidth  × TILE_SIZE
+levelHeight = mapHeight × TILE_SIZE
+```
+
+Một entity chỉ được đánh dấu removal khi toàn bộ bounding box của nó đã đi ra ngoài level quá margin 64 px ở một trong bốn phía.
+
+```text
+level bounds + 64 px cleanup margin
+    ↓
+entity hoàn toàn vượt qua
+    ↓
+markForRemoval()
+```
+
+Cleanup sử dụng lifecycle mechanism có sẵn của `Entity`. Không erase entity trực tiếp trong update loop.
+
+`Level::removeDeadEntities()` chịu trách nhiệm xóa entity sau khi entity được đánh dấu removal.
+
+### Phân chia trách nhiệm
+
+S6-TV4-22 tiếp tục xử lý enemy đã đi quá một viewport phía sau camera.
+
+S6-TV4-31 xử lý generic out-of-level cleanup cho entity như enemy, item và projectile.
+
+Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn được giữ nguyên.
+
+### Kiểm tra
+
+- Entity trong level không bị cleanup.
+- Entity chỉ ra ngoài một phần vẫn được giữ lại.
+- Entity hoàn toàn vượt level bounds hơn 64 px được cleanup.
+- Mushroom và Star rơi khỏi level được cleanup.
+- Projectile bay khỏi level được cleanup.
+- Enemy rơi khỏi level được cleanup.
+- QuestionBlock và item còn nằm trong level không bị ảnh hưởng.
+- Build và toàn bộ CTest pass.
+
+---
+
+## 20. SaveManager Version 1 Foundation
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-32 - Tạo SaveManager version 1
+
+`SaveManager` được tạo làm nơi quản lý dữ liệu persistent của game.
+
+`SaveData` sử dụng version 1 và cung cấp các giá trị mặc định an toàn:
+
+```text
+version = 1
+highScore = 0
+highestUnclockedLevel = 1
+soundVolume = 80
+musicVolume = 70
+```
+
+Save path được truyền vào thông qua constructor và mặc định là `saves/save.txt`
+
+Việc cho phép inject save path giúp các test của `SaveManager` sau này có thể sử dụng file tạm riêng mà không ghi đè lên save file thật của game
+
+### Phân chia trách nhiệm
+
+Task này chỉ tạo cấu trúc `SaveData`, `SaveManager` version 1 và default data.
+
+Chưa xử lý:
+
+- đọc dữ liệu từ save file;
+- ghi dữ liệu xuống save file;
+- cập nhật high score;
+- lưu sound/music volume;
+- atomic file replacement;
+- fallback khi save file bị corrupt hoặc sai version;
+
+Các chức năng trên được triển khai trong S6-TV4-39.
+
+### Kiểm tra
+
+- Save data version mặc định bằng 1.
+- High score mặc định bằng 0.
+- Highest unclocked level mặc định bằng 1.
+- Sound volume mặc định bằng 80.
+- Music volume mặc định bằng 70.
+- Save path có thể được inject để phục vụ test.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 21. Load High Score
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-33 - Load high score từ save file
+
+`SaveManager` được bổ sung `load()` để đọc persistent data từ save path đã được cấu hình.
+
+Save file version 1 sử dụng định dạng key-value:
+
+``` test
+version 1
+highScore 12500
+highestUnlockedLevel 1
+soundVolume 80
+musicVolume 70
+```
+
+Dữ liệu không được đọc trực tiếp vào `m_data`.
+
+Thay và đó, `load()` đọc vào một `SaveData` tạm thời và chỉ cập nhật state của `SaveManager` sau khi quá trình đọc hoàn tất.
+
+Cách này tránh để `SaveManager` giữ dữ liệu chỉ được load một phần khi file không hợp lệ.
+
+Nếu save file không tồn tại, `SaveManager` quay về default data và không làm game crash.
+
+Version của file cũng được kiểm tra với `SAVE_DATA_VERSION`.
+
+### Phân chia trách nhiệm
+
+Task này tập trung vào việc đọc persistent save data, đặc biệt là `highScore`.
+
+Chưa xử lý:
+- ghi save file;
+- high score monotinic update;
+- level unlock update;
+- audio setting update;
+- atomic file replacement;
+- đầy đủ corrupted-save recovery tests.
+
+Các phần trên được xử lý trong S6-TV4-34 đến S6-TV4-39.
+
+### Kiểm tra
+
+- Save file hợp lệ được mở thành công.
+- High score được đọc đúng từ file.
+- High score vẫn đọc đúng sau khi khởi tạo lại `SaveManager`.
+- Missing save file sử dụng default data.
+- Save version hợp lệ được chấp nhận.
+- State chỉ được cập nhật sau khi quá trình đọc hoàn tất.
+- Project buld thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 22. Monotonic High Score
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-34 - Chỉ cập nhật high score khi score mới cao hơn
+
+`SaveManager` được bổ sung `save()` để ghi `SaveData` hiện tại xuống save file version 1.
+
+High score được cập nhật thông qua:
+
+```cpp
+updateHighScore(score);
+```
+
+Score mới chỉ thay thế high score hiện tại khi:
+```text
+newScore > highScore
+```
+
+Nếu score mới nhỏ hơn hoặc bằng high score hiện tại, dữ liệu được giữ nguyên và save file không bị overwrite bởi giá trị thấp hơn.
+
+Khi score mới cao hơn, `SaveManager` cập nhật high score và ghi dữ liệu xuống file.
+
+Nếu quá trình ghi file thất bại, high score trong memory được rollback về giá trị trước đó.
+
+### Phân chia trách nhiệm
+
+Task này đảm bảo high score tăng đơn điệu và có thể persist xuống file.
+
+Việc ghi file hiện vẫn sử dụng direct write.
+
+Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng torng S6-TV4-37.
+
+### Kiểm tra
+
+- Score cao hơn cập nhật high score.
+- Score thất hơn không bị overwrite high score.
+- Score bằng high score hiện tại không overwrite dữ liệu.
+- High score mới được đọc lại dúng sau restart.
+- Save failure không giữ high score mới trong memory.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 23. Highest Unlocked level Persistence
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-35 - lưu highest unlocked level
+
+`SaveManager` được bổ sung API:
+
+```cpp
+updateHighestUnlockedLevel(level);
+```
+
+để lưu level cao nhất mà người chơi đã mở khóa.
+
+Giá trị `highestUnlockedlevel` chỉ được cập nhật khi level mới lớn hơn giá trị hiện tại.
+
+```text
+newLevel > highestUnlockedlevel -> update và save
+newLevel <= highestUnlockedlevel -> giữ nguyên
+```
+
+Cách xử lý monotonic này bảo đảm tiến độ đã mở khóa không bị giảm khi người chơi chơi lại một level cũ.
+
+Nếu quá trình ghi save thất bại, giá trị trong memory được rollback về `highestUnlockedlevel` trước đó.
+
+Sau khi load lại ứng dụng, level đã mở khóa được đọc lại từ save file thông qua `SaveManager::load()`.
+
+### Phân chia trách nhiệm
+
+`SaveManager` chỉ chịu trách nhiệm persist level cao nhất đã mở khóa.
+
+Việc xác định level kế tiếp sau khi hoàn thành một màn và chuyển Level 3 sang Win thuộc state/progression flow và được tích hợp cùng TV1.
+
+### Kiểm tra
+
+- Default highest unlocked level bằng 1.
+- Unlock level 2 cập nhật giá trị thành 2.
+- Chơi lại Level 1 không làm giá trị giảm/
+- Unlock Level 3 cập nhật giá trị thành 3.
+- Giá trị vẫn đúng sau restart và `load()`.
+- Save failure rollback giá trị trong memory.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 24. Audio Settings Persistence
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`include/core/SoundManager.h`](../../include/core/SoundManager.h)
+- [`src/core/SoundManager.cpp`](../../src/core/SoundManager.cpp)
+
+### S6-TV4-36 - Lưu SFX và music volume
+
+`SaveManager` được bổ sung:
+
+```cpp
+updateAudioSettings(soundVolume, musicVolume);
+```
+
+để persist hai thiết lập âm thanh trong `SaveData`.
+
+Các giá trị volume được giới hạn trong khoảng:
+
+```text
+0 <= volume <= 100
+```
+
+trước khi ghi xuống save file.
+
+Nếu giá trị không hữu hạn hoặc nằm ngoài khoảng hợp lệ, dữ liệu được đưa về phạm vi an toàn trước khi lưu.
+
+Khi quá trình ghi file thất bại, cả `soundVolume` và `musicVolume` trong memory được rollback về giá trị trước đó.
+
+Sau khi restart, `SaveManager::load()` khôi phục hai giá trị từ save file.
+
+`SaveManager` không trực tiếp điều khiển audio runtime. Integration layer sử dụng dữ liệu đã load để gọi:
+
+```cpp
+SoundManager::setSoundVolume(...)
+SoundManager::setMusicVolume(...)
+```
+
+Cách tách này giữ `SaveManager` chịu trách nhiệm persistence và `SoundManager` chịu trách nhiệm audio playback.
+
+### Kiểm tra
+
+- Sound volume được ghi đúng xuống save file.
+- Music volume được ghi đúng xuống save file.
+- Hai giá trị được đọc lại đúng sau restart.
+- Volume nhỏ hơn 0 được clamp về 0.
+- Volume lớn hơn 100 được clamp về 100.
+- Save failure rollback cả hai giá trị trong memory.
+- Existing high score và unlocked-level data không bị mất khi lưu audio.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 25. Atomic Save File Replacement
+
+### File liên quan
+
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+
+### S6-TV4-37 - Ghi save bằng temporary file và safe replace
+
+`SaveManager::save()` không còn ghi trực tiếp vào production save file bằng `std::ios::trunc`.
+
+Thay vào đó, dữ liệu được ghi trước vào:
+
+```text
+save.txt.tmp
+```
+
+Luồng save mới:
+
+```text
+SaveData
+    ↓
+write temporary file
+    ↓
+flush và kiểm tra write state
+    ↓
+close temporary file
+    ↓
+replace production save
+```
+
+Production `save.txt` chỉ được thay thế sau khi temporary ile đã được ghi hoàn chỉnh.
+
+Nếu quá trình ghi temporary file hoặc replace thất bại:
+
+- `save()` trả về `false`;
+- save file cũ không bị ghi trực tiếp;
+- temporary file được cleanup;
+- các update method rollback state trong memory về giá trị trước đó.
+
+Temporary file được đặt cùng direction với production save để việc replace diễn ra trên cùng filesystem.
+
+`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuco16 production `saves/` directory.
+
+### Phân chia trách nhiệm
+
+Task này tập trung vào safe file writing và replacement.
+
+Validation đầy dủ cho missing, corrupt và wrong-version save được xử lý trong S6-TV4-38 và automated test matrix được bổ sung ở S6-TV4-39.
+
+### Kiểm tra
+
+- Save data được ghi vào `.tmp` trước.
+- Production save chỉ được replace sau khi temporary write thành công.
+- Save thành công không để lại `.tmp`.
+- Save thất bại trả về `false`.
+- Existing save không bị truncate trực tiếp khi temporary write fail.
+- High score vẫn giữ monotonic behaviour.
+- Highest unlocked level vẫn giữ monotonic behaviour.
+- Audio settings vẫn persist đúng.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 26. Corrupted Save Fallback
+
+### File liên quan
+
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+
+### S6-TV4-38 — Fallback an toàn khi save file không hợp lệ
+
+`SaveManager::load()` được tăng cường validation để save file thiếu,
+hỏng hoặc sai version không làm game crash hoặc tạo partial state.
+
+Save version 1 yêu cầu đầy đủ các field:
+
+```text
+version
+highScore
+highestUnlockedLevel
+soundVolume
+musicVolume
+```
+
+Parser kiểm tra đúng key, đúng kiểu dữ liệu và không chấp nhận token dư sau cấu trúc version 1.
+
+Sau khi parse, dữ liệu tiếp tục được kiểm tra:
+
+```text
+version == SAVE_DATA_VERSION
+highScore >= 0
+highestUnlockedLevel >= 1
+0 <= soundVolume <= 100
+0 <= musicVolume <= 100
+```
+
+Volume cũng phải là giá trị hữu hạn.
+
+Nếu bất kỳ bước validation nào thất bại, SaveManager gọi `resetToDefaults()` và `load()` trả về `false`.
+
+Các failure path có log riêng để phân biệt:
+
+```text
+missing save
+corrupted format
+unsupported version
+invalid values
+```
+
+### Phân chia trách nhiệm
+
+Task này xử lý fallback an toàn trong production `SaveManager`.
+
+Automated regression tests cho missing, valid, corrupt, version mismatch và high-score monotonicity được bổ sung trong S6-TV4-39.
+
+### Kiểm tra
+
+- Missing file không làm game crash và dùng default data.
+- File thiếu field bị reject.
+- Key sai hoặc value sai kiểu bị reject.
+- Wrong version bị reject.
+- High score âm bị reject.
+- Highest unlocked level nhỏ hơn 1 bị reject.
+- Volume ngoài khoảng 0–100 bị reject.
+- Valid version 1 save vẫn load đúng.
+- Failure không để lại partial loaded state.
+- Project build thành công.
+- Toàn bộ CTest hiện tại pass.
+
+---
+
+## 27. SaveManager Regression Tests
+
+### File liên quan
+
+- [`tests/SaveManagerTests.cpp`](../../tests/SaveManagerTests.cpp)
+- [`include/core/SaveManager.h`](../../include/core/SaveManager.h)
+- [`src/core/SaveManager.cpp`](../../src/core/SaveManager.cpp)
+- [`CMakeLists.txt`](../../CMakeLists.txt)
+
+### S6-TV4-39 — Automated tests cho SaveManager
+
+Một test target riêng `save_manager_tests` được bổ sung để kiểm tra các failure path và persistence rule quan trọng của `SaveManager`.
+
+Các test sử dụng save path được inject vào temporary directory của hệ điều hành thay vì production path:
+
+```text
+saves/save.txt
+```
+
+Do đó automated tests không ghi đè dữ liệu save thật của người chơi.
+
+Test matrix bao gồm:
+
+```text
+missing save
+valid save
+corrupted save
+version mismatch
+high-score monotonicity
+temporary-file cleanup
+```
+
+Missing, corrupt và wrong-version save phải trả về `false` từ `load()`và phục hồi toàn bộ default `SaveData`.
+
+Valid save phải khôi phục đúng:
+
+```text
+highScore
+highestUnlockedLevel
+soundVolume
+musicVolume
+```
+
+High-score test xác nhận score mới cao hơn được persist, sau đó score thấp hơn không thể ghi đè high score hiện tại.
+
+Một regression test bổ sung xác nhận save thành công không để lại file:
+
+```text
+save.txt.tmp
+```
+
+sau safe replacement.
+
+### Phương pháp kiểm thử
+
+Test suite sử dụng `assert` giống các regression test hiện có của project.
+
+Mỗi test reset temporary directory trước khi chạy để không phụ thuộc state của test trước đó.
+
+Cuối test suite, toàn bộ temporary data được cleanup.
+
+### Kiểm tra
+
+- Missing save fallback pass.
+- Valid save load pass.
+- Corrupted save fallback pass.
+- Wrong-version fallback pass.
+- Lower score không overwrite high score.
+- Higher score vẫn persist đúng sau reload.
+- Successful atomic save không để lại temporary file.
+- `save_manager_tests` được đăng ký với CTest.
+- Project build thành công.
+- Toàn bộ CTest pass.
+
+---
+
+## 28. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

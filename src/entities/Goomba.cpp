@@ -5,10 +5,11 @@
  * @note Sprint 5 - adds ledge detection and delayed removal after stomp
  */
 
+#include "entities/Goomba.h"
+
 #include <cmath>
 
 #include "level/TileMap.h"
-#include "entities/Goomba.h"
 
 #include <box2d/box2d.h>
 #include "core/AnimationSystem.h"
@@ -66,10 +67,7 @@ void Goomba::update(float dt) {
 
         m_squishTimer += dt;
         updateAnimation(dt);
-        if (m_sprite) {
-            m_sprite->setPosition(m_position);
-            m_sprite->setScale({2.f, 2.f});
-        }
+        syncSpriteToFeet();
 
         if (m_squishTimer >= SQUISH_DURATION) {
             markForRemoval();
@@ -90,6 +88,7 @@ void Goomba::update(float dt) {
     }
 
     updateAnimation(dt);
+    syncSpriteToFeet();
 }
 
 void Goomba::onFireHit() {
@@ -203,4 +202,22 @@ bool Goomba::isApproachingLedge() const {
     const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
 
     return hasCurrentGround && !hasFrontGround;
+}
+
+void Goomba::syncSpriteToFeet() {
+    if (!m_sprite) {
+        return;
+    }
+
+    constexpr float SPRITE_SCALE = 2.f;
+
+    const sf::IntRect rect = m_sprite->getTextureRect();
+
+    m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+
+    const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
+
+    const float footY = m_position.y + GOOMBA_SIZE.y;
+
+    m_sprite->setPosition({m_position.x, footY - renderedHeight});
 }

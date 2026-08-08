@@ -18,4 +18,10 @@ void Enemy::onFireHit() {
     markForRemoval();
 }
 
+void Enemy::activate() {
+    m_activated = true;
+}
 
+bool Enemy::isActivated() const {
+    return m_activated;
+}

@@ -29,6 +29,8 @@ public:
     void patrol() override;
     void onFireHit() override;
 
+    void setTileMap(const TileMap* tileMap) override;
+
     void kick(Direction direction);
 
     bool isInShell() const;
@@ -38,9 +40,15 @@ public:
 
 private:
     void reverseDirection();
+    bool isApproachingLedge() const;
+    void rebuildShellFixture();
+    void syncSpriteToFeet();
 
     KoopaState m_state;
     bool m_isFlippedDead = false;
     float m_patrolSpeed;
-};
 
+    const TileMap* m_tileMap = nullptr;
+
+    bool m_pendingShellFixtureRebuild = false;
+};

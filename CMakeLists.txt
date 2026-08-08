@@ -198,6 +198,12 @@ if(BUILD_TESTING)
     target_include_directories(level_catalog_tests PRIVATE include)
     target_link_libraries(level_catalog_tests PRIVATE game_lib)
     add_test(NAME level_catalog_tests COMMAND level_catalog_tests)
+
+    add_executable(save_manager_tests
+        tests/SaveManagerTests.cpp
+    )
+    target_link_libraries(save_manager_tests PRIVATE game_lib)
+    add_test(NAME save_manager_tests COMMAND save_manager_tests)
 endif()
 
 # Platform-specific Release build settings

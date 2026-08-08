@@ -45,6 +45,10 @@ public:
         return true;
     }
 
+    virtual bool isDying() const {
+        return !isActive() || isDead();
+    }
+
 private:
     bool m_activated = false;
 };

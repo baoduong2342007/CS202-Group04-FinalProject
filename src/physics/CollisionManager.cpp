@@ -165,6 +165,13 @@ void CollisionManager::preSolve(b2Contact* contact) {
     if ((entityA && entityA->isMario()) || (entityB && entityB->isMario())) {
         contact->SetFriction(0.0f);
     }
+
+    if (entityA && entityA->isEnemy() && static_cast<Enemy*>(entityA)->isDying()) {
+        contact->SetEnabled(false);
+    }
+    if (entityB && entityB->isEnemy() && static_cast<Enemy*>(entityB)->isDying()) {
+        contact->SetEnabled(false);
+    }
 }
 
 void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
@@ -279,6 +286,10 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         Enemy* enemyA = static_cast<Enemy*>(entityA);
         Enemy* enemyB = static_cast<Enemy*>(entityB);
 
+        if (enemyA->isDying() || enemyB->isDying()) {
+            return;
+        }
+
         auto tryShellKill = [](Enemy* attacker, Enemy* victim) -> bool {
             if (!attacker || !victim) {
                 return false;
@@ -319,12 +330,12 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {
         enemy = static_cast<Enemy*>(entityA);
-        if (std::abs(normal.x) > 0.5f) {
+        if (!enemy->isDying() && std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
         }
     } else if (entityB && entityB->isEnemy()) {
         enemy = static_cast<Enemy*>(entityB);
-        if (std::abs(normal.x) > 0.5f) {
+        if (!enemy->isDying() && std::abs(normal.x) > 0.5f) {
             enemy->onWallCollision();
         }
     }
@@ -387,6 +398,11 @@ void CollisionManager::handleMarioCollision(Mario* mario,
     // Box2D contacts after each completed physics step.
     bool isStomp = false;
     if (other && other->isEnemy()) {
+        Enemy* enemy = static_cast<Enemy*>(other);
+        if (enemy->isDying()) {
+            return;
+        }
+
         if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {
             isStomp = true;
         } else {

@@ -26,6 +26,9 @@ public:
     void onFireHit() override;
 
     bool isStomped() const;
+    bool isDying() const override {
+        return m_isStomped || m_isFlippedDead || isDead() || !isActive();
+    }
 
     void setTileMap(const TileMap* tileMap) override;
 

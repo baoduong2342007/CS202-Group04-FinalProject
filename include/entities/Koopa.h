@@ -37,6 +37,9 @@ public:
     bool isShellSliding() const;
     KoopaState getState() const;
     bool isKoopa() const override { return true; }
+    bool isDying() const override {
+        return m_isFlippedDead || isDead() || !isActive();
+    }
 
 private:
     void reverseDirection();

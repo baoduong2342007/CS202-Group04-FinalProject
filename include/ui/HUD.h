@@ -63,6 +63,8 @@ public:
      * @return int The number of coins currently held.
      */
     int getCoinCount() const;
+    /// Return the label rendered by the power indicator.
+    std::string getPowerLabel() const;
 
     /**
      * @brief Updates the world and level number displayed on the HUD.
@@ -106,6 +108,7 @@ private:
     int m_worldNumber;          ///< Current world number.
     int m_levelNumber;          ///< Current level number.
     bool m_fontLoaded;          ///< Whether the font loaded successfully.
+    bool m_starPowerActive = false;
 
     int m_timeRemaining = DEFAULT_LEVEL_TIME;
     float m_timerAccumulator = 0.f;

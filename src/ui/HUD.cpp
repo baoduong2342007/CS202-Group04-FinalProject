@@ -51,8 +51,11 @@ constexpr float LIVES_X = 300.f;
 constexpr float LIVES_Y = 3.f;
 constexpr float TIME_X = 430.f;
 constexpr float TIME_Y = 3.f;
-constexpr float POWER_X = 540.f;
-constexpr float POWER_Y = 3.f;
+// The current logical canvas is 426x240. Keep the power indicator on a
+// second compact HUD row until the display module moves to its locked 640x360
+// canvas; this prevents POWER from being clipped in the current build.
+constexpr float POWER_X = 4.f;
+constexpr float POWER_Y = 16.f;
 constexpr unsigned int SECOND = 1;
 
 // Text padding widths
@@ -109,6 +112,9 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
     bus.subscribe(EventType::PLAYER_DIED, this);
     bus.subscribe(EventType::PLAYER_LOST_LIFE, this);
     bus.subscribe(EventType::PLAYER_POWER_UP, this);
+    bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
+    bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
+    bus.subscribe(EventType::ONE_UP_COLLECTED, this);
     bus.subscribe(EventType::GAME_PAUSED, this);
     bus.subscribe(EventType::LEVEL_COMPLETED, this);
     bus.subscribe(EventType::LEVEL_STARTED, this);
@@ -124,6 +130,9 @@ HUD::~HUD() {
     bus.unsubscribe(EventType::PLAYER_DIED, this);
     bus.unsubscribe(EventType::PLAYER_LOST_LIFE, this);
     bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
+    bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
+    bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
+    bus.unsubscribe(EventType::ONE_UP_COLLECTED, this);
     bus.unsubscribe(EventType::GAME_PAUSED, this);
     bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
     bus.unsubscribe(EventType::LEVEL_STARTED, this);
@@ -143,6 +152,17 @@ void HUD::onNotify(EventType event) {
             break;
         case EventType::PLAYER_POWER_UP:
             // Power-up may change score; refresh to be safe.
+            refreshText();
+            break;
+        case EventType::PLAYER_STAR_COLLECTED:
+            m_starPowerActive = true;
+            refreshText();
+            break;
+        case EventType::PLAYER_INVINCIBILITY_EXPIRED:
+            m_starPowerActive = false;
+            refreshText();
+            break;
+        case EventType::ONE_UP_COLLECTED:
             refreshText();
             break;
         case EventType::GAME_PAUSED:
@@ -188,6 +208,23 @@ void HUD::draw(sf::RenderTarget& target) const {
 // ── Getters / Setters ────────────────────────────────────────
 
 int HUD::getCoinCount() const { return m_mario.getCoinCount(); }
+
+std::string HUD::getPowerLabel() const {
+    if (m_starPowerActive) {
+        return "STAR";
+    }
+
+    switch (m_mario.getMarioState()) {
+        case MarioState::SMALL:
+            return "SMALL";
+        case MarioState::SUPER:
+            return "SUPER";
+        case MarioState::FIRE:
+            return "FIRE";
+    }
+
+    return "SMALL";
+}
 
 void HUD::setWorldLevel(int world, int level) {
   m_worldNumber = world;
@@ -281,23 +318,7 @@ void HUD::refreshText() {
     m_timeText->setString(timeStream.str());
     m_timeText->setFillColor(isTimeWarningActive() ? sf::Color::Red : sf::Color::White);
 
-    std::string powerLabel;
-    if (m_mario.isInvincible()) {
-        powerLabel = "STAR";
-    } else {
-        switch (m_mario.getMarioState()) {
-            case MarioState::SMALL:
-                powerLabel = "SMALL";
-                break;
-            case MarioState::SUPER:
-                powerLabel = "SUPER";
-                break;
-            case MarioState::FIRE:
-                powerLabel = "FIRE";
-                break;
-        }
-    }
-    m_powerText->setString("POWER " + powerLabel);
+    m_powerText->setString("POWER " + getPowerLabel());
 }
 
 void HUD::advanceTimer(float dt, bool gameplayActive) {
@@ -320,6 +341,7 @@ void HUD::advanceTimer(float dt, bool gameplayActive) {
         }
 
         if (m_timeRemaining == 0 && m_timeoutCallback) {
+            m_timerEnabled = false;
             m_timeoutCallback();
         }
     }

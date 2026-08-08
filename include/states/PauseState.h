@@ -7,6 +7,11 @@
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
 
+enum class PauseVolumeSelection {
+    MUSIC,
+    SOUND
+};
+
 class PauseState : public IGameState {
 public:
     /**
@@ -56,6 +61,10 @@ public:
     bool isOverlay() const override { return true; }
 
 private:
+    void refreshText();
+    void adjustSelectedVolume(float delta);
+
     sf::Font m_font;
     sf::Text m_text;
+    PauseVolumeSelection m_selectedVolume = PauseVolumeSelection::MUSIC;
 };

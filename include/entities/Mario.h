@@ -17,8 +17,7 @@ class FireBall;
 enum class MarioState {
     SMALL,
     SUPER,
-    FIRE,
-    FIRE_SMALL
+    FIRE
 };
 
 // Selectable player character identity (Mario / Luigi)
@@ -111,7 +110,7 @@ protected:
 
     // 6. Protected / Private members
     MarioState m_marioState;
-    CharacterType m_characterType = CharacterType::LUIGI;
+    CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
     float m_moveSpeed;

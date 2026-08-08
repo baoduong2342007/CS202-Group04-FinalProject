@@ -37,7 +37,7 @@ constexpr float RUN_MAX_SPEED = 340.f;
 constexpr float GROUND_ACCEL = 900.f;
 constexpr float RUN_ACCEL = 1400.f;
 constexpr float GROUND_FRICTION = 1100.f;
-constexpr float SKID_FRICTION = 2200.f;
+constexpr float SKID_FRICTION = 1200.f;
 constexpr float AIR_ACCEL = 450.f;
 constexpr float AIR_FRICTION = 150.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
@@ -91,16 +91,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
             break;
         }
-        case MarioState::FIRE_SMALL: {
-            namespace F = SpriteFrames::FireSmallMario;
-            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
-            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
-            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
-            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
-            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH},  1.f, false));
-            break;
-        }
+
         }
     } else {
         switch (state) {
@@ -132,16 +123,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
             break;
         }
-        case MarioState::FIRE_SMALL: {
-            namespace F = SpriteFrames::FireSmallMario;
-            animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
-            animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
-            animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
-            animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
-            animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH},  1.f, false));
-            break;
-        }
+
         }
     }
 }
@@ -150,7 +132,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
 Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
-      m_characterType(CharacterType::LUIGI),
+      m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
@@ -176,7 +158,7 @@ Mario::Mario()
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL),
-      m_characterType(CharacterType::LUIGI),
+      m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE),
       m_moveSpeed(WALK_MAX_SPEED),
@@ -236,14 +218,7 @@ void Mario::update(float dt) {
     updateAnimation(dt);
     if (m_deathTimer <= 0.f) {
       m_isDying = false;
-      if (m_lives > 0) {
-        respawn(m_respawnPosition);
-        setInvincible(DAMAGE_INVINCIBILITY_DURATION);
-      } else {
-        takeDamage(FATAL_DAMAGE);
-        m_active = false;
-        EventBus::getInstance().notify(EventType::PLAYER_DIED);
-      }
+      m_active = false;
     }
     return;
   }
@@ -285,7 +260,6 @@ void Mario::update(float dt) {
       playAnimation("idle");
   }
   updateAnimation(dt);
-  updateInvincibility(dt);
 
   if (m_sprite) {
     sf::IntRect texRect = m_sprite->getTextureRect();
@@ -448,7 +422,7 @@ void Mario::initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& siz
 }
 
 void Mario::rebuildFixture() {
-  sf::Vector2f targetSize = (m_marioState == MarioState::SMALL || m_marioState == MarioState::FIRE_SMALL)
+  sf::Vector2f targetSize = (m_marioState == MarioState::SMALL)
                                 ? SMALL_MARIO_SIZE
                                 : SUPER_MARIO_SIZE;
   m_size = targetSize;
@@ -565,14 +539,14 @@ bool Mario::hasCeilingClearance() const {
 void Mario::powerUp(MarioState state) {
   if (m_marioState == state) return;
 
-  bool wasSmall = (m_marioState == MarioState::SMALL || m_marioState == MarioState::FIRE_SMALL);
+  bool wasSmall = (m_marioState == MarioState::SMALL);
   m_marioState = state;
 
   if (state == MarioState::SMALL) {
     m_statePattern = std::make_unique<SmallMarioState>();
   } else if (state == MarioState::SUPER) {
     m_statePattern = std::make_unique<SuperMarioState>();
-  } else if (state == MarioState::FIRE || state == MarioState::FIRE_SMALL) {
+  } else if (state == MarioState::FIRE) {
     m_statePattern = std::make_unique<FireMarioState>();
   }
 
@@ -615,11 +589,6 @@ void Mario::powerDown() {
 
   if (m_marioState == MarioState::FIRE) {
     powerUp(MarioState::SUPER);
-    rebuildFixture();
-    setInvincible(DAMAGE_INVINCIBILITY_DURATION);
-    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
-  } else if (m_marioState == MarioState::FIRE_SMALL) {
-    powerUp(MarioState::SMALL);
     rebuildFixture();
     setInvincible(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
@@ -669,16 +638,8 @@ void Mario::loseLife() {
   // S6-TV1-18: PLAYER_DIED fires on EVERY death (life already decremented exactly
   // once above). Whether this results in a level reload (non-terminal death) or a
   // GameOver is decided by the observer (PlayState) from the remaining lives.
+  // We keep m_active = true while dying so the death animation plays.
   EventBus::getInstance().notify(EventType::PLAYER_DIED);
-
-  if (m_lives > 0) {
-    m_active = false;
-    EventBus::getInstance().notify(EventType::PLAYER_LOST_LIFE);
-  } else {
-    // Game over death
-    takeDamage(FATAL_DAMAGE);
-    m_active = false;
-  }
 }
 
 void Mario::respawn(const sf::Vector2f& spawnPosition) {
@@ -819,6 +780,7 @@ void Mario::updateInvincibility(float dt) {
         sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
         m_sprite->setColor(baseColor);
       }
+      EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED);
     }
     return;
   }
@@ -860,7 +822,7 @@ bool Mario::isInvincible() const {
 }
 
 bool Mario::canShootFireBall() const {
-  return (m_marioState == MarioState::FIRE || m_marioState == MarioState::FIRE_SMALL) && m_fireCooldown <= 0.0f;
+  return m_marioState == MarioState::FIRE && m_fireCooldown <= 0.0f;
 }
 
 int Mario::getLives() const {

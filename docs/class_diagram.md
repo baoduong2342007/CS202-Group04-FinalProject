@@ -8,9 +8,9 @@
 # Class Diagram — Super Mario
 
 > **Status:** Sprint 6 (updated)
-> **Last updated:** 2026-08-06
+> **Last updated:** 2026-08-08
 > **Author:** TV1 (Dương)
-> **Note:** Reflects current implementation (ownership, state lifecycle, factory, EventBus, Box2D).
+> **Note:** Reflects current implementation (ownership, state lifecycle, Simple Factory, EventBus, Box2D).
 
 ---
 
@@ -42,21 +42,30 @@ classDiagram
         +changeState(unique_ptr~IGameState~) void
         +pushState(unique_ptr~IGameState~) void
         +popState() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
+        +render(sf::RenderTarget& target) void
         +stackDepth() int
         -applyOp(PendingOp&) void
         -processPendingOps() void
     }
 
     class SoundManager {
+        <<Observer>>
         -static SoundManager* s_instance
-        -map~string, sf::SoundBuffer~ m_buffers
+        -unordered_map~string, sf::SoundBuffer~ m_buffers
         -SoundManager()
         +static getInstance() SoundManager&
-        +playSound(string name) void
-        +playMusic(string name) void
-        +setVolume(float vol) void
+        +onNotify(EventType) void
+        +loadSound(string id, string filepath) bool
+        +playSound(string id) void
+        +playMusic(MusicId) void
+        +pauseMusic() void
+        +resumeMusic() void
+        +stopMusic() void
+        +setMusicVolume(float) void
+        +setSfxVolume(float) void
     }
 
     %% ============================================================
@@ -72,15 +81,17 @@ classDiagram
         +processEvents(sf::Event)* void
         +processInput(InputState)* void
         +update(float dt)* void
-        +render(sf::RenderWindow& window)* void
-        +isOverlay() bool
+        +render(sf::RenderTarget& target)* void
+        +isOverlay() const bool
     }
 
     class MenuState {
-        +init() void
+        +onEnter() void
+        +onExit() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
-        +exit() void
+        +render(sf::RenderTarget& target) void
     }
 
     class PlayState {
@@ -91,33 +102,44 @@ classDiagram
         +onExit() void
         +onPause() void
         +onResume() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
+        +render(sf::RenderTarget& target) void
+        +onNotify(EventType) void
+        -rebindCommands() void
         -loadLevel(int) bool
         -navigateToLevel(int) bool
         -snapshotProgress() void
         -restoreProgress() void
+        -updateTransition(float dt) void
     }
 
     class PauseState {
-        +init() void
+        +onEnter() void
+        +onExit() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
-        +exit() void
+        +render(sf::RenderTarget& target) void
     }
 
     class GameOverState {
-        +init() void
+        +onEnter() void
+        +onExit() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
-        +exit() void
+        +render(sf::RenderTarget& target) void
     }
 
     class WinState {
-        +init() void
+        +onEnter() void
+        +onExit() void
+        +processEvents(sf::Event) void
+        +processInput(InputState) void
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
-        +exit() void
+        +render(sf::RenderTarget& target) void
     }
 
     IGameState <|.. MenuState
@@ -139,11 +161,14 @@ classDiagram
         #bool m_isActive
         +Entity(sf::Vector2f pos)
         +update(float dt)* void
-        +render(sf::RenderWindow& window)* void
+        +render(sf::RenderTarget& target)* void
         +getPosition() sf::Vector2f
         +setPosition(sf::Vector2f pos) void
         +getBounds() sf::FloatRect
         +isActive() bool
+        +isMario() bool
+        +isEnemy() bool
+        +isItem() bool
     }
 
     class Character {
@@ -151,13 +176,14 @@ classDiagram
         #int m_health
         #Direction m_direction
         #bool m_isOnGround
-        +takeDamage() void
+        +takeDamage(int) void
         +isAlive() bool
         +getDirection() Direction
     }
 
     class Mario {
         -MarioState m_marioState
+        -CharacterType m_characterType
         -int m_lives
         -int m_score
         -int m_coinCount
@@ -165,17 +191,26 @@ classDiagram
         +moveLeft() void
         +moveRight() void
         +stopMoving() void
+        +setMoveIntent(float) void
+        +releaseJump() void
         +powerUp(MarioState) void
         +powerDown() void
         +loseLife() void
+        +addLife(int) void
         +addScore(int) void
         +collectCoin(int) void
         +setScore(int) void
         +setCoinCount(int) void
+        +setLives(int) void
+        +setMarioState(MarioState) void
+        +canShootFireBall() bool
+        +shootFireBall(b2World*) unique_ptr~FireBall~
         +getLives() int
         +getScore() int
         +getCoinCount() int
         +getMarioState() MarioState
+        +getCharacterType() CharacterType
+        +setCharacterType(CharacterType) void
     }
 
     class Enemy {
@@ -199,7 +234,7 @@ classDiagram
     class FireBall {
         -float m_speed
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
+        +render(sf::RenderTarget& target) void
     }
 
     Entity <|-- Character
@@ -215,29 +250,26 @@ classDiagram
 
     class Item {
         <<abstract>>
-        +activate(Mario& mario)* void
-        +collect()* void
+        +onCollect(Mario& mario)* void
+        +checkOverlap(Entity&) bool
+        +setCollectibleDelay(float) void
+        +isCollected() bool
     }
 
     class Coin {
-        +activate(Mario& mario) void
-        +collect() void
+        +onCollect(Mario& mario) void
     }
 
     class Mushroom {
-        +activate(Mario& mario) void
-        +collect() void
+        +onCollect(Mario& mario) void
     }
 
     class FireFlower {
-        +activate(Mario& mario) void
-        +collect() void
+        +onCollect(Mario& mario) void
     }
 
     class Star {
-        -float m_duration
-        +activate(Mario& mario) void
-        +collect() void
+        +onCollect(Mario& mario) void
     }
 
     Entity <|-- Item
@@ -257,28 +289,38 @@ classDiagram
         -Camera m_camera
         -unique_ptr~Mario~ m_mario
         -vector~unique_ptr~Entity~~ m_entities
+        -TextureManager& m_textureManager
         +loadFromFile(string path) bool
         +update(float dt) void
-        +render(sf::RenderWindow& window) void
+        +render(sf::RenderTarget& target) void
+        +shootFireBall() void
         +getMario() Mario*
+        +getCamera() Camera&
         +getEntities() vector~unique_ptr~Entity~~&
     }
 
     class TileMap {
-        -vector~vector~int~~ m_grid
+        -vector~string~ m_grid
         -sf::Texture m_tileset
         +loadFromFile(string path) bool
-        +render(sf::RenderWindow& window) void
-        +getTileAt(int x, int y) int
-        +isSolid(int x, int y) bool
+        +render(sf::RenderTarget& target) const
+        +getTileAt(int col, int row) char
+        +isSolid(int col, int row) bool
+        +getWidth() size_t
+        +getHeight() size_t
+        +findTiles(char) vector~Vector2i~
+        +createPhysicsBodies(b2World*) void
+        +queueTileHit(int col, int row, float) void
+        +hitTile(int, int, b2World*, TextureManager&, int) void
     }
 
     class Camera {
         -sf::View m_view
-        -sf::FloatRect m_levelBounds
-        +follow(sf::Vector2f target) void
-        +applyTo(sf::RenderWindow& window) void
-        +setBounds(sf::FloatRect bounds) void
+        -sf::FloatRect m_bounds
+        +init(Vector2f viewSize, FloatRect levelBounds) void
+        +shake(float duration, float magnitude) void
+        +update(float dt, Vector2f targetPosition) void
+        +getView() sf::View
     }
 
     Level *-- TileMap : contains
@@ -292,17 +334,19 @@ classDiagram
         -static TextureManager* s_instance
         -map~string, sf::Texture~ m_textures
         +static getInstance() TextureManager&
-        +load(string id, string path) bool
-        +get(string id) sf::Texture&
+        +loadTexture(string id, string filename) bool
+        +getTexture(string id) sf::Texture&
     }
 
     class AnimationSystem {
-        -vector~sf::IntRect~ m_frames
-        -float m_frameTime
-        -int m_currentFrame
-        +addClip(string name, vector~sf::IntRect~ frames) void
-        +play(string name) void
-        +update(float dt) void
+        -unordered_map~string, Animation~ m_animations
+        -string m_currentAnimation
+        -float m_currentTime
+        -bool m_isPlaying
+        +addAnimation(string name, Animation anim) void
+        +playAnimation(string name) void
+        +update(float dt, sf::Sprite& sprite) void
+        +static createGridAnimation(int startX, int startY, int frameW, int frameH, int frames) Animation
         +getCurrentFrame() sf::IntRect
     }
 
@@ -311,15 +355,17 @@ classDiagram
     %% ============================================================
 
     class PhysicsEngine {
-        -float m_gravity
-        +applyGravity(Entity& entity, float dt) void
-        +applyVelocity(Entity& entity, float dt) void
+        <<static utility>>
+        +static update(b2World& world, float dt) bool
+        +static const PPM float = 30.0
+        +static pixelsToMeters(float) float
+        +static metersToPixels(float) float
     }
 
     class CollisionManager {
-        +checkCollision(Entity* a, Entity* b) bool
-        +resolveCollision(Entity* a, Entity* b, Direction dir) void
-        +checkTileCollision(Entity* entity, TileMap& map) bool
+        <<static utility>>
+        +static resolve(b2Contact* contact, TileMap& tileMap) void
+        +static preSolve(b2Contact* contact) void
     }
 
     %% ============================================================
@@ -362,6 +408,7 @@ classDiagram
     class InputHandler {
         -map~sf::Keyboard::Key, unique_ptr~ICommand~~ m_bindings
         +bindKey(sf::Keyboard::Key key, unique_ptr~ICommand~ cmd, InputTrigger, InputGroup) void
+        +clear() void
         +handleInput(InputState) void
     }
 
@@ -374,11 +421,20 @@ classDiagram
     %% ============================================================
 
     class HUD {
-        -int m_score
-        -int m_lives
-        -float m_time
-        +update(int score, int lives, float time) void
-        +render(sf::RenderWindow& window) void
+        <<Observer>>
+        -const Mario& m_mario
+        -int m_worldNumber
+        -int m_levelNumber
+        -int m_timeRemaining
+        +onNotify(EventType) void
+        +update() void
+        +update(float dt, bool gameplayActive) void
+        +draw(sf::RenderTarget& target) const
+        +setWorldLevel(int world, int level) void
+        +setTimeWarningCallback(function) void
+        +setTimeoutCallback(function) void
+        +getTimeRemaining() int
+        +isTimeWarningActive() bool
     }
 
     class GameProgress {
@@ -416,6 +472,13 @@ classDiagram
         SMALL
         SUPER
         FIRE
+        FIRE_SMALL
+    }
+
+    class CharacterType {
+        <<enumeration>>
+        MARIO
+        LUIGI
     }
 
     class Direction {
@@ -438,20 +501,45 @@ classDiagram
         STAR
     }
 
-    class Event {
+    class DefeatCause {
         <<enumeration>>
-        COIN_COLLECTED
-        ENEMY_KILLED
-        PLAYER_DIED
-        POWER_UP
-        LEVEL_COMPLETE
+        STOMP
+        SHELL
+        FIREBALL
+        STAR
+        PIT
     }
 
-    class PowerUpType {
+    class LevelTheme {
         <<enumeration>>
-        MUSHROOM
-        FIRE_FLOWER
+        OVERWORLD
+        UNDERGROUND
+        CASTLE
+    }
+
+    class MusicId {
+        <<enumeration>>
+        OVERWORLD
+        UNDERGROUND
+        CASTLE
         STAR
+        DEATH
+        GAME_OVER
+        WIN
+    }
+
+    class EventType {
+        <<enumeration>>
+        PLAYER_JUMPED
+        PLAYER_DIED
+        PLAYER_LOST_LIFE
+        PLAYER_POWER_UP
+        PLAYER_POWER_DOWN
+        ENEMY_STOMPED
+        COIN_COLLECTED
+        LEVEL_COMPLETED
+        GAME_PAUSED
+        LEVEL_STARTED
     }
 ```
 
@@ -462,7 +550,7 @@ classDiagram
 | # | Pattern | Where | Purpose |
 |---|---|---|---|
 | 1 | **Singleton** | `GameManager`, `SoundManager`, `TextureManager`, `EventBus` | Ensure single instance for global managers |
-| 2 | **Factory** | `EntityFactory` | Create enemies and items dynamically from level data |
+| 2 | **Simple Factory** | `EntityFactory` | Create enemies and items dynamically from level data (returns `unique_ptr`) |
 | 3 | **Observer** | `EventBus`, `IObserver`, `ISubject` | Decouple game events (coin collected, enemy killed, etc.) |
 | 4 | **State** | `IGameState`, `MenuState`, `PlayState`, etc. | Manage game states (menu, playing, pause, gameover) |
 | 5 | **Command** | `ICommand`, `InputHandler` | Map keyboard input to actions, decoupled from Mario |

@@ -47,7 +47,7 @@
 | BUG-017 | EntityFactory gọi sai tên Factory Method | Code review | TV1 | S6-TV1-23 | FIXED |
 | BUG-018 | Transition: 1-frame mờ dần nháy sáng | Chuyển level (LOADING->FADE_IN) | TV1 | S6-TV1-12 | FIXED |
 | BUG-019 | Transition: Camera giật & Sprite thu nhỏ | Quan sát 0.5s đầu FADE_IN | TV1 | S6-TV1-12 | FIXED |
-| BUG-020 | Ghost Collisions: Mario kẹt khi trượt ngang | Spam trái/phải trên Question Block | TV1 | S6-TV1-02 | FIXED |
+| BUG-020 | Ghost Collisions: Mario kẹt khi trượt ngang trên Question Block | Spam trái/phải trên Question Block | TV3 | S6-TV3-25 (contact normalization) | OPEN (chờ verification) |
 | BUG-021 | WinState bị mất chữ (màn hình đen thui) | Hoàn thành World 3 | TV1 | S6-TV1-12 | FIXED |
 
 ---
@@ -56,3 +56,5 @@
 
 - Bug mới phát hiện trong Sprint 6 phải được thêm vào đây với đầy đủ severity/reproduction/owner.
 - Bug P0/P1 chưa xong → Sprint 6 không đạt DoD.
+- Mỗi dòng `FIXED` phải có bằng chứng build/CTest hoặc manual checklist tương ứng; nếu chưa xác minh thì giữ `OPEN`/`REVIEW`.
+- `BUG-008`/`BUG-009` (reproduction `—`) và `BUG-014/015` được cập nhật tại `class_diagram.md`/archive ngày 08/08/2026.

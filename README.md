@@ -111,6 +111,7 @@ Test suites: `input_state_tests`, `mario_physics_tests`, `tile_collision_span_te
 | Move left | `A` / `←` (hold) |
 | Move right | `D` / `→` (hold) |
 | Jump | `W` / `↑` / `Space` |
+| Shoot FireBall (Fire Mario) | `J` / `F` / `X` / `LControl` / `LShift` / `RShift` |
 | Pause | `Esc` |
 | Menu / Confirm (in menus) | `Enter` or mouse click |
 

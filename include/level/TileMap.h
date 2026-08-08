@@ -60,7 +60,8 @@ public:
                             );
 
     bool hitTile(int column, int row, bool isBigMario,
-                 std::vector<std::unique_ptr<class Entity>>& entities
+                 std::vector<std::unique_ptr<class Entity>>& entities,
+                 class TextureManager* textureManager = nullptr
                  );
     
     void update(float dt);

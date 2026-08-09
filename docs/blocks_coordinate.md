@@ -3,7 +3,7 @@
 Danh sách toàn bộ **120** thành phần liên thông khối gạch (`Block Spritesheet`) tách trực tiếp từ tệp nguồn gốc **`assets/textures/items/items_blocks.png`** (kích thước `448 × 256 px`), phân tích theo thuật toán loang (connected component) và khớp ô Grid chuẩn `16 × 16 px`.
 
 > 📌 **NGUỒN DỮ LIỆU CHÍNH THỨC:**
-> Tài liệu này (`blocks_coordinate.md`) cùng tệp ảnh minh họa Atlas **`assets/textures/items/blocks_all_components_atlas.png`** được phân tích và tạo dựng dựa trên tệp hình ảnh gốc **`assets/textures/items/items_blocks.png`** (chứa toàn bộ khối gạch Brick Block, khối hộp nghi vấn Question Block `?`, mảnh vỡ gạch Brick Debris và 4 bảng màu môi trường NES: Overworld, Underground, Castle, Underwater).
+> Tài liệu này (`blocks_coordinate.md`) cùng tệp ảnh minh họa Atlas **`docs/assets/reference/blocks_all_components_atlas_full.png`** được phân tích và tạo dựng dựa trên tệp hình ảnh gốc **`assets/textures/items/items_blocks.png`** (chứa toàn bộ khối gạch Brick Block, khối hộp nghi vấn Question Block `?`, mảnh vỡ gạch Brick Debris và 4 bảng màu môi trường NES: Overworld, Underground, Castle, Underwater).
 
 > **Giải thích hai cột tọa độ & kích thước:**
 > - **Tọa độ Loang (X, Y) & Kích thước Loang (W × H)**: Bounding box thực tế ôm sát các điểm ảnh (pixel) của khối gạch do thuật toán loang tìm thấy.
@@ -228,4 +228,3 @@ Bộ gạch dòng dưới (y = 192–255) chứa các biến thể bảng màu m
 | **Brick Blocks (Bộ 2) - OW/UW** | 4 Palettes (OW/UG/CT/UW) | 20 | #81 – #100 | Biến thể gạch ngoài trời (dòng dưới) |
 | **Brick Blocks (Bộ 2) - UG/CT** | 4 Palettes (OW/UG/CT/UW) | 20 | #101 – #120 | Biến thể gạch hầm tối (dòng dưới) |
 | **TỔNG CỘNG** | **4 Palettes × 30 Cột** | **120 Sprites** | **#1 – #120** | **Toàn bộ hệ thống Block trong game** |
-

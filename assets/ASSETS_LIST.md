@@ -18,12 +18,13 @@ tính từ thư mục executable sau khi CMake copy runtime assets; đường d�
 | Path | Kích thước | Usage | Ghi chú |
 |---|---:|---|---|
 | `assets/fonts/mario.ttf` | 116,008 bytes | `Runtime` | Font dùng cho HUD và các state UI. |
-| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Goomba walk/squish; 3 frames × 32×32. |
-| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Koopa walk/shell; 4 frames × 32×48. |
+| `assets/textures/enemies/enemies.png` | 436×530 | `Runtime` | Atlas thật đang được `Goomba`/`Koopa` cắt qua `SpriteFrames`. |
+| `assets/textures/enemies/goomba.png` | 96×32 | `Future` | Standalone Goomba sheet; chưa có runtime loader riêng. |
+| `assets/textures/enemies/koopa.png` | 128×48 | `Future` | Standalone Koopa sheet; chưa có runtime loader riêng. |
 | `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | Mushroom, QuestionBlock và block frames. |
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Coin, FireFlower và Star frames. |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
-| `assets/textures/tiles/tileset.png` | 128×32 | `Runtime` | TileMap dùng 4 frame terrain 32×32: ground/brick/question/used. |
+| `assets/textures/tiles/tileset.png` | 680×776 | `Runtime` | Tileset thật; `TileMap` dùng các frame catalog trong `TileFrames.h`. |
 | `assets/ui/bg_world.png` | 1857×847 | `Runtime` | Full-frame modern pixel-art overworld; uniformly scaled to the logical view and repeated with alternating mirroring behind every level. |
 | `assets/textures/ui/bg_clouds.png` | 768×1129 | `Runtime` | Menu/background asset. |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld background kept as a reference asset. |
@@ -100,7 +101,15 @@ Các file dùng để đo/cắt hoặc kiểm tra component đã chuyển ra kh�
 | Path | Kích thước | Usage |
 |---|---:|---|
 | `docs/assets/reference/enemies.png` | 436×530 | `Reference` — atlas enemy dùng để đo/cắt. |
-| `docs/assets/reference/enemies_all_components_atlas.png` | 979×4592 | `Reference` — atlas phân tích component enemy. |
+| `docs/assets/reference/enemies_all_components_atlas.png` | 880×1400 | `Reference` — atlas phân tích component enemy cũ. |
+| `docs/assets/reference/enemies_all_components_atlas_full.png` | 800×1280 | `Reference` — atlas component lấy từ runtime history; không package. |
+| `docs/assets/reference/enemies_candidate.png` | 128×96 | `Reference` — candidate sheet chưa có loader runtime. |
+| `docs/assets/reference/blocks_all_components_atlas_full.png` | 800×800 | `Reference` — atlas phân tích block; không package. |
+| `docs/assets/reference/items_objects_all_components_atlas_full.png` | 960×1840 | `Reference` — atlas phân tích item; không package. |
+| `docs/assets/reference/items_blocks_candidate.png` | 96×96 | `Reference` — candidate sheet chưa có loader runtime. |
+| `docs/assets/reference/items_objects_candidate.png` | 128×64 | `Reference` — candidate sheet chưa có loader runtime. |
+| `docs/assets/reference/tileset_candidate.png` | 160×32 | `Reference` — candidate tileset chưa được chọn cho release. |
+| `docs/assets/reference/bg_world_candidate.png` | 1857×847 | `Reference` — candidate background trùng kích thước nhưng chưa có runtime path. |
 | `docs/assets/reference/general_tile.png` | 680×776 | `Reference` — bản duplicate/source tile. |
 | `docs/assets/reference/tileset(v2).png` | 680×776 | `Reference` — legacy tile source. |
 

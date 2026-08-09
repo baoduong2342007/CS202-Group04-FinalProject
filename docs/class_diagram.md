@@ -38,6 +38,7 @@ classDiagram
     class GameManager {
         -vector~unique_ptr~IGameState~~ m_stateStack
         -vector~PendingOp~ m_pendingOps
+        -SaveManager m_saveManager       %% S6-TV1-19: composition root save
         +static getInstance() GameManager&
         +changeState(unique_ptr~IGameState~) void
         +pushState(unique_ptr~IGameState~) void
@@ -46,6 +47,7 @@ classDiagram
         +processInput(InputState) void
         +update(float dt) void
         +render(sf::RenderTarget& target) void
+        +getSaveManager() SaveManager&    %% S6-TV1-19: single shared instance
         +stackDepth() int
         -applyOp(PendingOp&) void
         -processPendingOps() void
@@ -69,12 +71,16 @@ classDiagram
     }
 
     class SaveManager {
+        -string m_savePath
         -SaveData m_data
-        +load() void
-        +save() void
-        +updateHighScore(int score) void
-        +updateHighestUnlockedLevel(int level) void
+        +load() bool
+        +save() const bool
+        +updateHighScore(int score) bool
+        +updateHighestUnlockedLevel(int level) bool
+        +updateAudioSettings(float soundVolume, float musicVolume) bool
+        +resetToDefaults() void
         +getData() const SaveData&
+        +getSavePath() const string&
     }
 
     %% ============================================================
@@ -485,7 +491,7 @@ classDiagram
 
     class CharacterType {
         <<enumeration>>
-        MARIO
+        MARIO   %% Gate 0: default player is MARIO (Luigi NOT in release flow)
         LUIGI
     }
 

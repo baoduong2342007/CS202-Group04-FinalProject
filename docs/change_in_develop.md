@@ -285,3 +285,24 @@
 
 
 
+### Entry #29: [Round 2 — Gate 0 Contract Tests + Docs Sync] - TV1 evidences the release contract and refreshes stale management docs
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
+- **Task liên quan:** S6-TV1-01/02/03/14/18/19/28/30/31/32/33/35 + Gate 0 test contract.
+- **File ảnh hưởng:** `CMakeLists.txt`, `tests/Gate0ContractTests.cpp` (mới), `tests/PlayStateTests.cpp` (mở rộng), `tests/SaveSessionTests.cpp` (mới), `README.md`, `FILE_STRUCTURE.md`, `docs/class_diagram.md`, `docs/management/S6_AUDIT_TRACKER.md`, `docs/management/S6_BUG_REGISTER.md`
+- **Mô tả:**
+  1. **Gate 0 test contract (`gate0_contract_tests`)**: `static_assert` khóa `MarioState = {SMALL, SUPER, FIRE}` (FIRE_SMALL tái xuất ⇒ build fail); FireFlower luôn cho `FIRE` từ cả SMALL và SUPER; Mushroom không downgrade (SUPER/FIRE giữ nguyên); `CharacterType` mặc định `MARIO`; cả 3 release level load được qua validator + tileset, đúng 1 `M` và 1 `F`. Lưu ý: guard giới hạn FireBall = 2 chờ TV3-19 (dòng NOTE trong file).
+  2. **PlayState death/Win regression (`play_state_tests`)**: một death phát đúng 1 `PLAYER_DIED` và trừ đúng 1 life; death thứ hai khi đang dying bị chặn; respawn re-arm death chain; Win-decision (Level 3 → hết level → Win) đi đúng một đường (`m_transitionIsWin`). Playthrough full-loop chờ TV4 (S6-TV4-40).
+  3. **Save restart-session validation (`save_session_tests`)**: hai phiên SaveManager độc lập trên cùng file tạm — mọi field (high score, unlock, hai volume) còn đúng sau "restart"; monotonic score/unlock giữ sau restart; `GameManager::getSaveManager()` luôn trả về cùng một instance (composition root).
+  4. **Docs sync**: README controls đúng `Shift = Run`, `X = Shoot` và đủ 12 test suite; FILE_STRUCTURE bỏ file phantom (`implementation_plan_sprint5_error.md`, `docs/PLAN_TV1.md`, `ui/Button.*`) và khớp cây file thật; class_diagram bổ sung `GameManager::getSaveManager()`/`m_saveManager`, `SaveManager` API thật, default character MARIO; tracker/bug register cập nhật bằng chứng thật (12/12, target `SuperMario`, SaveManager REVIEW).
+  5. **S6-TV1-33**: Sprint 5 error plan không tồn tại trong repo — đã gỡ mọi link/claim (FILE_STRUCTURE) và ghi lý do vào tracker, không bịa file/banner.
+
+### Entry #30: [Fix Death & Completion High Score Persistence + Save Logging] - Save high score immediately on death/completion (BUG-027 / S6-TV1-19)
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
+- **Task liên quan:** S6-TV1-19 / BUG-027.
+- **File ảnh hưởng:** [PlayState.cpp](../src/states/PlayState.cpp), [SaveManager.cpp](../src/core/SaveManager.cpp), [GameManager.cpp](../src/core/GameManager.cpp), [SaveSessionTests.cpp](../tests/SaveSessionTests.cpp), [S6_AUDIT_TRACKER.md](management/S6_AUDIT_TRACKER.md), [S6_BUG_REGISTER.md](management/S6_BUG_REGISTER.md)
+- **Mô tả:**
+  1. **Fix 1 (Lưu high score khi chết)**: Trong `PlayState::onNotify(PLAYER_DIED)`, gọi `GameManager::getInstance().getSaveManager().updateHighScore(m_level->getMario()->getScore())` ngay khi sự kiện chết xảy ra. Mario chết dù còn mạng vẫn được lưu lại điểm cao vào đĩa đòn bẩy.
+  2. **Fix 2 (Lưu high score khi xong level)**: Trong `PlayState::onNotify(LEVEL_COMPLETED)`, gọi `GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score)` để đảm bảo điểm số màn vừa qua không bị rơi mất nếu thoát game trước khi vào GameOver/Win.
+  3. **Fix 3 (Save error & CWD load logging)**: Gỡ bỏ `#ifdef DEBUG` quanh thông báo `std::cerr` khi `replaceSaveFile` hoặc `writeSaveFile` thất bại trong `SaveManager.cpp`. Bổ sung log CWD path và data đã load ở constructor `GameManager.cpp` trong chế độ Debug.
+  4. **Regression test (`save_session_tests`)**: Bổ sung unit test `testMidSessionDeathSavesHighScore` mô phỏng người chơi chết còn mạng -> thoát game -> restart executable -> load lại đĩa save kiểm tra điểm cao vẫn được bảo toàn (100% pass, 12/12 CTest pass).
+

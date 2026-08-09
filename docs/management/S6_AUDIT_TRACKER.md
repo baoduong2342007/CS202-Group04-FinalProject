@@ -59,13 +59,13 @@
 | Level progression 1-based | TV1 | DONE | S6-TV1-07 | LevelCatalog one-based; New Game bắt đầu Level 1 (build pass) |
 | Load error handling | TV1 | DONE | S6-TV1-11 | Load chuyển về `onEnter()`, queue Menu đúng FIFO; không để failed PlayState (build pass) |
 | Transition freeze + input block | TV1 | DONE | S6-TV1-12 | `processInput` chặn trong transition; reload fail không vào FADE_IN, không phát `LEVEL_STARTED` (build pass) |
-| Terminal-result race guard | TV1 | PARTIAL | S6-TV1-13/14 | Guard + Win đã viết (PlayState). Đã thêm test headless mới `level_catalog_tests` (boundary 1-2-3-Win, Progress). Test PlayState thật (death/GameOver/Win) vẫn cần SFML/audio context — chưa tự động hóa. |
+| Terminal-result race guard | TV1 | REVIEW | S6-TV1-13/14 | Guard + Win đã viết (PlayState). `play_state_tests` mở rộng vòng 2: death → đúng 1 `PLAYER_DIED` + 1 life; death khi đang dying bị chặn; respawn re-arm; Win-decision chỉ đi một đường. `gate0_contract_tests` xác nhận Level 1–3 load được. Playthrough full-loop chờ TV4 (S6-TV4-40). |
 | Deferred state ops (state stack) | TV1 | DONE | S6-TV1-16 | GameManager dùng `m_stateStack` + snapshot queue; `game_manager_tests` pass (stack lifecycle, deferred-op, overlay teardown) |
 | Pause/Resume lifecycle | TV1 | DONE | S6-TV1-15/17 | IGameState lifecycle đủ; Pause dừng update/input/music; subscriber-growth chưa có test 20 vòng riêng (dùng event_bus_tests) |
 | `PLAYER_DIED` mỗi lần chết | TV1 | DONE | S6-TV1-18 | `Mario::loseLife()` phát event mỗi lần trừ life; GameOver theo lives còn lại (build pass) |
 | Observer lifetime / subscriber growth | TV1 | DONE | S6-TV1-20/21 | `event_bus_tests` pass: unsubscribe giữa callback, không duplicate subscriber, không stale callback sau nhiều vòng |
-| SaveManager | TV4 | BLOCKED | S6-TV1-19 | Owner TV4; TV1 giữ `BLOCKED`, chỉ tích hợp khi interface sẵn sàng |
-| CMake: SHA256 + presets | TV1 | DONE | S6-TV1-27/28 | `EXPECTED_HASH` thật (SHA256) cho SFML zips; executable giữ tên `main` (quyết định 08/08 — không đổi `SuperMario`); 3 preset clean build |
+| SaveManager + state integration | TV4 (module) / TV1 (state) | DONE | S6-TV1-19 | `GameManager` sở hữu 1 instance duy nhất (`getSaveManager()`); MenuState đọc high score, Win/GameOverState update, PlayState update unlock + high score tức thì khi chết (PLAYER_DIED) hoặc xong level (LEVEL_COMPLETED) (BUG-027). `save_session_tests` pass: restart-session toàn field, monotonic, single-instance, mid-session death save (12/12 CTest pass). |
+| CMake: SHA256 + presets | TV1 | DONE | S6-TV1-27/28 | `EXPECTED_HASH` thật (SHA256) cho SFML zips; target đổi sang `SuperMario` (`CMakeLists.txt:136`), DLL/asset copy theo target mới; 3 preset debug/release/tests clean build |
 | CMake: CopyAssets per-file | TV1 | DONE | S6-TV1-29 | `copy_if_different` per-file + `make_directory`; no-op build không re-copy assets (đã kiểm) |
 | LevelCatalog (centralized levels) | TV1 | DONE | S6-TV1-05 | PlayState dùng catalog, không còn hard-code path/`MAX_LEVELS` |
 | EntityFactory → unique_ptr | TV1 | DONE | S6-TV1-22 | Không còn raw `new` ở factory; call site dùng `std::make_unique` |
@@ -85,6 +85,7 @@
 
 | Ngày | Commit HEAD | Debug | Release | CTest | Warning production | Blocker |
 |---|---|---|---|---|---|---|
-| 08/08/2026 | `8114ab5` + working tree (diagram/test/docs cleanup) | ✅ build-debug `main` pass | ✅ build-release `main` pass | ✅ 7/7 pass (build-tests, gồm `level_catalog_tests` mới) | không có (chỉ CMake deprecation từ Box2D) | SaveManager chưa sẵn sàng — `S6-TV1-19` giữ `BLOCKED` (owner TV4) |
+| 08/08/2026 | `8114ab5` + working tree (diagram/test/docs cleanup) | ✅ build-debug pass | ✅ build-release pass | ✅ 7/7 pass | không có (chỉ CMake deprecation từ Box2D) | SaveManager chưa nối state |
+| 09/08/2026 | working tree (vòng 2: Gate0 tests + PlayState/SaveSession tests + docs) | ✅ build-debug pass | ✅ build-release pass | ✅ **12/12 pass** (thêm `gate0_contract_tests`, `save_session_tests`) | không có (chỉ CMake deprecation từ Box2D) | `S6-TV1-14` chờ TV4 playthrough Level 3 (load đã pass); FireBall limit-2 guard chờ TV3-19 |
 
-> Nhắc: executable giữ tên `main` (không đổi sang `SuperMario`) — quyết định giữ nguyên tại CMakeLists để không phá preset/hướng dẫn chạy hiện có. Dòng "CMake: target name" trong bảng trên phản ánh trạng thái hiện tại: target vẫn là `main`.
+> Vòng 2 (Evaluate_v2.md): target production đã đổi thành `SuperMario`; tracker có evidence build & test cho từng task mở lại. README/FILE_STRUCTURE/class_diagram đã được sync lại đúng file hiện tại.

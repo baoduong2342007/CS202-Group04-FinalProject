@@ -100,7 +100,10 @@ cmake --build build-tests
 ctest --test-dir build-tests --output-on-failure
 ```
 
-Test suites: `input_state_tests`, `mario_physics_tests`, `tile_collision_span_tests`, `play_state_tests`, `game_manager_tests`, `event_bus_tests`.
+Test suites: `input_state_tests`, `tile_collision_span_tests`, `mario_physics_tests`,
+`play_state_tests`, `game_manager_tests`, `event_bus_tests`,
+`tv5_integration_tests`, `level_catalog_tests`, `save_manager_tests`, and
+`level_validator_tests`.
 
 ---
 
@@ -111,7 +114,8 @@ Test suites: `input_state_tests`, `mario_physics_tests`, `tile_collision_span_te
 | Move left | `A` / `←` (hold) |
 | Move right | `D` / `→` (hold) |
 | Jump | `W` / `↑` / `Space` |
-| Shoot FireBall (Fire Mario) | `J` / `F` / `X` / `LControl` / `LShift` / `RShift` |
+| Run (hold) | `LShift` / `RShift` |
+| Shoot FireBall (Fire Mario) | `X` (press) |
 | Pause | `Esc` |
 | Menu / Confirm (in menus) | `Enter` or mouse click |
 

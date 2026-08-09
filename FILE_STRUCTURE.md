@@ -15,8 +15,8 @@ SuperMario/
 ├── FILE_STRUCTURE.md
 ├── CODING_RULES.md
 ├── PLAN.md                     ← Sprint 6 plan (current sprint)
-├── s6_fix_plan_v2.md           ← Sprint 6 fix plan — round 2 (current working plan)
-├── Evaluate_v2.md              ← Sprint 6 re-evaluation — round 2 (current)
+├── s6_fix_plan_v3.md           ← Sprint 6 fix plan — round 3 (current working plan)
+├── Evaluate_v3.md              ← Sprint 6 re-evaluation — round 3 (current)
 ├── .gitignore
 │
 ├── thirdparty/                 ← Folder containing external libraries
@@ -38,16 +38,15 @@ SuperMario/
 │   ├── management/             ← Sprint planning and task tracking
 │   │   ├── ROLES.md
 │   │   ├── WEEKLY_PLAN.md
-│   │   ├── s6_plan.md          ← Sprint 6 plan (full task list)
-│   │   ├── s7_plan.md          ← Sprint 7 plan (future)
+│   │   ├── s6_plan.md          ← Sprint 6 plan (full task list) [ARCHIVE]
+│   │   ├── s7_plan.md          ← Sprint 7 plan (future) [PLANNED]
 │   │   ├── S6_AUDIT_TRACKER.md ← TV1: Sprint 1–6 deliverable tracker
 │   │   ├── S6_BUG_REGISTER.md  ← TV1: P0/P1/P2 bug register
 │   │   ├── S6_DEPENDENCY_BOARD.md
 │   │   ├── S6_LOCKED_INTERFACES.md
 │   │   ├── TV1_CHANGES_SUMMARY.md
 │   │   ├── TV4_CHANGES_SUMMARY.md
-│   │   ├── TV5_AUDIO_HUD_ITEM_CHECKLIST.md
-│   │   └── TV5_INDEPENDENT_TASKS.md
+│   │   └── TV5_CHANGES_SUMMARY.md
 │   └── specs/                  ← Project specifications
 │       └── CS202-FinalProject_SuperMario.md
 │
@@ -329,9 +328,6 @@ sprite.setTextureRect(sf::IntRect({FRAME_X, FRAME_Y}, {FRAME_W, FRAME_H}));
 // INCORRECT — file riêng KHÔNG TỒN TẠI, sẽ hiện khối magenta
 texture.loadFromFile("assets/textures/mario/idle.png");   // ❌ file này không có!
 texture.loadFromFile("assets/textures/items/coin.png");   // ❌ file này không có!
-
-// INCORRECT — hardcoded absolute path, will not run on others' machines
-texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/MarioLuigi.png");
 ```
 
 ### Level files

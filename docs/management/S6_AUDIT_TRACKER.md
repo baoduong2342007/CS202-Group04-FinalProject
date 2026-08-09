@@ -10,74 +10,59 @@
 
 - Cột **Trạng thái**: `DONE` / `DOING` / `BLOCKED` / `NOT DONE`.
 - Cột **Task xử lý**: ID task Sprint 6 (ví dụ `S6-TV1-08`) hoặc bug ID.
-- Cột **Bằng chứng**: test, build log, hoặc manual checklist.
+- Cột **Bằng chứng / Blocker**: test, build log, manual checklist, hoặc nguyên nhân block.
 
 ---
 
-## Deliverable theo Sprint
+## Sprint 1 (17/06 – 04/07)
 
-### Sprint 1–2 (Nền tảng)
-
-| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
+| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng / Blocker |
 |---|---|---|---|---|
-| CMake + SFML bootstrap | TV1 | DONE | S6-TV1-27 | Build pass |
-| Game loop + window | TV2 | DONE | — | Build pass |
-| State machine cơ bản | TV1 | DONE | S6-TV1-15/16 | Build pass |
-| EventBus + Observer | TV1 | DONE | S6-TV1-20/21 | CTest pass |
-| Command pattern | TV5 | DONE | S6-TV1-24/25 | CTest pass |
-| EntityFactory | TV1 | DONE | S6-TV1-22/23 | Build pass |
+| `README.md`, `ROLES.md`, `WEEKLY_PLAN.md`, class diagram draft | TV1 | DONE | S6-TV1-30 | Đã có trên develop |
+| Project compiles, 1280x720 window opens | TV2 | DONE | — | 3/3 CMake preset pass |
+| `Entity.h`, `Character.h` with stub methods | TV3 | DONE | — | Đã phát triển thành Entity full |
+| `levels/level1.txt` (placeholder), format spec in doc | TV4 | DONE | — | Đã thành TileMap thật |
+| `SoundManager.h`, list of acquired assets | TV5 | DONE | S6-TV5-24 | Assets đã commit đủ |
 
-### Sprint 3 (Physics & Mario)
+## Sprint 2 (06/07 – 11/07)
 
-| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
+| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng / Blocker |
 |---|---|---|---|---|
-| Mario movement physics | TV3 | DONE | — | MarioPhysicsTests pass |
-| Box2D integration | TV3 | DONE | — | Build pass |
-| Collision handling | TV3 | DOING | S6-TV3-25→31 | — |
+| Functional `EventBus.h/.cpp` with safe iteration | TV1 | DONE | S6-TV1-20 | `event_bus_tests` pass |
+| `Game.h/.cpp` refactored | TV2 | DONE | — | Bỏ magic number |
+| Box2D integrated, `PhysicsEngine`+`ContactListener` working | TV3 | DOING | S6-TV1-36 | Blocker: BUG-030 (Static Accumulator) |
+| `TileMap.cpp` parses level files | TV4 | DONE | — | `TileCollisionSpanTests` pass |
+| Command pattern headers complete | TV5 | DONE | S6-TV1-24 | `InputStateTests` pass |
 
-### Sprint 4 (Level & Items)
+## Sprint 4 (19/07 – 25/07)
 
-| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
+| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng / Blocker |
 |---|---|---|---|---|
-| TileMap parse/render | TV4 | DONE | — | TileCollisionSpanTests pass |
-| Level 1 | TV4 | DOING | S6-TV4-13/14 | — |
-| Items (Coin/Mushroom) | TV5 | DOING | S6-TV5-07→16 | — |
+| `EntityFactory.h/.cpp` functional; all Sprint 2 branches merged | TV1 | DONE | S6-TV1-22 | Factory dùng `unique_ptr` |
+| Mario sprite visible with walk/jump animation; camera follows player | TV2 | DOING | S6-TV2-10 | Blocker: BUG-028 (Camera thiếu Y-clamp, ép 16:9) |
+| Physics feels correct; no magic numbers; collision directions work | TV3 | DOING | S6-TV3-16/20 | Blocker: BUG-029 (Growth clearance), BUG-032 (Double-Dispatch) |
+| Level 1 renders correctly; Goomba walks back and forth | TV4 | DONE | S6-TV4-13 | Manual test pass |
+| `InputHandler` maps keys to actions; `SoundManager` plays sounds; `Coin` collectable | TV5 | DONE | S6-TV5-07/24 | Manual test pass |
 
-### Sprint 5 (Enemy, HUD, Sound)
+## Sprint 5 (26/07 – 01/08)
 
-| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
+| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng / Blocker |
 |---|---|---|---|---|
-| Goomba/Koopa | TV4 | DOING | S6-TV4-21→31 | — |
-| HUD | TV5 | DOING | S6-TV5-17→23 | — |
-| SoundManager | TV5 | DOING | S6-TV5-24→36 | — |
+| Game state machine works: can transition between states | TV1 | DONE | S6-TV1-15/16 | `game_manager_tests` pass |
+| Death/spawn animations; level transition works | TV2 | DONE | S6-TV1-12 | Freeze input khi chuyển màn thành công |
+| Enemy collision behavior correct; FireBall works | TV3 | DOING | S6-TV3-19 | Blocker: BUG-031 (Duplicate FireBall API thiếu limit) |
+| Level 1 playable end-to-end; Koopa works; Level 2 started | TV4 | DOING | S6-TV4-21 | Đang design map 2 |
+| Items work correctly; 3+ sound effects active; HUD displays info | TV5 | DOING | S6-TV5-17/26 | Blocker: BUG-033 (UI update ngoài map 1) |
 
-### Sprint 6 (Full loop)
+## Sprint 6 (02/08 – 08/08)
 
-| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng |
+| Deliverable | Owner | Trạng thái | Task xử lý | Bằng chứng / Blocker |
 |---|---|---|---|---|
-| GameProgress session | TV1 | DONE | S6-TV1-08/09/10 | Snapshot trước khi hủy Level; `setMarioState()` dựng lại animation → giữ SUPER/FIRE visual qua level (build pass) |
-| Level progression 1-based | TV1 | DONE | S6-TV1-07 | LevelCatalog one-based; New Game bắt đầu Level 1 (build pass) |
-| Load error handling | TV1 | DONE | S6-TV1-11 | Load chuyển về `onEnter()`, queue Menu đúng FIFO; không để failed PlayState (build pass) |
-| Transition freeze + input block | TV1 | DONE | S6-TV1-12 | `processInput` chặn trong transition; reload fail không vào FADE_IN, không phát `LEVEL_STARTED` (build pass) |
-| Terminal-result race guard | TV1 | REVIEW | S6-TV1-13/14 | Guard + Win đã viết (PlayState). `play_state_tests` mở rộng vòng 2: death → đúng 1 `PLAYER_DIED` + 1 life; death khi đang dying bị chặn; respawn re-arm; Win-decision chỉ đi một đường. `gate0_contract_tests` xác nhận Level 1–3 load được. Playthrough full-loop chờ TV4 (S6-TV4-40). |
-| Deferred state ops (state stack) | TV1 | DONE | S6-TV1-16 | GameManager dùng `m_stateStack` + snapshot queue; `game_manager_tests` pass (stack lifecycle, deferred-op, overlay teardown) |
-| Pause/Resume lifecycle | TV1 | DONE | S6-TV1-15/17 | IGameState lifecycle đủ; Pause dừng update/input/music; subscriber-growth chưa có test 20 vòng riêng (dùng event_bus_tests) |
-| `PLAYER_DIED` mỗi lần chết | TV1 | DONE | S6-TV1-18 | `Mario::loseLife()` phát event mỗi lần trừ life; GameOver theo lives còn lại (build pass) |
-| Observer lifetime / subscriber growth | TV1 | DONE | S6-TV1-20/21 | `event_bus_tests` pass: unsubscribe giữa callback, không duplicate subscriber, không stale callback sau nhiều vòng |
-| SaveManager + state integration | TV4 (module) / TV1 (state) | DONE | S6-TV1-19 | `GameManager` sở hữu 1 instance duy nhất (`getSaveManager()`); MenuState đọc high score, Win/GameOverState update, PlayState update unlock + high score tức thì khi chết (PLAYER_DIED) hoặc xong level (LEVEL_COMPLETED) (BUG-027). `save_session_tests` pass: restart-session toàn field, monotonic, single-instance, mid-session death save (12/12 CTest pass). |
-| CMake: SHA256 + presets | TV1 | DONE | S6-TV1-27/28 | `EXPECTED_HASH` thật (SHA256) cho SFML zips; target đổi sang `SuperMario` (`CMakeLists.txt:136`), DLL/asset copy theo target mới; 3 preset debug/release/tests clean build |
-| CMake: CopyAssets per-file | TV1 | DONE | S6-TV1-29 | `copy_if_different` per-file + `make_directory`; no-op build không re-copy assets (đã kiểm) |
-| LevelCatalog (centralized levels) | TV1 | DONE | S6-TV1-05 | PlayState dùng catalog, không còn hard-code path/`MAX_LEVELS` |
-| EntityFactory → unique_ptr | TV1 | DONE | S6-TV1-22 | Không còn raw `new` ở factory; call site dùng `std::make_unique` |
-| Docs/metadata/diagram cleanup | TV1 | DONE | S6-TV1-23/30→34 | CODING_RULES = Simple Factory; class_diagram sửa API sai (`RenderTarget`, `onCollect`, Physics/Collision static, enums); README test/controls; FILE_STRUCTURE; xóa `.gitkeep` dư ngoài build (`assets/textures/enemies`) — các `.gitkeep` trong `build*/` là bản copy, không phải source |
-| Demo exclusion (CMake) | TV1 | DONE | S6-TV1-26 | `list(FILTER SOURCES EXCLUDE REGEX)` loại `src/demo/` |
-
----
-
-## Ghi chú
-
-- Cập nhật hằng ngày trong Sprint 6.
-- Task nào chưa đạt DoD phải giữ `BLOCKED`/`NOT DONE`, không âm thầm chuyển sang Sprint 7.
+| All 5 game states transition correctly; high scores save/load | TV1 | DONE | S6-TV1-08/19 | `save_session_tests` pass, BUG-027 fixed |
+| Menu + GameOver + Win + Pause screens functional | TV2 | DONE | S6-TV1-14 | Bố cục text căn giữa màn hình WinState ok |
+| Power-ups work correctly with visual feedback | TV3 | DOING | S6-TV3-16 | Đợi fix lỗi Growth Clearance |
+| Levels 2 & 3 playable; Koopa works in all levels | TV4 | DOING | S6-TV4-40 | Chờ full end-to-end manual playthrough |
+| Background music loops; full HUD with timer; all SFX bound | TV5 | DOING | S6-TV5-24 | Chờ kiểm tra lại SFX |
 
 ---
 
@@ -85,7 +70,5 @@
 
 | Ngày | Commit HEAD | Debug | Release | CTest | Warning production | Blocker |
 |---|---|---|---|---|---|---|
-| 08/08/2026 | `8114ab5` + working tree (diagram/test/docs cleanup) | ✅ build-debug pass | ✅ build-release pass | ✅ 7/7 pass | không có (chỉ CMake deprecation từ Box2D) | SaveManager chưa nối state |
-| 09/08/2026 | working tree (vòng 2: Gate0 tests + PlayState/SaveSession tests + docs) | ✅ build-debug pass | ✅ build-release pass | ✅ **12/12 pass** (thêm `gate0_contract_tests`, `save_session_tests`) | không có (chỉ CMake deprecation từ Box2D) | `S6-TV1-14` chờ TV4 playthrough Level 3 (load đã pass); FireBall limit-2 guard chờ TV3-19 |
-
-> Vòng 2 (Evaluate_v2.md): target production đã đổi thành `SuperMario`; tracker có evidence build & test cho từng task mở lại. README/FILE_STRUCTURE/class_diagram đã được sync lại đúng file hiện tại.
+| 08/08/2026 | `8114ab5` + working tree | ✅ build-debug pass | ✅ build-release pass | ✅ 7/7 pass | CMake deprecation Box2D | SaveManager chưa nối state |
+| 09/08/2026 | S6 Evaluate v3 | ✅ build-debug pass | ✅ build-release pass | ✅ **12/12 pass** | CMake deprecation Box2D | S6-TV1-14 chờ TV4 test tay Level 3 |

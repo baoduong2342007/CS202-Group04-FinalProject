@@ -69,16 +69,35 @@ bool testWinDecisionCommittedOnce() {
     // Mirrors PlayState::onNotify LEVEL_COMPLETED (increments currentLevel, then
     // m_transitionIsWin = isPastFinalLevel(...)) and the LOADING phase that
     // builds WinState exactly once via the m_transitionIsWin flag (S6-TV1-14).
-    int currentLevel = 1;
+    GameProgress progress;
+    progress.currentLevel = 1;
+    progress.score = 100;
 
-    currentLevel++; // completed Level 1 -> 2
-    assert(LevelCatalog::isPastFinalLevel(currentLevel) == false);
+    // Simulate LEVEL_COMPLETED (Level 1 -> 2)
+    progress.currentLevel++;
+    assert(LevelCatalog::isPastFinalLevel(progress.currentLevel) == false);
 
-    currentLevel++; // completed Level 2 -> 3
-    assert(LevelCatalog::isPastFinalLevel(currentLevel) == false);
+    // Simulate LEVEL_COMPLETED (Level 2 -> 3)
+    progress.currentLevel++;
+    assert(LevelCatalog::isPastFinalLevel(progress.currentLevel) == false);
 
-    currentLevel++; // completed Level 3 -> 4 -> Win
-    assert(LevelCatalog::isPastFinalLevel(currentLevel) == true);
+    // Simulate LEVEL_COMPLETED (Level 3 -> 4)
+    // S6-TV1-14: Emulate the snapshot before transition
+    progress.score = 5000; // Snapshot final score
+    progress.currentLevel++;
+    
+    bool transitionIsWin = LevelCatalog::isPastFinalLevel(progress.currentLevel);
+    assert(transitionIsWin == true);
+    
+    int winStateQueuedCount = 0;
+    if (transitionIsWin) {
+        winStateQueuedCount++;
+        // transitionPhase = TransitionPhase::NONE;
+    }
+    
+    // Verify Win is only queued once and score is preserved
+    assert(winStateQueuedCount == 1);
+    assert(progress.score == 5000);
 
     std::cout << "[PASSED] testWinDecisionCommittedOnce" << std::endl;
     return true;

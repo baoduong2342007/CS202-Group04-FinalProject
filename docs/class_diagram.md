@@ -240,10 +240,17 @@ classDiagram
     }
 
     class Koopa {
-        -bool m_isShell
+        -KoopaState m_state
+        -bool m_isFlippedDead
+        -float m_patrolSpeed
         +patrol() void
         +onStomp() void
-        +kickShell() void
+        +onFireHit() void
+        +onWallCollision() void
+        +kick(Direction) void
+        +isInShell() bool
+        +isShellSliding() bool
+        +getState() KoopaState
     }
 
     class FireBall {

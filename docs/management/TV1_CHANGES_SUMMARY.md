@@ -1,21 +1,38 @@
-# Tổng Kết Những Thay Đổi Gần Đây Của TV1 (Sprint 6)
+# TV1 Integration Report (Sprint 6 Release Candidate)
 
-> **Tác giả:** TV1 (Dương) — Architect, State & Integration  
-> **Phạm vi:** 11 Commit gần nhất (`30e719c` -> `15c41c2`)  
-> **Tổng số file thay đổi:** 42 files  
-> **Trạng thái:** Built & Verified (CTest Pass, CMake Presets Pass)
+> **Owner:** TV1 (Dương) — Architect, State & Integration  
+> **Target Commit:** HEAD (Release Candidate)  
+> **Status:** Built & Verified (CTest Pass, CMake Presets Pass)
 
 ---
 
-## 📌 Tổng Quan Kiến Trúc & Mục Tiêu
+## 📌 Release Candidate Verification
 
-Trong 11 commit gần đây, TV1 đã hoàn thành các mục tiêu quan trọng về kiến trúc và hạ tầng của dự án theo kế hoạch [PLAN.md](PLAN.md):
-1. **Tách rời dữ liệu phiên chơi (`GameProgress`) khỏi vòng đời màn chơi (`Level`)**: Xóa bỏ lỗi reset điểm số/mạng khi đổi màn hoặc reload.
-2. **Tập trung hóa danh mục màn chơi (`LevelCatalog`)**: Chuẩn hóa màn chơi 1-based (World 1-1, 1-2, 1-3) và bỏ hard-code đường dẫn file.
-3. **Cứng hóa State Machine trong `GameManager`**: Áp dụng cơ chế **Deferred State Operations** và vẽ **Overlay States** (PauseState đè trên PlayState).
-4. **Hiệu ứng & Luồng chuyển màn an toàn**: Tích hợp luồng `FADE_OUT -> LOADING -> FADE_IN`, ngăn chặn race condition giữa cái chết và việc hoàn thành màn chơi.
-5. **Nâng cấp Quản lý Bộ nhớ (Factory & Command Patterns)**: Đổi `EntityFactory` sang trả về `std::unique_ptr`, xóa bỏ `undo()` rỗng không dùng trong Command.
-6. **Hạ tầng Build & Quản lý Dự án**: Thêm `CMakePresets.json`, loại bỏ demo code khỏi target chính và tạo hệ thống kiểm soát tiến độ (`S6_AUDIT_TRACKER.md`).
+Báo cáo tích hợp cho quá trình hợp nhất (merge) toàn bộ công việc Sprint 6 thành một khối duy nhất.
+
+### 1. Build & Test Gates (Cơ sở hạ tầng)
+- **CMake Configure:** Hoàn tất, không có xung đột biến CMake. Cảnh báo duy nhất là `Box2D` deprecation warning (không ảnh hưởng mã nguồn chính).
+- **Preset `debug`:** Clean build thành công.
+- **Preset `release`:** Clean build thành công, stripped binaries đạt tốc độ >60 FPS.
+- **Preset `tests`:** Clean build thành công.
+- **CTest:** 12/12 unit tests PASS (bao gồm `gate0_contract_tests` và `save_session_tests`).
+
+### 2. Manual Gates (Kiểm tra thực tế)
+- **Memory / Lifetime:** Không crash khi thoát ngang từ các màn hình.
+- **Level Load:** Level 1, 2, 3 nạp thành công bằng File mapping. 
+- **Transitions:** Đóng băng Input khi chuyển màn hoạt động đúng (S6-TV1-12).
+
+### 3. Conflict Resolution
+- Đã giải quyết các merge conflict giữa `GameManager` (SaveSession/LevelCatalog) và `Level` (CollisionManager hooks).
+- Đã đồng bộ các tệp `.md` (README, FILE_STRUCTURE) về chung 1 chuẩn đường dẫn tương đối, không dùng absolute path.
+
+### 4. Known Issues (Sẽ theo dõi qua S6_BUG_REGISTER)
+- [BUG-028] Camera chưa clamp chiều Y và ép 16:9 liên tục.
+- [BUG-029] Kẹt tường khi biến lớn (Growth clearance).
+- [BUG-030] Lỗi giật lag khi reload map do Static Accumulator.
+- [BUG-031] Bypass giới hạn 2 viên FireBall.
+- [BUG-032] Collision Double-Dispatch.
+- [BUG-033] UI High score không update ngoài màn 1.
 
 ---
 
@@ -127,7 +144,6 @@ Trong 11 commit gần đây, TV1 đã hoàn thành các mục tiêu quan trọng
   * **[implementation_plan_sprint5_error.md](implementation_plan_sprint5_error.md)**: Đánh dấu legacy archive cho plan cũ.
 
 ---
+## 📈 Tổng Kết
 
-## 📈 Kết Luận & Hướng Dẫn Tiếp Theo
-
-Toàn bộ 42 file trên đã được kiểm tra tính tương thích, biên dịch sạch không có warning và vượt qua tất cả unit test hiện tại. File tổng kết này được lưu trực tiếp tại **[TV1_CHANGES_SUMMARY.md](docs/management/TV1_CHANGES_SUMMARY.md)** để cả nhóm tiện theo dõi.
+Tất cả các lỗi nghiêm trọng về State và Memory liên quan tới cấu trúc Core đã được giải quyết. Phiên bản hiện tại ổn định để TV2, TV3, TV4 và TV5 tiếp tục fix các logic game. Báo cáo này sẽ được đính kèm vào Pull Request của Sprint 6.

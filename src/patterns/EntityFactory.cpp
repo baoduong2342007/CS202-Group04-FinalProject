@@ -59,7 +59,9 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode, const s
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::SUPER_MUSHROOM);
+            // The release '?' contract is adaptive. Its content is resolved
+            // once by QuestionBlock::onHit() from Mario's current state.
+            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ADAPTIVE);
         case 'f':
         case 'h':
             return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::FIRE_FLOWER);

@@ -14,4 +14,11 @@ void award(Mario& mario, ScoreEvent event) {
     mario.addScore(pointsFor(event));
 }
 
+void awardDefeat(Mario& mario, DefeatCause cause) {
+    const int points = pointsFor(cause);
+    if (points > 0) {
+        mario.addScore(points);
+    }
+}
+
 } // namespace ScoreRules

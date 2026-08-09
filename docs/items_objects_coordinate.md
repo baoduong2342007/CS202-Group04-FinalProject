@@ -3,7 +3,7 @@
 Danh sách toàn bộ **266** thành phần vật thể, vật phẩm hỗ trợ (Items) và cấu trúc môi trường tách trực tiếp từ tệp nguồn gốc **`assets/textures/items/items_objects.png`** (kích thước `592 × 572 px`), phân tích theo thuật toán loang (connected component) và khớp khung ô Grid tiêu chuẩn.
 
 > 📌 **NGUỒN DỮ LIỆU CHÍNH THỨC:**
-> Tài liệu này (`items_objects_coordinate.md`) cùng tệp ảnh minh họa Atlas **`assets/textures/items/items_objects_atlas.png`** được phân tích dựa trên vùng vật thể chứa khung tím của tệp **`items_objects.png`** (chứa Nấm Super/1-Up, Hoa Lửa Fire Flower, Sao Bất Tử Super Star, Đạn lửa Fireball, Lò xo Trampoline, Bệ nâng Moving Platform, Cờ đích Flagpole & Dây leo Beanstalk).
+> Tài liệu này (`items_objects_coordinate.md`) cùng tệp ảnh minh họa Atlas **`docs/assets/reference/items_objects_all_components_atlas_full.png`** được phân tích dựa trên vùng vật thể chứa khung tím của tệp **`items_objects.png`** (chứa Nấm Super/1-Up, Hoa Lửa Fire Flower, Sao Bất Tử Super Star, Đạn lửa Fireball, Lò xo Trampoline, Bệ nâng Moving Platform, Cờ đích Flagpole & Dây leo Beanstalk).
 
 > ⚠️ **Lưu ý**: Các khung hình `Block Debris` (mảnh vỡ gạch) đã được loại bỏ khỏi danh sách này theo đúng logic vì chúng thuộc nhóm Blocks.
 
@@ -312,4 +312,3 @@ Danh sách toàn bộ **266** thành phần vật thể, vật phẩm hỗ trợ
 | **#266** | `(252, 400)` | `16 × 7 px` | `(252, 400)` | `16 × 8 px` | 61 px | UW Palette | Floating Score Text (Văn bản điểm số hiển thị khi ăn nấm/diệt quái: 100, 200, 1000, 1UP...) |
 
 ---
-

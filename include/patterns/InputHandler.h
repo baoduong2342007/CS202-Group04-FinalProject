@@ -56,7 +56,12 @@ public:
     void clear();
 
     /// Dispatch commands from the event-driven input state.
-    void handleInput(const InputState& inputState) const;
+    ///
+    /// `gameplayEnabled` is deliberately explicit so a state owner can
+    /// suppress gameplay requests while paused, dying, or transitioning.
+    /// Suppressed input is discarded for that dispatch; it is never buffered
+    /// inside InputHandler.
+    void handleInput(const InputState& inputState, bool gameplayEnabled = true) const;
 
     // 4. Getters
     /// Retrieve the command bound to a key (nullptr if unbound).

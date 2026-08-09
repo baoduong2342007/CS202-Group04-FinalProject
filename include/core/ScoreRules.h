@@ -8,6 +8,18 @@
 
 class Mario;
 
+/// Gameplay reason used by every enemy-defeat score producer.
+///
+/// PIT is intentionally represented for the shared release contract, but a
+/// pit death awards no enemy score.
+enum class DefeatCause {
+    STOMP,
+    SHELL,
+    FIREBALL,
+    STAR,
+    PIT
+};
+
 enum class ScoreEvent {
     COIN_COLLECTED,
     POWER_UP_COLLECTED,
@@ -37,7 +49,30 @@ constexpr int pointsFor(ScoreEvent event) {
     return 0;
 }
 
+/// Return the score value for a shared defeat cause.
+constexpr int pointsFor(DefeatCause cause) {
+    switch (cause) {
+        case DefeatCause::STOMP:
+            return pointsFor(ScoreEvent::ENEMY_STOMPED);
+        case DefeatCause::SHELL:
+            return pointsFor(ScoreEvent::SHELL_DEFEATED);
+        case DefeatCause::FIREBALL:
+            return pointsFor(ScoreEvent::FIREBALL_DEFEATED);
+        case DefeatCause::STAR:
+            return pointsFor(ScoreEvent::STAR_DEFEATED);
+        case DefeatCause::PIT:
+            return 0;
+    }
+
+    return 0;
+}
+
 /// Apply a catalogued score award to the authoritative Mario score.
 void award(Mario& mario, ScoreEvent event);
+
+/// Apply one shared defeat score. Callers must invoke this only after the
+/// victim has transitioned to its defeated state, so duplicate contacts cannot
+/// award the same victim twice.
+void awardDefeat(Mario& mario, DefeatCause cause);
 
 } // namespace ScoreRules

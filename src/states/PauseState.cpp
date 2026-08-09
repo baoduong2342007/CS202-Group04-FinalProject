@@ -117,5 +117,10 @@ void PauseState::adjustSelectedVolume(float delta) {
     } else {
         sound.setSoundVolume(sound.getSoundVolume() + delta);
     }
+
+    // SaveManager is the persistence owner. Persist both values after every
+    // adjustment so a pause-menu change survives an application restart.
+    GameManager::getInstance().getSaveManager().updateAudioSettings(
+        sound.getSoundVolume(), sound.getMusicVolume());
     refreshText();
 }

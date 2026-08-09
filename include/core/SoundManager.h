@@ -78,6 +78,7 @@ public:
     void playStarMusic();
     void restoreLevelMusic();
     bool isStarMusicActive() const;
+    std::optional<MusicId> getLevelMusicId() const { return m_levelMusicId; }
 
     /// Stop the currently playing background music
     void stopMusic();

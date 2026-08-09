@@ -18,8 +18,8 @@
 #include "patterns/EventType.h"
 
 namespace {
-constexpr float DEFAULT_SOUND_VOLUME = 100.f;
-constexpr float DEFAULT_MUSIC_VOLUME = 50.f;
+constexpr float DEFAULT_SOUND_VOLUME = 80.f;
+constexpr float DEFAULT_MUSIC_VOLUME = 70.f;
 } // namespace
 
 SoundManager& SoundManager::getInstance() {
@@ -118,7 +118,12 @@ void SoundManager::onNotify(EventType event) {
             playStarMusic();
             break;
         case EventType::PLAYER_INVINCIBILITY_EXPIRED:
-            restoreLevelMusic();
+            // Damage-grace expiry also uses this event. Only a Star override
+            // may restore the level track; otherwise an unrelated grace timer
+            // would interrupt death/GameOver music.
+            if (isStarMusicActive()) {
+                restoreLevelMusic();
+            }
             break;
         case EventType::FIREBALL_SHOT:
             playSound("fireball");

@@ -93,7 +93,9 @@ SuperMario/
 
 ├── docs/assets/reference/      ← TV5: source/reference, không package runtime
 │   ├── enemies.png
-│   ├── enemies_all_components_atlas.png
+│   ├── enemies_all_components_atlas_full.png
+│   ├── blocks_all_components_atlas_full.png
+│   ├── items_objects_all_components_atlas_full.png
 │   ├── general_tile.png
 │   └── tileset(v2).png
 │

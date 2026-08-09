@@ -10,6 +10,8 @@
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
 #include "core/ScoreRules.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 
 namespace {
 constexpr float COIN_WIDTH  = 16.f;
@@ -102,6 +104,7 @@ void Coin::awardTo(Mario& mario) {
     while (coins >= COINS_PER_LIFE) {
         coins -= COINS_PER_LIFE;
         mario.addLife();
+        EventBus::getInstance().notify(EventType::ONE_UP_COLLECTED);
     }
     if (coins != mario.getCoinCount()) {
         mario.setCoinCount(coins);

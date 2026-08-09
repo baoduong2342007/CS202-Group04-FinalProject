@@ -79,6 +79,9 @@ public:
     /// Reset the countdown for a newly loaded level.
     void resetTimer(int seconds = DEFAULT_LEVEL_TIME);
 
+    /// Stop the countdown for a terminal gameplay event.
+    void stopTimer();
+
     /// Optional hooks let the state/gameplay owner connect warning and
     /// timeout behavior without coupling HUD to SoundManager or Mario death.
     void setTimeWarningCallback(std::function<void()> callback);

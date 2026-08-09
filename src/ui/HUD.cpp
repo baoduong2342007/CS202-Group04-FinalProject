@@ -31,13 +31,6 @@
 namespace {
 // ── Constants ────────────────────────────────────────────────
 constexpr const char *FONT_PATH = "assets/fonts/mario.ttf";
-// Fallback fonts (system paths) used when the pixel font is missing.
-// SFML 3.0.0 has no sf::Font::getDefaultFont(), so we try common system fonts.
-constexpr const char *FALLBACK_FONT_PATHS[] = {
-    "C:/Windows/Fonts/arial.ttf",
-    "C:/Windows/Fonts/segoeui.ttf",
-    "C:/Windows/Fonts/consola.ttf",
-};
 constexpr unsigned int FONT_SIZE = 8;
 
 // HUD layout positions (screen-space, drawn on default view)
@@ -147,6 +140,7 @@ void HUD::onNotify(EventType event) {
             break;
         case EventType::PLAYER_DIED:
             m_starPowerActive = false;
+            stopTimer();
             refreshText();
             break;
         case EventType::PLAYER_POWER_UP:
@@ -248,6 +242,11 @@ void HUD::resetTimer(int seconds) {
     refreshText();
 }
 
+void HUD::stopTimer() {
+    m_timerEnabled = false;
+    m_timerPausedForEvent = false;
+}
+
 void HUD::setTimeWarningCallback(std::function<void()> callback) {
     m_timeWarningCallback = std::move(callback);
 }
@@ -264,25 +263,11 @@ bool HUD::loadFont(const std::string &filepath) {
     return true;
   }
 
-  // Preferred pixel font missing — fall back to a system font so the HUD
-  // still renders instead of silently disappearing.
+  // Runtime must be portable: never probe absolute system font paths. The
+  // packaged font is the only supported font for the release build.
 #ifdef DEBUG
-  std::cerr << "[DEBUG][HUD] Failed to load font from '" << filepath
-            << "'. Trying system fallback fonts...\n";
-#endif
-  for (const char *fallback : FALLBACK_FONT_PATHS) {
-    if (m_font.openFromFile(fallback)) {
-#ifdef DEBUG
-      std::cerr << "[DEBUG][HUD] Using fallback font '" << fallback << "'\n";
-#endif
-      return true;
-    }
-  }
-
-  // No font available at all — HUD text will not be drawn.
-#ifdef DEBUG
-  std::cerr << "[DEBUG][HUD] All fallback fonts failed. "
-            << "HUD text will not be drawn.\n";
+  std::cerr << "[DEBUG][HUD] Failed to load packaged font from '" << filepath
+            << "'. HUD text is disabled.\n";
 #endif
   return false;
 }

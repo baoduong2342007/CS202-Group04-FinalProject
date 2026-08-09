@@ -11,6 +11,8 @@
 
 #include <SFML/System/Vector2.hpp>
 
+class Mario;
+
 enum class KoopaState {
     WALKING,
     SHELL_IDLE,
@@ -33,6 +35,11 @@ public:
 
     void kick(Direction direction);
 
+    /// Mario who last kicked this shell; used as the score owner if the shell
+    /// later defeats another enemy.
+    void setDefeatOwner(Mario* owner) { m_defeatOwner = owner; }
+    Mario* getDefeatOwner() const { return m_defeatOwner; }
+
     bool isInShell() const;
     bool isShellSliding() const;
     KoopaState getState() const;
@@ -54,4 +61,5 @@ private:
     const TileMap* m_tileMap = nullptr;
 
     bool m_pendingShellFixtureRebuild = false;
+    Mario* m_defeatOwner = nullptr;
 };

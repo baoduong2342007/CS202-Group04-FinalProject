@@ -25,3 +25,23 @@ void Enemy::activate() {
 bool Enemy::isActivated() const {
     return m_activated;
 }
+
+bool Enemy::tryCommitDefeat() {
+    if (m_defeatCommitted || isDead() || shouldRemove() ||
+        isPendingDestroy() || !isActive()) {
+        return false;
+    }
+
+    m_defeatCommitted = true;
+    return true;
+}
+
+bool Enemy::tryCommitStomp() {
+    if (m_stompCommitted || isDead() || shouldRemove() ||
+        isPendingDestroy() || !isActive()) {
+        return false;
+    }
+
+    m_stompCommitted = true;
+    return true;
+}

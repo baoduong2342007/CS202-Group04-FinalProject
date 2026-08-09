@@ -14,7 +14,6 @@
 #include <box2d/box2d.h>
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames.h"
-#include "core/SoundManager.h"
 
 namespace {
 
@@ -96,7 +95,6 @@ void Goomba::onFireHit() {
 
     m_isFlippedDead = true;
     setHealth(0);
-    SoundManager::getInstance().playSound("kickkill");
 
     b2Body* body = getBody();
     if (body) {

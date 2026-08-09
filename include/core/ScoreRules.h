@@ -70,9 +70,4 @@ constexpr int pointsFor(DefeatCause cause) {
 /// Apply a catalogued score award to the authoritative Mario score.
 void award(Mario& mario, ScoreEvent event);
 
-/// Apply one shared defeat score. Callers must invoke this only after the
-/// victim has transitioned to its defeated state, so duplicate contacts cannot
-/// award the same victim twice.
-void awardDefeat(Mario& mario, DefeatCause cause);
-
 } // namespace ScoreRules

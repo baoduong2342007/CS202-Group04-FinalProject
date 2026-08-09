@@ -49,6 +49,18 @@ public:
         return !isActive() || isDead();
     }
 
+    /// Claim the one shared defeat transaction for this victim.
+    /// CollisionManager owns the transaction; the latch only prevents a
+    /// second fixture/contact from applying damage, score, or SFX again.
+    bool tryCommitDefeat();
+
+    /// Claim the one stomp interaction for this victim. A Koopa's first stomp
+    /// changes it into a shell instead of killing it, so this is separate from
+    /// the terminal defeat latch.
+    bool tryCommitStomp();
+
 private:
     bool m_activated = false;
+    bool m_defeatCommitted = false;
+    bool m_stompCommitted = false;
 };

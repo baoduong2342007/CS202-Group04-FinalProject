@@ -64,11 +64,39 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
 constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
 
-float calculateBackgroundTop(std::size_t levelHeightInTiles) {
-    const float levelHeight = static_cast<float>(levelHeightInTiles * TILE_SIZE);
-    const float groundTop = std::max(0.f, levelHeight - static_cast<float>(TILE_SIZE));
-    const float backgroundHeight = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.y);
-    return std::max(0.f, groundTop - backgroundHeight);
+std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
+    const std::size_t height = tileMap.getHeight();
+    const std::size_t width = tileMap.getWidth();
+    if (height == 0 || width == 0) {
+        return 0;
+    }
+
+    // The floor can be one or several rows thick. A floor row is identified by
+    // its dominant ground-tile coverage; sparse platforms above it must not
+    // move the background down.
+    const auto isFloorRow = [&tileMap, width](std::size_t row) {
+        std::size_t groundTiles = 0;
+        for (std::size_t column = 0; column < width; ++column) {
+            if (tileMap.getTileAt(static_cast<int>(column), static_cast<int>(row)) == '1') {
+                ++groundTiles;
+            }
+        }
+        return groundTiles * 2 >= width;
+    };
+
+    std::size_t surfaceRow = height - 1;
+    while (surfaceRow > 0 && isFloorRow(surfaceRow - 1)) {
+        --surfaceRow;
+    }
+    return surfaceRow;
+}
+
+float calculateBackgroundTop(const TileMap& tileMap) {
+    const float groundTop = static_cast<float>(findGroundSurfaceRow(tileMap) * TILE_SIZE);
+    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
+    // Do not clamp this to zero: short levels can legitimately place the full
+    // background frame above world Y=0 while the camera is already inside it.
+    return groundTop - backgroundHeight;
 }
 } // namespace
 
@@ -260,23 +288,29 @@ void Level::render(sf::RenderTarget& target) {
     // Apply camera view
     target.setView(m_camera.getView());
 
-    // Draw Mountain Background for main levels (temporarily disabled for level0)
-    if (m_levelPath.find("level0") == std::string::npos) {
-        const sf::Texture& bgTex = m_textureManager.getTexture(std::string(SpriteFrames::Backgrounds::MOUNTAINS_PATH));
-        sf::Sprite bgSprite(bgTex);
-        bgSprite.setTextureRect(SpriteFrames::Backgrounds::OVERWORLD);
+    // Draw the cheerful pixel-art world background behind the tilemap.
+    const sf::Texture& bgTex = m_textureManager.getTexture(
+        std::string(SpriteFrames::Backgrounds::WORLD_PATH));
+    sf::Sprite bgSprite(bgTex);
+    bgSprite.setTextureRect(SpriteFrames::Backgrounds::WORLD);
 
-        float stripWidth = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.x);
-        float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-        float backgroundTop = calculateBackgroundTop(m_tileMap.getHeight());
+    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
+    const float backgroundScale =
+        backgroundHeight / static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.y);
+    const float stripWidth =
+        static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.x) * backgroundScale;
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+    const float backgroundTop = calculateBackgroundTop(m_tileMap);
 
-        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
-            bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
-            target.draw(bgSprite);
-        }
+    std::size_t stripIndex = 0;
+    for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
+        const bool mirrored = (stripIndex % 2u) != 0u;
+        bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
+                                   : sf::Vector2f(backgroundScale, backgroundScale));
+        bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
+                                     : sf::Vector2f(x, backgroundTop));
+        target.draw(bgSprite);
     }
-
-
 
     // Draw tilemap background
     m_tileMap.render(target);

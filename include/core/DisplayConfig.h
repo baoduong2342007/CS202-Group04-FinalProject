@@ -39,6 +39,6 @@ namespace DisplayConfig {
     /**
      * @brief The default background color used to clear the render texture (Sky Blue).
      */
-    const sf::Color BACKGROUND_COLOR(100, 149, 237);
+    const sf::Color BACKGROUND_COLOR(69, 197, 250);
 
 } // namespace DisplayConfig

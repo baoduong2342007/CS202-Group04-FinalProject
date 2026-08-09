@@ -2,8 +2,8 @@
 
 > **Phạm vi:** Chỉ ghi các thay đổi TV5 được thực hiện trong lượt fix này.
 > Không dùng file này để kết luận task của TV1, TV2, TV3 hoặc TV4.
-> **Trạng thái:** Debug/Release/Tests build sạch; CTest `10/10`.
-> **Mốc kiểm tra:** `HEAD 59df1a6 + working tree`, ngày `2026-08-09`.
+> **Trạng thái:** Debug/Release/Tests build sạch; CTest `12/12`; `git diff --check` pass.
+> **Mốc kiểm tra:** `HEAD 128e047d876adcc06cfa672d66613c050d32059c + working tree`, ngày `2026-08-09`.
 
 ---
 
@@ -63,7 +63,16 @@ X auto-repeat và suppression.
 | Shell / FireBall / Star | 200 |
 | Pit | 0 |
 
-Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catalog.
+`ScoreRules::pointsFor()` chỉ là catalog pure cause → points. Runtime defeat đi
+qua một operation duy nhất là `CollisionManager::defeatEnemy()`: operation này
+commit victim đúng một lần, gọi callback gameplay cần thiết, cộng score cho
+owner và phát event cause-specific. Không còn producer tự cộng score defeat.
+
+`STOMP` là transaction riêng vì Koopa stomp chuyển sang shell; shell kick phát
+`SHELL_KICKED`, còn shell/fireball/star defeat lần lượt phát
+`ENEMY_DEFEATED_BY_SHELL`, `ENEMY_DEFEATED_BY_FIREBALL` và
+`ENEMY_DEFEATED_BY_STAR`. Latch ở `Enemy` chặn score/event lặp khi contact còn
+tồn tại; owner của shell được giữ từ Mario đã kick shell.
 
 ### File liên quan
 
@@ -71,6 +80,9 @@ Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catal
 - [`src/items/Coin.cpp`](../../src/items/Coin.cpp)
 - [`include/core/ScoreRules.h`](../../include/core/ScoreRules.h)
 - [`src/core/ScoreRules.cpp`](../../src/core/ScoreRules.cpp)
+- [`include/physics/CollisionManager.h`](../../include/physics/CollisionManager.h)
+- [`src/physics/CollisionManager.cpp`](../../src/physics/CollisionManager.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
 - [`src/entities/Mario.cpp`](../../src/entities/Mario.cpp)
 - [`tests/TV5IntegrationTests.cpp`](../../tests/TV5IntegrationTests.cpp)
 
@@ -105,6 +117,12 @@ Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catal
 - Pause điều chỉnh Music và SFX độc lập, phản hồi ngay và lưu qua một
   `GameManager`/`SaveManager` dùng chung.
 - Composition root nạp lại hai volume từ SaveManager khi khởi động.
+- `SoundManager` map kick và kill qua hai logical cue riêng
+  (`shell_kick`/`shell_kill`); event defeat của fireball/star cũng có cue riêng.
+  Bản sample `kickkill.wav` hiện được tái sử dụng cho các cue này cho tới khi
+  có recording chuyên biệt.
+- Resume đi qua `GAME_RESUMED`, còn death/GameOver/Win và track Level 1–3 được
+  kiểm tra qua state lifecycle thật trong `GameManager`/`PlayState`.
 
 ### File liên quan
 
@@ -122,6 +140,10 @@ Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catal
   `docs/assets/reference/`, nên không còn bị CMake đóng gói vào runtime.
 - `assets/ASSETS_LIST.md` được đối chiếu theo PNG thật và ghi rõ Runtime,
   Reference hoặc Future.
+- `items_objects.png` là atlas runtime của Mushroom, Coin, FireFlower và Star;
+  `items_blocks.png` là atlas runtime của QuestionBlock.
+- `assets/ui/bg_world.png` là background runtime hiện tại; `bg_clouds.png` chỉ
+  là Future vì chưa có caller runtime.
 - Kích thước runtime được khóa trong test:
   - tileset `680×776`
   - enemies `436×530`
@@ -137,12 +159,12 @@ Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catal
 - [`FILE_STRUCTURE.md`](../../FILE_STRUCTURE.md)
 - [`docs/blocks_coordinate.md`](../blocks_coordinate.md)
 - [`docs/items_objects_coordinate.md`](../items_objects_coordinate.md)
-- `assets/textures/enemies/enemies_all_components_atlas.png` (đã chuyển ra
-  khỏi runtime)
-- `assets/textures/items/blocks_all_components_atlas.png` (đã chuyển ra khỏi
-  runtime)
-- `assets/textures/items/items_objects_all_components_atlas.png` (đã chuyển ra
-  khỏi runtime)
+- `docs/assets/reference/enemies_all_components_atlas.png` (reference, ngoài
+  runtime package)
+- `docs/assets/reference/blocks_all_components_atlas_full.png` (reference,
+  ngoài runtime package)
+- `docs/assets/reference/items_objects_all_components_atlas_full.png`
+  (reference, ngoài runtime package)
 
 ---
 
@@ -154,8 +176,15 @@ Thêm `ScoreRules::awardDefeat()` và regression assertions cho toàn bộ catal
 - FireFlower, adaptive block, Star expiry/HUD và one-up threshold.
 - Score catalog theo `DefeatCause`.
 - HUD timer pause/timeout/death/flag guard.
-- Level music catalog, SFX catalog, Star restore và volume persistence.
+- Runtime defeat score/event path với Box2D contact thật, shell kick/kill không
+  lặp, và event-to-SFX mapping.
+- Level 1–3 music transition, death/GameOver/Win, pause/resume, Star restore và
+  volume persistence qua state/audio lifecycle thật.
 - Asset dimensions, manifest content và runtime/reference classification.
+
+Phần kiểm tra thiết bị audio không thể chứng minh bằng headless CTest được ghi
+trong [TV5 audio/HUD/item checklist](TV5_AUDIO_HUD_ITEM_CHECKLIST.md); tài liệu
+đó tách rõ automated evidence và manual-only steps.
 
 Verification đã chạy:
 
@@ -171,5 +200,6 @@ cmake --build --preset mingw-tests --parallel 2
 ctest --preset mingw-tests --output-on-failure
 ```
 
-Kết quả: `100% tests passed, 0 tests failed out of 10`. `git diff --check`
-cũng pass. File này là nguồn tổng kết duy nhất của TV5 cho lượt fix này.
+Kết quả: `100% tests passed, 0 tests failed out of 12`. `git diff --check`
+cũng pass. Snapshot này là `HEAD + working tree`, chưa phải commit release;
+không dùng nó để kết luận task của TV1, TV2, TV3 hoặc TV4.

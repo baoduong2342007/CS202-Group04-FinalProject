@@ -260,6 +260,16 @@
   1. **Điều chỉnh ma sát phanh (`SKID_FRICTION`)**: Đổi hằng số `SKID_FRICTION` từ `2200.f` về `1200.f` trong `Mario.cpp`.
   2. **Kết quả**: Khi Mario đang chạy nhanh (tốc độ tối đa 340 px/s) và bấm phím ngược hướng để phanh lại, thời gian trượt phanh và hiển thị animation `skid` kéo dài từ ~0.15s lên ~0.28s, mang lại cảm giác phanh trượt mượt mà và đúng chuẩn game Mario gốc.
 
+### Entry #27: [Merge TV4 Branch & Finalize Level/Enemy System] - Integrated feature/level-and-enemy into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (10/10 ctest passed).
+- **File ảnh hưởng:** `CMakeLists.txt`, `docs/management/TV4_CHANGES_SUMMARY.md`, [TileMap.h](../include/level/TileMap.h), [CollisionManager.h](../include/physics/CollisionManager.h), [level0.txt](../levels/level0.txt), [level1.txt](../levels/level1.txt), [level2.txt](../levels/level2.txt), [level3.txt](../levels/level3.txt), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.cpp](../src/entities/Koopa.cpp), [Level.cpp](../src/level/Level.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [ContactListener.cpp](../src/physics/ContactListener.cpp), [LevelValidatorTests.cpp](../tests/LevelValidatorTests.cpp)
+- **Mô tả:** 
+  1. **Level File Validation**: Bổ sung cơ chế validate nghiêm ngặt file level trong `TileMap::loadFromFile()` (đúng 1 Mario spawn `M`, 1 finish point `F`, cột cờ `|` liên tục kết thúc ở ô solid, và cùng chiều rộng hàng). Thêm bộ test `LevelValidatorTests.cpp` với 8 bài unit test tự động (100% pass).
+  2. **Release Level Normalization**: Chuẩn hóa cấu trúc và layout 3 màn chơi chính Level 1 (183×12), Level 2 (250×12), Level 3 (281×12) và fixture Level 0. Bổ sung các cụm pipe traversal và phần thưởng Fire Flower ở giữa Level 2.
+  3. **Cải tiến Tile & Physics Collision Pipeline**: Tinh chỉnh AI quái Goomba/Koopa với ledge detection và bỏ qua va chạm mép gạch (`isWalkableSupportSeam`). Dependency injection truyền `TileMap&` qua `ContactListener` và `CollisionManager`. Chuẩn hóa `QuestionBlock` làm Single Source of Truth cho tile hits. Mở rộng finish trigger bao phủ toàn bộ chiều cao cột cờ.
+  4. **Merge & Giải Quyết Xung Đột**: Hợp nhất thành công nhánh `feature/level-and-enemy` vào `develop`. Giải quyết xung đột merge tại `Koopa.cpp` và `CollisionManager.cpp`, giữ nguyên cả logic bỏ qua va chạm quái dying/dead lẫn logic seam check. Xóa `#include "entities/FireBall.h"` bị lặp trong `Level.cpp`. Toàn bộ 10/10 ctest đều vượt qua.
+
+
 
 
 

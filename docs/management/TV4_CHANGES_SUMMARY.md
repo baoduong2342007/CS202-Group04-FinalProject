@@ -3,9 +3,9 @@
 # **Tổng Kết Những Thay Đổi Của TV4 — Sprint 6**
 
 > **Tác giả:** TV4 (Vy) — Level, Enemy & SaveManager  
-> **Phạm vi hiện tại:** S6-TV4-02 đến S6-TV4-16, S6-TV4-21 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
+> **Phạm vi hiện tại:** S6-TV4-01 đến S6-TV4-27, S6-TV4-29, S6-TV4-31 đến S6-TV4-39
 > **Trạng thái:** Build thành công, toàn bộ CTest hiện tại đã pass  
-> **Cập nhật gần nhất:** Sau khi tích hợp nhánh TV3 Mario & Physics
+> **Cập nhật gần nhất:** Sau khi chuẩn hóa release levels và sửa enemy patrol/collision regressions
 
 ---
 
@@ -302,7 +302,7 @@ Các lệnh đã sử dụng:
 
 ```bash
 git diff --check
-cmake --build build -j1
+cmake --build build --parallel 1
 ctest --test-dir build --output-on-failure
 ```
 
@@ -339,11 +339,12 @@ Trước đây các tile `U` và `O` có hai đường xử lý:
 
 Hiện tại `QuestionBlock::onHit()` là source of truth duy nhất cho:
 
-| Tile | QuestionBlock content |
-| ---- | --------------------- |
-| `?`  | Coin                  |
-| `U`  | Super Mushroom        |
-| `O`  | 1-Up Mushroom         |
+| Tile  | QuestionBlock content |
+| ----  | --------------------- |
+| `?`   | Super Mushroom        |
+| `U/u` | 1-Up Mushroom         |
+| `f/h` | Fire Flower           |
+| `O/o` | Starman / Star        |
 
 ### Phương pháp được sử dụng
 
@@ -493,7 +494,7 @@ Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, n
 
 ---
 
-## 8. Four-Tile TileMap Spritesheet
+## 8. Consolidated TileMap Tileset
 
 ### File liên quan
 
@@ -502,66 +503,50 @@ Khi chuyển sang level mới, `PlayState` tạo một `Level` instance mới, n
 - [`levels/level2.txt`](../../levels/level2.txt)
 - [`assets/textures/tiles/tileset.png`](../../assets/textures/tiles/tileset.png)
 
-### S6-TV4-09 — Chuyển TileMap sang tileset bốn frame
+### S6-TV4-09 — Chuyển TileMap sang consolidated tileset
 
-`TileMap` trước đây sử dụng `items_blocks.png` và các frame trong `SpriteFrames::Blocks` để render terrain. Điều này khiến ground, brick và finish pole phụ thuộc vào spritesheet dành cho item/block, đồng thời một số tile cũ như pipe vẫn sử dụng placeholder.
-
-Theo cấu trúc asset mới của nhóm, `TileMap` hiện sử dụng:
+`TileMap` sử dụng:
 
 ```text
 assets/textures/tiles/tileset.png
 ```
 
-Tileset gồm đúng bốn frame nằm ngang, mỗi frame có kích thước 32×32:
+làm source terrain chung.
 
-| Index | Nội dung       |
-| ----- | -------------- |
-| 0     | Ground         |
-| 1     | Brick          |
-| 2     | Question block |
-| 3     | Finish pole    |
+Source frame có kích thước 16×16 và được render ở world tile size 32×32.
+
+Các terrain symbol có frame riêng gồm:
+
+```text
+1       Ground
+B       Brick
+E       Used block
+[ ]     Pipe top
+{ }     Pipe body
+F       Finish top
+|       Finish pole
+```
+
+QuestionBlock vẫn được quản lý bởi `QuestionBlock` entity để tránh duplicate rendering hoặc item spawning.
+Các pipe symbol `[ ] { }` tiếp tục thuộc grammar hợp lệ và được sử dụng trong Level 2.
 
 ### Phương pháp được sử dụng
-
-Các frame trong tileset được truy cập thông qua named indices thay vì hardcode trực tiếp texture coordinates.
-
-```
-GROUND_TILE_INDEX
-BRICK_TILE_INDEX
-QUESTION_TILE_INDEX
-FINISH_POLE_TILE_INDEX
-```
 
 Helper `makeTilesetRect()` chuyển tile index thành `sf::IntRect` tương ứng trong spritesheet.
 
 `TileMap` không còn phụ thuộc vào `SpriteFrames::Blocks` để render terrain.
 
-Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi`QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
-
-### Loại bỏ pipe tile cũ
-
-Các ký hiệu pipe:
-
-```
-[ ] { }
-```
-
-đã được loại khỏi level format vì tileset mới không còn chứa các frame pipe và thiết kế level hiện tại không sử dụng pipe.
-
-Các pipe cũ trong `level1.txt` và `level2.txt` được thay bằng empty tile `.` để giữ nguyên kích thước từng hàng của level.
-
-Các symbol tương ứng cũng được loại khỏi:
-
-- level validation;
-- solid tile semantics;
-- TileMap rendering;
-- tileset frame mapping.
+Question block (`?`, `U`, `O`) tiếp tục được quản lý và render bởi `QuestionBlock` entity, tránh việc cùng một block bị render hai lần.
 
 ### Kết quả
 
-`TileMap` hiện sử dụng một tileset terrain thống nhất gồm bốn frame, không còn dùng brick hoặc empty block làm placeholder cho terrain khác.
+`TileMap` sử dụng consolidated terrain atlas làm source chung cho terrain rendering.
 
-Level files cũng được đồng bộ với tập tile symbol hiện tại.
+Source rectangles được tách khỏi world tile size: atlas sử dụng frame 16×16 trong khi gameplay world vẫn dùng tile 32×32.
+
+QuestionBlock tiếp tục được render và quản lý bởi entity riêng, còn pipe, ground, brick, used block và finish pole được render từ `TileMap`.
+
+Level grammar và rendering hiện sử dụng cùng một symbol contract.
 
 ---
 
@@ -584,7 +569,8 @@ Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã 
 - Mario có khoảng trống để làm quen movement ngay sau spawn.
 - Coin xuất hiện trước enemy đầu tiên.
 - QuestionBlock xuất hiện trước combat.
-- `U` cung cấp Super Mushroom trước Goomba đầu tiên.
+- `?` cung cấp Super Mushroom trong phần tutorial.
+- Level cũng có Fire Flower, 1-Up và Star ở các khu vực sau để giới thiệu item mechanics có chủ đích.
 - Level có thể hoàn thành từ spawn tới flag.
 - Không cần damage boost để hoàn thành.
 - Build và toàn bộ CTest hiện tại pass.
@@ -597,22 +583,41 @@ Không cần thay đổi thêm layout vì thứ tự tutorial hiện tại đã 
 
 - [`levels/level1.txt`](../../levels/level1.txt)
 
-- ### S6-TV4-14 — Kiểm tra Level 1 gaps
+### S6-TV4-14 — Kiểm tra Level 1 gaps
 
-  Level 1 được kiểm tra dựa trên các bề mặt Mario thực sự có thể đứng, không chỉ dựa trên khoảng trống ở hàng ground thấp nhất.
+Level 1 được kiểm tra theo các gap bắt buộc trên completion route và movement/jump hiện tại của Mario.
 
-  Các gap bắt buộc trên completion route được thử trực tiếp với movement và jump hiện tại của Mario.
+Hai pit gap bắt buộc đều rộng:
 
-  Kết quả:
+```text
+3 tiles = 96 px
+```
 
-  - Không có jump bắt buộc vượt ngoài jump envelope hiện tại.
-  - Không có frame-perfect jump.
-  - Không cần damage boost để vượt gap.
-  - Các staircase/platform phía trên được tính là một phần của traversal route.
-  - Nếu một jump yêu cầu run, run phải được expose qua input và được giới thiệu
-    trước obstacle đó.
+Khoảng cách này nằm trong walking-jump envelope hiện tại và không yêu cầu Run hoặc damage boost.
 
-  Không cần thay đổi geometry nếu toàn bộ manual checks trên pass.
+### Manual verification
+
+Hai gap được test trực tiếp trong gameplay với:
+
+```text
+- Không giữ Shift / không Run.
+- Walking + Space để jump.
+- Không cần run-up dài.
+- Không dùng damage boost.
+```
+
+Kết quả:
+
+```text
+Gap 1: PASS
+Gap 2: PASS
+```
+
+Không phát hiện frame-perfect jump, blind landing bắt buộc hoặc obstacle vượt ngoài jump envelope.
+
+### Kết luận
+
+Level 1 completion route đáp ứng fairness requirement của S6-TV4-14.
 
 ---
 
@@ -645,8 +650,6 @@ inactive → activated
 ```
 
 Sau khi đã activate, enemy tiếp tục được update bình thường và không bị reset hoặc freeze lại khi rời viewport.
-
-Việc cleanup enemy đã đi quá xa phía sau camera được tách sang S6-TV4-22.
 
 ### Phân chia trách nhiệm
 
@@ -692,6 +695,23 @@ Các pipe:
 - tham gia TileMap collision như terrain;
 - tạo thêm các bề mặt đứng/nhảy mà không thay đổi completion route chính.
 
+Level 2 cũng được bổ sung một Fire Flower block `f` trong khu pipe giữa level.
+
+Vị trí này được chọn sau phần mở đầu và trước các encounter tiếp theo để
+Fire Flower đóng vai trò mid-level reward thay vì xuất hiện quá sớm hoặc
+quá sát finish.
+
+Level 2 hiện có:
+
+```text
+pipe traversal
+Goomba
+Koopa
+shell gameplay
+Fire Flower
+finish route
+```
+
 ### Kiểm tra
 
 - Pipe render đúng từ consolidated tileset.
@@ -708,80 +728,214 @@ Các pipe:
 
 ### S6-TV4-16 — Kiểm tra spawn fairness của Level 2
 
-Các spawn Koopa trong Level 2 được kiểm tra để bảo đảm enemy có terrain
-hợp lệ dưới vị trí spawn và không tạo unavoidable damage khi Mario tiếp cận.
+Các spawn Koopa trong Level 2 được kiểm tra trực tiếp trong gameplay sau khi hoàn tất các enemy patrol/collision regression fixes.
 
-Layout hiện tại không cần thay đổi thêm nếu các Koopa vẫn đứng đúng platform
-khi bắt đầu xuất hiện trong viewport.
+Static validatiion xác nhận các Koopa đều có enemy-support surface hợp lệ tại vị trí spawn và không nằm bên trong pipe hoặc solid terrain.
 
-Tuy nhiên, yêu cầu “Koopa không rơi hoặc attack trước khi thấy” còn phụ thuộc
-vào enemy activation policy của S6-TV4-21.
-
-### Kiểm tra
-
-- Koopa không spawn giữa không trung.
-- Koopa không spawn bên trong pipe hoặc solid terrain.
-- Spawn không nằm ngay tại blind landing bắt buộc.
-- Không có unavoidable damage ngay khi Mario tiến vào khu vực.
-- Enemy activation trước khi Mario tiếp cận hiện được kiểm soát bởi S6-TV4-21 với vùng activation 64 px phía trước viewport.
-
----
-
-## 14. Off-screen Enemy Cleanup
-
-### S6-TV4-22 — Cleanup enemy quá xa phía sau viewport
-
-Enemy off-screen policy được điều chỉnh để tránh hai vấn đề:
-
-1. Enemy chưa được nhìn thấy chạy AI trên toàn bộ map.
-2. Enemy đã đi rất xa phía sau camera vẫn tồn tại vô thời hạn.
-
-S6-TV4-21 chịu trách nhiệm first-time activation trong vùng 64 px phía trước viewport.
-
-Sau khi được activate, enemy tiếp tục gameplay update bình thường và không bị freeze hoặc reset khi tạm rời viewport.
-
-Enemy chỉ được đánh dấu removal khi toàn bộ bounding box đã nằm xa hơn một chiều rộng viewport phía sau cạnh trái camera.
+Enemy activation tiếp tục sử dụng vùng:
 
 ```text
-inactive
-   ↓
-64 px activation range
-   ↓
-activated
-   ↓
-continue updating
-   ↓
-more than one viewport behind camera
-   ↓
-markForRemoval()
+viewport + 64 px
 ```
 
-### Phân chia trách nhiệm
+Enemy chưa vào activation range không chạy patrol. Sau khi activate, Koopa giữ state và patrol bình thường trên platform.
 
-Task này chỉ cleanup enemy phía sau camera.
+### Runtime verification
 
-Không xử lý:
+Các encounter trong Level 2 được chơi trực tiếp từ đầu đến cuối.
 
-- item/projectile cleanup;
-- entity dưới level bounds;
-- pit cleanup;
-- Koopa ledge hoặc shell behavior.
+Kết quả:
 
-Các trường hợp generic entity cleanup được xử lý riêng trong S6-TV4-31.
+```text
+- Cặp Koopa đầu level: PASS
+- Các Koopa còn lại: PASS
+- Activation timing: PASS
+- Platform / ledge behavior: PASS
+- Enemy-enemy pass-through: PASS
+- No blind / unavoidable attack: PASS
+```
 
-### Kiểm tra
+Trong các encounter có nhiều enemy, Walking Koopa có thể lướt qua enemy khác mà không push, kẹt hoặc reverse direction.
 
-- Enemy chưa activate không chạy AI.
-- Enemy activate đúng theo S6-TV4-21.
-- Enemy đã activate không bị reset khi rời viewport.
-- Enemy chưa quá một viewport phía sau vẫn tồn tại.
-- Enemy quá một viewport phía sau được cleanup.
-- Item và QuestionBlock không bị ảnh hưởng.
-- Build và toàn bộ CTest pass.
+Koopa cũng đi qua các walkable support seam như:
+
+```text
+B -> ? -> B
+```
+
+mà không quay đầu sai, trong khi wall và ledge thật vẫn làm Koopa reverse.
+
+Không phát hiện Koopa rơi khỏi platform ngay sau activation hoặc gây unavoidable damage trước khi người chơi có cơ hội quan sát và phản ứng.
+
+### Kết luận
+
+Level 2 đáp ứng spawn fairness requirement của S6-TV4-16.
 
 ---
 
-## 15. Koopa Ledge Detection
+## 14. Release Level Data Normalization
+
+### File liên quan
+
+- [`levels/level1.txt`](../../levels/level1.txt)
+- [`levels/level2.txt`](../../levels/level2.txt)
+- [`levels/level3.txt`](../../levels/level3.txt)
+
+### S6-TV4-13/15/17/19 — Chuẩn hóa ba release level
+
+Ba release level được rà soát lại để sử dụng cùng level grammar và có
+row width nhất quán.
+
+Kích thước hiện tại:
+
+```text
+Level 1: 183 × 12
+Level 2: 250 × 12
+Level 3: 281 × 12
+```
+
+Mỗi level có đúng:
+
+```text
+1 Mario spawn M
+1 finish F
+continuous finish pole |
+```
+
+Các level sử dụng chung item symbol contract:
+
+```text
+?     Super Mushroom
+U/u   1-Up Mushroom
+f/h   Fire Flower
+O/o   Starman / Star
+```
+
+### Level 1
+
+Level 1 giữ vai trò tutorial và giới thiệu movement, coin, QuestionBlock, Mushroom, Goomba và finish route trước khi tăng dần mật độ enemy và item.
+
+
+### Level 2
+
+Level 2 tập trung vào underground-style traversal với pipe, Goomba, Koopa và shell gameplay.
+
+Một Fire Flower block được đặt trong khu pipe giữa level để đáp ứng power-up progression của level và cho người chơi đủ thời gian sử dụng Fire Mario trước finish.
+
+### Level 3
+
+Level 3 được sửa lại thành map hợp lệ 281×12 thay vì các row có chiều dài không nhất quán.
+
+Level giữ layout challenge hiện tại và có:
+
+```text
+mixed Goomba / Koopa encounters
+Star block
+platform / stone gauntlet
+final finish-pole section
+```
+
+Star được đặt trước phần challenge cuối để item xuất hiện có mục đích thay vì chỉ tồn tại để thỏa symbol requirement.
+
+---
+
+## 15. Level 3 Fairness Verification
+
+### S6-TV4-18 — Kiểm tra fairness của Level 3
+
+Level 3 được chơi trực tiếp từ spawn đến finish sau khi hoàn tất các
+enemy patrol, activation và collision regression fixes.
+
+Level được kiểm tra với mục tiêu bảo đảm final challenge khó hơn các level
+trước nhưng vẫn có completion route hợp lệ và không yêu cầu exploit hoặc
+damage boost.
+
+### Runtime verification
+
+Kết quả playthrough:
+
+```text
+Level completion: PASS
+Required jumps: PASS
+Enemy visibility: PASS
+Mixed Goomba / Koopa encounters: PASS
+Star placement: PASS
+Final gauntlet: PASS
+No damage boost required: PASS
+```
+
+Các jump bắt buộc có đủ khoảng tiếp cận và landing space, không phát hiện frame-perfect jump bắt buộc.
+
+Enemy được activate theo viewport policy và xuất hiện đủ sớm để người chơi có thời gian quan sát và phản ứng.
+
+Các encounter kết hợp Goomba và Koopa không tạo unavoidable damage. Enemy thông thường có thể lướt qua nhau thay vì tạo blocking hoặc unexpected direction reversal.
+
+Star xuất hiện trước phần challenge cuối và có thể được sử dụng như một power-up có chủ đích trong completion route.
+
+Final gauntlet có ít nhất một route hợp lệ tới finish pole mà không cần:
+
+```text
+damage boost
+collision exploit
+frame-perfect input
+```
+
+### Kết luận
+Level 3 đáp ứng fairness requirement của S6-TV4-18.
+
+---
+
+## 15. Off-screen Enemy Update Policy
+
+### File liên quan
+
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
+
+### S6-TV4-22 — Giữ trạng thái enemy sau khi đã activate
+
+Enemy chưa được nhìn thấy vẫn bị giữ inactive cho đến khi đi vào vùng
+activation của viewport.
+
+Sau khi đã activate, enemy không bị reset hoặc xóa chỉ vì camera đã đi
+qua nó.
+
+Flow hiện tại:
+
+```text
+enemy chưa tới viewport
+    ↓
+inactive
+    ↓
+viewport + activation margin
+    ↓
+activated
+    ↓
+giữ state trong suốt lifetime
+```
+
+Camera position không còn là điều kiện xóa một enemy còn sống.
+
+Entity chỉ được cleanup bởi lifecycle thật sự, ví dụ:
+
+```text
+dead / marked for removal
+out of level bounds + cleanup margin
+```
+
+Điều này giữ trạng thái enemy nhất quán nếu gameplay hoặc camera quay lại khu vực cũ, đồng thời enemy phía trước chưa activate vẫn không chạy AI trên toàn map.
+
+### Kiểm tra
+
+- Enemy xa phía trước chưa update.
+- Enemy activate khi Mario tiếp cận.
+- Enemy đã activate không bị reset.
+- Camera đi xa không tự xóa enemy còn sống.
+- Enemy ra khỏi level bounds vẫn được generic cleanup.
+
+---
+
+## 16. Koopa Ledge Detection
 
 ### File liên quan
 
@@ -799,8 +953,10 @@ Koopa walking hiện sử dụng `TileMap` để kiểm tra terrain ngay phía t
 
 Trong `isApproachingLedge()`, Koopa kiểm tra:
 
-- solid terrain bên dưới vị trí hiện tại;
-- solid terrain ngay phía trước hướng di chuyển.
+- enemy-support surface bên dưới vị trí hiện tại;
+- enemy-support surface ngay dưới trước hướng di chuyển.
+
+Enemy-support semantics bao gồm terrain solid và bề mặt QuestionBlock, nhưng không làm QuestionBlock trở thành terrain collider trùng.
 
 Nếu Koopa vẫn đang đứng trên solid terrain nhưng phía trước không còn solid tile, Koopa đảo hướng trước khi rời platform.
 
@@ -810,20 +966,68 @@ Ledge detection chỉ áp dụng cho trạng thái `WALKING`.
 
 `reverseDirection()` trực tiếp cập nhật facing direction và horizontal velocity thay vì gọi lại `patrol()`, tránh recursive ledge checks.
 
+### Runtime regression fixes
+
+Runtime verification phát hiện Koopa có thể quay đầu sai tại seam giữa
+terrain tile và QuestionBlock, đặc biệt ở các layout dạng:
+
+```text
+BBB?BBB
+```
+
+Ledge detection hiện phân biệt:
+
+```text
+terrain physics solidity
+enemy walkable support
+```
+
+QuestionBlock và các power-up block được xem là support surface cho enemy mà không bị biến thành terrain collider trùng.
+
+Collision handling cũng bỏ side-contact giả tại walkable support seam,nhưng vẫn giữ wall collision đối với obstacle thật.
+
+Koopa walking sprite sử dụng asset mặc định quay trái. Khi facing direction đổi sang phải, sprite được mirror theo trục X để visual direction luôn khớp với movement direction.
+
+### Kiểm tra bổ sung
+
+- Koopa đi qua `B → ? → B` mà không reverse sai.
+- Koopa vẫn reverse ở wall thật.
+- Koopa không bị đứng dính vào wall.
+- Facing LEFT hiển thị asset gốc.
+- Facing RIGHT hiển thị sprite mirror.
+
+### Enemy Collision Regression Fixes
+
+Các enemy thông thường không còn dùng nhau như wall vật lý.
+
+Trong enemy-enemy contact, physical response được disable để Goomba và Walking Koopa có thể lướt qua nhau mà không push, kẹt hoặc reverse direction.
+
+Gameplay contact của Koopa shell vẫn được xử lý trước physical response:
+
+```text
+normal enemy <-> normal enemy
+    -> pass through
+
+sliding shell <-> enemy
+    -> shell attack logic
+    -> victim defeat
+    -> shell tiếp tục di chuyển
+```
+
+Wall collision được xử lý idempotent để nhiều Box2D contacts trên cùng một wall không làm enemy reverse nhiều lần rồi đứng kẹt.
+
+Goomba squish rendering cũng được bottom-align lại theo kích thước hiện tại của entity, tránh sprite bị chìm vài pixel xuống terrain sau khi stomp.
+
 ### Kiểm tra
 
-- Walking Koopa quay đầu ở mép trái platform.
-- Walking Koopa quay đầu ở mép phải platform.
-- Koopa không quay đầu sai trên continuous ground.
-- Wall collision vẫn đổi hướng bình thường.
-- Shell idle vẫn đứng yên.
-- Shell sliding không quay đầu tại ledge.
-- Enemy activation và off-screen cleanup vẫn hoạt động.
-- Build và toàn bộ CTest hiện tại pass.
-
+- Goomba và Koopa thường lướt qua nhau.
+- Enemy không đứng yên sau khi chạm wall.
+- Sliding shell vẫn attack enemy.
+- Goomba squish giữ đúng vị trí chân.
+- Project build và chạy gameplay thành công.
 ---
 
-## 16. Koopa Shell Fixture
+## 17. Koopa Shell Fixture
 
 ## File liên quan
 - [`include/entities/Koopa.h`](../../include/entities/Koopa.h)
@@ -867,7 +1071,7 @@ Sprite rendering sử dụng scale cố định 2× và bottom alignment thông 
 
 ---
 
-## 17. Koopa State Transitions
+## 18. Koopa State Transitions
 
 ### File liên quan
 
@@ -891,7 +1095,7 @@ Các trường hợp được tách rõ:
 
 ```text
 WALKING + stomp -> SHELL_IDLE
-SHELL_IDLE + stompr -> SHELL_IDLE
+SHELL_IDLE + stomp -> SHELL_IDLE
 SHELL_SLIDING + stomp -> SHELL_IDLE
 SHELL_IDLE + lateral contact -> SHELL_SLIDING
 ```
@@ -949,7 +1153,7 @@ Shared collision dispatch architecture không được thay đổi trong hai tas
 
 ---
 
-## 18. Koopa Shell Enemy Defeat
+## 19. Koopa Shell Enemy Defeat
 
 ### File liên quan
 
@@ -958,13 +1162,13 @@ Shared collision dispatch architecture không được thay đổi trong hai tas
 - [`src/entities/Koopa.cpp`](../../src/entities/Koopa.cpp)
 - [`include/entities/Enemy.h`](../../include/entities/Enemy.h)
 
-### S6-TV4-29 - Shell hạ enemy khác đúng một lần
+### S6-TV4-29 - Shell defeat duplicate guard
 
 Sliding Koopa shell có thể defeat enemy khác khi xảy ra Enemy-Enemy collision.
 
 Collision handler chỉ cho phép shell attack khi Koopa đang ở trạng thái `SHELL_SLIDING`, shell idle không gây damage.
 
-Trước khi xử lý defeat, handler kiểm tra victim đã chết, đã được đánh dấy remove, pending destroy hặc inactive hay chưa.
+Trước khi xử lý defeat, handler kiểm tra victim đã chết, đã được đánh dấu remove, pending destroy hoặc inactive hay chưa.
 
 Nếu victim đã được xử lý bởi một contact trước đó, collision được xem là đã handled nhưng không gọi takeDamage() hoặc defeat logic lần nữa.
 
@@ -976,9 +1180,24 @@ Task này chỉ bảo đảm shell defeat được xử lý một lần trên m�
 
 Score và DefeatCause được để cho collision/score pipeline chung của TV3 và TV5, tránh tạo nguồn score thứ hai trong TV4.
 
+
+### Trạng thái
+
+Duplicate shell defeat đã được guard ở TV4 collision logic.
+
+Task chưa được claim DONE theo fix plan vòng 2 vì shell defeat cần được kết nối vào shared defeat pipeline với
+
+```text
+DefeatCayse::SHELL
+score +200
+shared defeat event / SFX path
+```
+
+Phần integration này phụ thuộc contract chung của TV3/TV5.
+
 ### Kiểm tra
 - Shell idle không defeat enemy.
-- Shell sldiing defeat enemy khi va chạm.
+- Shell sliding defeat enemy khi va chạm.
 - Một victim không bị defeat nhiều lần.
 - Shell không reverse như enemy thường sau khi đã xử lý shell collision.
 - Shell có thể tiếp tục defeat enemy khác.
@@ -986,7 +1205,7 @@ Score và DefeatCause được để cho collision/score pipeline chung của TV
 
 ---
 
-## 19. Generic Entity Bounds Cleanup
+## 20. Generic Entity Bounds Cleanup
 
 ### File liên quan
 
@@ -1021,8 +1240,6 @@ Cleanup sử dụng lifecycle mechanism có sẵn của `Entity`. Không erase e
 
 ### Phân chia trách nhiệm
 
-S6-TV4-22 tiếp tục xử lý enemy đã đi quá một viewport phía sau camera.
-
 S6-TV4-31 xử lý generic out-of-level cleanup cho entity như enemy, item và projectile.
 
 Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn được giữ nguyên.
@@ -1040,7 +1257,7 @@ Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn đượ
 
 ---
 
-## 20. SaveManager Version 1 Foundation
+## 21. SaveManager Version 1 Foundation
 
 ### File liên quan
 
@@ -1056,7 +1273,7 @@ Các lifecycle rule riêng như FireBall lifetime và bounce limit vẫn đượ
 ```text
 version = 1
 highScore = 0
-highestUnclockedLevel = 1
+highestUnlockedLevel = 1
 soundVolume = 80
 musicVolume = 70
 ```
@@ -1093,7 +1310,7 @@ Các chức năng trên được triển khai trong S6-TV4-39.
 
 ---
 
-## 21. Load High Score
+## 22. Load High Score
 
 ### File liên quan
 
@@ -1130,7 +1347,7 @@ Task này tập trung vào việc đọc persistent save data, đặc biệt là
 
 Chưa xử lý:
 - ghi save file;
-- high score monotinic update;
+- high score monotonic update;
 - level unlock update;
 - audio setting update;
 - atomic file replacement;
@@ -1146,12 +1363,12 @@ Các phần trên được xử lý trong S6-TV4-34 đến S6-TV4-39.
 - Missing save file sử dụng default data.
 - Save version hợp lệ được chấp nhận.
 - State chỉ được cập nhật sau khi quá trình đọc hoàn tất.
-- Project buld thành công.
+- Project build thành công.
 - Toàn bộ CTest hiện tại pass.
 
 ---
 
-## 22. Monotonic High Score
+## 23. Monotonic High Score
 
 ### File liên quan
 
@@ -1185,21 +1402,21 @@ Task này đảm bảo high score tăng đơn điệu và có thể persist xu�
 
 Việc ghi file hiện vẫn sử dụng direct write.
 
-Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng torng S6-TV4-37.
+Atomic temporary-file replacement và bảo vệ save file cũ khi quá trình ghi thất bại được xử lý riêng trong S6-TV4-37.
 
 ### Kiểm tra
 
 - Score cao hơn cập nhật high score.
 - Score thất hơn không bị overwrite high score.
 - Score bằng high score hiện tại không overwrite dữ liệu.
-- High score mới được đọc lại dúng sau restart.
+- High score mới được đọc lại đúng sau restart.
 - Save failure không giữ high score mới trong memory.
 - Project build thành công.
 - Toàn bộ CTest hiện tại pass.
 
 ---
 
-## 23. Highest Unlocked level Persistence
+## 24. Highest Unlocked level Persistence
 
 ### File liên quan
 
@@ -1216,7 +1433,7 @@ updateHighestUnlockedLevel(level);
 
 để lưu level cao nhất mà người chơi đã mở khóa.
 
-Giá trị `highestUnlockedlevel` chỉ được cập nhật khi level mới lớn hơn giá trị hiện tại.
+Giá trị `highestUnlockedLevel` chỉ được cập nhật khi level mới lớn hơn giá trị hiện tại.
 
 ```text
 newLevel > highestUnlockedlevel -> update và save
@@ -1248,7 +1465,7 @@ Việc xác định level kế tiếp sau khi hoàn thành một màn và chuy�
 
 ---
 
-## 24. Audio Settings Persistence
+## 25. Audio Settings Persistence
 
 ### File liên quan
 
@@ -1304,7 +1521,7 @@ Cách tách này giữ `SaveManager` chịu trách nhiệm persistence và `Soun
 
 ---
 
-## 25. Atomic Save File Replacement
+## 26. Atomic Save File Replacement
 
 ### File liên quan
 
@@ -1335,7 +1552,7 @@ close temporary file
 replace production save
 ```
 
-Production `save.txt` chỉ được thay thế sau khi temporary ile đã được ghi hoàn chỉnh.
+Production `save.txt` chỉ được thay thế sau khi temporary file đã được ghi hoàn chỉnh.
 
 Nếu quá trình ghi temporary file hoặc replace thất bại:
 
@@ -1344,9 +1561,9 @@ Nếu quá trình ghi temporary file hoặc replace thất bại:
 - temporary file được cleanup;
 - các update method rollback state trong memory về giá trị trước đó.
 
-Temporary file được đặt cùng direction với production save để việc replace diễn ra trên cùng filesystem.
+Temporary file được đặt cùng directory với production save để việc replace diễn ra trên cùng filesystem.
 
-`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuco16 production `saves/` directory.
+`writeSaveFile()` cũng tạo parent directory khi cần thiết, giúp injected test path hoạt động mà không phụ thuộc production `saves/` directory.
 
 ### Phân chia trách nhiệm
 
@@ -1369,7 +1586,7 @@ Validation đầy dủ cho missing, corrupt và wrong-version save được xử
 
 ---
 
-## 26. Corrupted Save Fallback
+## 27. Corrupted Save Fallback
 
 ### File liên quan
 
@@ -1438,7 +1655,7 @@ Automated regression tests cho missing, valid, corrupt, version mismatch và hig
 
 ---
 
-## 27. SaveManager Regression Tests
+## 28. SaveManager Regression Tests
 
 ### File liên quan
 
@@ -1514,7 +1731,66 @@ Cuối test suite, toàn bộ temporary data được cleanup.
 
 ---
 
-## 28. Quy Ước Cập Nhật File Này
+## 29. Level Fixture and Validator Regression Tests
+
+### File liên quan
+
+- [`levels/level0.txt`](../../levels/level0.txt)
+- [`tests/LevelValidatorTests.cpp`](../../tests/LevelValidatorTests.cpp)
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+- [`CMakeLists.txt`](../../CMakeLists.txt)
+
+### S6-TV4-01 - Level 0 trở thành test fixture
+
+`level0.txt` được giữ ngoài release catalog và dùng làm fixture cho automated level-validation tests.
+
+Một row có chiều rộng không nhất quán trong fixture được sửa để toàn bộ 12 map rows đều có chiều rộng 100 tiles.
+
+Automated test xác nhận Level 0:
+
+- load thành công;
+- có kích thước 100x12;
+- có đúng một Mario spawn;
+- có đúng một finish point;
+
+Level 0 không được sử dụng trong New Game hoặc release progression.
+
+### S6-TV4-20 - Level validator regression tests
+
+Một test target mới `level_validator_tests` được bổ sung để bảo vệ các validation rule của `TileMap::loadFromFile()`.
+
+Test matrix bao gồm:
+
+```text
+valid Level 0 fixture
+inconsistent row width
+invalid symbol
+missing mario spawn
+duplicate Mario spawn
+missing finish
+duplicate finish
+invalid flag pole
+```
+
+Các invalid fixture được tạo trong temporary directory nên không làm thay đổi release level data.
+
+CTest chạy validator test với repository root làm working directory để `TileMap` có thể resolve tileset runtime bằng relative path.
+
+### Kiểm tra
+
+- Level 0 fixture load thành công.
+- Invalid row width bị reject.
+- Invalid tile symbol bị reject.
+- Missing/duplicate Mario spawn bị reject.
+- Missing/duplicate finish bị reject.
+- Invalid flag pole bị reject.
+- level_validator_tests được đăng ký với CTest.
+- Project build thành công.
+- Toàn bộ CTest pass.
+
+---
+
+## 30. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

@@ -132,10 +132,8 @@ void Goomba::onStomp() {
 
     playAnimation("squish");
     updateAnimation(0.f);
-    if (m_sprite) {
-        m_sprite->setPosition(m_position);
-        m_sprite->setScale({2.f, 2.f});
-    }
+    updateBoundingBox();
+    syncSpriteToFeet();
 }
 
 void Goomba::patrol() {

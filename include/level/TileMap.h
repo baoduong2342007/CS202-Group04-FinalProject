@@ -32,6 +32,7 @@ public:
     void renderForeground(sf::RenderTarget& target) const;
 
     char getTileAt(int column, int row) const;
+    bool isEnemySupport(int column, int row) const;
     bool isSolid(int column, int row) const;
 
     std::size_t getWidth() const;

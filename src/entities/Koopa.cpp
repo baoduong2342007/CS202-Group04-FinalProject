@@ -284,8 +284,8 @@ bool Koopa::isApproachingLedge() const {
     const int currentColumn =static_cast<int>(std::floor(currentX / TILE_SIZE));
     const int frontColumn =static_cast<int>(std::floor(frontX / TILE_SIZE));
 
-    const bool hasCurrentGround = m_tileMap->isSolid(currentColumn, row);
-    const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
+    const bool hasCurrentGround = m_tileMap->isEnemySupport(currentColumn, row);
+    const bool hasFrontGround = m_tileMap->isEnemySupport(frontColumn, row);
 
     return hasCurrentGround && !hasFrontGround;
 }
@@ -346,17 +346,16 @@ void Koopa::syncSpriteToFeet() {
 
     const sf::IntRect rect = m_sprite->getTextureRect();
 
-    if (getFacingDirection() == Direction::RIGHT) {
-        m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE});
-        m_sprite->setOrigin({static_cast<float>(rect.size.x), 0.f});
-    } else {
-        m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
-        m_sprite->setOrigin({0.f, 0.f});
-    }
-
+    const float renderedWidth = static_cast<float>(rect.size.x) * SPRITE_SCALE;
     const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
 
     const float footY = m_position.y + KOOPA_HEIGHT;
 
-    m_sprite->setPosition({m_position.x, footY - renderedHeight});
+    if (getFacingDirection() == Direction::LEFT) {
+        m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+        m_sprite->setPosition({m_position.x, footY - renderedHeight});
+    } else {
+        m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE});
+        m_sprite->setPosition({m_position.x + renderedWidth, footY - renderedHeight});
+    }
 }

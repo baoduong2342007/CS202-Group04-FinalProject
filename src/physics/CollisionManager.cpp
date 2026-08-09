@@ -25,12 +25,75 @@
 #include "core/ScoreRules.h"
 
 namespace {
+
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
 constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
 constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
 constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.7f;
 constexpr float MAX_WALL_NORMAL_X = 0.5f;
 constexpr float BLOCK_SIZE_PIXELS = 32.f;
+
+constexpr float ENEMY_SUPPORT_PROBE_OFFSET = 2.f;
+constexpr float ENEMY_WALL_NORMAL_THRESHOLD = 0.5f;
+constexpr float TILE_SIZE_PIXELS = 32.f;
+
+bool isEnemySupportObstacle(
+    Entity* obstacle,
+    b2Body* obstacleBody
+) {
+    if (!obstacleBody) {
+        return false;
+    }
+
+    if (obstacle &&
+        obstacle->isQuestionBlock()) {
+        return true;
+    }
+
+    if (!obstacle) {
+        return TileMap::isTileUserData(
+            obstacleBody->GetUserData().pointer
+        );
+    }
+
+    return false;
+}
+
+bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
+                           b2Body* enemyBody, b2Body* obstacleBody,
+                           const b2Vec2& enemyNormal,
+                           const TileMap& tileMap
+                        ) {
+    if (!enemy || !enemyBody || !isEnemySupportObstacle(obstacle, obstacleBody)) {
+        return false;
+    }
+
+    if (std::abs(enemyNormal.x) <= ENEMY_WALL_NORMAL_THRESHOLD) {
+        return false;
+    }
+
+    const sf::Vector2f center = PhysicsEngine::metersToPixels(enemyBody->GetPosition());
+
+    const sf::Vector2f size = enemy->getSize();
+
+    const float bottomY = center.y + size.y / 2.f;
+
+    const float frontX = enemyNormal.x < 0.f
+                         ? center.x - size.x / 2.f - ENEMY_SUPPORT_PROBE_OFFSET
+                         : center.x + size.x / 2.f + ENEMY_SUPPORT_PROBE_OFFSET;
+
+    const int supportRow = static_cast<int>(std::floor((bottomY + ENEMY_SUPPORT_PROBE_OFFSET) / TILE_SIZE_PIXELS));
+
+    const int frontColumn = static_cast<int>(std::floor(frontX / TILE_SIZE_PIXELS));
+
+    if (!tileMap.isEnemySupport(frontColumn, supportRow)) {
+        return false;
+    }
+
+    const bool blockedAbove = tileMap.isEnemySupport(frontColumn, supportRow - 1);
+
+    return !blockedAbove;
+}
 
 Entity* entityFromBody(b2Body* body) {
     if (!body) {
@@ -150,17 +213,58 @@ void queueEntityBlockHit(TileMap& tileMap, Mario* mario, b2Body* marioBody, cons
     }
 }
 
+void handleEnemyWallCollision(Enemy* enemy, Entity* obstacle,
+                              b2Body* enemyBody, b2Body* obstacleBody,
+                              const b2Vec2& enemyNormal,
+                              const TileMap& tileMap
+                              ) {
+    if (!enemy || !enemyBody || enemy->isDying()) {
+        return;
+    }
+
+    if (std::abs(enemyNormal.x) <= ENEMY_WALL_NORMAL_THRESHOLD) {
+        return;
+    }
+
+    if (isWalkableSupportSeam(enemy, obstacle,
+                               enemyBody, obstacleBody,
+                               enemyNormal,
+                               tileMap)) {
+        return;
+    }
+
+    const Direction wallDirection = enemyNormal.x < 0.f
+                                    ? Direction::LEFT : Direction::RIGHT;
+
+    if (enemy->getFacingDirection() != wallDirection) {
+        return;
+    }
+
+    enemy->onWallCollision();
+}
+
 } // namespace
 
-void CollisionManager::preSolve(b2Contact* contact) {
-    if (!contact) return;
+void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
+    if (!contact) {
+        return;
+    }
 
     b2Fixture* fixtureA = contact->GetFixtureA();
     b2Fixture* fixtureB = contact->GetFixtureB();
-    if (!fixtureA || !fixtureB) return;
+
+    if (!fixtureA || !fixtureB) {
+        return;
+    }
 
     Entity* entityA = entityFromBody(fixtureA->GetBody());
     Entity* entityB = entityFromBody(fixtureB->GetBody());
+
+    if (entityA && entityB &&
+        entityA->isEnemy() && entityB->isEnemy()) {
+        contact->SetEnabled(false);
+        return;
+    }
 
     if ((entityA && entityA->isMario()) || (entityB && entityB->isMario())) {
         contact->SetFriction(0.0f);
@@ -171,6 +275,29 @@ void CollisionManager::preSolve(b2Contact* contact) {
     }
     if (entityB && entityB->isEnemy() && static_cast<Enemy*>(entityB)->isDying()) {
         contact->SetEnabled(false);
+    }
+
+    b2WorldManifold worldManifold;
+    contact->GetWorldManifold(&worldManifold);
+
+    if (entityA && entityA->isEnemy() &&
+        isWalkableSupportSeam(static_cast<Enemy*>(entityA), entityB,
+                              fixtureA->GetBody(), fixtureB->GetBody(),
+                              worldManifold.normal,
+                              tileMap
+                            )) {
+
+        contact->SetEnabled(false);
+        return;
+    }
+
+    if (entityB && entityB->isEnemy() &&
+        isWalkableSupportSeam(static_cast<Enemy*>(entityB), entityA,
+                              fixtureB->GetBody(), fixtureA->GetBody(),
+                              -worldManifold.normal,
+                              tileMap)) {
+        contact->SetEnabled(false);
+        return;
     }
 }
 
@@ -315,29 +442,25 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
             return true;
         };
 
-        const bool shellCollisionHandled = tryShellKill(enemyA, enemyB) || tryShellKill(enemyB, enemyA);
-
-        // Ordinary enemies reverse when they collide laterally.
-        if (!shellCollisionHandled && std::abs(normal.x) > 0.5f) {
-            enemyA->onWallCollision();
-            enemyB->onWallCollision();
-        }
+        tryShellKill(enemyA, enemyB);
+        tryShellKill(enemyB, enemyA);
 
         return;
     }
 
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
-    Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {
-        enemy = static_cast<Enemy*>(entityA);
-        if (!enemy->isDying() && std::abs(normal.x) > 0.5f) {
-            enemy->onWallCollision();
-        }
+        handleEnemyWallCollision(static_cast<Enemy*>(entityA), entityB,
+                                 bodyA, bodyB,
+                                 normal,
+                                 tileMap
+                                 );
     } else if (entityB && entityB->isEnemy()) {
-        enemy = static_cast<Enemy*>(entityB);
-        if (!enemy->isDying() && std::abs(normal.x) > 0.5f) {
-            enemy->onWallCollision();
-        }
+        handleEnemyWallCollision(static_cast<Enemy*>(entityB), entityA,
+                                 bodyB, bodyA,
+                                 -normal,
+                                 tileMap
+                                 );
     }
 
     // Handle Item ↔ Wall / Static Body collisions
@@ -479,13 +602,13 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                     // If shell is sliding, Mario gets hit
                     if (koopa->isShellSliding()) {
                         mario->queuePowerDown();
-                    } 
+                    }
                     // If shell is idle, Mario kicks it
                     else if (koopa->isInShell()) {
                         Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
                         koopa->kick(kickDir);
                         EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-                    } 
+                    }
                     // If walking, Mario gets hit
                     else {
                         mario->queuePowerDown();

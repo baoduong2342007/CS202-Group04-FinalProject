@@ -43,7 +43,11 @@ void InputHandler::clear() {
     m_keyBindings.clear();
 }
 
-void InputHandler::handleInput(const InputState& inputState) const {
+void InputHandler::handleInput(const InputState& inputState, bool gameplayEnabled) const {
+    if (!gameplayEnabled) {
+        return;
+    }
+
     for (const auto& [key, bindings] : m_keyBindings) {
         for (const auto& binding : bindings) {
             if (!binding.command) {

@@ -269,6 +269,16 @@
   3. **Cải tiến Tile & Physics Collision Pipeline**: Tinh chỉnh AI quái Goomba/Koopa với ledge detection và bỏ qua va chạm mép gạch (`isWalkableSupportSeam`). Dependency injection truyền `TileMap&` qua `ContactListener` và `CollisionManager`. Chuẩn hóa `QuestionBlock` làm Single Source of Truth cho tile hits. Mở rộng finish trigger bao phủ toàn bộ chiều cao cột cờ.
   4. **Merge & Giải Quyết Xung Đột**: Hợp nhất thành công nhánh `feature/level-and-enemy` vào `develop`. Giải quyết xung đột merge tại `Koopa.cpp` và `CollisionManager.cpp`, giữ nguyên cả logic bỏ qua va chạm quái dying/dead lẫn logic seam check. Xóa `#include "entities/FireBall.h"` bị lặp trong `Level.cpp`. Toàn bộ 10/10 ctest đều vượt qua.
 
+### Entry #28: [Merge TV5 Sound & Visual Enhancements] - Integrated feature/sound-input into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (10/10 ctest passed).
+- **File ảnh hưởng:** [ASSETS_LIST.md](../assets/ASSETS_LIST.md), `assets/ui/bg_world.png`, `docs/management/s6_plan.md`, `docs/management/s7_plan.md`, [DisplayConfig.h](../include/core/DisplayConfig.h), [SpriteFrames.h](../include/core/SpriteFrames.h), [Camera.cpp](../src/level/Camera.cpp), [Level.cpp](../src/level/Level.cpp)
+- **Mô tả:** 
+  1. **Background Pixel-Art Mới (`bg_world.png`)**: Bổ sung hình nền pixel-art thế giới Overworld sinh động (`assets/ui/bg_world.png`, 1857×847 px) và khai báo hằng số `WORLD_PATH` trong `SpriteFrames::Backgrounds`.
+  2. **Căn Chỉnh Background & Camera**: Điều chỉnh thuật toán `calculateBackgroundTop` dựa trên hàng mặt đất `findGroundSurfaceRow` trong `Level.cpp`, render các dải nền đan xen lật gương (`mirrored scale`) phủ kín chiều rộng level. Cập nhật `BOTTOM_TILE_PADDING` trong `Camera.cpp` về `0.0f` để mép dưới camera vừa khít mặt map.
+  3. **Màu Nền Trời Tươi Sáng**: Cập nhật `BACKGROUND_COLOR` trong `DisplayConfig.h` từ CornflowerBlue `(100, 149, 237)` thành Sky Blue `(69, 197, 250)`.
+  4. **Merge Tự Động**: Merge hoàn toàn tự động không xung đột (`ort strategy`) nhánh `feature/sound-input` của TV5 vào `develop`. Biên dịch thành công 100%, tất cả 10/10 bộ ctest đều passed.
+
+
 
 
 

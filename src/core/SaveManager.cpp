@@ -216,9 +216,9 @@ bool SaveManager::replaceSaveFile(const std::string& temporaryPath) const {
     std::filesystem::rename(temporaryPath, m_savePath, errorCode);
 
     if (errorCode) {
-#ifdef DEBUG
-        std::cerr << "[SaveManager] Failed to replace save file." << std::endl;
-#endif
+        std::cerr << "[SaveManager] Failed to replace save file at '"
+                  << m_savePath << "' (rename error: " << errorCode.message() << ")."
+                  << std::endl;
         return false;
     }
 
@@ -236,9 +236,9 @@ bool SaveManager::writeSaveFile(const std::string& path) const {
         std::filesystem::create_directories(parentPath, errorCode);
 
         if (errorCode) {
-#ifdef DEBUG
-            std::cerr << "[SaveManager] Failed to create save directory." << std::endl;
-#endif
+            std::cerr << "[SaveManager] Failed to create save directory '"
+                      << parentPath.string() << "' (error: " << errorCode.message() << ")."
+                      << std::endl;
             return false;
         }
     }
@@ -246,9 +246,8 @@ bool SaveManager::writeSaveFile(const std::string& path) const {
     std::ofstream output(path, std::ios::trunc);
 
     if (!output.is_open()) {
-#ifdef DEBUG
-        std::cerr << "[SaveManager] Failed to open temporary save file." << std::endl;
-#endif
+        std::cerr << "[SaveManager] Failed to open temporary save file '"
+                  << path << "'." << std::endl;
         return false;
     }
 

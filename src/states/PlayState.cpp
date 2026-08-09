@@ -161,6 +161,14 @@ void PlayState::onNotify(EventType event) {
         }
         m_terminalCommittedThisFrame = true;
         m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before state change
+        // S6-TV1-19: commit the current score to the high score the moment a
+        // death happens — dying with lives left must STILL persist the session
+        // score. GameOver/Win keep calling updateHighScore (monotonic) as a
+        // harmless fallback.
+        if (m_level && m_level->getMario()) {
+            GameManager::getInstance().getSaveManager()
+                .updateHighScore(m_level->getMario()->getScore());
+        }
         if (m_level && m_level->getMario() && m_level->getMario()->getLives() > 0) {
             m_isReloadPending = true;
         } else {
@@ -177,6 +185,9 @@ void PlayState::onNotify(EventType event) {
         snapshotProgress();
         m_progress.currentLevel++;
         GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(m_progress.currentLevel);
+        // S6-TV1-19: persist the high score at level completion too, so reaching
+        // the finish right before quitting is never lost.
+        GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
         // S6-TV1-12: start the transition state machine (freeze → fade → load → fade in).
         m_transitionIsWin = LevelCatalog::isPastFinalLevel(m_progress.currentLevel);
         m_transitionTargetLevel = m_progress.currentLevel;

@@ -7,8 +7,21 @@
 
 #include "core/GameManager.h"
 
+#include <iostream>
+
 GameManager::GameManager() {
+#ifdef DEBUG
+    const std::string savePath = m_saveManager.getSavePath();
+#endif
     m_saveManager.load();
+#ifdef DEBUG
+    const SaveData& data = m_saveManager.getData();
+    std::cout << "[DEBUG][GameManager] Save file '" << savePath
+              << "' loaded: highScore=" << data.highScore
+              << ", highestUnlockedLevel=" << data.highestUnlockedLevel
+              << ", soundVolume=" << data.soundVolume
+              << ", musicVolume=" << data.musicVolume << std::endl;
+#endif
 }
 
 GameManager& GameManager::getInstance() {

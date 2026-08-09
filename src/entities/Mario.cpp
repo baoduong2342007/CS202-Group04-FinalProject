@@ -775,7 +775,9 @@ void Mario::updateInvincibility(float dt) {
     if (m_starInvincibilityTimer <= 0.f) {
       m_isStarInvincible = false;
       m_starInvincibilityTimer = 0.f;
-      m_isInvincible = false;
+      // Preserve an independent damage-grace window if one is still active.
+      // Star expiry must not accidentally make Mario vulnerable early.
+      m_isInvincible = m_invincibilityTimer > 0.f;
       if (m_sprite) {
         sf::Color baseColor = (m_marioState == MarioState::FIRE) ? sf::Color(255, 140, 0) : sf::Color::White;
         m_sprite->setColor(baseColor);

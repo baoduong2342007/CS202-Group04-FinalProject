@@ -25,7 +25,7 @@ public:
     static void resolve(b2Contact* contact, TileMap& tileMap);
 
     /// @brief Adjusts active contact properties before Box2D solves them
-    static void preSolve(b2Contact* contact);
+    static void preSolve(b2Contact* contact, TileMap& tileMap);
 
 private:
     CollisionManager() = delete;

@@ -47,20 +47,6 @@ bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     return enemyRight >= cameraLeft && enemyLeft <= activationRight;
 }
 
-bool shouldCleanupEnemyBehindCamera(const Enemy& enemy, const sf::View& cameraView) {
-    const sf::Vector2f cameraCenter = cameraView.getCenter();
-    const sf::Vector2f cameraSize = cameraView.getSize();
-
-    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f;
-
-    const float cleanupBoundary = cameraLeft - cameraSize.x;
-    const sf::FloatRect enemyBounds = enemy.getBoundingBox();
-
-    const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
-
-    return enemyRight < cleanupBoundary;
-}
-
 bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float levelHeight) {
     const sf::FloatRect bounds = entity.getBoundingBox();
 
@@ -221,11 +207,6 @@ void Level::update(float dt) {
             }
 
             enemy->activate();
-        }
-
-        if (shouldCleanupEnemyBehindCamera(*enemy, cameraView)) {
-            enemy->markForRemoval();
-            continue;
         }
 
         enemy->update(dt);
@@ -394,11 +375,11 @@ void Level::removeDeadEntities() {
 }
 
 // --- Getters ---
-Mario* Level::getMario() { 
-    return m_mario.get(); 
+Mario* Level::getMario() {
+    return m_mario.get();
 }
-const Mario* Level::getMario() const { 
-    return m_mario.get(); 
+const Mario* Level::getMario() const {
+    return m_mario.get();
 }
 bool Level::isLevelCompleted() const {
     return m_levelCompleted;

@@ -40,6 +40,13 @@ bool isSolidTileSymbol(char tile) {
            tile == '[' || tile == ']' || tile == '{' || tile == '}';
 }
 
+bool isEnemySupportTileSymbol(char tile) {
+    return isSolidTileSymbol(tile) || tile == '?' ||
+           tile == 'U' || tile == 'u' ||
+           tile == 'f' || tile == 'h' ||
+           tile == 'O' || tile == 'o';
+}
+
 int worldToGridCoordinate(float coordinate) {
     return static_cast<int>(std::lround(coordinate / TILE_SIZE_PIXELS));
 }
@@ -408,6 +415,10 @@ char TileMap::getTileAt(int column, int row) const {
     }
 
     return m_grid[gridRow][gridColumn];
+}
+
+bool TileMap::isEnemySupport(int column, int row) const {
+    return isEnemySupportTileSymbol(getTileAt(column, row));
 }
 
 bool TileMap::isSolid(int column, int row) const {

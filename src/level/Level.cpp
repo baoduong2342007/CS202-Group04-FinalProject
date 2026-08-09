@@ -21,7 +21,6 @@
 #include "entities/FireBall.h"
 #include "core/SpriteFrames.h"
 #include "core/SoundManager.h"
-#include "entities/FireBall.h"
 
 #include "core/DisplayConfig.h"
 

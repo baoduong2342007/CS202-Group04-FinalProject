@@ -169,6 +169,9 @@ if(BUILD_TESTING)
     )
     target_link_libraries(play_state_tests PRIVATE game_lib)
     add_test(NAME play_state_tests COMMAND play_state_tests)
+    set_tests_properties(play_state_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 
     add_executable(game_manager_tests
         tests/GameManagerTests.cpp
@@ -213,6 +216,26 @@ if(BUILD_TESTING)
     add_test(NAME level_validator_tests COMMAND level_validator_tests)
 
     set_tests_properties(level_validator_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    # Gate 0 release-contract guards (S6-TV1 Gate 0 / test contract).
+    add_executable(gate0_contract_tests
+        tests/Gate0ContractTests.cpp
+    )
+    target_link_libraries(gate0_contract_tests PRIVATE game_lib)
+    add_test(NAME gate0_contract_tests COMMAND gate0_contract_tests)
+    set_tests_properties(gate0_contract_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    # SaveManager session-restart integration (S6-TV1-19).
+    add_executable(save_session_tests
+        tests/SaveSessionTests.cpp
+    )
+    target_link_libraries(save_session_tests PRIVATE game_lib)
+    add_test(NAME save_session_tests COMMAND save_session_tests)
+    set_tests_properties(save_session_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 endif()

@@ -42,10 +42,18 @@ Game::Game()
   // Initialize SoundManager singleton — constructor subscribes to EventBus
   // and preloads all sound effects/music. Without this call the audio
   // system stays dead (no jump/coin sounds at all).
-  SoundManager::getInstance();
+  SoundManager& soundManager = SoundManager::getInstance();
+
+  // Apply the single SaveManager-owned audio settings at the composition
+  // root. SoundManager remains the runtime mixer; SaveManager remains the
+  // persistence owner, so no second SaveManager is created in a state.
+  GameManager& gameManager = GameManager::getInstance();
+  const SaveData& savedAudio = gameManager.getSaveManager().getData();
+  soundManager.setSoundVolume(savedAudio.soundVolume);
+  soundManager.setMusicVolume(savedAudio.musicVolume);
 
   // Transition to MenuState as the initial state
-  GameManager::getInstance().changeState(std::make_unique<MenuState>());
+  gameManager.changeState(std::make_unique<MenuState>());
 }
 void Game::run() {
 #ifdef DEBUG

@@ -238,6 +238,12 @@ if(BUILD_TESTING)
     set_tests_properties(save_session_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+
+    add_executable(sprite_frames_theme_tests
+        tests/SpriteFramesThemeTests.cpp
+    )
+    target_link_libraries(sprite_frames_theme_tests PRIVATE game_lib)
+    add_test(NAME sprite_frames_theme_tests COMMAND sprite_frames_theme_tests)
 endif()
 
 # Platform-specific Release build settings

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <SFML/Graphics.hpp>
+#include "core/LevelCatalog.h"
 
 class b2Body;
 class b2World;
@@ -25,6 +26,8 @@ public:
     TileMap& operator=(const TileMap&) = delete;
     TileMap(TileMap&&) = delete;
     TileMap& operator=(TileMap&&) = delete;
+
+    void setTheme(LevelTheme theme);
 
     bool loadFromFile(const std::string& path);
 
@@ -96,4 +99,5 @@ private:
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
+    LevelTheme m_theme; // Default to OVERWORLD in cpp
 };

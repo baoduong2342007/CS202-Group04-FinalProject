@@ -274,6 +274,7 @@ bool PlayState::loadLevel(int levelNumber) {
 
     // S6-TV1-11: never ignore the loadFromFile() result.
     m_level = std::make_unique<Level>();
+    m_level->setTheme(def->theme);
     if (!m_level->loadFromFile(def->filePath)) {
         m_level.reset();
         return false;

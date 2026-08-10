@@ -168,7 +168,33 @@ tồn tại; owner của shell được giữ từ Mario đã kick shell.
 
 ---
 
-## 6. Regression tests và verification
+## 6. TileMap Multi-Theme Support & Tileset Coordinates
+
+### Bóc Tách Tọa Độ Tileset Hoàn Chỉnh
+
+- Trích xuất thủ công và phân tích toàn bộ 345 object (Ground, Bricks, Platforms, Scenery) từ `assets/textures/tiles/tileset.png`.
+- Lưu trữ tài liệu phân tích kỹ thuật tại `docs/tileset_coordinate.md`.
+
+### Hỗ Trợ Đa Môi Trường Cho Nền Tĩnh (Multi-Theme Background)
+
+- Cập nhật file `include/level/TileFrames.h` với các tọa độ gạch chuẩn tương ứng cho 3 môi trường: Overworld, Underground, Castle.
+- Khởi tạo kiến trúc theme-aware cho `TileMap`:
+  - Thêm `m_theme` vào `TileMap`, kế thừa từ enum `LevelTheme` của `LevelCatalog`.
+  - Hàm `getTilesetRect()` trong `TileMap.cpp` nay tự động map đúng frame hình ảnh gạch (màu sắc/bóng tối) tương ứng với môi trường Level hiện hành.
+- Di dời các Entity tĩnh riêng lẻ (Coin, Trampoline, Castle Axe, Bridge Chain, Pulley) vào namespace `SpriteFrames::LevelEntities` phục vụ riêng cho Level Rendering độc lập.
+
+### File liên quan
+
+- [`docs/tileset_coordinate.md`](../../docs/tileset_coordinate.md)
+- [`include/level/TileFrames.h`](../../include/level/TileFrames.h)
+- [`include/core/SpriteFrames.h`](../../include/core/SpriteFrames.h)
+- [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+- [`src/level/Level.cpp`](../../src/level/Level.cpp)
+- [`src/states/PlayState.cpp`](../../src/states/PlayState.cpp)
+
+---
+
+## 7. Regression tests và verification
 
 `tests/TV5IntegrationTests.cpp` được mở rộng để bao phủ:
 

@@ -1554,4 +1554,31 @@ inline const sf::IntRect MOUNTAIN_BIG({0, 160}, {80, 50});
 inline const sf::IntRect MOUNTAIN_SMALL({250, 160}, {64, 50});
 } // namespace Backgrounds
 
+// ── Entities & Items extracted from Tileset ──
+namespace LevelEntities {
+
+// Map Coins (Stationary)
+inline const sf::IntRect MAP_COIN_OW_1({524, 78}, {16, 16});
+inline const sf::IntRect MAP_COIN_OW_2({541, 78}, {16, 16});
+inline const sf::IntRect MAP_COIN_OW_3({586, 78}, {16, 16});
+inline const sf::IntRect MAP_COIN_OW_4({603, 78}, {16, 16});
+
+// Items
+inline const sf::IntRect STAR({620, 112}, {16, 16});
+inline const sf::IntRect TRAMPOLINE({68, 50}, {16, 16});
+
+// Castle specific entities
+inline const sf::IntRect BOWSER_AXE({298, 129}, {16, 16});
+inline const sf::IntRect BRIDGE_CHAIN({0, 134}, {16, 16});
+
+// Platforms
+inline const sf::IntRect ELEVATOR_PULLEY({298, 146}, {16, 16});
+
+inline const std::vector<sf::IntRect> &mapCoinFrames() {
+  static const std::vector<sf::IntRect> frames = {MAP_COIN_OW_1, MAP_COIN_OW_2, MAP_COIN_OW_3, MAP_COIN_OW_4};
+  return frames;
+}
+
+} // namespace LevelEntities
+
 } // namespace SpriteFrames

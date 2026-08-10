@@ -21,6 +21,7 @@
 #include "entities/FireBall.h"
 #include "core/SpriteFrames.h"
 #include "core/SoundManager.h"
+#include "core/LevelCatalog.h"
 
 #include "core/DisplayConfig.h"
 
@@ -103,6 +104,10 @@ float calculateBackgroundTop(const TileMap& tileMap) {
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 Level::~Level() = default;
+
+void Level::setTheme(LevelTheme theme) {
+    m_tileMap.setTheme(theme);
+}
 
 bool Level::loadFromFile(const std::string& path) {
     m_levelPath = path;

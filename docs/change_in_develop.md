@@ -326,3 +326,10 @@
   4. Mở rộng `TV5IntegrationTests` với kiểm thử cho runtime defeat paths, state audio switching, và asset manifest verification.
   5. Toàn bộ 12 test suite đều thông qua (100% pass) trên `develop`.
 
+### Entry #33: [Assets & Core] - Tileset & TileMap Multi-Theme Support Integration
+- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
+- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/core/SpriteFrames.h`, `include/level/TileFrames.h`, `include/level/Level.h`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/states/PlayState.cpp`
+- **Mô tả:**
+  1. **Tọa độ Tileset Hoàn Chỉnh (`tileset_coordinate.md`)**: Phân tích toàn bộ 345 object từ `assets/textures/tiles/tileset.png`. Cập nhật tọa độ chuẩn vào `TileFrames.h` cho gạch nền (Ground, Brick, Question Block, Coin...) theo 3 môi trường: Overworld, Underground, Castle. 
+  2. **Tọa độ SpriteFrames Bổ Sung**: Tích hợp tọa độ Map Coins tĩnh, Trampoline, Castle Axe, Bridge Chain và Elevator Pulley vào `SpriteFrames::LevelEntities` ở cuối `SpriteFrames.h`. Cắt bỏ tệp Python dư thừa.
+  3. **TileMap Multi-Theme Engine (`TileMap.cpp`)**: Thay đổi kiến trúc render gạch nền từ hardcode Overworld sang Dynamic Multi-Theme. TileMap giờ đây đọc `LevelTheme` (được truyền vào qua `Level::setTheme()` từ `PlayState`) để render chính xác màu sắc khối gạch (Background, Brick, Question) theo từng màn chơi.

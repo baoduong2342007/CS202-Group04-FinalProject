@@ -31,6 +31,7 @@ public:
     // (None — Level does not inherit from a base class)
 
     // 3. Public methods
+    void setTheme(LevelTheme theme);
     bool loadFromFile(const std::string& path);
     void update(float dt);
     void render(sf::RenderTarget& target);

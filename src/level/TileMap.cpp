@@ -28,6 +28,7 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "level/TileFrames.h"
+#include "core/LevelCatalog.h"
 
 namespace {
 
@@ -138,15 +139,25 @@ bool isForegroundTile(char symbol) {
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 
-sf::IntRect getTilesetRect(char symbol) {
+} // namespace
+
+void TileMap::setTheme(LevelTheme theme) {
+    m_theme = theme;
+}
+
+namespace {
+sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
         case '1':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
+            // Fallback for castle
             return TileFrames::GROUND;
 
         case 'S':
             return TileFrames::STONE;
 
         case 'B':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
             return TileFrames::BRICK;
 
         case '?':
@@ -156,6 +167,7 @@ sf::IntRect getTilesetRect(char symbol) {
         case 'o':
         case 'f':
         case 'h':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::QUESTION_UNDERGROUND;
             return TileFrames::QUESTION;
 
         case 'E':
@@ -469,35 +481,37 @@ void TileMap::buildVertices() {
     m_foregroundVertices.clear();
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
-            const char symbol = m_grid[row][column];
-
+        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
+            const char symbol = m_grid[row][col];
             if (!isRenderableTile(symbol)) {
                 continue;
             }
 
+            const float x = static_cast<float>(col * TILE_SIZE);
+            const float y = static_cast<float>(row * TILE_SIZE);
+
+            const sf::IntRect textureRect = getTilesetRect(symbol, m_theme);
+
             float offsetY = 0.f;
             for (const auto& bump : m_bumpAnimations) {
-                if (bump.column == static_cast<int>(column) && bump.row == static_cast<int>(row)) {
+                if (bump.column == static_cast<int>(col) && bump.row == static_cast<int>(row)) {
                     float progress = bump.timer / bump.maxDuration;
                     offsetY = std::sin(progress * 3.14159265f) * bump.maxOffset;
                     break;
                 }
             }
 
-            const float left = static_cast<float>(column * TILE_SIZE);
+            const float left = static_cast<float>(col * TILE_SIZE);
             const float top = static_cast<float>(row * TILE_SIZE) + offsetY;
 
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const sf::IntRect rect = getTilesetRect(symbol);
+            const float textureLeft = static_cast<float>(textureRect.position.x);
+            const float textureTop = static_cast<float>(textureRect.position.y);
 
-            const float textureLeft = static_cast<float>(rect.position.x);
-            const float textureTop = static_cast<float>(rect.position.y);
-
-            const float textureRight = textureLeft + static_cast<float>(rect.size.x);
-            const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+            const float textureRight = textureLeft + static_cast<float>(textureRect.size.x);
+            const float textureBottom = textureTop + static_cast<float>(textureRect.size.y);
 
             // Route to correct vertex array based on layer classification
             sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;

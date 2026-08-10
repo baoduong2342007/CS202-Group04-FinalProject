@@ -73,6 +73,23 @@
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
+### Entry #35: [Doc & Asset Sync] - Rà Soát Tọa Độ Tileset Bàn Đồ (`tileset_coordinate.md`) & Khắc Phục Nhãn Sai
+- **Trạng thái:** Đã hoàn thành 100%.
+- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
+- **Mô tả:**
+  1. Tiến hành rà soát trực quan toàn bộ 340 object của `tileset.png` ($680 \times 776 \text{ px}$) đối soát với `TileFrames.h` trong C++ engine.
+  2. Phát hiện và sửa lỗi nhãn sai trong `tileset_coordinate.md` đối với nhóm STT #1–#4 (vốn bị ghi nhầm là 4 khối Ground cho 4 môi trường, thực tế là 4 khối Overworld: Ground, Brick, Stone, Hard) và nhóm STT #9–#12 (khối Underground: Ground Teal, Brick Teal, Stone, Used Block).
+  3. Khẳng định code C++ (`TileFrames.h`) đã chọn chuẩn xác $100\%$ tọa độ của toàn bộ các tile (Ground, Brick, Question Block, Castle Window/Door, Pipes, Finish Pole).
+  4. Đã dọn dẹp các script Python phụ trợ.
+
+### Entry #34: [Asset & Doc Sync] - Khôi Phục Đủ 157 Khung Ảnh Quái Vật & Đồng Bộ Tọa Độ Chuẩn
+- **Trạng thái:** Đã hoàn thành 100%.
+- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `include/core/SpriteFrames_shared.h`, `docs/assets/enemies/enemy_001.png` -> `enemy_157.png`
+- **Mô tả:**
+  1. Xác minh lại tệp ảnh atlas gốc `enemies.png`: Dòng Y=24 thực tế chứa đầy đủ **4 khung Goomba bị giẫm bẹp** (`STOMPED`) ứng với 4 môi trường NES (Overworld, Underground, Castle, Underwater) với giá trị kênh Alpha opaque 255.
+  2. Khôi phục lại danh sách chuẩn xác **157 thành phần quái vật** (`enemy_001.png` đến `enemy_157.png`) trong `docs/enemies_coordinate.md`.
+  3. Đồng bộ chính xác tọa độ Koopa Xanh dưới nước (`UW_WALK1`/`UW_WALK2` và `UW_PARATROOPA_FLY1`/`UW_PARATROOPA_FLY2`) và vỏ Buzzy Beetle trong `SpriteFrames_shared.h`.
+  4. Đã tự động dọn dẹp toàn bộ các script Python phụ trợ.
 ### Entry #1: [Bugfix] - Khắc Phục Lỗi Đồng Hồ Bất Tử 10s Bị Đóng Băng & Quy Tắc Trùng Lặp Hiệu Ứng NES
 - **Trạng thái:** Đã hoàn thành, build & test pass 100%.
 - **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp)
@@ -342,4 +359,45 @@
   2. **Refactor SpriteFrames theo Theme Catalog**: Tách tệp header `SpriteFrames.h` thành các catalog riêng biệt theo môi trường (`SpriteFrames_shared.h`, `SpriteFrames_ovw.h`, `SpriteFrames_udg.h`, `SpriteFrames_castle.h`, `SpriteFrames_udw.h`), đồng thời giữ `SpriteFrames.h` làm aggregator thống nhất.
   3. **Lan truyền LevelTheme**: Truyền `LevelTheme` từ `Level` tới `TileMap`, `EntityFactory` và các thực thể game (`Goomba`, `Koopa`, `QuestionBlock`, `BlockDebris`...) giúp tự động render đúng bảng màu sprite tương ứng.
   4. **Bổ sung Theme Unit Tests**: Thêm bộ test `SpriteFramesThemeTests.cpp` kiểm thử tính chính xác của các thuộc tính và tọa độ frame theo từng chủ đề màn chơi.
+
+### Entry #35: [Documentation & Assets] - Export Enemy PNG Sprites & Update Enemies Coordinate Documentation
+- **Trạng thái:** Đã hoàn thành, 157/157 PNG frames exported & documented.
+- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `docs/assets/reference/enemies_all_components_atlas.png`, `docs/assets/reference/enemies_all_components_atlas_full.png`, `docs/assets/enemies/enemy_001.png`...`enemy_157.png`, `docs/assets/enemies_loang/enemy_001_loang.png`...`enemy_157_loang.png`, `scripts/export_enemy_pngs.py`, `scripts/update_enemies_md.py`
+- **Mô tả:**
+  1. **Xuất tệp PNG riêng cho từng khung hình quái vật (`docs/assets/enemies/`)**: Trích xuất toàn bộ 157 thành phần quái vật theo tọa độ Grid khung chuẩn (16×16, 16×24, 32×32, v.v.) từ tệp gốc `assets/textures/enemies/enemies.png`, tự động khử màu nền xanh NES `(0, 41, 140)` và `(146, 144, 255)` sang nền trong suốt Alpha.
+  2. **Cập nhật Bảng Tọa Độ & Hình Ảnh (`enemies_coordinate.md`)**: Bổ sung cột `Ảnh PNG` nhúng trực tiếp hình ảnh xem trước (integer scaled) cho tất cả 157 khung hình quái vật từ `#1` đến `#157`.
+  3. **Tạo mới Ảnh minh họa Atlas Tổng hợp (`docs/assets/reference/`)**: Tải lại và tổng hợp tệp Atlas `enemies_all_components_atlas.png` và `enemies_all_components_atlas_full.png` với nét vẽ bounding box và đánh nhãn số STT trực quan.
+
+
+
+
+### 36. Semantic Fix for Enemy Sprite Frames and Animations
+- **Date**: 2026-08-10
+- **Author**: AI Assistant
+- **Modified Files**: 
+  - `docs/enemies_coordinate.md`
+  - `include/core/SpriteFrames_shared.h`
+  - `src/entities/Koopa.cpp`
+  - `src/entities/Goomba.cpp`
+- **Logic Changes**:
+  - Performed a visual deep scan of `enemies.png` and discovered severe semantic misalignments.
+  - Corrected `enemies_coordinate.md` to properly label Underwater Paratroopas and Koopas (STT #61-#64) since their layout in the spritesheet was reversed compared to Overworld.
+  - Overhauled `SpriteFrames_shared.h` to fix critical copy-paste errors across the board:
+    - Fixed Buzzy Beetle shell references (Overworld and Underground were pointing to incorrect or walking frames).
+    - Fixed Blooper and Bullet Bill (Coordinates were totally misaligned for Underground, Castle, and Underwater).
+    - Fixed Piranha Plant (Open and Closed frames were swapped and scrambled across themes).
+    - Fixed Red Koopa and Red Paratroopa (Walk 2 and Fly 2 were swapped).
+    - Fixed Red Spiny Walk frames (inverted animation).
+  - Updated `Koopa.cpp` and `Goomba.cpp` to correctly resolve `LevelTheme::UNDERWATER` animations.
+
+## Entry 36: Fixed TileFrames.h C++ Tile Frame Coordinates
+
+- **Author**: TV1 (Dương)
+- **Modified Files**:
+  - `include/level/TileFrames.h`
+- **Logic Changes**:
+  - Corrected `STONE` in `TileFrames.h` from `{0, 33}` (which was erroneously pointing to Castle Battlement) to `{34, 16}` (Object #3 - Stone / Solid Stair Block).
+  - Standardized `QUESTION` to `{85, 16}` (Object #6 - Row 1 Question Block) and `USED_BLOCK` to `{51, 16}` (Object #4 - Row 1 Used Block).
+  - Fixed `CASTLE_WALL` from `{102, 33}` (Solid Black Filler) to `{34, 33}` (Object #39 - Castle Brick Wall).
+  - Verified full build clean success across 100% C++ targets.
 

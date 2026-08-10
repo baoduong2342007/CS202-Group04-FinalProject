@@ -87,35 +87,35 @@ inline const std::vector<sf::IntRect> &uwWalkFrames() {
 namespace BuzzyBeetle {
 // Overworld Palette
 inline const sf::IntRect WALK1({0, 34},
-                               {16, 16}); // STT #17: Crawling frame 1 (16x15)
+                               {16, 16}); // STT #11: Crawling frame 1 (16x15)
 inline const sf::IntRect WALK2({18, 34},
-                               {16, 16}); // STT #13: Crawling frame 2 (16x16)
+                               {16, 16}); // STT #12: Crawling frame 2 (16x16)
 inline const sf::IntRect
-    SHELL({110, 34}, {16, 16}); // STT #18: Retracted hard beetle shell (16x15)
+    SHELL({36, 34}, {16, 16}); // STT #13: Retracted hard beetle shell (16x15)
 
 // Underground Palette
 inline const sf::IntRect UG_WALK1({74, 34},
-                                  {16, 16}); // STT #19: Underground crawling 1
+                                  {16, 16}); // STT #14: Underground crawling 1
 inline const sf::IntRect UG_WALK2({92, 34},
-                                  {16, 16}); // STT #14: Underground crawling 2
+                                  {16, 16}); // STT #15: Underground crawling 2
 inline const sf::IntRect
-    UG_SHELL({166, 34}, {16, 16}); // STT #20: Underground beetle shell
+    UG_SHELL({110, 34}, {16, 16}); // STT #16: Underground beetle shell
 
 // Castle Palette
 inline const sf::IntRect CASTLE_WALK1({148, 34},
-                                      {16, 16}); // STT #21: Castle crawling 1
+                                      {16, 16}); // STT #17: Castle crawling 1
 inline const sf::IntRect CASTLE_WALK2({166, 34},
-                                      {16, 16}); // STT #15: Castle crawling 2
+                                      {16, 16}); // STT #18: Castle crawling 2
 inline const sf::IntRect CASTLE_SHELL({184, 34},
-                                      {16, 16}); // STT #22: Castle beetle shell
+                                      {16, 16}); // STT #19: Castle beetle shell
 
 // Underwater Palette
 inline const sf::IntRect UW_WALK1({222, 34},
-                                  {16, 16}); // STT #23: Underwater crawling 1
+                                  {16, 16}); // STT #20: Underwater crawling 1
 inline const sf::IntRect UW_WALK2({240, 34},
-                                  {16, 16}); // STT #16: Underwater crawling 2
+                                  {16, 16}); // STT #21: Underwater crawling 2
 inline const sf::IntRect UW_SHELL({258, 34},
-                                  {16, 16}); // STT #24: Underwater beetle shell
+                                  {16, 16}); // STT #22: Underwater beetle shell
 
 inline const std::vector<sf::IntRect> &walkFrames() {
   static const std::vector<sf::IntRect> frames = {WALK1, WALK2};
@@ -304,7 +304,7 @@ inline const sf::IntRect &CASTLE_SHELL_KICKED = UG_SHELL_RETRACTED;
 
 // Underwater palette mapping used by the theme catalog.
 inline const sf::IntRect UW_WALK1({328, 112}, {16, 24});
-inline const sf::IntRect UW_WALK2({146, 112}, {16, 24});
+inline const sf::IntRect UW_WALK2({346, 112}, {16, 24});
 inline const sf::IntRect UW_SHELL_RETRACTED({364, 120}, {16, 16});
 inline const sf::IntRect &UW_SHELL = UW_SHELL_RETRACTED;
 inline const sf::IntRect UW_SHELL_WAKING({382, 120}, {16, 16});
@@ -364,10 +364,10 @@ inline const sf::IntRect &UW_KOOPA_WALK1 = Koopa::UW_WALK1;
 inline const sf::IntRect &UW_KOOPA_WALK2 = Koopa::UW_WALK2;
 inline const sf::IntRect
     UW_PARATROOPA_FLY1({328, 112},
-                       {16, 24}); // STT #64: Underwater Paratroopa fly 1
+                       {16, 24}); // STT #63: Underwater Paratroopa fly 1
 inline const sf::IntRect
     UW_PARATROOPA_FLY2({346, 112},
-                       {16, 24}); // STT #58: Underwater Paratroopa fly 2
+                       {16, 24}); // STT #64: Underwater Paratroopa fly 2
 inline const sf::IntRect &UW_SHELL_RETRACTED = Koopa::UW_SHELL_RETRACTED;
 inline const sf::IntRect &UW_SHELL_WAKING = Koopa::UW_SHELL_WAKING;
 } // namespace GreenEnemiesBlock

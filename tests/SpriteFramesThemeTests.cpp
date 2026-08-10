@@ -13,6 +13,7 @@
 #include "core/SpriteFrames_castle.h"
 #include "core/SpriteFrames_udw.h"
 #include "core/SpriteFrames.h"
+#include "level/TileFrames.h"
 
 namespace {
 
@@ -106,6 +107,93 @@ void testThemeFrameGeometry() {
                         SpriteFrames::udw::Blocks::QUESTION3));
 }
 
+void testCanonicalEnemyCoordinates() {
+    namespace Enemies = SpriteFrames::legacy::Enemies;
+
+    // Ground-enemy rows: the UG/Castle/Underwater entries must not drift into
+    // the adjacent Bullet Bill or Blooper cells.
+    assert(hasPosition(Enemies::Blooper::UG_SWIM_OPEN, 74, 52));
+    assert(Enemies::Blooper::UG_SWIM_OPEN.size.x == 16 &&
+           Enemies::Blooper::UG_SWIM_OPEN.size.y == 24);
+    assert(hasPosition(Enemies::Blooper::CASTLE_SWIM_OPEN, 148, 52));
+    assert(hasPosition(Enemies::Blooper::UW_SWIM_OPEN, 222, 52));
+    assert(hasPosition(Enemies::BulletBill::UG_BULLET, 128, 52));
+    assert(hasPosition(Enemies::BulletBill::CASTLE_BULLET, 202, 52));
+
+    // The Underwater Koopa pair is #61/#62; #63/#64 are Paratroopa.
+    assert(hasPosition(Enemies::Koopa::UW_WALK1, 292, 112));
+    assert(hasPosition(Enemies::Koopa::UW_WALK2, 310, 112));
+    assert(hasPosition(Enemies::GreenEnemiesBlock::UW_PARATROOPA_FLY1,
+                       328, 112));
+    assert(hasPosition(Enemies::GreenEnemiesBlock::UW_PARATROOPA_FLY2,
+                       346, 112));
+
+    // Piranha Plant uses closed/open order in every palette group.
+    assert(hasPosition(Enemies::PiranhaPlant::CLOSED, 0, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::OPEN, 18, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_CLOSED, 146, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_OPEN, 164, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UW_CLOSED, 292, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UW_OPEN, 310, 138));
+
+    // The large Castle rows are Bowser hammer poses; only #139/#140 are the
+    // small Hammer Bro special frames.
+    assert(hasPosition(Enemies::Bowser::THROW_RIGHT, 68, 242));
+    assert(Enemies::Bowser::THROW_RIGHT.size.x == 32 &&
+           Enemies::Bowser::THROW_RIGHT.size.y == 26);
+    assert(hasPosition(Enemies::Bowser::UG_THROW_RIGHT, 214, 242));
+    assert(hasPosition(Enemies::HammerBro::BOWSER_HAMMER_LEFT1, 34, 276));
+    assert(hasPosition(Enemies::HammerBro::THROW1, 144, 276));
+    assert(hasPosition(Enemies::HammerBro::BOWSER_HAMMER_RIGHT1, 180, 276));
+
+    // Red row order is Koopa, Paratroopa, shell; Spiny walk is #153 -> #154.
+    assert(hasPosition(Enemies::RedKoopa::WALK1, 0, 318));
+    assert(hasPosition(Enemies::RedKoopa::WALK2, 18, 318));
+    assert(hasPosition(Enemies::RedKoopa::PARATROOPA1, 36, 318));
+    assert(hasPosition(Enemies::RedKoopa::PARATROOPA2, 54, 318));
+    assert(hasPosition(Enemies::RedSpiny::WALK1, 72, 352));
+    assert(hasPosition(Enemies::RedSpiny::WALK2, 90, 352));
+}
+
+void testCanonicalTileCoordinates() {
+    assert(hasPosition(TileFrames::GROUND, 0, 16));
+    assert(hasPosition(TileFrames::BRICK, 17, 16));
+    assert(hasPosition(TileFrames::STONE, 34, 16));
+    assert(hasPosition(TileFrames::BRICK_UNDERGROUND, 164, 16));
+    assert(hasPosition(TileFrames::BRICK_VARIANT_UNDERGROUND, 181, 16));
+    assert(hasPosition(TileFrames::STONE_UNDERGROUND, 198, 16));
+    assert(hasPosition(TileFrames::HARD_BLOCK_UNDERGROUND, 198, 16));
+
+    // Question/used blocks are in Palette 3, not beside the terrain quartet.
+    assert(hasPosition(TileFrames::QUESTION, 298, 78));
+    assert(hasPosition(TileFrames::QUESTION_UNDERGROUND, 394, 78));
+    assert(hasPosition(TileFrames::QUESTION_CASTLE, 490, 78));
+    assert(hasPosition(TileFrames::USED_BLOCK, 349, 78));
+    assert(hasPosition(TileFrames::USED_BLOCK_UNDERGROUND, 445, 78));
+    assert(hasPosition(TileFrames::USED_BLOCK_CASTLE, 541, 78));
+
+    // A normal map coin is a 16x16 tileset animation, separate from the
+    // items_objects coin used for a QuestionBlock popup.
+    assert(hasPosition(TileFrames::COIN_OVERWORLD, 298, 95));
+    assert(hasPosition(TileFrames::COIN_OVERWORLD_SIDE, 315, 95));
+    assert(hasPosition(TileFrames::COIN_OVERWORLD_THIN, 332, 95));
+
+    // Castle palette pipe/pole frames mirror the Overworld geometry.
+    assert(hasPosition(TileFrames::PIPE_TOP_LEFT_CASTLE, 119, 280));
+    assert(hasPosition(TileFrames::PIPE_BODY_RIGHT_CASTLE, 136, 297));
+    assert(hasPosition(TileFrames::FINISH_TOP_CASTLE, 136, 314));
+    assert(hasPosition(TileFrames::FINISH_POLE_CASTLE, 136, 331));
+
+    assert(TileFrames::Assembled::FLAG_POLE.position.x == 0);
+    assert(TileFrames::Assembled::FLAG_POLE.position.y == 608);
+    assert(TileFrames::Assembled::FLAG_POLE.size.x == 16);
+    assert(TileFrames::Assembled::FLAG_POLE.size.y == 168);
+    assert(TileFrames::Assembled::SMALL_CASTLE.size.x == 80);
+    assert(TileFrames::Assembled::SMALL_CASTLE.size.y == 80);
+    assert(TileFrames::Assembled::LARGE_CASTLE.size.x == 145);
+    assert(TileFrames::Assembled::LARGE_CASTLE.size.y == 176);
+}
+
 } // namespace
 
 int main() {
@@ -113,6 +201,8 @@ int main() {
     testUndergroundKoopaCoordinates();
     testKoopaAliasesUseVerifiedGreenEnemyFrames();
     testThemeFrameGeometry();
+    testCanonicalEnemyCoordinates();
+    testCanonicalTileCoordinates();
 
     std::cout << "SpriteFramesThemeTests passed." << std::endl;
     return 0;

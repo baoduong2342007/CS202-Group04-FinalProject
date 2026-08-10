@@ -10,13 +10,23 @@
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_shared.h"
 #include "core/ScoreRules.h"
+#include "level/TileFrames.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 
 namespace {
 constexpr float COIN_WIDTH  = 16.f;
 constexpr float COIN_HEIGHT = 32.f;
-constexpr const char* COIN_TEXTURE_PATH = "assets/textures/items/items_objects.png";
+constexpr const char* MAP_COIN_TEXTURE_PATH = "assets/textures/tiles/tileset.png";
+constexpr const char* QUESTION_COIN_TEXTURE_PATH = "assets/textures/items/items_objects.png";
+
+std::vector<sf::IntRect> mapCoinFrames() {
+    return {
+        TileFrames::COIN_OVERWORLD,
+        TileFrames::COIN_OVERWORLD_SIDE,
+        TileFrames::COIN_OVERWORLD_THIN,
+    };
+}
 
 void scaleCoinSprite(sf::Sprite& sprite, const sf::Vector2f& size) {
     sf::IntRect textureRect = sprite.getTextureRect();
@@ -34,9 +44,9 @@ Coin::Coin()
       m_type(CoinType::COLLECTIBLE),
       m_initialY(0.f) {
     initPhysics(nullptr, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT), true);
-    setSprite(COIN_TEXTURE_PATH);
+    setSprite(MAP_COIN_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::coinFrames(), 0.2f));
+        AnimationSystem::createManualAnimation(mapCoinFrames(), 0.2f));
     playAnimation("idle");
 }
 
@@ -47,11 +57,14 @@ Coin::Coin(const sf::Vector2f& position, b2World* world, CoinType type)
     if (m_type == CoinType::COLLECTIBLE) {
         initPhysics(world, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT), true);
     }
-    setSprite(COIN_TEXTURE_PATH);
+    const bool isQuestionPopup = m_type == CoinType::QUESTION_POPUP;
+    setSprite(isQuestionPopup ? QUESTION_COIN_TEXTURE_PATH : MAP_COIN_TEXTURE_PATH);
 
-    float frameDuration = (type == CoinType::QUESTION_POPUP) ? 0.08f : 0.2f;
+    float frameDuration = isQuestionPopup ? 0.08f : 0.2f;
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::coinFrames(), frameDuration));
+        AnimationSystem::createManualAnimation(
+            isQuestionPopup ? SpriteFrames::shared::Items::coinFrames() : mapCoinFrames(),
+            frameDuration));
     playAnimation("idle");
 
     if (m_type == CoinType::QUESTION_POPUP) {

@@ -73,6 +73,16 @@
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
+### Superseding audit — Tileset coordinates and assembled scenery (2026-08-10)
+
+Entry #35 below is historical and is superseded by the current audit in
+[`docs/tileset_coordinate.md`](tileset_coordinate.md). The current contract
+separates the Palette 1 terrain quartet from Palette 3 question/used blocks,
+adds the standalone map-coin frames, selects Castle palette pipe/pole frames,
+and records assembled bboxes for the full pole, tall pipes, and small/large
+castles. `TileMap` chroma-keys only the two known sheet backdrop colors before
+uploading the tileset; it does not remove gameplay colors such as castle holes.
+
 ### Entry #35: [Doc & Asset Sync] - Rà Soát Tọa Độ Tileset Bàn Đồ (`tileset_coordinate.md`) & Khắc Phục Nhãn Sai
 - **Trạng thái:** Đã hoàn thành 100%.
 - **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
@@ -403,4 +413,3 @@
   - Added `STONE_UNDERGROUND` (`{198, 16}` - Object #12, Khối đá vuông 4 đinh Teal) definition in `TileFrames.h` and updated `TileMap.cpp` (`getTilesetRect`) so symbol `'S'` correctly renders Underground Teal Stone in Level 2 instead of Overworld Brown Stone or Teal Brick.
   - Added a `0.02f` pixel UV inset in `TileMap::buildVertices` to completely eliminate 1-pixel border texture bleeding caused by subpixel camera position sampling.
   - Verified full build clean success and 13/13 ctest pass.
-

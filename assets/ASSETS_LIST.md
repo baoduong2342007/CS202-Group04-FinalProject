@@ -89,7 +89,8 @@ nhật theo `include/core/SpriteFrames.h`:
   `(180,36)`, `(190,36)`, `(200,36)`, `(210,36)`; khoảng cách giữa frame là
   2 pixel.
 - Tile catalog dùng `assets/textures/tiles/tileset.png`: `TileMap` đọc các
-  frame ground/stone/brick/used/question/pipe/flag từ `TileFrames.h`.
+  frame theme-specific ground/stone/brick/used/question/pipe/flag từ
+  `TileFrames.h`; coin map dùng ba frame Palette 3 trong cùng sheet.
 - Không tạo file crop riêng như `idle.png`, `coin.png`, `mushroom.png` hoặc
   `star.png`; animation phải cắt từ spritesheet bằng named frame constants.
 
@@ -101,7 +102,7 @@ Các file dùng để đo/cắt hoặc kiểm tra component đã chuyển ra kh�
 | Path | Kích thước | Usage |
 |---|---:|---|
 | `docs/assets/reference/enemies.png` | 436×530 | `Reference` — atlas enemy dùng để đo/cắt. |
-| `docs/assets/reference/enemies_all_components_atlas.png` | 880×1400 | `Reference` — atlas phân tích component enemy cũ. |
+| `docs/assets/reference/enemies_all_components_atlas.png` | 1072×1160 | `Reference` — atlas phân tích component enemy có đánh số STT. |
 | `docs/assets/reference/enemies_all_components_atlas_full.png` | 800×1280 | `Reference` — atlas component lấy từ runtime history; không package. |
 | `docs/assets/reference/enemies_candidate.png` | 128×96 | `Reference` — candidate sheet chưa có loader runtime. |
 | `docs/assets/reference/blocks_all_components_atlas_full.png` | 800×800 | `Reference` — atlas phân tích block; không package. |
@@ -109,6 +110,7 @@ Các file dùng để đo/cắt hoặc kiểm tra component đã chuyển ra kh�
 | `docs/assets/reference/items_blocks_candidate.png` | 96×96 | `Reference` — candidate sheet chưa có loader runtime. |
 | `docs/assets/reference/items_objects_candidate.png` | 128×64 | `Reference` — candidate sheet chưa có loader runtime. |
 | `docs/assets/reference/tileset_candidate.png` | 160×32 | `Reference` — candidate tileset chưa được chọn cho release. |
+| `docs/assets/reference/tileset_all_components_atlas_full.png` | 720×2448 | `Reference` — atlas component có nhãn; tọa độ crop không cùng hệ với sheet gốc. |
 | `docs/assets/reference/bg_world_candidate.png` | 1857×847 | `Reference` — candidate background trùng kích thước nhưng chưa có runtime path. |
 | `docs/assets/reference/general_tile.png` | 680×776 | `Reference` — bản duplicate/source tile. |
 | `docs/assets/reference/tileset(v2).png` | 680×776 | `Reference` — legacy tile source. |

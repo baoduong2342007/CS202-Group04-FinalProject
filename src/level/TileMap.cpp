@@ -183,15 +183,17 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
         case '1':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
-            // Fallback for castle
+            if (theme == LevelTheme::CASTLE) return TileFrames::GROUND_CASTLE;
             return TileFrames::GROUND;
 
         case 'S':
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::STONE_UNDERGROUND;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
 
         case 'B':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
             return TileFrames::BRICK;
 
         case '?':
@@ -206,30 +208,37 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
 
         case 'E':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::USED_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::USED_BLOCK_CASTLE;
             return TileFrames::USED_BLOCK;
 
         case '[':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
             return TileFrames::PIPE_TOP_LEFT;
 
         case ']':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_RIGHT_CASTLE;
             return TileFrames::PIPE_TOP_RIGHT;
 
         case '{':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_LEFT_CASTLE;
             return TileFrames::PIPE_BODY_LEFT;
 
         case '}':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_RIGHT_CASTLE;
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
             return TileFrames::FINISH_TOP;
 
         case '|':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
 
         default:
@@ -413,7 +422,20 @@ bool TileMap::loadFromFile(const std::string& path) {
     
     sf::Texture loadedTileset;
     try {
-        loadedTileset = sf::Texture(std::string(TILESET_PATH));
+        sf::Image tilesetImage;
+        if (!tilesetImage.loadFromFile(std::string(TILESET_PATH))) {
+            std::cerr << "Failed to load TileMap tileset image: " << TILESET_PATH << std::endl;
+            return false;
+        }
+
+        // The reference sheet is an opaque compositing sheet.  Its three
+        // backdrop colors are not gameplay pixels; key them out before the
+        // atlas is uploaded so pipes, poles, and assembled structures do not
+        // carry lavender/blue rectangles into the level.
+        tilesetImage.createMaskFromColor(sf::Color(146, 144, 255));
+        tilesetImage.createMaskFromColor(sf::Color(148, 148, 255));
+        tilesetImage.createMaskFromColor(sf::Color(0, 41, 140));
+        loadedTileset = sf::Texture(tilesetImage);
     } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;

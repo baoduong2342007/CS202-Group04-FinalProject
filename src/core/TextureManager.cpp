@@ -58,6 +58,7 @@ bool TextureManager::loadTexture(const std::string& id, const std::string& filen
             
             // Create mask for background colors to make them transparent
             img.createMaskFromColor(bg1);
+            img.createMaskFromColor(sf::Color(148, 148, 255));
             img.createMaskFromColor(bg2);
             if (corner.a == 255 && (corner == bg1 || corner == bg2 || (corner.r < 50 && corner.g < 50))) {
                 img.createMaskFromColor(corner);

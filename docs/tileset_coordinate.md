@@ -11,9 +11,9 @@
 | **#7** | (102, 16) | 16 × 16 px | `object_007.png` | Lâu đài (Castle) - Ô Cửa Sổ Đen |
 | **#8** | (119, 16) | 16 × 16 px | `object_008.png` | Lâu đài (Castle) - Đỉnh Cửa (Door Top) |
 | **#9** | (147, 16) | 16 × 16 px | `object_009.png` | Khối Đất Nền (Ground Tile) - Underground (Màu Xanh Teal) |
-| **#10** | (164, 16) | 16 × 16 px | `object_010.png` | Khối Gạch (Brick Block) - Underground (Màu Xanh Teal) |
-| **#11** | (181, 16) | 16 × 16 px | `object_011.png` | Khối Đá Nền / Khối Cứng (Stone / Solid Block) - Underground |
-| **#12** | (198, 16) | 16 × 16 px | `object_012.png` | Khối Đã Nẩy (Used Block) - Underground (Màu Xanh Teal) |
+| **#10** | (164, 16) | 16 × 16 px | `object_010.png` | Khối Gạch (Brick Block Variant 1) - Underground (Màu Xanh Teal) |
+| **#11** | (181, 16) | 16 × 16 px | `object_011.png` | Khối Gạch (Brick Block Variant 2) - Underground (Màu Xanh Teal) |
+| **#12** | (198, 16) | 16 × 16 px | `object_012.png` | Khối Đá Nền / Khối Cứng (Stone / Solid Block) - Underground (Màu Xanh Teal) |
 | **#13** | (215, 16) | 16 × 16 px | `object_013.png` | Lâu đài (Castle) - Đỉnh Cửa (Door Top) |
 | **#14** | (232, 16) | 16 × 16 px | `object_014.png` | Lâu đài (Castle) - Tường Gạch Xây (Màu Xanh) |
 | **#15** | (249, 16) | 16 × 16 px | `object_015.png` | Lâu đài (Castle) - Ô Cửa Sổ Đen |

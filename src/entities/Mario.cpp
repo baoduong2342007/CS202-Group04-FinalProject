@@ -10,8 +10,6 @@
 #include <iostream>
 #include <cmath>
 #include "entities/FireBall.h"
-#include "entities/Enemy.h"
-#include "items/Item.h"
 #include "physics/PhysicsEngine.h"
 #include "level/TileMap.h"
 #include "patterns/EventBus.h"
@@ -43,9 +41,6 @@ constexpr float AIR_FRICTION = 150.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
-constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
-constexpr float MAX_WALL_NORMAL_X = 0.5f;
-constexpr float STOMP_BOUNCE_SPEED = 300.f;
 constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.0f;
 constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
 constexpr float MAX_GROUND_NORMAL_X = 0.5f;
@@ -900,71 +895,13 @@ void Mario::clearGroundedState() {
   setGrounded(false);
 }
 
-// ── Double Dispatch Collision Resolution ────────────────────────
-
 void Mario::onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal) {
-  if (!other || m_isDying) return;
-
-  b2WorldManifold worldManifold;
-  contact->GetWorldManifold(&worldManifold);
-  b2Vec2 contactNormal = normal;
-
-  b2Vec2 marioVel = (m_body) ? m_body->GetLinearVelocity() : b2Vec2(0.f, 0.f);
-
-  // 1. Collectible Item Pickup
-    if (other->getType() == EntityType::ITEM) {
-        Item* item = static_cast<Item*>(other);
-        if (item && item->isCollectible()) {
-            item->onCollect(*this);
-            item->markForRemoval();
-        }
-    return;
-  }
-
-  // 2. Enemy Interaction
-  if (other->getType() == EntityType::ENEMY) {
-    Enemy* enemy = static_cast<Enemy*>(other);
-    // Stomp check
-    bool isStomp = false;
-    if (contactNormal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(contactNormal.x) < MAX_WALL_NORMAL_X) {
-      isStomp = true;
-    } else {
-      b2Body* enemyBody = other->getBody();
-      if (enemyBody && m_body) {
-        float marioHalfHeight = PhysicsEngine::pixelsToMeters(getSize().y / 2.0f);
-        float marioBottomMeters = m_body->GetPosition().y + marioHalfHeight;
-        float enemyMidMeters = enemyBody->GetPosition().y;
-        float tolerance = PhysicsEngine::pixelsToMeters(other->getSize().y * 0.2f);
-        if (marioBottomMeters <= enemyMidMeters + tolerance) {
-          isStomp = true;
-        }
-      }
-    }
-
-    if (isStomp) {
-      setGrounded(true);
-      if (enemy) {
-        enemy->onStomp();
-        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-
-        if (m_body) {
-          float currentY = m_body->GetLinearVelocity().y;
-          float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : 200.f);
-          m_body->SetLinearVelocity(b2Vec2(m_body->GetLinearVelocity().x, bounceVel));
-        }
-      }
-    } else { // Lateral / Bottom Collision
-      if (enemy) {
-        enemy->onSideCollision(this);
-      }
-    }
-    return;
-  }
-
-  // 3. Terrain / Ground Contact
-  if (contactNormal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(contactNormal.x) < MAX_WALL_NORMAL_X && marioVel.y >= -0.1f) {
-    setGrounded(true);
-  }
+  // CollisionManager is the sole gameplay collision authority. The legacy
+  // double-dispatch hook remains part of Entity's interface for compatibility,
+  // but this callback intentionally has no gameplay side effects.
+  (void)other;
+  (void)contact;
+  (void)normal;
 }
 
 void Mario::onCollisionEnd(Entity* other, b2Contact* contact) {

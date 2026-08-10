@@ -21,12 +21,12 @@ tính từ thư mục executable sau khi CMake copy runtime assets; đường d�
 | `assets/textures/enemies/enemies.png` | 436×530 | `Runtime` | Atlas thật đang được `Goomba`/`Koopa` cắt qua `SpriteFrames`. |
 | `assets/textures/enemies/goomba.png` | 96×32 | `Future` | Standalone Goomba sheet; chưa có runtime loader riêng. |
 | `assets/textures/enemies/koopa.png` | 128×48 | `Future` | Standalone Koopa sheet; chưa có runtime loader riêng. |
-| `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | Mushroom, QuestionBlock và block frames. |
-| `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Coin, FireFlower và Star frames. |
+| `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | QuestionBlock và block frames; không phải atlas runtime của Mushroom. |
+| `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Mushroom, Coin, FireFlower và Star frames; được các item caller load trực tiếp. |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
 | `assets/textures/tiles/tileset.png` | 680×776 | `Runtime` | Tileset thật; `TileMap` dùng các frame catalog trong `TileFrames.h`. |
 | `assets/ui/bg_world.png` | 1857×847 | `Runtime` | Full-frame modern pixel-art overworld; uniformly scaled to the logical view and repeated with alternating mirroring behind every level. |
-| `assets/textures/ui/bg_clouds.png` | 768×1129 | `Runtime` | Menu/background asset. |
+| `assets/textures/ui/bg_clouds.png` | 768×1129 | `Future` | Không có caller runtime trong release hiện tại; giữ để tham khảo cho background tương lai. |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld background kept as a reference asset. |
 | `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | Chưa có runtime render path. |
 | `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu/HUD bitmap UI asset. |
@@ -54,7 +54,7 @@ runtime asset.
 | `assets/sounds/effects/item.wav` | `Runtime` — `ITEM_EMERGED` khi item rời block. |
 | `assets/sounds/effects/jump.wav` | `Runtime` — `PLAYER_JUMPED`. |
 | `assets/sounds/effects/jumpsmall.wav` | `Runtime` catalog — small-Mario jump variant. |
-| `assets/sounds/effects/kickkill.wav` | `Runtime` — `SHELL_KICKED`, phát một lần khi shell bắt đầu trượt. |
+| `assets/sounds/effects/kickkill.wav` | `Runtime` — nguồn sample cho hai logical cues `shell_kick` và `shell_kill`; mỗi cue đi qua event riêng và chỉ phát một lần cho state transition/defeat. |
 | `assets/sounds/effects/pause.wav` | `Runtime` — `GAME_PAUSED`. |
 | `assets/sounds/effects/pipepowerdown.wav` | `Runtime` — `PLAYER_POWER_DOWN`. |
 | `assets/sounds/effects/powerup.wav` | `Runtime` — `PLAYER_POWER_UP`. |
@@ -88,8 +88,8 @@ nhật theo `include/core/SpriteFrames.h`:
 - Coin dùng `items_objects.png`, bốn frame 8×16 tại
   `(180,36)`, `(190,36)`, `(200,36)`, `(210,36)`; khoảng cách giữa frame là
   2 pixel.
-- Tile catalog dùng `items_objects.png`: ground `(180,8)`, brick `(198,8)`,
-  used block `(216,8)`, special `(234,8)`.
+- Tile catalog dùng `assets/textures/tiles/tileset.png`: `TileMap` đọc các
+  frame ground/stone/brick/used/question/pipe/flag từ `TileFrames.h`.
 - Không tạo file crop riêng như `idle.png`, `coin.png`, `mushroom.png` hoặc
   `star.png`; animation phải cắt từ spritesheet bằng named frame constants.
 

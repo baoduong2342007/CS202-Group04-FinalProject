@@ -146,7 +146,7 @@ void PlayState::onPause() {
 
 void PlayState::onResume() {
     // S6-TV1-15/17: restore music and resume updates.
-    SoundManager::getInstance().playMusic();
+    EventBus::getInstance().notify(EventType::GAME_RESUMED);
 }
 
 void PlayState::onNotify(EventType event) {

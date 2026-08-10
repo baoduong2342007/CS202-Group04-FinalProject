@@ -15,11 +15,17 @@
 #include <string>
 #include <utility>
 
+#include <box2d/box2d.h>
+
 #include "core/SaveManager.h"
 #include "core/ScoreRules.h"
 #include "core/SoundManager.h"
 #include "core/LevelCatalog.h"
+#include "core/GameManager.h"
+#include "entities/FireBall.h"
 #include "entities/Mario.h"
+#include "entities/Goomba.h"
+#include "entities/Koopa.h"
 #include "entities/QuestionBlock.h"
 #include "items/Coin.h"
 #include "items/FireFlower.h"
@@ -33,6 +39,13 @@
 #include "patterns/InputState.h"
 #include "patterns/RunCommand.h"
 #include "patterns/ShootCommand.h"
+#include "physics/ContactListener.h"
+#include "level/TileMap.h"
+#include "states/GameOverState.h"
+#include "states/MenuState.h"
+#include "states/PlayState.h"
+#include "states/PauseState.h"
+#include "states/WinState.h"
 #include "ui/HUD.h"
 
 namespace {
@@ -43,12 +56,22 @@ public:
         EventBus::getInstance().subscribe(EventType::PLAYER_POWER_UP, this);
         EventBus::getInstance().subscribe(EventType::ONE_UP_COLLECTED, this);
         EventBus::getInstance().subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
+        EventBus::getInstance().subscribe(EventType::ENEMY_STOMPED, this);
+        EventBus::getInstance().subscribe(EventType::SHELL_KICKED, this);
+        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
+        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
+        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
     }
 
     ~EventCounter() override {
         EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_UP, this);
         EventBus::getInstance().unsubscribe(EventType::ONE_UP_COLLECTED, this);
         EventBus::getInstance().unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
+        EventBus::getInstance().unsubscribe(EventType::ENEMY_STOMPED, this);
+        EventBus::getInstance().unsubscribe(EventType::SHELL_KICKED, this);
+        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
+        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
+        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
     }
 
     void onNotify(EventType event) override {
@@ -58,12 +81,27 @@ public:
             ++oneUpEvents;
         } else if (event == EventType::PLAYER_INVINCIBILITY_EXPIRED) {
             ++invincibilityExpiredEvents;
+        } else if (event == EventType::ENEMY_STOMPED) {
+            ++stompEvents;
+        } else if (event == EventType::SHELL_KICKED) {
+            ++shellKickedEvents;
+        } else if (event == EventType::ENEMY_DEFEATED_BY_SHELL) {
+            ++shellDefeatEvents;
+        } else if (event == EventType::ENEMY_DEFEATED_BY_FIREBALL) {
+            ++fireballDefeatEvents;
+        } else if (event == EventType::ENEMY_DEFEATED_BY_STAR) {
+            ++starDefeatEvents;
         }
     }
 
     int powerUpEvents = 0;
     int oneUpEvents = 0;
     int invincibilityExpiredEvents = 0;
+    int stompEvents = 0;
+    int shellKickedEvents = 0;
+    int shellDefeatEvents = 0;
+    int fireballDefeatEvents = 0;
+    int starDefeatEvents = 0;
 };
 
 sf::Event keyPressed(sf::Keyboard::Key key) {
@@ -141,13 +179,111 @@ void testScoreCatalogAndCoinThreshold() {
     assert(mario.getLives() == initialLives + 1);
     assert(events.oneUpEvents == 1);
 
-    Mario defeatMario;
-    ScoreRules::awardDefeat(defeatMario, DefeatCause::STOMP);
-    ScoreRules::awardDefeat(defeatMario, DefeatCause::SHELL);
-    ScoreRules::awardDefeat(defeatMario, DefeatCause::FIREBALL);
-    ScoreRules::awardDefeat(defeatMario, DefeatCause::STAR);
-    ScoreRules::awardDefeat(defeatMario, DefeatCause::PIT);
-    assert(defeatMario.getScore() == 700);
+}
+
+void stepContactWorld(b2World& world) {
+    world.Step(1.f / 60.f, 8, 3);
+}
+
+void testDefeatScoreAndShellEventsThroughCollisionRuntime() {
+    // Stomp: the score/event producer is CollisionManager, not ScoreRules.
+    {
+        b2World world(b2Vec2(0.f, 0.f));
+        TileMap tileMap;
+        ContactListener listener(tileMap);
+        world.SetContactListener(&listener);
+
+        Mario mario({0.f, 0.f}, {28.f, 30.f});
+        mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+        Goomba goomba({0.f, 25.f}, &world);
+        EventCounter events;
+
+        stepContactWorld(world);
+
+        assert(goomba.isDead());
+        assert(mario.getScore() == ScoreRules::pointsFor(DefeatCause::STOMP));
+        assert(events.stompEvents == 1);
+
+        // A second physics step keeps a persistent contact from awarding a
+        // second score/event while the victim is awaiting cleanup.
+        stepContactWorld(world);
+        assert(mario.getScore() == 100);
+        assert(events.stompEvents == 1);
+    }
+
+    // Shell kick and shell kill are distinct transactions. The victim is
+    // scored through DefeatCause::SHELL and the first kick is not mislabeled
+    // as ENEMY_STOMPED.
+    {
+        b2World world(b2Vec2(0.f, 0.f));
+        TileMap tileMap;
+        ContactListener listener(tileMap);
+        world.SetContactListener(&listener);
+
+        Mario owner;
+        Koopa koopa({0.f, 0.f}, &world);
+        Goomba victim({0.f, 0.f}, &world);
+        EventCounter events;
+        koopa.onStomp();
+        koopa.update(0.f); // deferred shell fixture rebuild, world unlocked
+        koopa.setDefeatOwner(&owner);
+        koopa.kick(Direction::RIGHT);
+        koopa.setVelocity({0.f, 0.f}); // keep the contact persistent for test
+
+        stepContactWorld(world);
+        assert(victim.isDead());
+        assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::SHELL));
+        assert(events.shellKickedEvents == 1);
+        assert(events.shellDefeatEvents == 1);
+        assert(events.stompEvents == 0);
+
+        stepContactWorld(world);
+        assert(owner.getScore() == 200);
+        assert(events.shellDefeatEvents == 1);
+        assert(events.stompEvents == 0);
+        assert(events.shellKickedEvents == 1);
+    }
+
+    // FireBall and Star use the same shared operation and receive their own
+    // cause event, rather than borrowing ENEMY_STOMPED.
+    {
+        b2World world(b2Vec2(0.f, 0.f));
+        TileMap tileMap;
+        ContactListener listener(tileMap);
+        world.SetContactListener(&listener);
+
+        Mario owner;
+        FireBall fireBall({0.f, 0.f}, Direction::RIGHT, &world);
+        fireBall.setOwner(&owner);
+        fireBall.setVelocity({0.f, 0.f});
+        Goomba goomba({0.f, 0.f}, &world);
+        EventCounter events;
+
+        stepContactWorld(world);
+        assert(goomba.isDead());
+        assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::FIREBALL));
+        assert(events.fireballDefeatEvents == 1);
+        assert(events.stompEvents == 0);
+    }
+
+    {
+        b2World world(b2Vec2(0.f, 0.f));
+        TileMap tileMap;
+        ContactListener listener(tileMap);
+        world.SetContactListener(&listener);
+
+        Mario mario({0.f, 0.f}, {28.f, 30.f});
+        mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+        mario.setStarInvincible(5.f);
+        Goomba goomba({0.f, 25.f}, &world);
+        EventCounter events;
+
+        stepContactWorld(world);
+        assert(goomba.isDead());
+        assert(mario.getScore() == ScoreRules::pointsFor(DefeatCause::STAR));
+        assert(events.starDefeatEvents == 1);
+        assert(events.stompEvents == 0);
+    }
 }
 
 void testPowerUpAndOneUpEvents() {
@@ -320,9 +456,10 @@ void testStarMusicOverrideAndVolumePersistence() {
     assert(LevelCatalog::find(2)->music == MusicId::UNDERGROUND);
     assert(LevelCatalog::find(3)->music == MusicId::CASTLE);
 
-    for (const char* effect : {"coin", "stomp", "kick", "death", "powerup",
-                               "powerdown", "fireball", "flagpole", "oneup",
-                               "hurryup"}) {
+    for (const char* effect : {"coin", "stomp", "kick", "shell_kick",
+                               "shell_kill", "enemy_fireball", "enemy_star",
+                               "death", "powerup", "powerdown", "fireball",
+                               "flagpole", "oneup", "hurryup"}) {
         assert(sound.isSoundLoaded(effect));
     }
 
@@ -359,6 +496,76 @@ void testStarMusicOverrideAndVolumePersistence() {
     std::filesystem::remove_all(saveDirectory, errorCode);
 }
 
+void testStateAudioRuntimeAndLevelTracks() {
+    SoundManager& sound = SoundManager::getInstance();
+    GameManager& game = GameManager::getInstance();
+
+    // Start through the real GameManager -> PlayState lifecycle. Each
+    // LEVEL_COMPLETED event below is consumed by PlayState's transition
+    // transaction, which loads the next catalog entry and switches music.
+    game.changeState(std::make_unique<PlayState>());
+    game.update(0.f);
+    assert(sound.getCurrentMusicId().has_value());
+    assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+
+    // Death is an EventBus event consumed by SoundManager before PlayState
+    // schedules its reload/GameOver decision.
+    EventBus::getInstance().notify(EventType::PLAYER_DIED);
+    assert(sound.getCurrentMusicId().has_value());
+    assert(sound.getCurrentMusicId().value() == MusicId::DEATH);
+
+    // Restart the state so the following checks begin at a clean Level 1.
+    game.changeState(std::make_unique<PlayState>());
+    game.update(0.f);
+    assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+
+    for (int cycle = 0; cycle < 20; ++cycle) {
+        game.pushState(std::make_unique<PauseState>());
+        game.update(0.f);
+        assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+
+        game.popState();
+        game.update(0.f);
+        assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+    }
+
+    const auto completeCurrentLevel = [&game, &sound](MusicId nextTrack) {
+        EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        game.update(0.6f); // fade out -> loading
+        game.update(0.f); // load next level, emit LEVEL_STARTED
+        assert(sound.getCurrentMusicId().has_value());
+        assert(sound.getCurrentMusicId().value() == nextTrack);
+        game.update(0.6f); // fade in complete
+    };
+
+    completeCurrentLevel(MusicId::UNDERGROUND);
+    completeCurrentLevel(MusicId::CASTLE);
+
+    // Level 3 completion queues exactly one WinState at the safe point.
+    EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+    game.update(0.6f);
+    game.update(0.f);
+    assert(sound.getCurrentMusicId().has_value());
+    assert(sound.getCurrentMusicId().value() == MusicId::WIN);
+
+    // GameOver/Win state entry points are also production audio state
+    // lifecycles, not helper-only SoundManager calls.
+    GameProgress progress;
+    progress.score = 4321;
+    GameOverState gameOver(progress);
+    gameOver.onEnter();
+    assert(sound.getCurrentMusicId().value() == MusicId::GAME_OVER);
+    gameOver.onExit();
+
+    WinState win(progress);
+    win.onEnter();
+    assert(sound.getCurrentMusicId().value() == MusicId::WIN);
+    win.onExit();
+
+    game.changeState(std::make_unique<MenuState>());
+    game.update(0.f);
+}
+
 void testVolumeClampAndAssetManifest() {
     assert(SoundManager::clampVolume(-10.f) == 0.f);
     assert(SoundManager::clampVolume(150.f) == 100.f);
@@ -390,6 +597,18 @@ void testVolumeClampAndAssetManifest() {
     assert(manifestText.find("680×776") != std::string::npos);
     assert(manifestText.find("assets/textures/enemies/enemies.png") != std::string::npos);
     assert(manifestText.find("436×530") != std::string::npos);
+    assert(manifestText.find(
+        "assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Mushroom") !=
+        std::string::npos);
+    assert(manifestText.find(
+        "assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | QuestionBlock") !=
+        std::string::npos);
+    assert(manifestText.find(
+        "assets/textures/ui/bg_clouds.png` | 768×1129 | `Future`") !=
+        std::string::npos);
+    assert(manifestText.find(
+        "Tile catalog dùng `assets/textures/tiles/tileset.png`") !=
+        std::string::npos);
     assert(manifestText.find("docs/assets/reference/blocks_all_components_atlas_full.png") !=
            std::string::npos);
 
@@ -413,12 +632,14 @@ void testVolumeClampAndAssetManifest() {
 
 int main() {
     testScoreCatalogAndCoinThreshold();
+    testDefeatScoreAndShellEventsThroughCollisionRuntime();
     testPowerUpAndOneUpEvents();
     testAdaptiveQuestionBlockAndFireFlowerContract();
     testStarTimerHudAndExpiryEvent();
     testHudTimeoutAndGameplayFreeze();
     testInputBindingsAndSuppression();
     testStarMusicOverrideAndVolumePersistence();
+    testStateAudioRuntimeAndLevelTracks();
     testVolumeClampAndAssetManifest();
     std::cout << "All TV5 integration tests passed successfully!\n";
     return 0;

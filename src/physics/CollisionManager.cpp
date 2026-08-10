@@ -245,6 +245,60 @@ void handleEnemyWallCollision(Enemy* enemy, Entity* obstacle,
 
 } // namespace
 
+bool CollisionManager::defeatEnemy(Enemy& victim,
+                                    DefeatCause cause,
+                                    Mario* owner) {
+    if (cause == DefeatCause::STOMP) {
+        // A Koopa stomp is an interaction rather than a terminal death: the
+        // walking/sliding shell changes state and remains available for a
+        // later shell-kill transaction. Goomba stomp still transitions the
+        // victim to its terminal squish state.
+        if (!victim.tryCommitStomp()) {
+            return false;
+        }
+
+        victim.onStomp();
+        if (owner) {
+            owner->addScore(ScoreRules::pointsFor(cause));
+        }
+        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+        return true;
+    }
+
+    if (!victim.tryCommitDefeat()) {
+        return false;
+    }
+
+    switch (cause) {
+        case DefeatCause::SHELL:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_SHELL);
+            break;
+        case DefeatCause::FIREBALL:
+            victim.onFireHit();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_FIREBALL);
+            break;
+        case DefeatCause::STAR:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
+            break;
+        case DefeatCause::PIT:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            break;
+        case DefeatCause::STOMP:
+            // Handled above; keep the switch exhaustive for future callers.
+            return false;
+    }
+
+    if (owner) {
+        owner->addScore(ScoreRules::pointsFor(cause));
+    }
+    return true;
+}
+
 void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
     if (!contact) {
         return;
@@ -322,14 +376,6 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     contact->GetWorldManifold(&worldManifold);
     b2Vec2 normal = worldManifold.normal;
 
-    // Invoke Polymorphic Double Dispatch callbacks
-    if (entityA) {
-        entityA->onCollisionBegin(entityB, contact, normal);
-    }
-    if (entityB) {
-        entityB->onCollisionBegin(entityA, contact, -normal);
-    }
-
     // Handle FireBall collisions if present
     FireBall* fireBall = nullptr;
     Entity* target = nullptr;
@@ -362,14 +408,7 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (target) {
             if (target->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(target);
-                if (!enemy->isDead()) {
-                    enemy->onFireHit();
-                    EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-                    if (enemy->isDead() && fireBall->getOwner()) {
-                        Mario* owner = fireBall->getOwner();
-                        ScoreRules::award(*owner, ScoreEvent::FIREBALL_DEFEATED);
-                    }
-                }
+                defeatEnemy(*enemy, DefeatCause::FIREBALL, fireBall->getOwner());
                 fireBall->deactivate();
                 return;
             }
@@ -404,6 +443,18 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     }
 
     if (mario && marioBody) {
+        // Item pickup is resolved here, alongside every other Mario gameplay
+        // collision. Level's overlap sweep remains a fallback for items whose
+        // sensor contact was not reported by Box2D, while Item::isCollectible()
+        // makes the operation idempotent.
+        if (otherEntity && otherEntity->isItem()) {
+            Item* item = static_cast<Item*>(otherEntity);
+            if (item->isCollectible()) {
+                item->onCollect(*mario);
+                item->markForRemoval();
+            }
+            return;
+        }
         handleMarioCollision(mario, otherEntity, marioBody, contact, tileMap);
         return;
     }
@@ -432,14 +483,10 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
-            if (victim->isDead() || victim->shouldRemove() || victim->isPendingDestroy() || !victim->isActive()) {
-                return true;
-            }
-
-            victim->takeDamage(victim->getHealth());
-            victim->markForRemoval();
-
-            return true;
+            return CollisionManager::defeatEnemy(
+                *victim,
+                DefeatCause::SHELL,
+                koopa->getDefeatOwner());
         };
 
         tryShellKill(enemyA, enemyB);
@@ -526,6 +573,16 @@ void CollisionManager::handleMarioCollision(Mario* mario,
             return;
         }
 
+        // Star invincibility is a separate gameplay authority from damage
+        // grace. It defeats the enemy through the same cause/score/event
+        // transaction regardless of whether the contact looks like a stomp
+        // or a side hit.
+        if (mario->isStarInvincible()) {
+            CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
+            mario->clearGroundedState();
+            return;
+        }
+
         if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {
             isStomp = true;
         } else {
@@ -545,29 +602,9 @@ void CollisionManager::handleMarioCollision(Mario* mario,
     if (isStomp) {
         Enemy* enemy = static_cast<Enemy*>(other);
 
-        if (enemy->isKoopa()) {
-            Koopa* koopa = static_cast<Koopa*>(enemy);
-
-            const KoopaState stateBefore = koopa->getState();
-
-            if (stateBefore == KoopaState::WALKING) {
-                // First stomp: WALKING -> SHELL_IDLE only.
-                koopa->onStomp();
-            }
-            else if (stateBefore == KoopaState::SHELL_SLIDING) {
-                // Stomping a moving shell stops it.
-                koopa->onStomp();
-            }
-            else if (stateBefore == KoopaState::SHELL_IDLE) {
-                // Already idle shell: keep it idle when stomped from above.
-            }
+        if (!CollisionManager::defeatEnemy(*enemy, DefeatCause::STOMP, mario)) {
+            return;
         }
-        else {
-            enemy->onStomp();
-        }
-
-        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-        ScoreRules::award(*mario, ScoreEvent::ENEMY_STOMPED);
 
         float currentY = marioBody->GetLinearVelocity().y;
 
@@ -606,8 +643,8 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                     // If shell is idle, Mario kicks it
                     else if (koopa->isInShell()) {
                         Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->setDefeatOwner(mario);
                         koopa->kick(kickDir);
-                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
                     }
                     // If walking, Mario gets hit
                     else {
@@ -618,5 +655,14 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                 }
             }
         }
+    }
+
+    // Terrain contact is also resolved centrally now that entity callbacks no
+    // longer perform gameplay decisions.
+    if ((!other || !other->isEnemy()) &&
+        normal.y > TOP_STOMP_NORMAL_THRESHOLD &&
+        std::abs(normal.x) < MAX_WALL_NORMAL_X &&
+        marioVel.y >= -0.1f) {
+        mario->setGrounded(true);
     }
 }

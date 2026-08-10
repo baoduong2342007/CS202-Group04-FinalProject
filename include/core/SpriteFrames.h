@@ -1447,7 +1447,9 @@ inline const sf::IntRect VINE_STEM_2({148, 90}, {16, 16});
 
 } // namespace Items
 
-// ── Tiles (from items_objects.png, bounding box (180,8) -> (249,23)) ──
+// ── Legacy item-atlas tile constants ──────────────────────────────────────
+// TileMap's runtime catalog is TileFrames from assets/textures/tiles/tileset.png.
+// These older item-atlas constants remain for source compatibility only.
 namespace Tiles {
 constexpr int Y = 8;
 constexpr int W = 16;

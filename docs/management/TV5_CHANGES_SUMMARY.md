@@ -5,8 +5,8 @@
 > này không dùng để kết luận toàn bộ Definition of Done của Sprint 6 hoặc phân
 > định ownership giữa TV1–TV5.
 >
-> **Mốc kiểm tra:** `HEAD 59b3d6e27c1d20dd589741aba287a13b807b5037 + working tree`,
-> ngày `2026-08-10`.
+> **Mốc kiểm tra:** `HEAD d18fce8bcd7ab278e545cb380d10894c5cf6b826 + working tree`,
+> ngày `2026-08-11`.
 >
 > **Verification đã xác nhận:** build Debug `build-codex` thành công; CTest
 > `13/13` pass; `git diff --check` pass. Đây là snapshot chưa commit release.
@@ -337,3 +337,53 @@ catalog SpriteFrames theo theme, test `sprite_frames_theme_tests`, tài liệu
 đánh giá và kế hoạch Sprint 6. Summary này mô tả trạng thái code đã kiểm tra ở
 `HEAD + working tree`; không phải release commit và không phải tuyên bố Sprint 6
 đã hoàn thành toàn bộ DoD.
+
+---
+
+## 10. Current working-tree changes recorded on 2026-08-11
+
+This section records the changes currently present in the working tree in
+addition to the historical Sprint 6 sections above.
+
+### QuestionBlock coin distribution
+
+- `include/entities/QuestionBlock.h` adds the weighted adaptive-content API and
+  the public `COIN_DROP_RATE_PERCENT = 75` tuning constant.
+- `src/entities/QuestionBlock.cpp` uses a seeded `std::mt19937` roll when a
+  normal `?` block is hit for the first time. Rolls `0..74` produce
+  `QuestionBlockContent::COIN`; the remaining rolls produce a Super Mushroom for
+  SMALL Mario or a Fire Flower for powered-up Mario. A resolved block remains
+  single-use.
+- `src/patterns/EntityFactory.cpp` documents the updated `?` contract while
+  preserving explicit Fire Flower, 1-Up, and Star tile codes.
+- `levels/level0.txt` through `levels/level3.txt` now document `?` as a
+  weighted coin/adaptive-power-up block instead of a guaranteed Super Mushroom.
+
+### QuestionBlock coin popup and sprite scale
+
+- `src/entities/QuestionBlock.cpp` awards the coin immediately through
+  `Coin::awardTo`, then spawns a `CoinType::QUESTION_POPUP` animation when an
+  entity list and texture manager are available.
+- `src/items/Coin.cpp` uses
+  `SpriteFrames::shared::Items::coinFrames()` from
+  `include/core/SpriteFrames_shared.h` for the popup. The source frames are
+  `8x16`; popup rendering now uses a uniform `2x` scale (`16x32`) and centers the
+  sprite over the block. Normal map-coin frames remain `16x16` and render at
+  `32x32`.
+- `include/core/SpriteFrames_shared.h` removes the obsolete duplicate
+  `legacy::LevelEntities::mapCoinFrames()` catalog; the shared item coin frames
+  remain the canonical popup source.
+
+### Regression coverage
+
+- `tests/TV5IntegrationTests.cpp` verifies the exact 75/100 weighted split,
+  SMALL/powered-up fallback content, immediate coin score/count/event updates,
+  popup entity type, and single-use behavior.
+- The working-tree verification was rerun with `cmake --build build-codex -j 2`,
+  `ctest --test-dir build-codex --output-on-failure`, and `git diff --check`:
+  build succeeded, all `13/13` CTest cases passed, and the diff check passed.
+
+### Other working-tree documents
+
+- `Evaluate.md` contains the Sprint 6 DoD audit snapshot.
+- `s6_fix_plan.md` contains the follow-up Sprint 6 completion plan.

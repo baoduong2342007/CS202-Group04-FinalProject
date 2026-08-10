@@ -20,6 +20,7 @@
 #include "core/SaveManager.h"
 #include "core/ScoreRules.h"
 #include "core/SoundManager.h"
+#include "core/TextureManager.h"
 #include "core/LevelCatalog.h"
 #include "core/GameManager.h"
 #include "entities/FireBall.h"
@@ -61,6 +62,7 @@ public:
         EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
         EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
         EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
+        EventBus::getInstance().subscribe(EventType::COIN_COLLECTED, this);
     }
 
     ~EventCounter() override {
@@ -72,6 +74,7 @@ public:
         EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
         EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
         EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
+        EventBus::getInstance().unsubscribe(EventType::COIN_COLLECTED, this);
     }
 
     void onNotify(EventType event) override {
@@ -91,6 +94,8 @@ public:
             ++fireballDefeatEvents;
         } else if (event == EventType::ENEMY_DEFEATED_BY_STAR) {
             ++starDefeatEvents;
+        } else if (event == EventType::COIN_COLLECTED) {
+            ++coinCollectedEvents;
         }
     }
 
@@ -102,6 +107,7 @@ public:
     int shellDefeatEvents = 0;
     int fireballDefeatEvents = 0;
     int starDefeatEvents = 0;
+    int coinCollectedEvents = 0;
 };
 
 sf::Event keyPressed(sf::Keyboard::Key key) {
@@ -313,25 +319,58 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     assert(adaptiveBlock != nullptr);
     assert(adaptiveBlock->getContent() == QuestionBlockContent::ADAPTIVE);
 
+    unsigned int coinRolls = 0;
+    for (unsigned int roll = 0; roll < 100; ++roll) {
+        if (QuestionBlock::chooseAdaptiveContent(MarioState::SMALL, roll) ==
+            QuestionBlockContent::COIN) {
+            ++coinRolls;
+        }
+    }
+    assert(coinRolls == QuestionBlock::COIN_DROP_RATE_PERCENT);
+    assert(coinRolls > 50);
+    assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL, 75) ==
+           QuestionBlockContent::SUPER_MUSHROOM);
+    assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER, 75) ==
+           QuestionBlockContent::FIRE_FLOWER);
+    assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE, 99) ==
+           QuestionBlockContent::FIRE_FLOWER);
+
     Mario smallMario;
     adaptiveBlock->onHit(smallMario);
-    assert(adaptiveBlock->getContent() == QuestionBlockContent::SUPER_MUSHROOM);
+    const QuestionBlockContent smallMarioContent = adaptiveBlock->getContent();
+    assert(smallMarioContent == QuestionBlockContent::COIN ||
+           smallMarioContent == QuestionBlockContent::SUPER_MUSHROOM);
+    const int coinsAfterFirstHit = smallMario.getCoinCount();
     adaptiveBlock->onHit(smallMario);
-    assert(adaptiveBlock->getContent() == QuestionBlockContent::SUPER_MUSHROOM);
+    assert(adaptiveBlock->getContent() == smallMarioContent);
+    assert(smallMario.getCoinCount() == coinsAfterFirstHit);
 
     QuestionBlock poweredBlock(
         {0.f, 0.f}, nullptr, QuestionBlockContent::ADAPTIVE);
     Mario superMario;
     superMario.setMarioState(MarioState::SUPER);
     poweredBlock.onHit(superMario);
-    assert(poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
+    assert(poweredBlock.getContent() == QuestionBlockContent::COIN ||
+           poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
 
-    QuestionBlock fireBlock(
-        {0.f, 0.f}, nullptr, QuestionBlockContent::ADAPTIVE);
-    Mario fireMario;
-    fireMario.setMarioState(MarioState::FIRE);
-    fireBlock.onHit(fireMario);
-    assert(fireBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
+    EventCounter coinEvents;
+    Mario coinMario;
+    QuestionBlock coinBlock(
+        {0.f, 0.f}, nullptr, QuestionBlockContent::COIN);
+    std::vector<std::unique_ptr<Entity>> spawnedEntities;
+    TextureManager& textureManager = TextureManager::getInstance();
+    coinBlock.onHit(coinMario, &spawnedEntities, &textureManager);
+    assert(coinMario.getCoinCount() == 1);
+    assert(coinMario.getScore() ==
+           ScoreRules::pointsFor(ScoreEvent::COIN_COLLECTED));
+    assert(coinEvents.coinCollectedEvents == 1);
+    assert(spawnedEntities.size() == 1);
+    auto* popupCoin = dynamic_cast<Coin*>(spawnedEntities.front().get());
+    assert(popupCoin != nullptr);
+    assert(popupCoin->getCoinType() == CoinType::QUESTION_POPUP);
+    coinBlock.onHit(coinMario, &spawnedEntities, &textureManager);
+    assert(coinMario.getCoinCount() == 1);
+    assert(spawnedEntities.size() == 1);
 
     FireFlower directFlower;
     Mario directMario;

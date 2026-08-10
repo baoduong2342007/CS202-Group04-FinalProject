@@ -75,4 +75,5 @@ private:
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
     std::string m_levelPath;
+    LevelTheme m_theme{LevelTheme::OVERWORLD};
 };

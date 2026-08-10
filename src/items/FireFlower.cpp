@@ -11,7 +11,7 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
 #include "core/ScoreRules.h"
 
 namespace {
@@ -27,7 +27,7 @@ FireFlower::FireFlower()
     initPhysics(nullptr, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireFlowerFrames(), 0.15f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireFlowerFrames(), 0.15f));
     playAnimation("idle");
 }
 
@@ -36,7 +36,7 @@ FireFlower::FireFlower(const sf::Vector2f& position, b2World* world)
     initPhysics(world, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireFlowerFrames(), 0.15f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireFlowerFrames(), 0.15f));
     playAnimation("idle");
 }
 

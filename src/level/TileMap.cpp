@@ -24,7 +24,9 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "level/TileFrames.h"
@@ -139,6 +141,37 @@ bool isForegroundTile(char symbol) {
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 
+struct DebrisFrames {
+    const sf::IntRect& topLeft;
+    const sf::IntRect& topRight;
+    const sf::IntRect& bottomLeft;
+    const sf::IntRect& bottomRight;
+};
+
+const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
+    static const DebrisFrames overworld{
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames underground{
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames castle{
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_RIGHT};
+    switch (theme) {
+        case LevelTheme::UNDERGROUND: return underground;
+        case LevelTheme::CASTLE:      return castle;
+        case LevelTheme::OVERWORLD:
+        default:                      return overworld;
+    }
+}
+
 } // namespace
 
 void TileMap::setTheme(LevelTheme theme) {
@@ -171,24 +204,31 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::QUESTION;
 
         case 'E':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::USED_BLOCK_UNDERGROUND;
             return TileFrames::USED_BLOCK;
 
         case '[':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
             return TileFrames::PIPE_TOP_LEFT;
 
         case ']':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
             return TileFrames::PIPE_TOP_RIGHT;
 
         case '{':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_LEFT_UNDERGROUND;
             return TileFrames::PIPE_BODY_LEFT;
 
         case '}':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_RIGHT_UNDERGROUND;
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
             return TileFrames::FINISH_TOP;
 
         case '|':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
             return TileFrames::FINISH_POLE;
 
         default:
@@ -501,8 +541,8 @@ void TileMap::buildVertices() {
                 }
             }
 
-            const float left = static_cast<float>(col * TILE_SIZE);
-            const float top = static_cast<float>(row * TILE_SIZE) + offsetY;
+            const float left = x;
+            const float top = y + offsetY;
 
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
@@ -651,10 +691,11 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
 
             // Spawn 4 flying debris particles (4 corners)
             sf::Vector2f center = tileWorldPos + sf::Vector2f(8.f, 8.f);
-            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_LEFT);
-            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_RIGHT);
-            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_LEFT);
-            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_RIGHT);
+            const DebrisFrames& debris = debrisFramesForTheme(m_theme);
+            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), debris.topLeft);
+            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), debris.topRight);
+            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), debris.bottomLeft);
+            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), debris.bottomRight);
 
             if (textureManager) {
                 d1->setTextureManager(*textureManager);

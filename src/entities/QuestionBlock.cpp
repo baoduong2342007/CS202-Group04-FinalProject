@@ -8,7 +8,10 @@
 #include "entities/QuestionBlock.h"
 #include <cmath>
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 #include "core/TextureManager.h"
 #include "items/Coin.h"
 #include "items/Mushroom.h"
@@ -34,21 +37,21 @@ QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, Quest
 
     const auto& animFrames = [theme]() -> const std::vector<sf::IntRect>& {
         switch (theme) {
-            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::ugQuestionBlockFrames();
-            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::castleQuestionBlockFrames();
-            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::uwQuestionBlockFrames();
+            case BlockTheme::UNDERGROUND: return SpriteFrames::udg::Blocks::questionBlockFrames();
+            case BlockTheme::CASTLE:      return SpriteFrames::castle::Blocks::questionBlockFrames();
+            case BlockTheme::UNDERWATER:  return SpriteFrames::udw::Blocks::questionBlockFrames();
             case BlockTheme::OVERWORLD:
-            default:                      return SpriteFrames::Blocks::questionBlockFrames();
+            default:                      return SpriteFrames::ovw::Blocks::questionBlockFrames();
         }
     }();
 
     const sf::IntRect emptyRect = [theme]() -> sf::IntRect {
         switch (theme) {
-            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::UG_EMPTY;
-            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::CASTLE_EMPTY;
-            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::UW_EMPTY;
+            case BlockTheme::UNDERGROUND: return SpriteFrames::udg::Blocks::EMPTY;
+            case BlockTheme::CASTLE:      return SpriteFrames::castle::Blocks::EMPTY;
+            case BlockTheme::UNDERWATER:  return SpriteFrames::udw::Blocks::EMPTY;
             case BlockTheme::OVERWORLD:
-            default:                      return SpriteFrames::Blocks::EMPTY;
+            default:                      return SpriteFrames::ovw::Blocks::EMPTY;
         }
     }();
 

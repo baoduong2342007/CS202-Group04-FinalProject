@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/LevelCatalog.h"
 #include "entities/Enemy.h"
 
 #include <SFML/System/Vector2.hpp>
@@ -15,7 +16,9 @@ class TileMap;
 
 class Goomba : public Enemy {
 public:
-    Goomba(const sf::Vector2f& position, b2World* world);
+    Goomba(const sf::Vector2f& position,
+           b2World* world,
+           LevelTheme theme = LevelTheme::OVERWORLD);
     ~Goomba() override = default;
 
     void update(float dt) override;

@@ -99,5 +99,5 @@ private:
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
-    LevelTheme m_theme; // Default to OVERWORLD in cpp
+    LevelTheme m_theme{LevelTheme::OVERWORLD};
 };

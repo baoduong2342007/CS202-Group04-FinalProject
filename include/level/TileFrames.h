@@ -15,17 +15,20 @@ inline constexpr int SOURCE_TILE_SIZE = 16;
 
 // Basic Blocks (Overworld)
 inline constexpr sf::IntRect GROUND{ {0, 16}, {16, 16} };
-inline constexpr sf::IntRect STONE{ {0, 50}, {16, 16} }; // Fixed from {0, 33} (Battlement) -> {0, 50} (Stone Stair)
-inline constexpr sf::IntRect BRICK{ {68, 16}, {16, 16} }; // Fixed from {17, 16} (Underground ground) -> {68, 16} (Overworld brick)
-inline constexpr sf::IntRect QUESTION{ {85, 16}, {16, 16} }; // Fixed from {298, 78} (Underground question) -> {85, 16} (Overworld question)
-inline constexpr sf::IntRect USED_BLOCK{ {215, 67}, {16, 16} }; // Fixed from {349, 78} (Animation frame) -> {215, 67} (Used block)
+inline constexpr sf::IntRect STONE{ {0, 33}, {16, 16} };
+inline constexpr sf::IntRect BRICK{ {17, 16}, {16, 16} };
+inline constexpr sf::IntRect QUESTION{ {298, 78}, {16, 16} };
+inline constexpr sf::IntRect USED_BLOCK{ {349, 78}, {16, 16} };
 
 // Theme Variations
-inline constexpr sf::IntRect GROUND_UNDERGROUND{ {17, 16}, {16, 16} };
+// Underground keeps the same shapes as Overworld, but uses the matching
+// blue palette group in the tileset (not the adjacent brown brick frame).
+inline constexpr sf::IntRect GROUND_UNDERGROUND{ {147, 16}, {16, 16} };
 inline constexpr sf::IntRect GROUND_CASTLE{ {34, 16}, {16, 16} };
 inline constexpr sf::IntRect GROUND_UNDERWATER{ {51, 16}, {16, 16} };
-inline constexpr sf::IntRect BRICK_UNDERGROUND{ {147, 16}, {16, 16} };
-inline constexpr sf::IntRect QUESTION_UNDERGROUND{ {298, 78}, {16, 16} };
+inline constexpr sf::IntRect BRICK_UNDERGROUND{ {164, 16}, {16, 16} };
+inline constexpr sf::IntRect QUESTION_UNDERGROUND{ {394, 78}, {16, 16} };
+inline constexpr sf::IntRect USED_BLOCK_UNDERGROUND{ {445, 78}, {16, 16} };
 
 // Map Coins (Stationary)
 inline constexpr sf::IntRect COIN_OVERWORLD{ {524, 78}, {16, 16} };
@@ -44,5 +47,13 @@ inline constexpr sf::IntRect PIPE_BODY_LEFT{ {119, 213}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT{ {136, 213}, {16, 16} };
 inline constexpr sf::IntRect FINISH_TOP{ {136, 230}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };
+
+// Same pipe and pole geometry in the darker Underground palette group.
+inline constexpr sf::IntRect PIPE_TOP_LEFT_UNDERGROUND{ {283, 196}, {16, 16} };
+inline constexpr sf::IntRect PIPE_TOP_RIGHT_UNDERGROUND{ {300, 196}, {16, 16} };
+inline constexpr sf::IntRect PIPE_BODY_LEFT_UNDERGROUND{ {283, 213}, {16, 16} };
+inline constexpr sf::IntRect PIPE_BODY_RIGHT_UNDERGROUND{ {300, 213}, {16, 16} };
+inline constexpr sf::IntRect FINISH_TOP_UNDERGROUND{ {300, 230}, {16, 16} };
+inline constexpr sf::IntRect FINISH_POLE_UNDERGROUND{ {300, 247}, {16, 16} };
 
 } // namespace TileFrames

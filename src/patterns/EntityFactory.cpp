@@ -21,15 +21,34 @@
 #include "items/Star.h"             // TV5 (Sprint 5)
 #include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
 
+namespace {
+
+BlockTheme toBlockTheme(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return BlockTheme::UNDERGROUND;
+        case LevelTheme::CASTLE:
+            return BlockTheme::CASTLE;
+        case LevelTheme::OVERWORLD:
+        default:
+            return BlockTheme::OVERWORLD;
+    }
+}
+
+} // namespace
+
 // ============================================================
 // PATTERN: Simple Factory Implementation
 // ============================================================
-std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
+                                                   const sf::Vector2f& position,
+                                                   b2World* world,
+                                                   LevelTheme theme) {
     switch (type) {
         case EnemyType::GOOMBA:
-            return std::make_unique<Goomba>(position, world);
+            return std::make_unique<Goomba>(position, world, theme);
         case EnemyType::KOOPA:
-            return std::make_unique<Koopa>(position, world);
+            return std::make_unique<Koopa>(position, world, theme);
         default:
             return nullptr;
     }
@@ -50,27 +69,42 @@ std::unique_ptr<Entity> EntityFactory::createItem(ItemType type, const sf::Vecto
     }
 }
 
-std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
+                                                          const sf::Vector2f& position,
+                                                          b2World* world,
+                                                          LevelTheme theme) {
     switch (tileCode) {
         case 'G':
-            return createEnemy(EnemyType::GOOMBA, position, world);
+            return createEnemy(EnemyType::GOOMBA, position, world, theme);
         case 'K':
-            return createEnemy(EnemyType::KOOPA, position, world);
+            return createEnemy(EnemyType::KOOPA, position, world, theme);
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
             // The release '?' contract is adaptive. Its content is resolved
             // once by QuestionBlock::onHit() from Mario's current state.
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ADAPTIVE);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::ADAPTIVE,
+                                                   toBlockTheme(theme));
         case 'f':
         case 'h':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::FIRE_FLOWER);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::FIRE_FLOWER,
+                                                   toBlockTheme(theme));
         case 'U':
         case 'u':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::ONEUP_MUSHROOM,
+                                                   toBlockTheme(theme));
         case 'O':
         case 'o':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::STAR);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::STAR,
+                                                   toBlockTheme(theme));
         default:
             return nullptr;
     }

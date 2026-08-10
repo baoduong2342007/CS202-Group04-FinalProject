@@ -11,7 +11,7 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
 #include "core/ScoreRules.h"
 
 namespace {
@@ -29,7 +29,7 @@ Mushroom::Mushroom(MushroomType type)
       m_patrolDirection(1) {
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
-    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::Items::ONE_UP_MUSHROOM : SpriteFrames::Items::SUPER_MUSHROOM;
+    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::ovw::Items::ONE_UP_MUSHROOM : SpriteFrames::ovw::Items::SUPER_MUSHROOM;
     m_animationSystem->addAnimation("idle",
         AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");
@@ -42,7 +42,7 @@ Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType ty
       m_patrolDirection(1) {
     initPhysics(world, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
-    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::Items::ONE_UP_MUSHROOM : SpriteFrames::Items::SUPER_MUSHROOM;
+    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::ovw::Items::ONE_UP_MUSHROOM : SpriteFrames::ovw::Items::SUPER_MUSHROOM;
     m_animationSystem->addAnimation("idle",
         AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");

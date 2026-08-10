@@ -8,7 +8,7 @@
 #include "items/Coin.h"
 #include "entities/Mario.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
 #include "core/ScoreRules.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -36,7 +36,7 @@ Coin::Coin()
     initPhysics(nullptr, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT), true);
     setSprite(COIN_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::coinFrames(), 0.2f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::coinFrames(), 0.2f));
     playAnimation("idle");
 }
 
@@ -51,7 +51,7 @@ Coin::Coin(const sf::Vector2f& position, b2World* world, CoinType type)
 
     float frameDuration = (type == CoinType::QUESTION_POPUP) ? 0.08f : 0.2f;
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::coinFrames(), frameDuration));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::coinFrames(), frameDuration));
     playAnimation("idle");
 
     if (m_type == CoinType::QUESTION_POPUP) {

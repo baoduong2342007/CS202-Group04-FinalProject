@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/LevelCatalog.h"
 #include "entities/Enemy.h"
 
 #include <SFML/System/Vector2.hpp>
@@ -21,7 +22,9 @@ enum class KoopaState {
 
 class Koopa : public Enemy {
 public:
-    explicit Koopa(const sf::Vector2f& position, b2World* world);
+    explicit Koopa(const sf::Vector2f& position,
+                   b2World* world,
+                   LevelTheme theme = LevelTheme::OVERWORLD);
     ~Koopa() override = default;
 
     void update(float dt) override;

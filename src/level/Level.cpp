@@ -19,7 +19,7 @@
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
 #include "entities/FireBall.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
 #include "core/SoundManager.h"
 #include "core/LevelCatalog.h"
 
@@ -29,6 +29,7 @@ namespace {
 constexpr unsigned int TILE_SIZE = 32;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
+const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
 
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
@@ -106,6 +107,7 @@ Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 Level::~Level() = default;
 
 void Level::setTheme(LevelTheme theme) {
+    m_theme = theme;
     m_tileMap.setTheme(theme);
 }
 
@@ -176,7 +178,7 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             auto entity =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), m_theme);
             if (entity) {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
@@ -293,28 +295,41 @@ void Level::render(sf::RenderTarget& target) {
     // Apply camera view
     target.setView(m_camera.getView());
 
-    // Draw the cheerful pixel-art world background behind the tilemap.
-    const sf::Texture& bgTex = m_textureManager.getTexture(
-        std::string(SpriteFrames::Backgrounds::WORLD_PATH));
-    sf::Sprite bgSprite(bgTex);
-    bgSprite.setTextureRect(SpriteFrames::Backgrounds::WORLD);
-
     const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
-    const float backgroundScale =
-        backgroundHeight / static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.y);
-    const float stripWidth =
-        static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.x) * backgroundScale;
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    const float backgroundTop = calculateBackgroundTop(m_tileMap);
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    std::size_t stripIndex = 0;
-    for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
-        const bool mirrored = (stripIndex % 2u) != 0u;
-        bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
-                                   : sf::Vector2f(backgroundScale, backgroundScale));
-        bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
-                                     : sf::Vector2f(x, backgroundTop));
-        target.draw(bgSprite);
+    if (m_theme == LevelTheme::UNDERGROUND) {
+        // SMB underground stages use a flat dark-blue field behind the same
+        // tile geometry. Extend it beyond the level bounds so camera motion
+        // cannot reveal the sky-blue render-texture clear color.
+        sf::RectangleShape undergroundBackground(
+            sf::Vector2f(levelWidth, levelHeight + backgroundHeight * 2.f));
+        undergroundBackground.setPosition({0.f, -backgroundHeight});
+        undergroundBackground.setFillColor(UNDERGROUND_BACKGROUND_COLOR);
+        target.draw(undergroundBackground);
+    } else {
+        // Draw the cheerful pixel-art world background behind the tilemap.
+        const sf::Texture& bgTex = m_textureManager.getTexture(
+            std::string(SpriteFrames::ovw::Backgrounds::WORLD_PATH));
+        sf::Sprite bgSprite(bgTex);
+        bgSprite.setTextureRect(SpriteFrames::ovw::Backgrounds::WORLD);
+
+        const float backgroundScale =
+            backgroundHeight / static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.y);
+        const float stripWidth =
+            static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.x) * backgroundScale;
+        const float backgroundTop = calculateBackgroundTop(m_tileMap);
+
+        std::size_t stripIndex = 0;
+        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
+            const bool mirrored = (stripIndex % 2u) != 0u;
+            bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
+                                       : sf::Vector2f(backgroundScale, backgroundScale));
+            bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
+                                         : sf::Vector2f(x, backgroundTop));
+            target.draw(bgSprite);
+        }
     }
 
     // Draw tilemap background

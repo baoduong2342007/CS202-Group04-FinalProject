@@ -10,10 +10,14 @@
 
 #include <memory>
 #include <cmath>
+#include <vector>
 
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "physics/PhysicsEngine.h"
@@ -51,7 +55,7 @@ sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
 
 } // namespace
 
-Koopa::Koopa(const sf::Vector2f& position, b2World* world)
+Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
     : Enemy(alignKoopaToGround(position),
             KOOPA_SIZE,
             DEFAULT_KOOPA_HEALTH
@@ -66,18 +70,35 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world)
 
     m_animationSystem = std::make_unique<AnimationSystem>();
 
+    const bool useUndergroundPalette = theme == LevelTheme::UNDERGROUND ||
+                                       theme == LevelTheme::CASTLE;
+
+    const auto& walkFrames = [theme]() -> const std::vector<sf::IntRect>& {
+        switch (theme) {
+            case LevelTheme::UNDERGROUND:
+                return SpriteFrames::udg::Enemies::Koopa::walkFrames();
+            case LevelTheme::CASTLE:
+                return SpriteFrames::castle::Enemies::Koopa::walkFrames();
+            case LevelTheme::OVERWORLD:
+            default:
+                return SpriteFrames::ovw::Enemies::Koopa::walkFrames();
+        }
+    }();
+
     const Animation walkAnimation =
-          AnimationSystem::createManualAnimation({sf::IntRect({0, 113}, {16, 23}),
-                                                sf::IntRect({18, 112}, {16, 24})},
-                                                 KOOPA_WALK_FRAME_DURATION,
-                                                 true
-                                                 );
+        AnimationSystem::createManualAnimation(walkFrames,
+                                                KOOPA_WALK_FRAME_DURATION,
+                                                true);
 
     const Animation shellIdleAnimation =
-          AnimationSystem::createManualAnimation({sf::IntRect({72, 120}, {16, 14})},
-                                                 KOOPA_SHELL_FRAME_DURATION,
-                                                 false
-                                                 );
+        AnimationSystem::createManualAnimation(
+            {useUndergroundPalette
+                 ? (theme == LevelTheme::CASTLE
+                        ? SpriteFrames::castle::Enemies::Koopa::SHELL
+                        : SpriteFrames::udg::Enemies::Koopa::SHELL)
+                 : SpriteFrames::ovw::Enemies::Koopa::SHELL},
+            KOOPA_SHELL_FRAME_DURATION,
+            false);
 
     m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION, walkAnimation);
 

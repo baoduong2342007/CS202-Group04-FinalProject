@@ -9,7 +9,7 @@
 #include <vector>
 #include "physics/PhysicsEngine.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
 
 namespace {
 const sf::Vector2f FIREBALL_SIZE(16.f, 16.f);
@@ -29,7 +29,7 @@ FireBall::FireBall()
     initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
     setSprite("assets/textures/items/items_objects.png");
     m_animationSystem->addAnimation("spin",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireballFrames(), 0.06f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireballFrames(), 0.06f));
     playAnimation("spin");
 }
 

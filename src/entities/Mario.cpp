@@ -19,7 +19,7 @@
 #include "states/SmallMarioState.h"
 #include "states/SuperMarioState.h"
 #include "states/FireMarioState.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
 #include "core/DisplayConfig.h"
 
 namespace {
@@ -59,7 +59,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
     if (charType == CharacterType::LUIGI) {
         switch (state) {
         case MarioState::SMALL: {
-            namespace F = SpriteFrames::SmallLuigi;
+            namespace F = SpriteFrames::shared::SmallLuigi;
             animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
@@ -68,22 +68,22 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             break;
         }
         case MarioState::SUPER: {
-            namespace F = SpriteFrames::BigLuigi;
+            namespace F = SpriteFrames::shared::BigLuigi;
             animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::shared::SmallLuigi::DEATH}, 1.f, false));
             break;
         }
         case MarioState::FIRE: {
-            namespace F = SpriteFrames::FireBigMario;
+            namespace F = SpriteFrames::shared::FireBigMario;
             animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
             animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
             animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
             animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::shared::SmallLuigi::DEATH}, 1.f, false));
             break;
         }
 
@@ -91,7 +91,7 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
     } else {
         switch (state) {
         case MarioState::SMALL: {
-            namespace F = SpriteFrames::SmallMario;
+            namespace F = SpriteFrames::shared::SmallMario;
             animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
@@ -100,22 +100,22 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             break;
         }
         case MarioState::SUPER: {
-            namespace F = SpriteFrames::BigMario;
+            namespace F = SpriteFrames::shared::BigMario;
             animSys.addAnimation("idle",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  1.f));
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::shared::SmallMario::DEATH}, 1.f, false));
             break;
         }
         case MarioState::FIRE: {
-            namespace F = SpriteFrames::FireBigMario;
+            namespace F = SpriteFrames::shared::FireBigMario;
             animSys.addAnimation("idle",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   1.f));
             animSys.addAnimation("walk",   AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
             animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
             animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::shared::SmallMario::DEATH}, 1.f, false));
             break;
         }
 

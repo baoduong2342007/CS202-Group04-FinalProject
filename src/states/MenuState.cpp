@@ -39,6 +39,12 @@ namespace {
     const int COIN_FRAME_SPACING = 10;
     const int COIN_BASE_X = 0;
     const int COIN_BASE_Y = 156;
+    
+    const unsigned int PRESS_TO_PLAY_FONT_SIZE = 14;
+    const sf::Color GOLD_COLOR(255, 215, 0);
+    const float OUTLINE_THICKNESS = 1.f;
+    const float PRESS_TO_PLAY_OFFSET_Y = 20.f;
+    const char* FONT_PATH = "assets/fonts/mario.ttf";
 
     sf::IntRect getCharRect(char c) {
         // Tilemap "0123456789ABCDEF" starts at X=328, Y=0
@@ -56,7 +62,7 @@ namespace {
 
 MenuState::MenuState(int score, int coins, int world, int level, int topScore) 
     : m_bgSprite(m_hudTexture), m_cursorSprite(m_hudTexture),
-      m_font(), m_pressToPlayText(m_font),
+      m_font(), m_fontLoaded(false),
       m_score(score), m_coins(coins), m_world(world), m_level(level), m_topScore(topScore),
       m_coinSprite(m_hudTexture) {}
 
@@ -123,20 +129,22 @@ void MenuState::onEnter() {
     m_coinSprite.setScale({SCALE, SCALE});
     m_coinSprite.setPosition(m_bgSprite.getPosition() + sf::Vector2f(COIN_ICON_POS_X * SCALE, COIN_ICON_POS_Y * SCALE));
 
-    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (!m_fontLoaded) {
 #ifdef DEBUG
-        std::cerr << "[DEBUG][MenuState] Failed to load mario.ttf\n";
+        std::cerr << "[DEBUG][MenuState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
 #endif
     } else {
-        m_pressToPlayText.setString("PRESS ENTER OR CLICK TO PLAY");
-        m_pressToPlayText.setCharacterSize(14); // Scaled for logical res
-        m_pressToPlayText.setFillColor(sf::Color(255, 215, 0)); // Retro arcade gold
-        m_pressToPlayText.setOutlineColor(sf::Color::Black);
-        m_pressToPlayText.setOutlineThickness(1.f);
+        m_pressToPlayText.emplace(m_font);
+        m_pressToPlayText->setString("PRESS ENTER OR CLICK TO PLAY");
+        m_pressToPlayText->setCharacterSize(PRESS_TO_PLAY_FONT_SIZE); // Scaled for logical res
+        m_pressToPlayText->setFillColor(GOLD_COLOR); // Retro arcade gold
+        m_pressToPlayText->setOutlineColor(sf::Color::Black);
+        m_pressToPlayText->setOutlineThickness(OUTLINE_THICKNESS);
         
-        sf::FloatRect bounds = m_pressToPlayText.getLocalBounds();
-        m_pressToPlayText.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
-        m_pressToPlayText.setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, DisplayConfig::LOGICAL_HEIGHT - 20.f});
+        sf::FloatRect bounds = m_pressToPlayText->getLocalBounds();
+        m_pressToPlayText->setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
+        m_pressToPlayText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, DisplayConfig::LOGICAL_HEIGHT - PRESS_TO_PLAY_OFFSET_Y});
     }
 }
 
@@ -193,7 +201,7 @@ void MenuState::render(sf::RenderTarget& target) {
     
     target.draw(m_cursorSprite);
     target.draw(m_coinSprite);
-    if (m_showPressToPlay) {
-        target.draw(m_pressToPlayText);
+    if (m_fontLoaded && m_showPressToPlay && m_pressToPlayText) {
+        target.draw(*m_pressToPlayText);
     }
 }

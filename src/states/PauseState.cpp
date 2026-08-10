@@ -13,29 +13,44 @@
 #include <iostream>
 #include <sstream>
 
-PauseState::PauseState() : m_font(), m_titleText(m_font), m_volumeText(m_font) {
-    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
-        std::cerr << "Failed to load font in PauseState\n";
+namespace {
+    constexpr unsigned int TITLE_FONT_SIZE = 24;
+    constexpr unsigned int VOLUME_FONT_SIZE = 12;
+    constexpr float TITLE_OFFSET_Y = 30.f;
+    constexpr float MENU_OFFSET_Y = 30.f;
+    constexpr float VOLUME_OFFSET_Y = -10.f;
+    constexpr std::uint8_t OVERLAY_ALPHA = 150;
+    constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
+}
+
+PauseState::PauseState() : m_font(), m_fontLoaded(false) {
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (!m_fontLoaded) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG][PauseState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
+#endif
+    } else {
+        m_titleText.emplace(m_font);
+        m_titleText->setString("PAUSED");
+        m_titleText->setCharacterSize(TITLE_FONT_SIZE);
+        m_titleText->setFillColor(sf::Color::White);
+        UILayoutHelper::setPosition(*m_titleText, UIAnchor::TopCenter, {0.f, TITLE_OFFSET_Y});
+
+        m_volumeText.emplace(m_font);
+        m_volumeText->setCharacterSize(VOLUME_FONT_SIZE);
+        m_volumeText->setFillColor(sf::Color::Yellow);
+        refreshText();
+
+        m_menu = std::make_unique<UIMenuWidget>(m_font);
+        m_menu->addItem("RESUME", []() {
+            GameManager::getInstance().popState();
+        });
+        m_menu->addItem("QUIT TO MENU", []() {
+            GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        });
+
+        m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, MENU_OFFSET_Y), UIAnchor::TopCenter);
     }
-
-    m_titleText.setString("PAUSED");
-    m_titleText.setCharacterSize(24);
-    m_titleText.setFillColor(sf::Color::White);
-    UILayoutHelper::setPosition(m_titleText, UIAnchor::TopCenter, {0.f, 30.f});
-
-    m_volumeText.setCharacterSize(12);
-    m_volumeText.setFillColor(sf::Color::Yellow);
-    refreshText();
-
-    m_menu = std::make_unique<UIMenuWidget>(m_font);
-    m_menu->addItem("RESUME", []() {
-        GameManager::getInstance().popState();
-    });
-    m_menu->addItem("QUIT TO MENU", []() {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-    });
-
-    m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, 30.f), UIAnchor::TopCenter);
 }
 
 void PauseState::onEnter() {
@@ -85,11 +100,13 @@ void PauseState::render(sf::RenderTarget& target) {
     target.setView(target.getDefaultView());
 
     sf::RectangleShape overlay(sf::Vector2f(target.getSize().x, target.getSize().y));
-    overlay.setFillColor(sf::Color(0, 0, 0, 150));
+    overlay.setFillColor(sf::Color(0, 0, 0, OVERLAY_ALPHA));
     target.draw(overlay);
 
-    target.draw(m_titleText);
-    target.draw(m_volumeText);
+    if (m_fontLoaded) {
+        if (m_titleText) target.draw(*m_titleText);
+        if (m_volumeText) target.draw(*m_volumeText);
+    }
 
     if (m_menu) {
         m_menu->draw(target);
@@ -97,6 +114,8 @@ void PauseState::render(sf::RenderTarget& target) {
 }
 
 void PauseState::refreshText() {
+    if (!m_fontLoaded || !m_volumeText) return;
+
     const SoundManager& sound = SoundManager::getInstance();
     std::ostringstream text;
     text << (m_selectedVolume == PauseVolumeSelection::MUSIC ? "> " : "  ")
@@ -106,8 +125,8 @@ void PauseState::refreshText() {
          << "SFX: " << std::fixed << std::setprecision(0)
          << sound.getSoundVolume() << "%\n"
          << "  [LEFT/RIGHT ADJUST VOLUME]";
-    m_volumeText.setString(text.str());
-    UILayoutHelper::setPosition(m_volumeText, UIAnchor::Center, {0.f, -10.f});
+    m_volumeText->setString(text.str());
+    UILayoutHelper::setPosition(*m_volumeText, UIAnchor::Center, {0.f, VOLUME_OFFSET_Y});
 }
 
 void PauseState::adjustSelectedVolume(float delta) {

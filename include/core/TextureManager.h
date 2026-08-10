@@ -61,12 +61,7 @@ public:
      */
     bool hasTexture(const std::string& id) const;
 
-    /**
-     * @brief Removes a texture from the manager and frees its memory.
-     * 
-     * @param id The unique string identifier of the texture to delete.
-     */
-    void deleteTexture(const std::string& id);
+
 
 private:
     /**

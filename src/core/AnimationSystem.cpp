@@ -81,21 +81,7 @@ void AnimationSystem::play(const std::string& name) {
     m_isPlaying = true;
 }
 
-void AnimationSystem::stop() {
-    m_isPlaying = false;
-    m_currentFrame = 0;
-    m_elapsedTime = RESET_TIME;
-}
 
-void AnimationSystem::pause() {
-    m_isPlaying = false;
-}
-
-void AnimationSystem::resume() {
-    if (!m_currentAnimation.empty()) {
-        m_isPlaying = true;
-    }
-}
 
 void AnimationSystem::update(float dt, sf::Sprite& sprite) {
     if (!m_isPlaying || m_currentAnimation.empty()) {
@@ -133,4 +119,11 @@ void AnimationSystem::update(float dt, sf::Sprite& sprite) {
     }
 
     sprite.setTextureRect(anim.frames[m_currentFrame]);
+}
+
+bool AnimationSystem::isFinished() const {
+    if (m_currentAnimation.empty()) return false;
+    auto it = m_animations.find(m_currentAnimation);
+    if (it == m_animations.end()) return false;
+    return !m_isPlaying && !it->second.isLooping;
 }

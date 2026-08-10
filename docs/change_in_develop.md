@@ -333,3 +333,13 @@
   1. **Tọa độ Tileset Hoàn Chỉnh (`tileset_coordinate.md`)**: Phân tích toàn bộ 345 object từ `assets/textures/tiles/tileset.png`. Cập nhật tọa độ chuẩn vào `TileFrames.h` cho gạch nền (Ground, Brick, Question Block, Coin...) theo 3 môi trường: Overworld, Underground, Castle. 
   2. **Tọa độ SpriteFrames Bổ Sung**: Tích hợp tọa độ Map Coins tĩnh, Trampoline, Castle Axe, Bridge Chain và Elevator Pulley vào `SpriteFrames::LevelEntities` ở cuối `SpriteFrames.h`. Cắt bỏ tệp Python dư thừa.
   3. **TileMap Multi-Theme Engine (`TileMap.cpp`)**: Thay đổi kiến trúc render gạch nền từ hardcode Overworld sang Dynamic Multi-Theme. TileMap giờ đây đọc `LevelTheme` (được truyền vào qua `Level::setTheme()` từ `PlayState`) để render chính xác màu sắc khối gạch (Background, Brick, Question) theo từng màn chơi.
+
+### Entry #34: [Merge TV5 Sound-Input & SpriteFrames Theme Refactoring] - Merged feature/sound-input into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
+- **File ảnh hưởng:** `CMakeLists.txt`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/SpriteFrames.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_shared.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_udw.h`, `include/entities/BlockDebris.h`, `include/entities/Goomba.h`, `include/entities/Koopa.h`, `include/level/Level.h`, `include/level/TileFrames.h`, `include/level/TileMap.h`, `include/patterns/EntityFactory.h`, `src/entities/FireBall.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/entities/QuestionBlock.cpp`, `src/items/Coin.cpp`, `src/items/FireFlower.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/patterns/EntityFactory.cpp`, `tests/SpriteFramesThemeTests.cpp`
+- **Mô tả:**
+  1. Hợp nhất thành công nhánh `feature/sound-input` mới nhất (commit `2099602`) vào nhánh `develop`.
+  2. **Refactor SpriteFrames theo Theme Catalog**: Tách tệp header `SpriteFrames.h` thành các catalog riêng biệt theo môi trường (`SpriteFrames_shared.h`, `SpriteFrames_ovw.h`, `SpriteFrames_udg.h`, `SpriteFrames_castle.h`, `SpriteFrames_udw.h`), đồng thời giữ `SpriteFrames.h` làm aggregator thống nhất.
+  3. **Lan truyền LevelTheme**: Truyền `LevelTheme` từ `Level` tới `TileMap`, `EntityFactory` và các thực thể game (`Goomba`, `Koopa`, `QuestionBlock`, `BlockDebris`...) giúp tự động render đúng bảng màu sprite tương ứng.
+  4. **Bổ sung Theme Unit Tests**: Thêm bộ test `SpriteFramesThemeTests.cpp` kiểm thử tính chính xác của các thuộc tính và tọa độ frame theo từng chủ đề màn chơi.
+

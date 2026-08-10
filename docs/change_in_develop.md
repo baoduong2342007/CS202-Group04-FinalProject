@@ -316,3 +316,13 @@
   4. Chuẩn hóa `HUD` với timer callbacks, font degrade control, và nhãn `POWER` đồng bộ.
   5. Chuyển toàn bộ reference atlases từ `assets/` ra `docs/assets/reference/` để tối ưu hóa dung lượng gói release.
 
+### Entry #32: [Merge TV5 Feature Branch - Audio Cues, Defeat Centralization & Integration Tests] - Merged feature/sound-input into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
+- **File ảnh hưởng:** `assets/ASSETS_LIST.md`, `docs/management/TV5_AUDIO_HUD_ITEM_CHECKLIST.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `include/core/SpriteFrames.h`, `include/entities/Enemy.h`, `include/entities/Koopa.h`, `include/patterns/EventType.h`, `include/physics/CollisionManager.h`, `src/core/ScoreRules.cpp`, `src/core/SoundManager.cpp`, `src/entities/Enemy.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/physics/CollisionManager.cpp`, `src/states/PlayState.cpp`, `tests/TV5IntegrationTests.cpp`
+- **Mô tả:**
+  1. Hợp nhất nhánh `origin/feature/sound-input` của TV5 vào `develop` theo yêu cầu của Architect (TV1).
+  2. Tập trung xử lý tiêu diệt kẻ địch và tính điểm trong `CollisionManager` với các sự kiện per-cause (`STOMP`, `SHELL`, `FIREBALL`, `STAR`).
+  3. Bổ sung âm thanh SFX đặc thù theo nguyên nhân tiêu diệt (shell kill, fireball hit, star kill) và xử lý phát nhạc khi resume game từ PauseState.
+  4. Mở rộng `TV5IntegrationTests` với kiểm thử cho runtime defeat paths, state audio switching, và asset manifest verification.
+  5. Toàn bộ 12 test suite đều thông qua (100% pass) trên `develop`.
+

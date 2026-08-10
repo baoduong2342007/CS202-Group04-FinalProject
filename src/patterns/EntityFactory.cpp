@@ -81,8 +81,8 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            // The release '?' contract is adaptive. Its content is resolved
-            // once by QuestionBlock::onHit() from Mario's current state.
+            // Normal '?' blocks resolve once when hit: mostly coins, otherwise
+            // a power-up adapted to Mario's current state.
             return std::make_unique<QuestionBlock>(position,
                                                    world,
                                                    QuestionBlockContent::ADAPTIVE,

@@ -5,7 +5,7 @@
 # . = empty (air)
 # 1 = ground tile (solid)
 # B = breakable brick block (solid)
-# ? = question block containing Super Mushroom (solid)
+# ? = weighted question block: mostly Coin, otherwise adaptive power-up (solid)
 # U/u = question block containing 1-Up Mushroom
 # f/h = question block containing Fire Flower
 # O/o = question block containing Starman / Star

@@ -11,28 +11,41 @@
 #include "ui/UILayoutHelper.h"
 #include <iostream>
 
+namespace {
+    constexpr unsigned int TITLE_FONT_SIZE = 24;
+    constexpr unsigned int SCORE_FONT_SIZE = 14;
+    constexpr float TITLE_OFFSET_Y = 40.f;
+    constexpr float SCORE_OFFSET_Y = 80.f;
+    constexpr float MENU_OFFSET_Y = 20.f;
+    constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
+}
+
 WinState::WinState(const GameProgress& progress)
-    : m_font(), m_titleText(m_font), m_progress(progress), m_scoreText(m_font) {
-    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
-        std::cerr << "Failed to load font in WinState\n";
+    : m_font(), m_fontLoaded(false), m_progress(progress) {
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (!m_fontLoaded) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG][WinState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
+#endif
+    } else {
+        m_titleText.emplace(m_font);
+        m_titleText->setString("YOU WIN!");
+        m_titleText->setCharacterSize(TITLE_FONT_SIZE);
+        m_titleText->setFillColor(sf::Color::White);
+        UILayoutHelper::setPosition(*m_titleText, UIAnchor::TopCenter, {0.f, TITLE_OFFSET_Y});
+
+        m_scoreText.emplace(m_font);
+        m_scoreText->setString("FINAL SCORE: " + std::to_string(m_progress.score));
+        m_scoreText->setCharacterSize(SCORE_FONT_SIZE);
+        m_scoreText->setFillColor(sf::Color::Yellow);
+        UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, SCORE_OFFSET_Y});
+
+        m_menu = std::make_unique<UIMenuWidget>(m_font);
+        m_menu->addItem("RETURN TO MENU", []() {
+            GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        });
+        m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, MENU_OFFSET_Y), UIAnchor::TopCenter);
     }
-    m_titleText.setString("YOU WIN!");
-    m_titleText.setCharacterSize(24);
-    m_titleText.setFillColor(sf::Color::White);
-    UILayoutHelper::setPosition(m_titleText, UIAnchor::TopCenter, {0.f, 40.f});
-
-    m_scoreText.setString("FINAL SCORE: " + std::to_string(m_progress.score));
-    m_scoreText.setCharacterSize(14);
-    m_scoreText.setFillColor(sf::Color::Yellow);
-    UILayoutHelper::setPosition(m_scoreText, UIAnchor::TopCenter, {0.f, 80.f});
-
-    m_menu = std::make_unique<UIMenuWidget>(m_font);
-    
-    m_menu->addItem("RETURN TO MENU", []() {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-    });
-    
-    m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, 20.f), UIAnchor::TopCenter);
 }
 
 void WinState::onEnter() {
@@ -64,8 +77,11 @@ void WinState::update(float dt) {
 void WinState::render(sf::RenderTarget& target) {
     target.clear(sf::Color::Black);
     target.setView(target.getDefaultView());
-    target.draw(m_titleText);
-    target.draw(m_scoreText);
+    
+    if (m_fontLoaded) {
+        if (m_titleText) target.draw(*m_titleText);
+        if (m_scoreText) target.draw(*m_scoreText);
+    }
     if (m_menu) {
         m_menu->draw(target);
     }

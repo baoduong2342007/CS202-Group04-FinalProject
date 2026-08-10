@@ -87,20 +87,7 @@ public:
      */
     void play(const std::string& name);
 
-    /**
-     * @brief Halts the current animation and resets the frame index to zero.
-     */
-    void stop();
 
-    /**
-     * @brief Freezes the current animation timer without resetting the frame index.
-     */
-    void pause();
-
-    /**
-     * @brief Resumes playback of a paused animation.
-     */
-    void resume();
 
     /**
      * @brief Updates the animation timer and modifies the sprite's texture rectangle if a frame advances.
@@ -108,6 +95,12 @@ public:
      * @param sprite A reference to the sf::Sprite that will be animated.
      */
     void update(float dt, sf::Sprite& sprite);
+
+    /**
+     * @brief Checks if the current non-looping animation has finished playing.
+     * @return true if the animation has finished, false otherwise.
+     */
+    bool isFinished() const;
 
     // 4. Getters / Setters
     // (None currently required for this class)

@@ -123,7 +123,7 @@ protected:
     int m_lives;
 
     bool m_isDying;
-    float m_deathTimer;
+    bool m_isSpawning;
     bool m_isRunning;
     bool m_isSkidding;
     bool m_wasJumpPressed;

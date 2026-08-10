@@ -6,6 +6,7 @@
 #pragma once
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
+#include <optional>
 
 class MenuState : public IGameState {
 public:
@@ -53,23 +54,24 @@ public:
 
 private:
     // 6. Private members
-    sf::Texture m_hudTexture;
-    sf::Sprite m_bgSprite;
-    sf::Sprite m_cursorSprite;
-    std::vector<sf::Sprite> m_dynamicTextSprites;
-    sf::Font m_font;
-    sf::Text m_pressToPlayText;
+    sf::Texture m_hudTexture;                   ///< Texture containing HUD elements
+    sf::Sprite m_bgSprite;                      ///< Background sprite
+    sf::Sprite m_cursorSprite;                  ///< Menu cursor sprite
+    std::vector<sf::Sprite> m_dynamicTextSprites; ///< Sprites for dynamic text
+    sf::Font m_font;                            ///< Font for rendering text
+    bool m_fontLoaded;                          ///< True if font loaded successfully
+    std::optional<sf::Text> m_pressToPlayText;  ///< Blinking "PRESS TO PLAY" text
 
-    int m_score;
-    int m_coins;
-    int m_world;
-    int m_level;
-    int m_topScore;
+    int m_score;                                ///< Current score
+    int m_coins;                                ///< Current coins
+    int m_world;                                ///< Current world
+    int m_level;                                ///< Current level
+    int m_topScore;                             ///< High score
 
-    sf::Sprite m_coinSprite;
-    float m_coinAnimTimer = 0.f;
-    int m_coinCurrentFrame = 0;
-    float m_blinkTimer = 0.f;
-    bool m_showPressToPlay = true;
-    bool m_transitioning = false;
+    sf::Sprite m_coinSprite;                    ///< Coin animation sprite
+    float m_coinAnimTimer = 0.f;                ///< Timer for coin animation
+    int m_coinCurrentFrame = 0;                 ///< Current frame of coin animation
+    float m_blinkTimer = 0.f;                   ///< Timer for text blinking
+    bool m_showPressToPlay = true;              ///< Toggle for blinking text
+    bool m_transitioning = false;               ///< True if transitioning to play state
 };

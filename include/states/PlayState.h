@@ -80,4 +80,5 @@ private:
     TransitionPhase m_transitionPhase = TransitionPhase::NONE;
     int m_transitionTargetLevel = 0;
     bool m_transitionIsWin = false;
+    bool m_skipNextDelta = false; ///< S6-TV2-21: ignore dt spike after loading
 };

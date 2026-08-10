@@ -110,10 +110,3 @@ bool TextureManager::hasTexture(const std::string& id) const {
     return m_textures.find(id) != m_textures.end();
 }
 
-void TextureManager::deleteTexture(const std::string& id) {
-    // Prevent deleting our safety fallback
-    if (id == "_fallback") return;
-
-    // .erase() safely removes the unique_ptr, which automatically deletes the sf::Texture
-    m_textures.erase(id);
-}

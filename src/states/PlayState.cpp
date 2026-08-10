@@ -330,6 +330,9 @@ void PlayState::update(float dt) {
     // S6-TV1-12: freeze gameplay during transition (fade out → load → fade in).
     if (m_transitionPhase != TransitionPhase::NONE) {
         updateTransition(dt);
+        if (m_hud) {
+            m_hud->update(dt, false);
+        }
         return;
     }
 
@@ -377,6 +380,11 @@ void PlayState::update(float dt) {
 }
 
 void PlayState::updateTransition(float dt) {
+    if (m_skipNextDelta) {
+        dt = 0.f;
+        m_skipNextDelta = false;
+    }
+
     switch (m_transitionPhase) {
         case TransitionPhase::FADE_OUT:
             m_fadeAlpha += (255.f / m_fadeDuration) * dt;
@@ -404,6 +412,7 @@ void PlayState::updateTransition(float dt) {
                 m_fadeAlpha = 255.f;
                 m_fadeOverlay.setFillColor(sf::Color(0, 0, 0, 255));
                 m_transitionPhase = TransitionPhase::FADE_IN;
+                m_skipNextDelta = true; // S6-TV2-21: skip lag spike on next frame
                 EventBus::getInstance().notify(EventType::LEVEL_STARTED);
             }
             break;

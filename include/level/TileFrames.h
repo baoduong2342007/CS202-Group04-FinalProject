@@ -27,6 +27,7 @@ inline constexpr sf::IntRect GROUND_UNDERGROUND{ {147, 16}, {16, 16} };
 inline constexpr sf::IntRect GROUND_CASTLE{ {34, 33}, {16, 16} };
 inline constexpr sf::IntRect GROUND_UNDERWATER{ {51, 33}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERGROUND{ {164, 16}, {16, 16} };
+inline constexpr sf::IntRect STONE_UNDERGROUND{ {181, 16}, {16, 16} };
 inline constexpr sf::IntRect QUESTION_UNDERGROUND{ {394, 78}, {16, 16} };
 inline constexpr sf::IntRect USED_BLOCK_UNDERGROUND{ {198, 16}, {16, 16} };
 

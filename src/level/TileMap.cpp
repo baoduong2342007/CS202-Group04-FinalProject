@@ -187,6 +187,7 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::GROUND;
 
         case 'S':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::STONE_UNDERGROUND;
             return TileFrames::STONE;
 
         case 'B':

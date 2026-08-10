@@ -547,11 +547,12 @@ void TileMap::buildVertices() {
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const float textureLeft = static_cast<float>(textureRect.position.x);
-            const float textureTop = static_cast<float>(textureRect.position.y);
+            const float texEpsilon = 0.02f;
+            const float textureLeft = static_cast<float>(textureRect.position.x) + texEpsilon;
+            const float textureTop = static_cast<float>(textureRect.position.y) + texEpsilon;
 
-            const float textureRight = textureLeft + static_cast<float>(textureRect.size.x);
-            const float textureBottom = textureTop + static_cast<float>(textureRect.size.y);
+            const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - texEpsilon;
+            const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - texEpsilon;
 
             // Route to correct vertex array based on layer classification
             sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;

@@ -390,14 +390,16 @@
     - Fixed Red Spiny Walk frames (inverted animation).
   - Updated `Koopa.cpp` and `Goomba.cpp` to correctly resolve `LevelTheme::UNDERWATER` animations.
 
-## Entry 36: Fixed TileFrames.h C++ Tile Frame Coordinates
+## Entry 36: Fixed TileFrames.h Coordinates & TileMap Texture Bleeding
 
 - **Author**: TV1 (Dương)
 - **Modified Files**:
   - `include/level/TileFrames.h`
+  - `src/level/TileMap.cpp`
 - **Logic Changes**:
   - Corrected `STONE` in `TileFrames.h` from `{0, 33}` (which was erroneously pointing to Castle Battlement) to `{34, 16}` (Object #3 - Stone / Solid Stair Block).
   - Standardized `QUESTION` to `{85, 16}` (Object #6 - Row 1 Question Block) and `USED_BLOCK` to `{51, 16}` (Object #4 - Row 1 Used Block).
   - Fixed `CASTLE_WALL` from `{102, 33}` (Solid Black Filler) to `{34, 33}` (Object #39 - Castle Brick Wall).
-  - Verified full build clean success across 100% C++ targets.
+  - Added a `0.02f` pixel UV inset in `TileMap::buildVertices` to completely eliminate 1-pixel border texture bleeding caused by subpixel camera position sampling.
+  - Verified full build clean success and 13/13 ctest pass.
 

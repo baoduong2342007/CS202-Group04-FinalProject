@@ -134,3 +134,10 @@ void AnimationSystem::update(float dt, sf::Sprite& sprite) {
 
     sprite.setTextureRect(anim.frames[m_currentFrame]);
 }
+
+bool AnimationSystem::isFinished() const {
+    if (m_currentAnimation.empty()) return false;
+    auto it = m_animations.find(m_currentAnimation);
+    if (it == m_animations.end()) return false;
+    return !m_isPlaying && !it->second.isLooping;
+}

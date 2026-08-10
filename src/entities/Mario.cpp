@@ -42,6 +42,8 @@ constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
 constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.0f;
+constexpr float DEATH_ANIMATION_DURATION = 0.5f;
+constexpr float SPAWN_ANIMATION_DURATION = 0.5f;
 constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
 constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 
@@ -64,7 +66,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  SPAWN_ANIMATION_DURATION, false));
             break;
         }
         case MarioState::SUPER: {
@@ -73,7 +76,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  SPAWN_ANIMATION_DURATION, false));
             break;
         }
         case MarioState::FIRE: {
@@ -83,7 +87,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
             animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
             animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, 1.f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallLuigi::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   SPAWN_ANIMATION_DURATION, false));
             break;
         }
 
@@ -96,7 +101,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  SPAWN_ANIMATION_DURATION, false));
             break;
         }
         case MarioState::SUPER: {
@@ -105,7 +111,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("walk",  AnimationSystem::createManualAnimation(F::walkFrames(), 0.1f));
             animSys.addAnimation("jump",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},  1.f));
             animSys.addAnimation("skid",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},  1.f));
-            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            animSys.addAnimation("death", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},  SPAWN_ANIMATION_DURATION, false));
             break;
         }
         case MarioState::FIRE: {
@@ -115,7 +122,8 @@ void setupAnimationsForState(AnimationSystem& animSys, MarioState state, Charact
             animSys.addAnimation("jump",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::JUMP},   1.f));
             animSys.addAnimation("skid",   AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::SKID},   1.f));
             animSys.addAnimation("action", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::ACTION}, 0.15f, false));
-            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, 1.f, false));
+            animSys.addAnimation("death",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::SmallMario::DEATH}, DEATH_ANIMATION_DURATION, false));
+            animSys.addAnimation("spawn",  AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{F::IDLE},   SPAWN_ANIMATION_DURATION, false));
             break;
         }
 
@@ -137,7 +145,7 @@ Mario::Mario()
       m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isDying(false),
-      m_deathTimer(0.f),
+      m_isSpawning(false),
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false),
@@ -163,7 +171,7 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES),
       m_isDying(false),
-      m_deathTimer(0.f),
+      m_isSpawning(false),
       m_isRunning(false),
       m_isSkidding(false),
       m_wasJumpPressed(false),
@@ -204,14 +212,24 @@ void Mario::update(float dt) {
     return;
   }
 
+  // Handle spawn animation phase
+  if (m_isSpawning) {
+    if (m_animationSystem->isFinished()) {
+      m_isSpawning = false;
+      playAnimation("idle");
+    } else {
+      updateAnimation(dt);
+      return;
+    }
+  }
+
   // Handle death animation phase
   if (m_isDying) {
     if (m_body) {
       m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
     }
-    m_deathTimer -= dt;
     updateAnimation(dt);
-    if (m_deathTimer <= 0.f) {
+    if (m_animationSystem->isFinished()) {
       m_isDying = false;
       m_active = false;
     }
@@ -607,7 +625,6 @@ void Mario::loseLife() {
   if (m_isDying) return;
 
   m_isDying = true;
-  m_deathTimer = 0.5f;
 
   if (m_lives > 0) {
     m_lives--;
@@ -643,6 +660,7 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   m_isDying = false;
+  m_isSpawning = true;
   clearGroundedState();
   setPosition(spawnPosition);
 
@@ -652,7 +670,7 @@ void Mario::respawn(const sf::Vector2f& spawnPosition) {
     m_body->SetAwake(true);
   }
   setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
-  playAnimation("idle");
+  playAnimation("spawn");
   rebuildFixture();
 
   if (m_sprite) {

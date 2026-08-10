@@ -109,6 +109,12 @@ public:
      */
     void update(float dt, sf::Sprite& sprite);
 
+    /**
+     * @brief Checks if the current non-looping animation has finished playing.
+     * @return true if the animation has finished, false otherwise.
+     */
+    bool isFinished() const;
+
     // 4. Getters / Setters
     // (None currently required for this class)
 

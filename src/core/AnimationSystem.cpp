@@ -81,21 +81,7 @@ void AnimationSystem::play(const std::string& name) {
     m_isPlaying = true;
 }
 
-void AnimationSystem::stop() {
-    m_isPlaying = false;
-    m_currentFrame = 0;
-    m_elapsedTime = RESET_TIME;
-}
 
-void AnimationSystem::pause() {
-    m_isPlaying = false;
-}
-
-void AnimationSystem::resume() {
-    if (!m_currentAnimation.empty()) {
-        m_isPlaying = true;
-    }
-}
 
 void AnimationSystem::update(float dt, sf::Sprite& sprite) {
     if (!m_isPlaying || m_currentAnimation.empty()) {

@@ -87,20 +87,7 @@ public:
      */
     void play(const std::string& name);
 
-    /**
-     * @brief Halts the current animation and resets the frame index to zero.
-     */
-    void stop();
 
-    /**
-     * @brief Freezes the current animation timer without resetting the frame index.
-     */
-    void pause();
-
-    /**
-     * @brief Resumes playback of a paused animation.
-     */
-    void resume();
 
     /**
      * @brief Updates the animation timer and modifies the sprite's texture rectangle if a frame advances.

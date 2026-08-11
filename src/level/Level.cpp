@@ -298,22 +298,7 @@ void Level::update(float dt) {
     }
 }
 
-bool Level::spawnFireBall() {
-    if (!m_mario || !m_world) {
-        return false;
-    }
 
-    std::unique_ptr<FireBall> fireBall = m_mario->shootFireBall(m_world.get());
-    if (!fireBall) {
-        return false;
-    }
-
-    fireBall->setOwner(m_mario.get());
-    fireBall->setTextureManager(m_textureManager);
-    m_entities.push_back(std::move(fireBall));
-    EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
-    return true;
-}
 
 void Level::spawnFireballExplosion(const sf::Vector2f& position) {
     auto explosion = std::make_unique<FireballExplosion>(position);
@@ -478,8 +463,10 @@ TextureManager& Level::getTextureManager() { return m_textureManager; }
 
 constexpr int MAX_ACTIVE_FIREBALLS = 4;
 
-void Level::shootFireBall() {
-    if (!m_mario || !m_world || !m_mario->canShootFireBall()) return;
+bool Level::requestFireBallShot(Mario& mario) {
+    if (!m_world || !mario.canShootFireBall()) {
+        return false;
+    }
 
     int activeFireballs = 0;
     for (const auto& entity : m_entities) {
@@ -489,24 +476,32 @@ void Level::shootFireBall() {
     }
     activeFireballs += static_cast<int>(m_pendingFireBallRequests.size());
 
-    if (activeFireballs >= MAX_ACTIVE_FIREBALLS) {
-        return;
+    if (activeFireballs >= 2) {
+        return false;
     }
 
     if (m_world->IsLocked()) {
-        float spawnX = m_mario->getPosition().x + (m_mario->getFacingDirection() == Direction::RIGHT ? m_mario->getSize().x + 4.f : -16.f);
-        float spawnY = m_mario->getPosition().y + 4.f;
-        m_pendingFireBallRequests.push_back({sf::Vector2f(spawnX, spawnY), m_mario->getFacingDirection()});
-        return;
+        float spawnX = mario.getPosition().x + (mario.getFacingDirection() == Direction::RIGHT ? mario.getSize().x + 4.f : -16.f);
+        float spawnY = mario.getPosition().y + 4.f;
+        m_pendingFireBallRequests.push_back({sf::Vector2f(spawnX, spawnY), mario.getFacingDirection()});
+        return true;
     }
 
-    auto fireball = m_mario->shootFireBall(m_world.get());
+    auto fireball = mario.shootFireBall(m_world.get());
     if (fireball) {
-        fireball->setOwner(m_mario.get());
+        fireball->setOwner(&mario);
         fireball->setTextureManager(m_textureManager);
         m_entities.push_back(std::move(fireball));
+        EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
         SoundManager::getInstance().playSound("fireball");
+        return true;
     }
+    return false;
+}
+
+bool Level::requestFireBallShot() {
+    if (!m_mario) return false;
+    return requestFireBallShot(*m_mario);
 }
 
 void Level::processPendingFireballs() {
@@ -520,6 +515,7 @@ void Level::processPendingFireballs() {
             }
             fireball->setTextureManager(m_textureManager);
             m_entities.push_back(std::move(fireball));
+            EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
             SoundManager::getInstance().playSound("fireball");
         }
     }

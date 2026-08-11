@@ -151,6 +151,45 @@ void testReleaseLevelMarkers() {
     std::cout << "[PASSED] testReleaseLevelMarkers" << std::endl;
 }
 
+#include "level/Level.h"
+
+void testFireBallActiveLimitOfTwo() {
+    std::cout << "[RUNNING] testFireBallActiveLimitOfTwo..." << std::endl;
+
+    Level level;
+    assert(loadReleaseLevel("levels/level1.txt"));
+    assert(level.loadFromFile("levels/level1.txt"));
+    Mario* mario = level.getMario();
+    assert(mario != nullptr);
+
+    // SMALL Mario cannot shoot fireballs
+    assert(mario->getMarioState() == MarioState::SMALL);
+    assert(!mario->canShootFireBall());
+    assert(!level.requestFireBallShot(*mario));
+
+    // Power up to FIRE state
+    mario->setMarioState(MarioState::FIRE);
+    assert(mario->canShootFireBall());
+
+    // 1st shot -> succeeds
+    assert(level.requestFireBallShot(*mario));
+
+    // Fast-forward cooldown
+    mario->update(0.3f);
+    assert(mario->canShootFireBall());
+
+    // 2nd shot -> succeeds
+    assert(level.requestFireBallShot(*mario));
+
+    mario->update(0.3f);
+    assert(mario->canShootFireBall());
+
+    // 3rd shot -> MUST FAIL because active count is 2 (hard limit of 2)
+    assert(!level.requestFireBallShot(*mario));
+
+    std::cout << "[PASSED] testFireBallActiveLimitOfTwo" << std::endl;
+}
+
 } // namespace
 
 int main() {
@@ -160,6 +199,7 @@ int main() {
     testMushroomPromotesAndNeverDowngrades();
     testReleaseLevelsAreLoadable();
     testReleaseLevelMarkers();
+    testFireBallActiveLimitOfTwo();
 
     std::cout << "All Gate0 contract tests passed successfully!" << std::endl;
     return 0;

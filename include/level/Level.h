@@ -37,11 +37,14 @@ public:
     bool loadFromFile(const std::string& path);
     void update(float dt);
     void render(sf::RenderTarget& target);
-    void shootFireBall();
+    /// Consolidated production entry point for FireBall shooting.
+    /// Checks FIRE state, 250ms cooldown, hard limit of 2 active projectiles, world-lock queueing, and triggers SFX/Event.
+    bool requestFireBallShot(Mario& mario);
+    bool requestFireBallShot();
 
-    /// Spawn one FireBall owned by Mario. Returns false when FIRE/cooldown/pool
-    /// rules reject the request.
-    bool spawnFireBall();
+    /// Legacy wrappers delegating to requestFireBallShot for backward compatibility.
+    bool spawnFireBall() { return requestFireBallShot(); }
+    void shootFireBall() { requestFireBallShot(); }
 
     /// Spawn a FireballExplosion particle effect at the specified position.
     void spawnFireballExplosion(const sf::Vector2f& position);

@@ -98,8 +98,8 @@ void PlayState::rebindCommands() {
 
         m_inputHandler.bindKey(sf::Keyboard::Key::X,
                                std::make_unique<ShootCommand>([this] {
-                                   if (m_level) {
-                                       m_level->spawnFireBall();
+                                   if (m_level && m_level->getMario()) {
+                                       m_level->requestFireBallShot(*m_level->getMario());
                                    }
                                }),
                                InputTrigger::Pressed);

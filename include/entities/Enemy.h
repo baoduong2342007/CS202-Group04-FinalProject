@@ -21,14 +21,46 @@ class TileMap;
 class Enemy : public Character {
 public:
     Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health);
+
     ~Enemy() override = default;
 
-    EntityType getType() const override { return EntityType::ENEMY; }
+    EntityType getType() const override {
+        return EntityType::ENEMY;
+    }
+
+    void activate();
+    bool isActivated() const;
 
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
-    virtual void setTileMap(const TileMap* tileMap) { (void)tileMap; }
+    virtual void onFireHit();
+
+    virtual void setTileMap(const TileMap* tileMap) {
+        (void)tileMap;
+    }
     virtual void onSideCollision(Entity* other);
-    bool isEnemy() const override { return true; }
+
+    bool isEnemy() const override {
+        return true;
+    }
+
+    virtual bool isDying() const {
+        return !isActive() || isDead();
+    }
+
+    /// Claim the one shared defeat transaction for this victim.
+    /// CollisionManager owns the transaction; the latch only prevents a
+    /// second fixture/contact from applying damage, score, or SFX again.
+    bool tryCommitDefeat();
+
+    /// Claim the one stomp interaction for this victim. A Koopa's first stomp
+    /// changes it into a shell instead of killing it, so this is separate from
+    /// the terminal defeat latch.
+    bool tryCommitStomp();
+
+private:
+    bool m_activated = false;
+    bool m_defeatCommitted = false;
+    bool m_stompCommitted = false;
 };

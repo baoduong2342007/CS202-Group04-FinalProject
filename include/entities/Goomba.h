@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/LevelCatalog.h"
 #include "entities/Enemy.h"
 
 #include <SFML/System/Vector2.hpp>
@@ -15,7 +16,9 @@ class TileMap;
 
 class Goomba : public Enemy {
 public:
-    Goomba(const sf::Vector2f& position, b2World* world);
+    Goomba(const sf::Vector2f& position,
+           b2World* world,
+           LevelTheme theme = LevelTheme::OVERWORLD);
     ~Goomba() override = default;
 
     void update(float dt) override;
@@ -23,18 +26,24 @@ public:
     void onStomp() override;
     void patrol() override;
     void onWallCollision() override;
+    void onFireHit() override;
 
     bool isStomped() const;
+    bool isDying() const override {
+        return m_isStomped || m_isFlippedDead || isDead() || !isActive();
+    }
 
     void setTileMap(const TileMap* tileMap) override;
 
 private:
     void reverseDirection();
     bool isApproachingLedge() const;
+    void syncSpriteToFeet();
 
     const TileMap* m_tileMap = nullptr;
 
     bool m_isStomped;
+    bool m_isFlippedDead = false;
     float m_patrolSpeed;
     float m_squishTimer = 0.f;
 

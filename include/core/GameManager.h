@@ -11,6 +11,7 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include "states/IGameState.h"
+#include "core/SaveManager.h"
 
 class InputState;
 
@@ -33,11 +34,16 @@ public:
     void processEvents(const sf::Event& event);
     void processInput(const InputState& inputState);
     void update(float dt);
-    void render(sf::RenderWindow& window);
+    void render(sf::RenderTarget& target);
+
+    /// Number of states currently on the stack (used by regression tests).
+    int stackDepth() const { return static_cast<int>(m_stateStack.size()); }
+
+    SaveManager& getSaveManager() { return m_saveManager; }
 
 private:
     // 1. Constructor / Destructor
-    GameManager() = default;
+    GameManager();
     ~GameManager() = default;
 
     GameManager(const GameManager&) = delete;
@@ -56,10 +62,14 @@ private:
     };
 
     // 5. Private methods
+    void applyOp(PendingOp& op);
     void processPendingOps();
+    IGameState* top() { return m_stateStack.empty() ? nullptr : m_stateStack.back().get(); }
 
     // 6. Private members
-    std::unique_ptr<IGameState> m_currentState;
-    std::unique_ptr<IGameState> m_previousState;
+    // A true state stack. CHANGE resets the whole stack, PUSH overlays a state
+    // on top (pausing the one below), POP removes the top and resumes the new one.
+    std::vector<std::unique_ptr<IGameState>> m_stateStack;
     std::vector<PendingOp> m_pendingOps;
+    SaveManager m_saveManager;
 };

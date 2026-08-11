@@ -32,7 +32,7 @@ public:
     void processEvents(const sf::Event& event) override;
     void processInput(const InputState& inputState) override;
     void update(float dt) override;
-    void render(sf::RenderWindow& window) override;
+    void render(sf::RenderTarget& target) override;
 
     void onNotify(EventType event) override;
 
@@ -44,7 +44,8 @@ private:
     bool loadLevel(int levelNumber);
 
     /// Re-load the current level and restore progress (used after death/retry/next-level).
-    void navigateToLevel(int levelNumber);
+    /// Returns false if the level file is missing/invalid (a Menu transition is queued).
+    bool navigateToLevel(int levelNumber);
 
     /// Snapshot current Mario/HUD values into m_progress (called before reload/destroy).
     void snapshotProgress();
@@ -67,6 +68,10 @@ private:
 
     bool m_needsReload = false;
     bool m_needsGameOver = false;
+
+    float m_deathDelayTimer = 0.f;
+    bool m_isGameOverPending = false;
+    bool m_isReloadPending = false;
     /// S6-TV1-13: only one terminal result can be committed per frame.
     bool m_terminalCommittedThisFrame = false;
 
@@ -75,4 +80,5 @@ private:
     TransitionPhase m_transitionPhase = TransitionPhase::NONE;
     int m_transitionTargetLevel = 0;
     bool m_transitionIsWin = false;
+    bool m_skipNextDelta = false; ///< S6-TV2-21: ignore dt spike after loading
 };

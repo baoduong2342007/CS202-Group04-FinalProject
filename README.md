@@ -26,7 +26,7 @@
 |---|---|
 | Language | C++17 |
 | Game Engine | SFML 3.0.0 (graphics, window, system, audio) |
-| Build System | CMake 3.15+ |
+| Build System | CMake 3.16+ |
 | Compiler | g++ (MinGW-w64) 14.2.0+ |
 | Version Control | Git + GitHub |
 
@@ -70,15 +70,55 @@ cmake --build build
 
 **Windows:**
 ```bash
-.\build\main.exe
+.\build\SuperMario.exe
 ```
 
 **macOS / Linux:**
 ```bash
-./build/main
+./build/SuperMario
 ```
 
 > **Note:** The executable is built into the `build/` directory, and all required DLLs (on Windows) as well as the `assets/` and `levels/` folders are automatically copied there during the build.
+
+---
+
+### 5. Build & Run the tests (CTest)
+
+Tests are enabled when `BUILD_TESTING=ON` (Debug and Tests presets). Run them with:
+
+**Windows (MinGW):**
+```bash
+cmake --preset mingw-tests
+cmake --build --preset mingw-tests
+ctest --preset mingw-tests --output-on-failure
+```
+
+**Manually (any generator):**
+```bash
+cmake -B build-tests -D BUILD_TESTING=ON
+cmake --build build-tests
+ctest --test-dir build-tests --output-on-failure
+```
+
+Test suites: `input_state_tests`, `tile_collision_span_tests`, `mario_physics_tests`, `play_state_tests`, `game_manager_tests`, `event_bus_tests`, `tv5_integration_tests`, `level_catalog_tests`, `save_manager_tests`, `level_validator_tests`, `gate0_contract_tests`, `save_session_tests`.
+
+---
+
+## Controls
+
+| Action | Key |
+|---|---|
+| Move left | `A` / `←` (hold) |
+| Move right | `D` / `→` (hold) |
+| Jump | `W` / `↑` / `Space` |
+| Run (hold) | `LShift` / `RShift` |
+| Shoot FireBall (Fire Mario) | `X` (press) |
+| Pause | `Esc` |
+| Pause | `Esc` |
+| Menu / Confirm (in menus) | `Enter` or mouse click |
+
+> **Sprint 6 release contract:** `Shift` runs only; `X` shoots only. No other key
+> is bound to shooting or running.
 
 ---
 
@@ -90,6 +130,7 @@ CS202-Group04-FinalProject/
 ├── include/         # Header files (.h) organized by module (core, entities, states...)
 ├── src/             # Source files (.cpp) corresponding to include/
 ├── levels/          # Text files containing level designs (.txt)
+├── tests/           # Automated unit tests (CTest)
 ├── thirdparty/      # External libraries (SFML binaries are auto-downloaded here on Windows)
 └── CMakeLists.txt   # CMake build configuration file
 ```
@@ -104,5 +145,6 @@ For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STR
 - [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md) — 6-week plan by member
 - [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Folder & file structure
 - [`CODING_RULES.md`](CODING_RULES.md) — Coding conventions, Git, naming rules
+- [`docs/design_patterns.md`](docs/design_patterns.md) — Design patterns documentation
 - [`docs/class_diagram.md`](docs/class_diagram.md) — Class diagram _(Week 6)_
 - [`PLAN.md`](PLAN.md) — Sprint 6 plan (current sprint)

@@ -11,17 +11,28 @@
 
 class Mario;
 class TextureManager;
+enum class MarioState;
 
 enum class QuestionBlockContent {
+    ADAPTIVE,
     COIN,
     SUPER_MUSHROOM,
-    ONEUP_MUSHROOM
+    FIRE_FLOWER,
+    ONEUP_MUSHROOM,
+    STAR
+};
+
+enum class BlockTheme {
+    OVERWORLD,
+    UNDERGROUND,
+    CASTLE,
+    UNDERWATER
 };
 
 class QuestionBlock : public Entity {
 public:
     // 1. Constructor / Destructor
-    QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content = QuestionBlockContent::COIN);
+    QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content = QuestionBlockContent::ADAPTIVE, BlockTheme theme = BlockTheme::OVERWORLD);
     ~QuestionBlock() override = default;
 
     // 2. Override methods
@@ -32,11 +43,18 @@ public:
     // 3. Public methods
     /// Triggers block hit reaction: 12px bump animation, spawns item & changes sprite to empty block
     void onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities = nullptr, TextureManager* textureManager = nullptr);
+    /// Resolve a 0-99 weighted roll for a normal '?' block.
+    static QuestionBlockContent chooseAdaptiveContent(MarioState marioState, unsigned int roll);
     bool isHit() const { return m_isHit; }
+    QuestionBlockContent getContent() const { return m_content; }
+    BlockTheme getTheme() const { return m_theme; }
 
+    static constexpr unsigned int COIN_DROP_RATE_PERCENT = 75;
 
 private:
-    QuestionBlockContent m_content = QuestionBlockContent::COIN;
+    QuestionBlockContent m_content = QuestionBlockContent::ADAPTIVE;
+    BlockTheme m_theme = BlockTheme::OVERWORLD;
+    bool m_contentResolved = false;
     bool m_isHit = false;
     bool m_isBumping = false;
     float m_bumpTimer = 0.f;
@@ -44,4 +62,5 @@ private:
 
     static constexpr float BUMP_DURATION = 0.16f;
     static constexpr float MAX_BUMP_OFFSET = -12.f;
+    static constexpr float ITEM_EMERGE_DELAY = 0.18f;
 };

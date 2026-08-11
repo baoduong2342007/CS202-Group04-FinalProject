@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <SFML/Graphics.hpp>
+#include "core/LevelCatalog.h"
 
 class b2Body;
 class b2World;
@@ -26,11 +27,15 @@ public:
     TileMap(TileMap&&) = delete;
     TileMap& operator=(TileMap&&) = delete;
 
+    void setTheme(LevelTheme theme);
+
     bool loadFromFile(const std::string& path);
 
-    void render(sf::RenderWindow& window) const;
+    void render(sf::RenderTarget& target) const;
+    void renderForeground(sf::RenderTarget& target) const;
 
     char getTileAt(int column, int row) const;
+    bool isEnemySupport(int column, int row) const;
     bool isSolid(int column, int row) const;
 
     std::size_t getWidth() const;
@@ -60,7 +65,8 @@ public:
                             );
 
     bool hitTile(int column, int row, bool isBigMario,
-                 std::vector<std::unique_ptr<class Entity>>& entities
+                 std::vector<std::unique_ptr<class Entity>>& entities,
+                 class TextureManager* textureManager = nullptr
                  );
     
     void update(float dt);
@@ -87,9 +93,11 @@ private:
 
     std::vector<std::string> m_grid;
     sf::VertexArray m_vertices{sf::PrimitiveType::Triangles};
+    sf::VertexArray m_foregroundVertices{sf::PrimitiveType::Triangles};
     sf::Texture m_tileset;
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
+    LevelTheme m_theme{LevelTheme::OVERWORLD};
 };

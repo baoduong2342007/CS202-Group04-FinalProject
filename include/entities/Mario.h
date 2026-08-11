@@ -20,6 +20,12 @@ enum class MarioState {
     FIRE
 };
 
+// Selectable player character identity (Mario / Luigi)
+enum class CharacterType {
+    MARIO,
+    LUIGI
+};
+
 class Mario : public Character {
 public:
     // 1. Constructor / Destructor
@@ -48,7 +54,7 @@ public:
     void queuePowerDown();
     void addScore(int points);
     void addCoin();
-    void collectCoin(int scoreValue = 200);
+    void collectCoin(int scoreValue = 100);
     std::unique_ptr<FireBall> shootFireBall(b2World* world);
     void setInvincible(float duration);
     void updateInvincibility(float dt);
@@ -81,14 +87,21 @@ public:
     bool isInvincible() const;
     bool isStarInvincible() const;
     bool isDamageImmune() const;
+    void setStarInvincible(float duration);
     void activateStarman(float duration = 10.0f);
     void activateDamageGrace(float duration = 2.0f);
+    void setInvincible(float duration);
     bool canShootFireBall() const;
     int getLives() const;
     void setLives(int lives);
 
+    CharacterType getCharacterType() const { return m_characterType; }
+    void setCharacterType(CharacterType type);
+
     bool isRunning() const;
-    void setRunning(bool running) { m_isRunning = running; }
+    /// Set the per-frame run intent consumed by preparePhysics().
+    void setRunIntent(bool running);
+    void setRunning(bool running) { setRunIntent(running); }
     bool isSkidding() const;
     bool isDying() const;
     bool isTransforming() const { return m_isTransforming; }
@@ -102,6 +115,7 @@ protected:
 
     // 6. Protected / Private members
     MarioState m_marioState;
+    CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
     float m_moveSpeed;
@@ -109,12 +123,12 @@ protected:
     int m_coinCount;
     bool m_isInvincible;
     float m_invincibilityTimer;
-    float m_starTimer = 0.0f;
-    float m_damageGraceTimer = 0.0f;
+    bool m_isStarInvincible = false;
+    float m_starInvincibilityTimer = 0.f;
     int m_lives;
 
     bool m_isDying;
-    float m_deathTimer;
+    bool m_isSpawning;
     bool m_isRunning;
     bool m_isSkidding;
     bool m_wasJumpPressed;
@@ -145,4 +159,3 @@ public:
     void setPitThreshold(float threshold) { m_pitThreshold = threshold; }
     float getPitThreshold() const { return m_pitThreshold; }
 };
-

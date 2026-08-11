@@ -11,6 +11,8 @@
 #include "patterns/ICommand.h"
 #include "patterns/InputHandler.h"
 #include "patterns/InputState.h"
+#include "patterns/RunCommand.h"
+#include "patterns/ShootCommand.h"
 
 namespace {
 
@@ -145,12 +147,67 @@ bool testPressedCommandAndFocusLoss() {
            check(!input.wasPressed(sf::Keyboard::Key::Space), "focus loss must clear press edges");
 }
 
+bool testReleasedTriggerAndMultipleBindings() {
+    InputState input;
+    InputHandler handler;
+    int pressExecutions = 0;
+    int releaseExecutions = 0;
+    int ignoredValue = 0;
+
+    handler.bindKey(sf::Keyboard::Key::Space,
+                    std::make_unique<RecordingCommand>(pressExecutions, ignoredValue, 1),
+                    InputTrigger::Pressed);
+    handler.bindKey(sf::Keyboard::Key::Space,
+                    std::make_unique<RecordingCommand>(releaseExecutions, ignoredValue, 2),
+                    InputTrigger::Released);
+
+    input.beginFrame();
+    input.handleEvent(keyPressed(sf::Keyboard::Key::Space));
+    handler.handleInput(input);
+    if (!check(pressExecutions == 1 && releaseExecutions == 0,
+               "press and release bindings must dispatch independently")) {
+        return false;
+    }
+
+    input.beginFrame();
+    input.handleEvent(keyReleased(sf::Keyboard::Key::Space));
+    handler.handleInput(input);
+    return check(input.wasReleased(sf::Keyboard::Key::Space),
+                 "release edge must remain visible to the handler") &&
+           check(pressExecutions == 1 && releaseExecutions == 1,
+                 "released command must execute exactly on the release frame");
+}
+
+bool testRequestCommandsDoNotOwnGameplayObjects() {
+    InputState input;
+    InputHandler handler;
+    int runRequests = 0;
+    int shootRequests = 0;
+
+    handler.bindKey(sf::Keyboard::Key::LShift,
+                    std::make_unique<RunCommand>([&runRequests] { ++runRequests; }),
+                    InputTrigger::Held);
+    handler.bindKey(sf::Keyboard::Key::X,
+                    std::make_unique<ShootCommand>([&shootRequests] { ++shootRequests; }),
+                    InputTrigger::Pressed);
+
+    input.beginFrame();
+    input.handleEvent(keyPressed(sf::Keyboard::Key::LShift));
+    input.handleEvent(keyPressed(sf::Keyboard::Key::X));
+    handler.handleInput(input);
+
+    return check(runRequests == 1, "run command must emit a held request") &&
+           check(shootRequests == 1, "shoot command must emit one press request");
+}
+
 } // namespace
 
 int main() {
     const bool success = testShortTapDispatchesOnce() &&
                          testHeldKeyAndAutoRepeat() &&
                          testLatestDirectionWinsAndFallsBack() &&
-                         testPressedCommandAndFocusLoss();
+                         testPressedCommandAndFocusLoss() &&
+                         testReleasedTriggerAndMultipleBindings() &&
+                         testRequestCommandsDoNotOwnGameplayObjects();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

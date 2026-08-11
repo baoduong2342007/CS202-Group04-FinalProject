@@ -43,4 +43,5 @@ private:
     float m_patrolSpeed;
     /// +1 = moving right, -1 = moving left
     int m_patrolDirection;
+    float m_stuckTimer = 0.f;
 };

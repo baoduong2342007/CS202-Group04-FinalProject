@@ -7,9 +7,11 @@
 #include "entities/FireBall.h"
 #include <iostream>
 #include "physics/PhysicsEngine.h"
+#include "core/AnimationSystem.h"
+#include "core/SpriteFrames_shared.h"
 
 namespace {
-const sf::Vector2f FIREBALL_SIZE(12.f, 12.f);
+const sf::Vector2f FIREBALL_SIZE(16.f, 16.f);
 constexpr float FIREBALL_SPEED = 360.f;
 constexpr float FIREBALL_BOUNCE_SPEED = 240.f;
 constexpr int MAX_BOUNCES = 3;
@@ -25,6 +27,9 @@ FireBall::FireBall()
       m_bounceCooldown(0.f) {
     initPhysics(nullptr, b2_dynamicBody, FIREBALL_SIZE, false);
     setSprite("assets/textures/items/items_objects.png");
+    m_animationSystem->addAnimation("spin",
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireballFrames(), 0.06f));
+    playAnimation("spin");
 }
 
 FireBall::FireBall(const sf::Vector2f& position, Direction direction, b2World* world)
@@ -38,6 +43,8 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     m_bounceCount = 0;
     m_lifetime = 0.f;
     m_bounceCooldown = 0.f;
+    m_spawnExplosion = false;
+    m_owner = nullptr;
     m_active = true;
     m_pendingDestroy = false;
 
@@ -56,6 +63,7 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     }
 
     if (m_body) {
+        applyNoPlayerCollision();
         float dirMultiplier = (direction == Direction::RIGHT) ? 1.0f : -1.0f;
         float vxMeters = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
         float vyMeters = PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED * 0.5f);
@@ -63,11 +71,31 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     }
 }
 
+void FireBall::applyNoPlayerCollision() {
+    if (!m_body) return;
+
+    // The body owns a single fixture (box). Tag it with the shared negative
+    // collision group so it never generates contacts / never resolves against
+    // Mario. All other bodies (tiles, enemies) keep default group 0, so they
+    // still collide with the fireball normally.
+    b2Fixture* fixture = m_body->GetFixtureList();
+    if (!fixture) return;
+
+    b2Filter filter = fixture->GetFilterData();
+    filter.groupIndex = COLLISION_GROUP_PLAYER_PROJECTILE;
+    fixture->SetFilterData(filter);
+}
+
 
 void FireBall::update(float dt) {
     if (!m_active || m_pendingDestroy) return;
 
     syncPhysics(); // CRITICAL: Sync first!
+    updateAnimation(dt);
+
+    if (m_sprite) {
+        m_sprite->setScale({2.f, 2.f});
+    }
 
     m_lifetime += dt;
     if (m_bounceCooldown > 0.0f) {
@@ -75,7 +103,7 @@ void FireBall::update(float dt) {
     }
 
     if (m_lifetime >= MAX_LIFETIME || m_bounceCount >= MAX_BOUNCES) {
-        deactivate();
+        deactivate(true);
         return;
     }
 
@@ -98,7 +126,7 @@ void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
     m_bounceCooldown = MIN_BOUNCE_COOLDOWN;
 
     if (m_bounceCount >= MAX_BOUNCES) {
-        deactivate();
+        deactivate(true);
         return;
     }
 
@@ -114,10 +142,11 @@ void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
 #endif
 }
 
-void FireBall::deactivate() {
+void FireBall::deactivate(bool explode) {
     if (!m_active && m_pendingDestroy) return;
 
     m_active = false;
+    m_spawnExplosion = explode;
     markForDestroy();
     // CRITICAL: Do NOT call destroyPhysicsBody() synchronously here!
     // Calling world->DestroyBody() inside a Box2D step callback crashes Box2D.

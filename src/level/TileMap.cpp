@@ -24,18 +24,30 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
+#include "level/TileFrames.h"
+#include "core/LevelCatalog.h"
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|[]{}UEO";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}prJ";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
-constexpr unsigned int TILESET_TILE_COUNT = 4;
 
 bool isSolidTileSymbol(char tile) {
-    return tile == '1' || tile == 'B' || tile == 'E' ||
-           tile == 'S' || tile == '[' || tile == ']' || tile == '{' || tile == '}';
+    return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
+           tile == '[' || tile == ']' || tile == 'p' || tile == 'r' || tile == '{' || tile == '}';
+}
+
+bool isEnemySupportTileSymbol(char tile) {
+    return isSolidTileSymbol(tile) || tile == '?' ||
+           tile == 'U' || tile == 'u' ||
+           tile == 'f' || tile == 'h' ||
+           tile == 'O' || tile == 'o';
 }
 
 int worldToGridCoordinate(float coordinate) {
@@ -93,8 +105,8 @@ void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities,
         }
     }
 
-    hitTile(bestGridPos.x,bestGridPos.y,
-            isBigMario, entities);
+    hitTile(bestGridPos.x, bestGridPos.y,
+            isBigMario, entities, &textureManager);
 
     m_pendingTileHits.clear();
 }
@@ -115,41 +127,124 @@ bool isValidTileSymbol(char symbol) {
     return VALID_TILE_SYMBOLS.find(symbol) != std::string_view::npos;
 }
 
-bool isRenderableTile(char symbol){
-    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
-           symbol == 'S' || symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}' || symbol == '|' || symbol == 'E';
+bool isRenderableTile(char symbol) {
+    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
+           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
 }
 
+bool isForegroundTile(char symbol) {
+    // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
+    return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
+           symbol == 'F' || symbol == '|' ||
+           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
+}
 
-constexpr std::string_view TILESET_PATH = "assets/textures/items/items_blocks.png";
+constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 
-sf::IntRect getTilesetRect(char symbol) {
-    switch (symbol){
+struct DebrisFrames {
+    const sf::IntRect& topLeft;
+    const sf::IntRect& topRight;
+    const sf::IntRect& bottomLeft;
+    const sf::IntRect& bottomRight;
+};
+
+const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
+    static const DebrisFrames overworld{
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames underground{
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames castle{
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_RIGHT};
+    switch (theme) {
+        case LevelTheme::UNDERGROUND: return underground;
+        case LevelTheme::CASTLE:      return castle;
+        case LevelTheme::OVERWORLD:
+        default:                      return overworld;
+    }
+}
+
+} // namespace
+
+void TileMap::setTheme(LevelTheme theme) {
+    m_theme = theme;
+}
+
+namespace {
+sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
+    switch (symbol) {
         case '1':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::GROUND_CASTLE;
+            return TileFrames::GROUND;
+
         case 'S':
-            return SpriteFrames::Blocks::BRICK;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
+            return TileFrames::STONE;
 
         case 'B':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
-            return SpriteFrames::Blocks::BRICK;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
+            return TileFrames::BRICK;
 
         case '?':
         case 'U':
+        case 'u':
         case 'O':
-            return SpriteFrames::Blocks::QUESTION1;
+        case 'o':
+        case 'f':
+        case 'h':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::QUESTION_UNDERGROUND;
+            return TileFrames::QUESTION;
 
         case 'E':
-            return SpriteFrames::Blocks::EMPTY;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::USED_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::USED_BLOCK_CASTLE;
+            return TileFrames::USED_BLOCK;
+
+        case '[':
+        case 'p':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
+            return TileFrames::PIPE_TOP_LEFT;
+
+        case ']':
+        case 'r':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_RIGHT_CASTLE;
+            return TileFrames::PIPE_TOP_RIGHT;
+
+        case '{':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_LEFT_CASTLE;
+            return TileFrames::PIPE_BODY_LEFT;
+
+        case '}':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_RIGHT_CASTLE;
+            return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
+            return TileFrames::FINISH_TOP;
+
         case '|':
-            return SpriteFrames::Blocks::EMPTY;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
+            return TileFrames::FINISH_POLE;
 
         default:
-            return SpriteFrames::Blocks::BRICK;
+            return TileFrames::GROUND;
     }
 }
 
@@ -329,7 +424,20 @@ bool TileMap::loadFromFile(const std::string& path) {
     
     sf::Texture loadedTileset;
     try {
-        loadedTileset = sf::Texture(std::string(TILESET_PATH));
+        sf::Image tilesetImage;
+        if (!tilesetImage.loadFromFile(std::string(TILESET_PATH))) {
+            std::cerr << "Failed to load TileMap tileset image: " << TILESET_PATH << std::endl;
+            return false;
+        }
+
+        // The reference sheet is an opaque compositing sheet.  Its three
+        // backdrop colors are not gameplay pixels; key them out before the
+        // atlas is uploaded so pipes, poles, and assembled structures do not
+        // carry lavender/blue rectangles into the level.
+        tilesetImage.createMaskFromColor(sf::Color(146, 144, 255));
+        tilesetImage.createMaskFromColor(sf::Color(148, 148, 255));
+        tilesetImage.createMaskFromColor(sf::Color(0, 41, 140));
+        loadedTileset = sf::Texture(tilesetImage);
     } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;
@@ -339,13 +447,10 @@ bool TileMap::loadFromFile(const std::string& path) {
     loadedTileset.setSmooth(false);
 
     const sf::Vector2u tilesetSize = loadedTileset.getSize();
-    const unsigned int expectedWidth = TILE_SIZE * TILESET_TILE_COUNT;
-    const unsigned int expectedHeight = TILE_SIZE;
 
-    if (tilesetSize.x < expectedWidth || tilesetSize.y < expectedHeight) {
-#ifdef DEBUG
-        std::cerr << "[TileMap] Warning: Tileset image size is " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
-#endif
+    if (tilesetSize.x == 0 || tilesetSize.y == 0) {
+        std::cerr << "Invalid TileMap tileset dimensions: " << tilesetSize.x << 'x' << tilesetSize.y << std::endl;
+        return false;
     }
 
     m_pendingTileHits.clear();
@@ -356,11 +461,18 @@ bool TileMap::loadFromFile(const std::string& path) {
     return true;
 }
 
-void TileMap::render(sf::RenderWindow& window) const {
+void TileMap::render(sf::RenderTarget& target) const {
     sf::RenderStates states;
     states.texture = &m_tileset;
 
-    window.draw(m_vertices, states);
+    target.draw(m_vertices, states);
+}
+
+void TileMap::renderForeground(sf::RenderTarget& target) const {
+    sf::RenderStates states;
+    states.texture = &m_tileset;
+
+    target.draw(m_foregroundVertices, states);
 }
 
 char TileMap::getTileAt(int column, int row) const {
@@ -380,6 +492,10 @@ char TileMap::getTileAt(int column, int row) const {
     }
 
     return m_grid[gridRow][gridColumn];
+}
+
+bool TileMap::isEnemySupport(int column, int row) const {
+    return isEnemySupportTileSymbol(getTileAt(column, row));
 }
 
 bool TileMap::isSolid(int column, int row) const {
@@ -427,56 +543,63 @@ void TileMap::update(float dt) {
 
 void TileMap::buildVertices() {
     m_vertices.clear();
+    m_foregroundVertices.clear();
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
-        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
-            const char symbol = m_grid[row][column];
-
+        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
+            const char symbol = m_grid[row][col];
             if (!isRenderableTile(symbol)) {
                 continue;
             }
 
+            const float x = static_cast<float>(col * TILE_SIZE);
+            const float y = static_cast<float>(row * TILE_SIZE);
+
+            const sf::IntRect textureRect = getTilesetRect(symbol, m_theme);
+
             float offsetY = 0.f;
             for (const auto& bump : m_bumpAnimations) {
-                if (bump.column == static_cast<int>(column) && bump.row == static_cast<int>(row)) {
+                if (bump.column == static_cast<int>(col) && bump.row == static_cast<int>(row)) {
                     float progress = bump.timer / bump.maxDuration;
                     offsetY = std::sin(progress * 3.14159265f) * bump.maxOffset;
                     break;
                 }
             }
 
-            const float left = static_cast<float>(column * TILE_SIZE);
-            const float top = static_cast<float>(row * TILE_SIZE) + offsetY;
+            const float left = x;
+            const float top = y + offsetY;
 
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const sf::IntRect rect = getTilesetRect(symbol);
+            const float texEpsilon = 0.02f;
+            const float textureLeft = static_cast<float>(textureRect.position.x) + texEpsilon;
+            const float textureTop = static_cast<float>(textureRect.position.y) + texEpsilon;
 
-            const float textureLeft = static_cast<float>(rect.position.x);
-            const float textureTop = static_cast<float>(rect.position.y);
+            const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - texEpsilon;
+            const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - texEpsilon;
 
-            const float textureRight = textureLeft + static_cast<float>(rect.size.x);
-            const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+            // Route to correct vertex array based on layer classification
+            sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;
 
             // First triangle: top-left, bottom-left, bottom-right.
-            appendTexturedVertex(m_vertices, left, top,
+            appendTexturedVertex(targetArray, left, top,
                                  textureLeft, textureTop);
 
-            appendTexturedVertex(m_vertices, left, bottom,
+            appendTexturedVertex(targetArray, left, bottom,
                                  textureLeft, textureBottom);
             
-            appendTexturedVertex(m_vertices, right, bottom,
+            appendTexturedVertex(targetArray, right, bottom,
                                  textureRight, textureBottom);
 
             // Second triangle: top-left, bottom-right, top-right.
-            appendTexturedVertex(m_vertices, left, top,
+            appendTexturedVertex(targetArray, left, top,
                                  textureLeft, textureTop);
             
-            appendTexturedVertex(m_vertices, right, bottom,
+            appendTexturedVertex(targetArray, right, bottom,
                                  textureRight, textureBottom);
             
-            appendTexturedVertex(m_vertices, right, top,
+            appendTexturedVertex(targetArray, right, top,
                                  textureRight, textureTop);
         }
     }
@@ -567,7 +690,8 @@ void TileMap::clearPhysicsBodies() {
 }
 
 bool TileMap::hitTile(int column, int row, bool isBigMario,
-                      std::vector<std::unique_ptr<Entity>>& entities) {
+                      std::vector<std::unique_ptr<Entity>>& entities,
+                      TextureManager* textureManager) {
     if (row < 0 || row >= static_cast<int>(m_grid.size())) {
         return false;
     }
@@ -591,17 +715,33 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
                 createPhysicsBodies(m_physicsWorld);
             }
 
-            // Spawn 4 flying debris particles
+            // Spawn 4 flying debris particles (4 corners)
             sf::Vector2f center = tileWorldPos + sf::Vector2f(8.f, 8.f);
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f)));
-            entities.push_back(std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f)));
+            const DebrisFrames& debris = debrisFramesForTheme(m_theme);
+            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), debris.topLeft);
+            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), debris.topRight);
+            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), debris.bottomLeft);
+            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), debris.bottomRight);
+
+            if (textureManager) {
+                d1->setTextureManager(*textureManager);
+                d2->setTextureManager(*textureManager);
+                d3->setTextureManager(*textureManager);
+                d4->setTextureManager(*textureManager);
+            }
+
+            entities.push_back(std::move(d1));
+            entities.push_back(std::move(d2));
+            entities.push_back(std::move(d3));
+            entities.push_back(std::move(d4));
+
+            EventBus::getInstance().notify(EventType::BRICK_BROKEN);
 
             return true;
         } else {
             // Small Mario bump: Block bounces up slightly
             triggerTileBump(column, row);
+            EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
             return true;
         }
     }

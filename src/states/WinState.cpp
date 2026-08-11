@@ -6,50 +6,83 @@
 #include "states/WinState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "patterns/InputState.h"
+#include "ui/UILayoutHelper.h"
 #include <iostream>
 
-WinState::WinState(const GameProgress& progress)
-    : m_font(), m_text(m_font), m_progress(progress), m_scoreText(m_font) {
-    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
-        std::cerr << "Failed to load font in WinState\n";
-    }
-    m_text.setString("YOU WIN!\nPress ENTER to Menu");
-    m_text.setCharacterSize(40);
-    m_text.setFillColor(sf::Color::White);
-    
-    sf::FloatRect bounds = m_text.getLocalBounds();
-    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
-    m_text.setPosition({640.f, 250.f});
-
-    m_scoreText.setString("FINAL SCORE: " + std::to_string(m_progress.score));
-    m_scoreText.setCharacterSize(24);
-    m_scoreText.setFillColor(sf::Color::Yellow);
-    
-    sf::FloatRect scoreBounds = m_scoreText.getLocalBounds();
-    m_scoreText.setOrigin({scoreBounds.position.x + scoreBounds.size.x / 2.f,
-                           scoreBounds.position.y + scoreBounds.size.y / 2.f});
-    m_scoreText.setPosition({640.f, 380.f});
+namespace {
+    constexpr unsigned int TITLE_FONT_SIZE = 24;
+    constexpr unsigned int SCORE_FONT_SIZE = 14;
+    constexpr float TITLE_OFFSET_Y = 40.f;
+    constexpr float SCORE_OFFSET_Y = 80.f;
+    constexpr float MENU_OFFSET_Y = 20.f;
+    constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
 }
 
-void WinState::onEnter() {}
-void WinState::onExit() {}
+WinState::WinState(const GameProgress& progress)
+    : m_font(), m_fontLoaded(false), m_progress(progress) {
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (!m_fontLoaded) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG][WinState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
+#endif
+    } else {
+        m_titleText.emplace(m_font);
+        m_titleText->setString("YOU WIN!");
+        m_titleText->setCharacterSize(TITLE_FONT_SIZE);
+        m_titleText->setFillColor(sf::Color::White);
+        UILayoutHelper::setPosition(*m_titleText, UIAnchor::TopCenter, {0.f, TITLE_OFFSET_Y});
+
+        m_scoreText.emplace(m_font);
+        m_scoreText->setString("FINAL SCORE: " + std::to_string(m_progress.score));
+        m_scoreText->setCharacterSize(SCORE_FONT_SIZE);
+        m_scoreText->setFillColor(sf::Color::Yellow);
+        UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, SCORE_OFFSET_Y});
+
+        m_menu = std::make_unique<UIMenuWidget>(m_font);
+        m_menu->addItem("RETURN TO MENU", []() {
+            GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        });
+        m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, MENU_OFFSET_Y), UIAnchor::TopCenter);
+    }
+}
+
+void WinState::onEnter() {
+    SoundManager::getInstance().playMusic(MusicId::WIN);
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
+}
+void WinState::onExit() {
+    SoundManager::getInstance().stopMusic();
+}
 
 void WinState::processEvents(const sf::Event& event) {
-    (void)event;
+    if (m_menu) {
+        m_menu->processEvents(event);
+    }
 }
 
 void WinState::processInput(const InputState& inputState) {
-    if (inputState.wasPressed(sf::Keyboard::Key::Enter)) {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+    if (m_menu) {
+        m_menu->processInput(inputState);
     }
 }
 
-void WinState::update(float dt) { (void)dt; }
+void WinState::update(float dt) {
+    if (m_menu) {
+        m_menu->update(dt);
+    }
+}
 
-void WinState::render(sf::RenderWindow& window) {
-    window.clear(sf::Color::Black);
-    window.setView(window.getDefaultView());
-    window.draw(m_text);
-    window.draw(m_scoreText);
+void WinState::render(sf::RenderTarget& target) {
+    target.clear(sf::Color::Black);
+    target.setView(target.getDefaultView());
+    
+    if (m_fontLoaded) {
+        if (m_titleText) target.draw(*m_titleText);
+        if (m_scoreText) target.draw(*m_scoreText);
+    }
+    if (m_menu) {
+        m_menu->draw(target);
+    }
 }

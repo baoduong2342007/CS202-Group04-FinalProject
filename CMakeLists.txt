@@ -28,18 +28,21 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
     if(MSVC)
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-vc17-64-bit.zip")
+        # S6-TV1-27: verified SHA256 of the official SFML 3.0.0 VC17 64-bit zip.
+        set(EXPECTED_SFML_HASH "SHA256=01295AA4E87AEBCD917A4EA67C319F325BE131B83E0F3A85F290F0CE51A492A8")
     else()
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MinGW-w64 (~30MB)...")
         set(SFML_URL "https://github.com/SFML/SFML/releases/download/3.0.0/SFML-3.0.0-windows-gcc-14.2.0-mingw-64-bit.zip")
+        # S6-TV1-27: verified SHA256 of the official SFML 3.0.0 MinGW-w64 (gcc 14.2.0) 64-bit zip.
+        set(EXPECTED_SFML_HASH "SHA256=4D83F919BD9356CD8C9C7B542BF70E4F6E542A51FB0FD1B6DE7AFFC81ED919FB")
     endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    # NOTE: TLS verification is ON. To also verify the archive integrity, set
-    # EXPECTED_HASH to the real SHA256 of the downloaded zip (e.g.
-    # "SHA256=<hex>"). It is intentionally omitted here because the exact
-    # upstream hash must be confirmed by the maintainer before hard-coding.
+    # S6-TV1-27: TLS verification is ON and the archive integrity is verified via
+    # EXPECTED_SFML_HASH (real SHA256 of the downloaded zip, confirmed by TV1).
     file(DOWNLOAD "${SFML_URL}"
                   "${SFML_ZIP_PATH}"
                   TLS_VERIFY ON
+                  EXPECTED_HASH "${EXPECTED_SFML_HASH}"
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
     if(STATUS_CODE EQUAL 0)
@@ -130,20 +133,21 @@ target_link_libraries(game_lib PUBLIC
 )
 
 # Executable target
-add_executable(main src/main.cpp)
-target_link_libraries(main PRIVATE game_lib)
+add_executable(SuperMario src/main.cpp)
+target_link_libraries(SuperMario PRIVATE game_lib)
 
 # ==============================================================================
 # 4. TARGET BUILD CONFIGURATIONS
 # ==============================================================================
 # Define DEBUG macro for debug builds
-target_compile_definitions(main PRIVATE $<$<CONFIG:Debug>:DEBUG>)
+target_compile_definitions(SuperMario PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 include(CTest)
 if(BUILD_TESTING)
     add_executable(input_state_tests
         tests/InputStateTests.cpp
+
     )
     target_link_libraries(input_state_tests PRIVATE game_lib)
     add_test(NAME input_state_tests COMMAND input_state_tests)
@@ -165,14 +169,95 @@ if(BUILD_TESTING)
     )
     target_link_libraries(play_state_tests PRIVATE game_lib)
     add_test(NAME play_state_tests COMMAND play_state_tests)
+    set_tests_properties(play_state_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(game_manager_tests
+        tests/GameManagerTests.cpp
+        src/core/GameManager.cpp
+        src/core/SaveManager.cpp
+    )
+    target_include_directories(game_manager_tests PRIVATE include)
+    target_link_libraries(game_manager_tests PRIVATE SFML::Graphics)
+    add_test(NAME game_manager_tests COMMAND game_manager_tests)
+
+    add_executable(event_bus_tests
+        tests/EventBusTests.cpp
+        src/patterns/EventBus.cpp
+    )
+    target_include_directories(event_bus_tests PRIVATE include)
+    add_test(NAME event_bus_tests COMMAND event_bus_tests)
+
+    add_executable(tv5_integration_tests
+        tests/TV5IntegrationTests.cpp
+    )
+    target_link_libraries(tv5_integration_tests PRIVATE game_lib)
+    add_test(NAME tv5_integration_tests COMMAND tv5_integration_tests)
+
+    # S6-TV1-05/06/07/08 — New headless test for level-catalog & GameProgress contracts.
+    add_executable(level_catalog_tests
+        tests/LevelCatalogTests.cpp
+    )
+    target_include_directories(level_catalog_tests PRIVATE include)
+    target_link_libraries(level_catalog_tests PRIVATE game_lib)
+    add_test(NAME level_catalog_tests COMMAND level_catalog_tests)
+
+    add_executable(save_manager_tests
+        tests/SaveManagerTests.cpp
+    )
+    target_link_libraries(save_manager_tests PRIVATE game_lib)
+    add_test(NAME save_manager_tests COMMAND save_manager_tests)
+
+    add_executable(level_validator_tests
+        tests/LevelValidatorTests.cpp
+    )
+    target_link_libraries(level_validator_tests PRIVATE game_lib)
+    add_test(NAME level_validator_tests COMMAND level_validator_tests)
+
+    add_executable(springboard_tests
+        tests/SpringboardTests.cpp
+    )
+    target_link_libraries(springboard_tests PRIVATE game_lib)
+    add_test(NAME springboard_tests COMMAND springboard_tests)
+
+    set_tests_properties(level_validator_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    # Gate 0 release-contract guards (S6-TV1 Gate 0 / test contract).
+    add_executable(gate0_contract_tests
+        tests/Gate0ContractTests.cpp
+    )
+    target_link_libraries(gate0_contract_tests PRIVATE game_lib)
+    add_test(NAME gate0_contract_tests COMMAND gate0_contract_tests)
+    set_tests_properties(gate0_contract_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    # SaveManager session-restart integration (S6-TV1-19).
+    add_executable(save_session_tests
+        tests/SaveSessionTests.cpp
+    )
+    target_link_libraries(save_session_tests PRIVATE game_lib)
+    add_test(NAME save_session_tests COMMAND save_session_tests)
+    set_tests_properties(save_session_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(sprite_frames_theme_tests
+        tests/SpriteFramesThemeTests.cpp
+    )
+    target_link_libraries(sprite_frames_theme_tests PRIVATE game_lib)
+    add_test(NAME sprite_frames_theme_tests COMMAND sprite_frames_theme_tests)
 endif()
 
 # Platform-specific Release build settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(WIN32)
-        set_property(TARGET main PROPERTY WIN32_EXECUTABLE TRUE)
+        set_property(TARGET SuperMario PROPERTY WIN32_EXECUTABLE TRUE)
     elseif(APPLE)
-        set_property(TARGET main PROPERTY MACOSX_BUNDLE TRUE)
+        set_property(TARGET SuperMario PROPERTY MACOSX_BUNDLE TRUE)
     endif()
 endif()
 
@@ -181,13 +266,31 @@ endif()
 # ==============================================================================
 
 # 5.1. Auto-sync assets and levels directories to the build folder.
-# S6-TV1-29: `cmake -E copy_directory` only overwrites files whose content/timestamp
-# changed, so unchanged assets are not re-copied on every invocation (incremental).
-add_custom_target(CopyAssets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/levels" "${CMAKE_BINARY_DIR}/levels"
-    COMMENT "Auto-syncing assets and level maps to build directory (incremental)..."
-)
+# S6-TV1-29: copy PER-FILE with `copy_if_different`, so an unchanged file is not
+# copied again on a no-op build (unlike `copy_directory`, which re-touches every
+# file each invocation). A GLOB with CONFIGURE_DEPENDS re-scans when files are
+# added/removed.
+file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
+foreach(ASSET_FILE IN LISTS ASSET_FILES)
+    file(RELATIVE_PATH ASSET_REL "${CMAKE_SOURCE_DIR}/assets" "${ASSET_FILE}")
+    get_filename_component(ASSET_DEST_DIR "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}" DIRECTORY)
+    add_custom_command(TARGET SuperMario POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ASSET_DEST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASSET_FILE}" "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}"
+        COMMENT "Syncing asset ${ASSET_REL}"
+    )
+endforeach()
+
+file(GLOB_RECURSE LEVEL_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/levels/*")
+foreach(LEVEL_FILE IN LISTS LEVEL_FILES)
+    file(RELATIVE_PATH LEVEL_REL "${CMAKE_SOURCE_DIR}/levels" "${LEVEL_FILE}")
+    get_filename_component(LEVEL_DEST_DIR "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}" DIRECTORY)
+    add_custom_command(TARGET SuperMario POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${LEVEL_DEST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LEVEL_FILE}" "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}"
+        COMMENT "Syncing level ${LEVEL_REL}"
+    )
+endforeach()
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)
@@ -210,8 +313,8 @@ if(WIN32)
     foreach(DLL_NAME IN LISTS SFML_DLL_NAMES)
         set(DLL_PATH "${SFML_DLL_DIR}/${DLL_NAME}")
         if(EXISTS "${DLL_PATH}")
-            add_custom_command(TARGET main POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_PATH}" "$<TARGET_FILE_DIR:main>/"
+            add_custom_command(TARGET SuperMario POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL_PATH}" "$<TARGET_FILE_DIR:SuperMario>/"
                 COMMENT "Copying ${DLL_NAME} to build output folder..."
             )
         endif()

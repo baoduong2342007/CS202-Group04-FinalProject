@@ -18,18 +18,83 @@
 #include "items/Star.h"
 #include "level/TileMap.h"
 #include "entities/QuestionBlock.h"
+#include "entities/Springboard.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/TileContactResolver.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
+#include "core/ScoreRules.h"
 
 namespace {
+
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
 constexpr float STOMP_BOUNCE_SPEED_LOW = 200.f;
 constexpr float TOP_STOMP_NORMAL_THRESHOLD = 0.8f;
 constexpr float BOTTOM_BLOCK_NORMAL_THRESHOLD = -0.7f;
 constexpr float MAX_WALL_NORMAL_X = 0.5f;
 constexpr float BLOCK_SIZE_PIXELS = 32.f;
+
+constexpr float ENEMY_SUPPORT_PROBE_OFFSET = 2.f;
+constexpr float ENEMY_WALL_NORMAL_THRESHOLD = 0.5f;
+constexpr float TILE_SIZE_PIXELS = 32.f;
+
+bool isEnemySupportObstacle(
+    Entity* obstacle,
+    b2Body* obstacleBody
+) {
+    if (!obstacleBody) {
+        return false;
+    }
+
+    if (obstacle &&
+        obstacle->isQuestionBlock()) {
+        return true;
+    }
+
+    if (!obstacle) {
+        return TileMap::isTileUserData(
+            obstacleBody->GetUserData().pointer
+        );
+    }
+
+    return false;
+}
+
+bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
+                           b2Body* enemyBody, b2Body* obstacleBody,
+                           const b2Vec2& enemyNormal,
+                           const TileMap& tileMap
+                        ) {
+    if (!enemy || !enemyBody || !isEnemySupportObstacle(obstacle, obstacleBody)) {
+        return false;
+    }
+
+    if (std::abs(enemyNormal.x) <= ENEMY_WALL_NORMAL_THRESHOLD) {
+        return false;
+    }
+
+    const sf::Vector2f center = PhysicsEngine::metersToPixels(enemyBody->GetPosition());
+
+    const sf::Vector2f size = enemy->getSize();
+
+    const float bottomY = center.y + size.y / 2.f;
+
+    const float frontX = enemyNormal.x < 0.f
+                         ? center.x - size.x / 2.f - ENEMY_SUPPORT_PROBE_OFFSET
+                         : center.x + size.x / 2.f + ENEMY_SUPPORT_PROBE_OFFSET;
+
+    const int supportRow = static_cast<int>(std::floor((bottomY + ENEMY_SUPPORT_PROBE_OFFSET) / TILE_SIZE_PIXELS));
+
+    const int frontColumn = static_cast<int>(std::floor(frontX / TILE_SIZE_PIXELS));
+
+    if (!tileMap.isEnemySupport(frontColumn, supportRow)) {
+        return false;
+    }
+
+    const bool blockedAbove = tileMap.isEnemySupport(frontColumn, supportRow - 1);
+
+    return !blockedAbove;
+}
 
 Entity* entityFromBody(b2Body* body) {
     if (!body) {
@@ -149,20 +214,145 @@ void queueEntityBlockHit(TileMap& tileMap, Mario* mario, b2Body* marioBody, cons
     }
 }
 
+void handleEnemyWallCollision(Enemy* enemy, Entity* obstacle,
+                              b2Body* enemyBody, b2Body* obstacleBody,
+                              const b2Vec2& enemyNormal,
+                              const TileMap& tileMap
+                              ) {
+    if (!enemy || !enemyBody || enemy->isDying()) {
+        return;
+    }
+
+    if (std::abs(enemyNormal.x) <= ENEMY_WALL_NORMAL_THRESHOLD) {
+        return;
+    }
+
+    if (isWalkableSupportSeam(enemy, obstacle,
+                               enemyBody, obstacleBody,
+                               enemyNormal,
+                               tileMap)) {
+        return;
+    }
+
+    const Direction wallDirection = enemyNormal.x < 0.f
+                                    ? Direction::LEFT : Direction::RIGHT;
+
+    if (enemy->getFacingDirection() != wallDirection) {
+        return;
+    }
+
+    enemy->onWallCollision();
+}
+
 } // namespace
 
-void CollisionManager::preSolve(b2Contact* contact) {
-    if (!contact) return;
+bool CollisionManager::defeatEnemy(Enemy& victim,
+                                    DefeatCause cause,
+                                    Mario* owner) {
+    if (cause == DefeatCause::STOMP) {
+        // A Koopa stomp is an interaction rather than a terminal death: the
+        // walking/sliding shell changes state and remains available for a
+        // later shell-kill transaction. Goomba stomp still transitions the
+        // victim to its terminal squish state.
+        if (!victim.tryCommitStomp()) {
+            return false;
+        }
+
+        victim.onStomp();
+        if (owner) {
+            owner->addScore(ScoreRules::pointsFor(cause));
+        }
+        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+        return true;
+    }
+
+    if (!victim.tryCommitDefeat()) {
+        return false;
+    }
+
+    switch (cause) {
+        case DefeatCause::SHELL:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_SHELL);
+            break;
+        case DefeatCause::FIREBALL:
+            victim.onFireHit();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_FIREBALL);
+            break;
+        case DefeatCause::STAR:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
+            break;
+        case DefeatCause::PIT:
+            victim.takeDamage(victim.getHealth());
+            victim.markForRemoval();
+            break;
+        case DefeatCause::STOMP:
+            // Handled above; keep the switch exhaustive for future callers.
+            return false;
+    }
+
+    if (owner) {
+        owner->addScore(ScoreRules::pointsFor(cause));
+    }
+    return true;
+}
+
+void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
+    if (!contact) {
+        return;
+    }
 
     b2Fixture* fixtureA = contact->GetFixtureA();
     b2Fixture* fixtureB = contact->GetFixtureB();
-    if (!fixtureA || !fixtureB) return;
+
+    if (!fixtureA || !fixtureB) {
+        return;
+    }
 
     Entity* entityA = entityFromBody(fixtureA->GetBody());
     Entity* entityB = entityFromBody(fixtureB->GetBody());
 
+    if (entityA && entityB &&
+        entityA->isEnemy() && entityB->isEnemy()) {
+        contact->SetEnabled(false);
+        return;
+    }
+
     if ((entityA && entityA->isMario()) || (entityB && entityB->isMario())) {
         contact->SetFriction(0.0f);
+    }
+
+    if (entityA && entityA->isEnemy() && static_cast<Enemy*>(entityA)->isDying()) {
+        contact->SetEnabled(false);
+    }
+    if (entityB && entityB->isEnemy() && static_cast<Enemy*>(entityB)->isDying()) {
+        contact->SetEnabled(false);
+    }
+
+    b2WorldManifold worldManifold;
+    contact->GetWorldManifold(&worldManifold);
+
+    if (entityA && entityA->isEnemy() &&
+        isWalkableSupportSeam(static_cast<Enemy*>(entityA), entityB,
+                              fixtureA->GetBody(), fixtureB->GetBody(),
+                              worldManifold.normal,
+                              tileMap
+                            )) {
+
+        contact->SetEnabled(false);
+        return;
+    }
+
+    if (entityB && entityB->isEnemy() &&
+        isWalkableSupportSeam(static_cast<Enemy*>(entityB), entityA,
+                              fixtureB->GetBody(), fixtureA->GetBody(),
+                              -worldManifold.normal,
+                              tileMap)) {
+        contact->SetEnabled(false);
+        return;
     }
 }
 
@@ -186,14 +376,6 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
     b2Vec2 normal = worldManifold.normal;
-
-    // Invoke Polymorphic Double Dispatch callbacks
-    if (entityA) {
-        entityA->onCollisionBegin(entityB, contact, normal);
-    }
-    if (entityB) {
-        entityB->onCollisionBegin(entityA, contact, -normal);
-    }
 
     // Handle FireBall collisions if present
     FireBall* fireBall = nullptr;
@@ -219,10 +401,15 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
             normal = -normal; // Flip so normal points away from FireBall
         }
 
+        // Ignore collisions between FireBall and Mario
+        if (target && target->isMario()) {
+            return;
+        }
+
         if (target) {
             if (target->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(target);
-                enemy->takeDamage(100);
+                defeatEnemy(*enemy, DefeatCause::FIREBALL, fireBall->getOwner());
                 fireBall->deactivate();
                 return;
             }
@@ -232,9 +419,11 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (normal.y > 0.5f) {
             fireBall->bounce(sf::Vector2f(normal.x, normal.y));
         }
-        // Wall contact: Deactivate FireBall
-        else if (std::abs(normal.x) > 0.5f) {
-            fireBall->deactivate();
+        // Wall or Overhead Ceiling contact: Deactivate FireBall (require small lifetime grace period so initial spawn doesn't instantly die)
+        else if (std::abs(normal.x) > 0.5f || normal.y < -0.5f) {
+            if (fireBall->getLifetime() > 0.05f) {
+                fireBall->deactivate();
+            }
         }
         return;
     }
@@ -255,6 +444,18 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     }
 
     if (mario && marioBody) {
+        // Item pickup is resolved here, alongside every other Mario gameplay
+        // collision. Level's overlap sweep remains a fallback for items whose
+        // sensor contact was not reported by Box2D, while Item::isCollectible()
+        // makes the operation idempotent.
+        if (otherEntity && otherEntity->isItem()) {
+            Item* item = static_cast<Item*>(otherEntity);
+            if (item->isCollectible()) {
+                item->onCollect(*mario);
+                item->markForRemoval();
+            }
+            return;
+        }
         handleMarioCollision(mario, otherEntity, marioBody, contact, tileMap);
         return;
     }
@@ -264,7 +465,15 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         Enemy* enemyA = static_cast<Enemy*>(entityA);
         Enemy* enemyB = static_cast<Enemy*>(entityB);
 
+        if (enemyA->isDying() || enemyB->isDying()) {
+            return;
+        }
+
         auto tryShellKill = [](Enemy* attacker, Enemy* victim) -> bool {
+            if (!attacker || !victim) {
+                return false;
+            }
+
             if (!attacker->isKoopa() || victim->isKoopa()) {
                 return false;
             }
@@ -275,34 +484,31 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
-            victim->takeDamage(victim->getHealth());
-            victim->markForRemoval();
-            return true;
+            return CollisionManager::defeatEnemy(
+                *victim,
+                DefeatCause::SHELL,
+                koopa->getDefeatOwner());
         };
 
-        const bool shellCollisionHandled = tryShellKill(enemyA, enemyB) || tryShellKill(enemyB, enemyA);
-
-        // Ordinary enemies reverse when they collide laterally.
-        if (!shellCollisionHandled && std::abs(normal.x) > 0.5f) {
-            enemyA->onWallCollision();
-            enemyB->onWallCollision();
-        }
+        tryShellKill(enemyA, enemyB);
+        tryShellKill(enemyB, enemyA);
 
         return;
     }
 
     // Handle Enemy ↔ Wall / Static Body collisions (Task 3.1)
-    Enemy* enemy = nullptr;
     if (entityA && entityA->isEnemy()) {
-        enemy = static_cast<Enemy*>(entityA);
-        if (std::abs(normal.x) > 0.5f) {
-            enemy->onWallCollision();
-        }
+        handleEnemyWallCollision(static_cast<Enemy*>(entityA), entityB,
+                                 bodyA, bodyB,
+                                 normal,
+                                 tileMap
+                                 );
     } else if (entityB && entityB->isEnemy()) {
-        enemy = static_cast<Enemy*>(entityB);
-        if (std::abs(normal.x) > 0.5f) {
-            enemy->onWallCollision();
-        }
+        handleEnemyWallCollision(static_cast<Enemy*>(entityB), entityA,
+                                 bodyB, bodyA,
+                                 -normal,
+                                 tileMap
+                                 );
     }
 
     // Handle Item ↔ Wall / Static Body collisions
@@ -310,20 +516,20 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         b2Vec2 itemNormal = normal;
         if (entityA->isMushroom()) {
             Mushroom* mushroom = static_cast<Mushroom*>(entityA);
-            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) mushroom->onWallCollision();
         } else if (entityA->isStar()) {
             Star* star = static_cast<Star*>(entityA);
-            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) star->onWallCollision();
             if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     } else if (entityB && entityB->isItem()) {
         b2Vec2 itemNormal = -normal;
         if (entityB->isMushroom()) {
             Mushroom* mushroom = static_cast<Mushroom*>(entityB);
-            if (std::abs(itemNormal.x) > 0.5f) mushroom->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) mushroom->onWallCollision();
         } else if (entityB->isStar()) {
             Star* star = static_cast<Star*>(entityB);
-            if (std::abs(itemNormal.x) > 0.5f) star->onWallCollision();
+            if (std::abs(itemNormal.x) > 0.1f) star->onWallCollision();
             if (itemNormal.y > 0.8f) star->onGroundCollision();
         }
     }
@@ -359,13 +565,13 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         }
     }
 
-    // Starman Invincibility check: Defeat enemy on any contact
-    if (other && other->isEnemy()) {
-        Enemy* enemy = static_cast<Enemy*>(other);
-        if (mario->isStarInvincible()) {
-            enemy->takeDamage(enemy->getHealth());
-            enemy->markForRemoval();
-            EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
+    if (other && other->isSpringboard()) {
+        if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && marioVel.y >= -0.1f) {
+            bool isHoldingJump = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+                                 sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) ||
+                                 sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
+            Springboard* springboard = static_cast<Springboard*>(other);
+            springboard->triggerSpring(*mario, isHoldingJump);
             return;
         }
     }
@@ -374,6 +580,26 @@ void CollisionManager::handleMarioCollision(Mario* mario,
     // Box2D contacts after each completed physics step.
     bool isStomp = false;
     if (other && other->isEnemy()) {
+        Enemy* enemy = static_cast<Enemy*>(other);
+        if (enemy->isDying()) {
+            return;
+        }
+
+        // Star invincibility is a separate gameplay authority from damage
+        // grace. It defeats the enemy through the same cause/score/event
+        // transaction regardless of whether the contact looks like a stomp
+        // or a side hit.
+        if (mario->isStarInvincible()) {
+            CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
+            mario->clearGroundedState();
+            return;
+        }
+
+        if (enemy->isPiranhaPlant()) {
+            mario->queuePowerDown();
+            return;
+        }
+
         if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {
             isStomp = true;
         } else {
@@ -393,28 +619,18 @@ void CollisionManager::handleMarioCollision(Mario* mario,
     if (isStomp) {
         Enemy* enemy = static_cast<Enemy*>(other);
 
-        // Koopa Kick Logic: If Koopa is in shell idle, kick it. If sliding, take damage.
-        if (enemy->isKoopa()) {
-            Koopa* koopa = static_cast<Koopa*>(enemy);
-            if (koopa->isInShell() && !koopa->isShellSliding()) {
-                Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
-                koopa->kick(kickDir);
-                EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-
-                float currentY = marioBody->GetLinearVelocity().y;
-                float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
-                marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
-                mario->clearGroundedState();
-                return;
-            }
+        if (!CollisionManager::defeatEnemy(*enemy, DefeatCause::STOMP, mario)) {
+            return;
         }
 
-        enemy->onStomp();
-        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-
         float currentY = marioBody->GetLinearVelocity().y;
-        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0 ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW);
+
+        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0
+                                                         ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW
+                                                         );
+
         marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
+
         mario->clearGroundedState();
         return;
     }
@@ -440,13 +656,13 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                     // If shell is sliding, Mario gets hit
                     if (koopa->isShellSliding()) {
                         mario->queuePowerDown();
-                    } 
+                    }
                     // If shell is idle, Mario kicks it
                     else if (koopa->isInShell()) {
                         Direction kickDir = (mario->getPosition().x < koopa->getPosition().x) ? Direction::RIGHT : Direction::LEFT;
+                        koopa->setDefeatOwner(mario);
                         koopa->kick(kickDir);
-                        EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
-                    } 
+                    }
                     // If walking, Mario gets hit
                     else {
                         mario->queuePowerDown();
@@ -456,5 +672,14 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                 }
             }
         }
+    }
+
+    // Terrain contact is also resolved centrally now that entity callbacks no
+    // longer perform gameplay decisions.
+    if ((!other || !other->isEnemy()) &&
+        normal.y > TOP_STOMP_NORMAL_THRESHOLD &&
+        std::abs(normal.x) < MAX_WALL_NORMAL_X &&
+        marioVel.y >= -0.1f) {
+        mario->setGrounded(true);
     }
 }

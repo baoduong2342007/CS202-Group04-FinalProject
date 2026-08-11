@@ -12,32 +12,106 @@
 #include <cassert>
 
 #include "items/Item.h"
+#include "items/Coin.h"
 #include "patterns/EntityFactory.h"
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
-#include "core/SpriteFrames.h"
+#include "entities/PiranhaPlant.h"
+#include "entities/FireBall.h"
+#include "entities/FireballExplosion.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SoundManager.h"
+#include "core/LevelCatalog.h"
+
+#include "core/DisplayConfig.h"
 
 namespace {
-constexpr unsigned int SCREEN_WIDTH = 1280;
-constexpr unsigned int SCREEN_HEIGHT = 720;
 constexpr unsigned int TILE_SIZE = 32;
+constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
+constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
+const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'U', 'O'};
 
-float calculateBackgroundTop(std::size_t levelHeightInTiles) {
-    const float levelHeight = static_cast<float>(levelHeightInTiles * TILE_SIZE);
-    const float groundTop = std::max(0.f, levelHeight - static_cast<float>(TILE_SIZE));
-    const float backgroundHeight = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.y);
-    return std::max(0.f, groundTop - backgroundHeight);
+bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
+    const sf::Vector2f cameraCenter = cameraView.getCenter();
+
+    const sf::Vector2f cameraSize = cameraView.getSize();
+
+    const float cameraLeft = cameraCenter.x - cameraSize.x / 2.f;
+    const float activationRight = cameraCenter.x + cameraSize.x / 2.f + ENEMY_ACTIVATION_MARGIN;
+
+    const sf::FloatRect enemyBounds = enemy.getBoundingBox();
+
+    const float enemyLeft = enemyBounds.position.x;
+    const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
+
+    return enemyRight >= cameraLeft && enemyLeft <= activationRight;
+}
+
+bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float levelHeight) {
+    const sf::FloatRect bounds = entity.getBoundingBox();
+
+    const float left = bounds.position.x;
+    const float right = bounds.position.x + bounds.size.x;
+
+    const float top = bounds.position.y;
+    const float bottom = bounds.position.y + bounds.size.y;
+
+    return right < -ENTITY_CLEANUP_MARGIN ||
+           left > levelWidth + ENTITY_CLEANUP_MARGIN ||
+           bottom < -ENTITY_CLEANUP_MARGIN ||
+           top > levelHeight + ENTITY_CLEANUP_MARGIN;
+}
+
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock, Springboard)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J'};
+
+std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
+    const std::size_t height = tileMap.getHeight();
+    const std::size_t width = tileMap.getWidth();
+    if (height == 0 || width == 0) {
+        return 0;
+    }
+
+    // The floor can be one or several rows thick. A floor row is identified by
+    // its dominant ground-tile coverage; sparse platforms above it must not
+    // move the background down.
+    const auto isFloorRow = [&tileMap, width](std::size_t row) {
+        std::size_t groundTiles = 0;
+        for (std::size_t column = 0; column < width; ++column) {
+            if (tileMap.getTileAt(static_cast<int>(column), static_cast<int>(row)) == '1') {
+                ++groundTiles;
+            }
+        }
+        return groundTiles * 2 >= width;
+    };
+
+    std::size_t surfaceRow = height - 1;
+    while (surfaceRow > 0 && isFloorRow(surfaceRow - 1)) {
+        --surfaceRow;
+    }
+    return surfaceRow;
+}
+
+float calculateBackgroundTop(const TileMap& tileMap) {
+    const float groundTop = static_cast<float>(findGroundSurfaceRow(tileMap) * TILE_SIZE);
+    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
+    // Do not clamp this to zero: short levels can legitimately place the full
+    // background frame above world Y=0 while the camera is already inside it.
+    return groundTop - backgroundHeight;
 }
 } // namespace
 
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 Level::~Level() = default;
+
+void Level::setTheme(LevelTheme theme) {
+    m_theme = theme;
+    m_tileMap.setTheme(theme);
+}
 
 bool Level::loadFromFile(const std::string& path) {
     m_levelPath = path;
@@ -52,13 +126,12 @@ bool Level::loadFromFile(const std::string& path) {
 
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    m_camera.init(sf::Vector2f(static_cast<float>(SCREEN_WIDTH),
-                               static_cast<float>(SCREEN_HEIGHT)
-                               ),
-                  sf::FloatRect(sf::Vector2f(0.f, 0.f),
-                                sf::Vector2f(levelWidth, levelHeight)
-                                )
-                  );
+    m_camera.init(
+        sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
+                     static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
+        sf::FloatRect(sf::Vector2f(0.f, 0.f),
+                      sf::Vector2f(levelWidth, levelHeight))
+    );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
@@ -88,7 +161,6 @@ void Level::spawnEntitiesFromTileMap() {
         sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
         m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
         m_mario->setRespawnPosition(spawnPos);
-        float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
         m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
@@ -108,7 +180,7 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             auto entity =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), m_theme);
             if (entity) {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
@@ -135,6 +207,9 @@ void Level::update(float dt) {
         }
     }
 
+    // Flush any pending fireball creation requests queued while Box2D world was locked
+    processPendingFireballs();
+
     // Update tilemap bump animations
     m_tileMap.update(dt);
 
@@ -149,7 +224,46 @@ void Level::update(float dt) {
 
     // Update all entities (enemies, items)
     for (auto& entity : m_entities) {
-        entity->update(dt);
+        if (!entity) {
+            continue;
+        }
+
+        if (!entity->isEnemy()) {
+            entity->update(dt);
+            continue;
+        }
+
+        Enemy* enemy = static_cast<Enemy*>(entity.get());
+
+        const sf::View& cameraView = m_camera.getView();
+
+        if (!enemy->isActivated()) {
+            if (!shouldActivateEnemy(*enemy, cameraView)) {
+                continue;
+            }
+
+            enemy->activate();
+        }
+
+        if (enemy->isPiranhaPlant() && m_mario) {
+            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
+        }
+
+        enemy->update(dt);
+    }
+
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    for (auto& entity : m_entities) {
+        if (!entity || entity->shouldRemove() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        if (isEntityOutsideLevelBounds(*entity, levelWidth, levelHeight)) {
+            entity->markForRemoval();
+        }
     }
 
     // Update active FireBall projectiles
@@ -158,6 +272,21 @@ void Level::update(float dt) {
     // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
+
+    // Spawn explosion particle for any deactivated fireball requesting explosion
+    std::vector<sf::Vector2f> explosionPositions;
+    for (auto& entity : m_entities) {
+        if (entity && entity->isFireBall()) {
+            auto* fb = static_cast<FireBall*>(entity.get());
+            if (fb->shouldSpawnExplosion() && (fb->shouldRemove() || fb->isPendingDestroy() || !fb->isActive())) {
+                explosionPositions.push_back(fb->getPosition());
+                fb->clearExplosionFlag();
+            }
+        }
+    }
+    for (const auto& pos : explosionPositions) {
+        spawnFireballExplosion(pos);
+    }
 
     // Remove dead entities
     removeDeadEntities();
@@ -169,32 +298,76 @@ void Level::update(float dt) {
     }
 }
 
-void Level::render(sf::RenderWindow& window) {
+bool Level::spawnFireBall() {
+    if (!m_mario || !m_world) {
+        return false;
+    }
+
+    std::unique_ptr<FireBall> fireBall = m_mario->shootFireBall(m_world.get());
+    if (!fireBall) {
+        return false;
+    }
+
+    fireBall->setOwner(m_mario.get());
+    fireBall->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(fireBall));
+    EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
+    return true;
+}
+
+void Level::spawnFireballExplosion(const sf::Vector2f& position) {
+    auto explosion = std::make_unique<FireballExplosion>(position);
+    explosion->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(explosion));
+}
+
+void Level::render(sf::RenderTarget& target) {
     // Apply camera view
-    window.setView(m_camera.getView());
+    target.setView(m_camera.getView());
 
-    // Draw Mountain Background for main levels (temporarily disabled for level0)
-    if (m_levelPath.find("level0") == std::string::npos) {
-        const sf::Texture& bgTex = m_textureManager.getTexture(std::string(SpriteFrames::Backgrounds::MOUNTAINS_PATH));
+    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    if (m_theme == LevelTheme::UNDERGROUND) {
+        // SMB underground stages use a flat dark-blue field behind the same
+        // tile geometry. Extend it beyond the level bounds so camera motion
+        // cannot reveal the sky-blue render-texture clear color.
+        sf::RectangleShape undergroundBackground(
+            sf::Vector2f(levelWidth, levelHeight + backgroundHeight * 2.f));
+        undergroundBackground.setPosition({0.f, -backgroundHeight});
+        undergroundBackground.setFillColor(UNDERGROUND_BACKGROUND_COLOR);
+        target.draw(undergroundBackground);
+    } else {
+        // Draw the cheerful pixel-art world background behind the tilemap.
+        const sf::Texture& bgTex = m_textureManager.getTexture(
+            std::string(SpriteFrames::ovw::Backgrounds::WORLD_PATH));
         sf::Sprite bgSprite(bgTex);
-        bgSprite.setTextureRect(SpriteFrames::Backgrounds::OVERWORLD);
+        bgSprite.setTextureRect(SpriteFrames::ovw::Backgrounds::WORLD);
 
-        float stripWidth = static_cast<float>(SpriteFrames::Backgrounds::OVERWORLD.size.x);
-        float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-        float backgroundTop = calculateBackgroundTop(m_tileMap.getHeight());
+        const float backgroundScale =
+            backgroundHeight / static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.y);
+        const float stripWidth =
+            static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.x) * backgroundScale;
+        const float backgroundTop = calculateBackgroundTop(m_tileMap);
 
-        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth) {
-            bgSprite.setPosition(sf::Vector2f(x, backgroundTop));
-            window.draw(bgSprite);
+        std::size_t stripIndex = 0;
+        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
+            const bool mirrored = (stripIndex % 2u) != 0u;
+            bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
+                                       : sf::Vector2f(backgroundScale, backgroundScale));
+            bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
+                                         : sf::Vector2f(x, backgroundTop));
+            target.draw(bgSprite);
         }
     }
 
     // Draw tilemap background
-    m_tileMap.render(window);
+    m_tileMap.render(target);
 
     // Draw all entities (enemies, items)
     for (const auto& entity : m_entities) {
-        window.draw(*entity);
+        target.draw(*entity);
     }
 
     // Draw FireBall projectiles
@@ -202,8 +375,11 @@ void Level::render(sf::RenderWindow& window) {
 
     // Draw Mario on top
     if (m_mario) {
-        window.draw(*m_mario);
+        target.draw(*m_mario);
     }
+    
+    // Draw foreground tiles (blocks, flagpoles, pipes) on top of Mario and entities
+    m_tileMap.renderForeground(target);
 }
 
 void Level::checkItemCollisions() {
@@ -215,6 +391,11 @@ void Level::checkItemCollisions() {
 
         Item* item = static_cast<Item*>(entity.get());
         if (item->isCollected()) {
+            if (const auto* coin = dynamic_cast<const Coin*>(item);
+                coin && coin->getCoinType() == CoinType::QUESTION_POPUP &&
+                !item->shouldRemove()) {
+                continue;
+            }
             if (!item->shouldRemove()) {
                 item->markForRemoval();
             }
@@ -229,20 +410,43 @@ void Level::checkItemCollisions() {
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_levelCompleted) return;
+    if (!m_mario || m_levelCompleted) {
+        return;
+    }
 
-    auto flags = m_tileMap.findTiles('F');
-    sf::FloatRect marioBounds = m_mario->getBoundingBox();
+    const auto finishTiles = m_tileMap.findTiles('F');
 
-    for (const auto& gridPos : flags) {
-        sf::Vector2f worldPos = TileMap::gridToWorldPosition(gridPos);
-        sf::FloatRect flagBounds(worldPos, sf::Vector2f(32.f, 32.f));
+    if (finishTiles.empty()) {
+        return;
+    }
 
-        if (marioBounds.findIntersection(flagBounds)) {
-            m_levelCompleted = true;
-            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
-            break;
+    const auto& finishPosition = finishTiles.front();
+
+    int bottomRow = finishPosition.y;
+
+    const auto poleTiles = m_tileMap.findTiles('|');
+
+    for (const auto& polePosition : poleTiles) {
+        if (polePosition.x == finishPosition.x && polePosition.y > bottomRow) {
+            bottomRow = polePosition.y;
         }
+    }
+
+    const sf::Vector2f triggerPosition = TileMap::gridToWorldPosition(finishPosition);
+
+    const float triggerHeight = static_cast<float>(bottomRow - finishPosition.y + 1) * static_cast<float>(TILE_SIZE);
+
+    const sf::FloatRect finishTrigger(triggerPosition, sf::Vector2f(static_cast<float>(TILE_SIZE),
+                                                                    triggerHeight
+                                                                    )
+                                      );
+
+    const sf::FloatRect marioBounds = m_mario->getBoundingBox();
+
+    if (marioBounds.findIntersection(finishTrigger)) {
+        m_levelCompleted = true;
+
+        EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
     }
 }
 
@@ -257,11 +461,11 @@ void Level::removeDeadEntities() {
 }
 
 // --- Getters ---
-Mario* Level::getMario() { 
-    return m_mario.get(); 
+Mario* Level::getMario() {
+    return m_mario.get();
 }
-const Mario* Level::getMario() const { 
-    return m_mario.get(); 
+const Mario* Level::getMario() const {
+    return m_mario.get();
 }
 bool Level::isLevelCompleted() const {
     return m_levelCompleted;
@@ -271,3 +475,53 @@ bool Level::isLevelCompleted() const {
 TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
 TextureManager& Level::getTextureManager() { return m_textureManager; }
+
+constexpr int MAX_ACTIVE_FIREBALLS = 4;
+
+void Level::shootFireBall() {
+    if (!m_mario || !m_world || !m_mario->canShootFireBall()) return;
+
+    int activeFireballs = 0;
+    for (const auto& entity : m_entities) {
+        if (entity && entity->isFireBall() && entity->isActive()) {
+            activeFireballs++;
+        }
+    }
+    activeFireballs += static_cast<int>(m_pendingFireBallRequests.size());
+
+    if (activeFireballs >= MAX_ACTIVE_FIREBALLS) {
+        return;
+    }
+
+    if (m_world->IsLocked()) {
+        float spawnX = m_mario->getPosition().x + (m_mario->getFacingDirection() == Direction::RIGHT ? m_mario->getSize().x + 4.f : -16.f);
+        float spawnY = m_mario->getPosition().y + 4.f;
+        m_pendingFireBallRequests.push_back({sf::Vector2f(spawnX, spawnY), m_mario->getFacingDirection()});
+        return;
+    }
+
+    auto fireball = m_mario->shootFireBall(m_world.get());
+    if (fireball) {
+        fireball->setOwner(m_mario.get());
+        fireball->setTextureManager(m_textureManager);
+        m_entities.push_back(std::move(fireball));
+        SoundManager::getInstance().playSound("fireball");
+    }
+}
+
+void Level::processPendingFireballs() {
+    if (!m_world || m_world->IsLocked() || m_pendingFireBallRequests.empty()) return;
+
+    for (const auto& req : m_pendingFireBallRequests) {
+        auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
+        if (fireball) {
+            if (m_mario) {
+                fireball->setOwner(m_mario.get());
+            }
+            fireball->setTextureManager(m_textureManager);
+            m_entities.push_back(std::move(fireball));
+            SoundManager::getInstance().playSound("fireball");
+        }
+    }
+    m_pendingFireBallRequests.clear();
+}

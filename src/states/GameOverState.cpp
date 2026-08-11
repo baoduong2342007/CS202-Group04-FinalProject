@@ -6,53 +6,86 @@
 #include "states/GameOverState.h"
 #include "states/MenuState.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "patterns/InputState.h"
+#include "ui/UILayoutHelper.h"
+#include "states/PlayState.h"
 #include <iostream>
 
-GameOverState::GameOverState(const GameProgress& progress)
-    : m_font(), m_text(m_font), m_progress(progress), m_scoreText(m_font) {
-    if (!m_font.openFromFile("assets/fonts/mario.ttf")) {
-        std::cerr << "Failed to load font in GameOverState\n";
-    }
-    m_text.setString("GAME OVER\n\nPRESS ENTER OR CLICK TO MENU");
-    m_text.setCharacterSize(32);
-    m_text.setFillColor(sf::Color::White);
-    
-    sf::FloatRect bounds = m_text.getLocalBounds();
-    m_text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
-    m_text.setPosition({640.f, 360.f});
-
-    m_scoreText.setString("SCORE: " + std::to_string(m_progress.score));
-    m_scoreText.setCharacterSize(24);
-    m_scoreText.setFillColor(sf::Color::Yellow);
-    sf::FloatRect scoreBounds = m_scoreText.getLocalBounds();
-    m_scoreText.setOrigin({scoreBounds.position.x + scoreBounds.size.x / 2.f,
-                           scoreBounds.position.y + scoreBounds.size.y / 2.f});
-    m_scoreText.setPosition({640.f, 420.f});
+namespace {
+    constexpr unsigned int TITLE_FONT_SIZE = 24;
+    constexpr unsigned int SCORE_FONT_SIZE = 14;
+    constexpr float TITLE_OFFSET_Y = 40.f;
+    constexpr float SCORE_OFFSET_Y = 80.f;
+    constexpr float MENU_OFFSET_Y = 20.f;
+    constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
 }
 
-void GameOverState::onEnter() {}
-void GameOverState::onExit() {}
+GameOverState::GameOverState(const GameProgress& progress)
+    : m_font(), m_fontLoaded(false), m_progress(progress) {
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (!m_fontLoaded) {
+#ifdef DEBUG
+        std::cerr << "[DEBUG][GameOverState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
+#endif
+    } else {
+        m_titleText.emplace(m_font);
+        m_titleText->setString("GAME OVER");
+        m_titleText->setCharacterSize(TITLE_FONT_SIZE);
+        m_titleText->setFillColor(sf::Color::Red);
+        UILayoutHelper::setPosition(*m_titleText, UIAnchor::TopCenter, {0.f, TITLE_OFFSET_Y});
+
+        m_scoreText.emplace(m_font);
+        m_scoreText->setString("FINAL SCORE: " + std::to_string(m_progress.score));
+        m_scoreText->setCharacterSize(SCORE_FONT_SIZE);
+        m_scoreText->setFillColor(sf::Color::White);
+        UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, SCORE_OFFSET_Y});
+
+        m_menu = std::make_unique<UIMenuWidget>(m_font);
+        m_menu->addItem("RETRY", []() {
+            GameManager::getInstance().changeState(std::make_unique<PlayState>());
+        });
+        m_menu->addItem("QUIT TO MENU", []() {
+            GameManager::getInstance().changeState(std::make_unique<MenuState>());
+        });
+        m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, MENU_OFFSET_Y), UIAnchor::TopCenter);
+    }
+}
+
+void GameOverState::onEnter() {
+    SoundManager::getInstance().playMusic(MusicId::GAME_OVER);
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
+}
+void GameOverState::onExit() {
+    SoundManager::getInstance().stopMusic();
+}
 
 void GameOverState::processEvents(const sf::Event& event) {
-    if (const auto* mouse = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mouse->button == sf::Mouse::Button::Left) {
-            GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        }
+    if (m_menu) {
+        m_menu->processEvents(event);
     }
 }
 
 void GameOverState::processInput(const InputState& inputState) {
-    if (inputState.wasPressed(sf::Keyboard::Key::Enter)) {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
+    if (m_menu) {
+        m_menu->processInput(inputState);
     }
 }
 
-void GameOverState::update(float dt) { (void)dt; }
+void GameOverState::update(float dt) {
+    if (m_menu) {
+        m_menu->update(dt);
+    }
+}
 
-void GameOverState::render(sf::RenderWindow& window) {
-    window.clear(sf::Color::Black);
-    window.setView(window.getDefaultView());
-    window.draw(m_text);
-    window.draw(m_scoreText);
+void GameOverState::render(sf::RenderTarget& target) {
+    target.clear(sf::Color::Black);
+    target.setView(target.getDefaultView());
+    if (m_fontLoaded) {
+        if (m_titleText) target.draw(*m_titleText);
+        if (m_scoreText) target.draw(*m_scoreText);
+    }
+    if (m_menu) {
+        m_menu->draw(target);
+    }
 }

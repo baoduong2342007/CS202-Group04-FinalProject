@@ -9,6 +9,7 @@
 
 #include <box2d/box2d.h>
 #include <SFML/System/Vector2.hpp>
+#include "core/DisplayConfig.h"
 
 class PhysicsEngine {
 public:
@@ -34,7 +35,7 @@ public:
 
 private:
     float m_timeAccumulator = 0.0f;
-    static constexpr float TIME_STEP = 1.0f / 60.0f;
+    static constexpr float TIME_STEP = 1.0f / static_cast<float>(DisplayConfig::FRAMERATE_LIMIT);
     static constexpr int VELOCITY_ITERATIONS = 8;
     static constexpr int POSITION_ITERATIONS = 3;
 };

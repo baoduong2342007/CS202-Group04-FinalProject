@@ -11,7 +11,8 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float FIRE_FLOWER_WIDTH  = 32.f;
@@ -26,7 +27,7 @@ FireFlower::FireFlower()
     initPhysics(nullptr, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireFlowerFrames(), 0.15f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireFlowerFrames(), 0.15f));
     playAnimation("idle");
 }
 
@@ -35,11 +36,13 @@ FireFlower::FireFlower(const sf::Vector2f& position, b2World* world)
     initPhysics(world, b2_staticBody, sf::Vector2f(FIRE_FLOWER_WIDTH, FIRE_FLOWER_HEIGHT), true);
     setSprite(FIRE_FLOWER_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::fireFlowerFrames(), 0.15f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::fireFlowerFrames(), 0.15f));
     playAnimation("idle");
 }
 
 void FireFlower::update(float dt) {
+    updateCollectibleDelay(dt);
+
     // Stationary item — sync physics position and update animation clip
     syncPhysics();
     updateAnimation(dt);
@@ -52,16 +55,17 @@ void FireFlower::onCollect(Mario& mario) {
 
     m_isCollected = true;
 
-    // Query Mario's current state directly — no EventBus payload required.
-    // SMALL Mario becomes FIRE directly; SUPER Mario also becomes FIRE.
-    // (In classic SMB, a mushroom would be spawned for SMALL Mario instead,
-    //  but here we apply the fire state for simplicity per the design doc.)
-    if (mario.getMarioState() != MarioState::FIRE) {
-        mario.powerUp(MarioState::FIRE);
+    const MarioState currentState = mario.getMarioState();
+    const MarioState targetState = MarioState::FIRE;
+
+    const bool stateChanged = (currentState != targetState);
+    if (stateChanged) {
+        mario.powerUp(targetState);
     }
 
-    mario.addScore(FIRE_FLOWER_SCORE_VALUE);
+    ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
 
-    // Notify observers (SoundManager plays powerup.wav, HUD updates score)
-    EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    if (!stateChanged) {
+        EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    }
 }

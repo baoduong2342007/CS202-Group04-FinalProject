@@ -8,9 +8,11 @@
 
 #include "entities/Entity.h"
 
+#include "core/SpriteFrames_ovw.h"
+
 class BlockDebris : public Entity {
 public:
-    BlockDebris(const sf::Vector2f& position, const sf::Vector2f& velocity);
+    BlockDebris(const sf::Vector2f& position, const sf::Vector2f& velocity, const sf::IntRect& frame = SpriteFrames::ovw::Blocks::DEBRIS_TOP_LEFT);
     ~BlockDebris() override = default;
 
     void update(float dt) override;

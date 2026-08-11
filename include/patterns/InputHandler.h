@@ -10,6 +10,7 @@
 // 1. Standard library
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 // 2. SFML
 #include <SFML/Window/Keyboard.hpp>
@@ -26,7 +27,8 @@
 
 enum class InputTrigger {
     Pressed,
-    Held
+    Held,
+    Released
 };
 
 enum class InputGroup {
@@ -54,7 +56,12 @@ public:
     void clear();
 
     /// Dispatch commands from the event-driven input state.
-    void handleInput(const InputState& inputState) const;
+    ///
+    /// `gameplayEnabled` is deliberately explicit so a state owner can
+    /// suppress gameplay requests while paused, dying, or transitioning.
+    /// Suppressed input is discarded for that dispatch; it is never buffered
+    /// inside InputHandler.
+    void handleInput(const InputState& inputState, bool gameplayEnabled = true) const;
 
     // 4. Getters
     /// Retrieve the command bound to a key (nullptr if unbound).
@@ -72,5 +79,8 @@ private:
     };
 
     // 6. Private members
-    std::unordered_map<sf::Keyboard::Key, Binding> m_keyBindings;
+    // A key may have both a press and a release action (for example, jump
+    // cutoff). Bindings with the same trigger/group are replaced so calling
+    // bindKey remains a normal rebind operation.
+    std::unordered_map<sf::Keyboard::Key, std::vector<Binding>> m_keyBindings;
 };

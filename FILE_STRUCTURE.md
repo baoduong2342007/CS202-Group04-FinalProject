@@ -15,7 +15,8 @@ SuperMario/
 ├── FILE_STRUCTURE.md
 ├── CODING_RULES.md
 ├── PLAN.md                     ← Sprint 6 plan (current sprint)
-├── implementation_plan_sprint5_error.md ← LEGACY Sprint 5 error plan (archived)
+├── s6_fix_plan_v3.md           ← Sprint 6 fix plan — round 3 (current working plan)
+├── Evaluate_v3.md              ← Sprint 6 re-evaluation — round 3 (current)
 ├── .gitignore
 │
 ├── thirdparty/                 ← Folder containing external libraries
@@ -25,11 +26,27 @@ SuperMario/
 │       └── lib/                ← Library files (.lib / .a)
 │
 ├── docs/                       ← TV1 (Dương) maintain
-│   ├── class_diagram.md        ← class diagram (Week 6)
-│   ├── PLAN_TV1.md             ← TV1 personal plan
+│   ├── class_diagram.md        ← class diagram (Week 6 + Sprint 6 updates)
+│   ├── change_in_develop.md    ← changelog of merged changes (ex: change_in_test_game.md)
+│   ├── design_patterns.md      ← design patterns documentation
+│   ├── blocks_coordinate.md    ← TV5: block-frame coordinates (analysis)
+│   ├── enemies_coordinate.md   ← TV5: enemy-frame coordinates (analysis)
+│   ├── items_objects_coordinate.md ← TV5: item-frame coordinates (analysis)
+│   ├── tiles_coordinate.md     ← TV5: tileset-frame coordinates (analysis)
+│   ├── engineering/            ← module engineering notes
+│   │   └── TV5_IMPLEMENTATION_NOTES.md
 │   ├── management/             ← Sprint planning and task tracking
 │   │   ├── ROLES.md
-│   │   └── WEEKLY_PLAN.md
+│   │   ├── WEEKLY_PLAN.md
+│   │   ├── s6_plan.md          ← Sprint 6 plan (full task list) [ARCHIVE]
+│   │   ├── s7_plan.md          ← Sprint 7 plan (future) [PLANNED]
+│   │   ├── S6_AUDIT_TRACKER.md ← TV1: Sprint 1–6 deliverable tracker
+│   │   ├── S6_BUG_REGISTER.md  ← TV1: P0/P1/P2 bug register
+│   │   ├── S6_DEPENDENCY_BOARD.md
+│   │   ├── S6_LOCKED_INTERFACES.md
+│   │   ├── TV1_CHANGES_SUMMARY.md
+│   │   ├── TV4_CHANGES_SUMMARY.md
+│   │   └── TV5_CHANGES_SUMMARY.md
 │   └── specs/                  ← Project specifications
 │       └── CS202-FinalProject_SuperMario.md
 │
@@ -42,7 +59,7 @@ SuperMario/
 │   │   │                          Code dùng setTextureRect() để cắt frame.
 │   │   ├── enemies/
 │   │   │   ├── goomba.png      ← spritesheet: walk + squish
-│   │   │   └── enemies.png     ← spritesheet chung nhiều enemy (Koopa, v.v.)
+│   │   │   └── koopa.png       ← spritesheet: walk + shell
 │   │   ├── tiles/
 │   │   │   └── tileset.png     ← tileset 4 tile (ground/brick/?/flag), dùng texture rect
 │   │   ├── items/
@@ -71,32 +88,60 @@ SuperMario/
 │   │       ├── castle.flac
 │   │       └── ... (additional audio tracks)
 │   └── fonts/
-│       └── mario.ttf           ← pixel font (CẦN BỔ SUNG)
+│       └── mario.ttf           ← pixel font (runtime)
+
+├── docs/assets/reference/      ← TV5: source/reference, không package runtime
+│   ├── enemies.png
+│   ├── enemies_all_components_atlas_full.png
+│   ├── blocks_all_components_atlas_full.png
+│   ├── items_objects_all_components_atlas_full.png
+│   ├── general_tile.png
+│   └── tileset(v2).png
 │
 ├── levels/                     ← TV4 (Vy) maintain
 │   ├── level0.txt              ← test fixture (NOT in release catalog)
-│   ├── level1.txt
-│   ├── level2.txt
-│   └── level3.txt              ← (planned for upcoming release)
+│   ├── level1.txt              ← World 1-1 (overworld tutorial)
+│   ├── level2.txt              ← World 1-2 (underground)
+│   └── level3.txt              ← World 1-3 (castle/sky, released)
 │
-├── saves/                      ← auto-generated, do not commit
-│   └── .gitkeep                ← empty file to force Git to track the directory
+├── saves/                      ← auto-generated at runtime by SaveManager (do not commit)
+│   └── save.txt                ← created lazily on first high-score/volume write
 │
 ├── tests/                      ← automated tests (CTest)
 │   ├── InputStateTests.cpp
+│   ├── TileCollisionSpanTests.cpp
 │   ├── MarioPhysicsTests.cpp
-│   └── TileCollisionSpanTests.cpp
+│   ├── PlayStateTests.cpp      ← TV1: death contract + Win-decision regression
+│   ├── GameManagerTests.cpp
+│   ├── EventBusTests.cpp
+│   ├── TV5IntegrationTests.cpp
+│   ├── LevelCatalogTests.cpp
+│   ├── SaveManagerTests.cpp
+│   ├── LevelValidatorTests.cpp
+│   ├── Gate0ContractTests.cpp  ← TV1: Gate 0 release-contract guards
+│   ├── SaveSessionTests.cpp    ← TV1: save restart-session integration
+│   └── TestSpawnDeath.cpp      ← local diagnostic (manual/UNTESTED in CTest)
 │
 ├── include/                    ← all .h header files
 │   ├── core/
 │   │   ├── AnimationSystem.h   ← TV2 (Nhật): sprite animation management
+│   │   ├── DisplayConfig.h     ← TV2 (Nhật): window/logical resolution config
 │   │   ├── Game.h              ← TV2 (Nhật): main loop, window, delta time
-│   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host
+│   │   ├── GameManager.h       ← TV1 (Dương): Singleton, state machine host + SaveManager
+│   │   ├── GameProgress.h      ← TV1 (Dương): session progress (score/coin/lives/power)
+│   │   ├── LevelCatalog.h      ← TV1 (Dương): centralized release-level catalog (1-based)
+│   │   ├── SaveManager.h       ← TV4 (Vy): persistent save (high score/unlock/volumes)
+│   │   ├── ScoreRules.h        ← TV5 (Truyền): central score catalog (DefeatCause points)
 │   │   ├── SoundManager.h      ← TV5 (Truyền): Singleton audio manager
+│   │   ├── SpriteFrames.h      ← TV1/TV5: shared sprite-frame tables
 │   │   └── TextureManager.h    ← TV1 (Dương): centralized texture cache
 │   │
 │   ├── states/                 ← TV1 (Dương) + TV2 (Nhật)
-│   │   ├── IGameState.h        ← TV1 (Dương): interface (init/update/render/exit)
+│   │   ├── IGameState.h        ← TV1 (Dương): interface (onEnter/Exit/Pause/Resume)
+│   │   ├── IMarioState.h       ← TV3 (Bảo): Mario power-state interface
+│   │   ├── SmallMarioState.h   ← TV3 (Bảo)
+│   │   ├── SuperMarioState.h   ← TV3 (Bảo)
+│   │   ├── FireMarioState.h    ← TV3 (Bảo)
 │   │   ├── MenuState.h         ← TV2 (Nhật)
 │   │   ├── PlayState.h         ← TV1 (Dương): gameplay controller
 │   │   ├── PauseState.h        ← TV2 (Nhật)
@@ -110,7 +155,10 @@ SuperMario/
 │   │   ├── Enemy.h             ← TV4 (Vy): abstract base for enemies
 │   │   ├── Goomba.h            ← TV4 (Vy)
 │   │   ├── Koopa.h             ← TV4 (Vy)
-│   │   └── FireBall.h          ← TV3 (Bảo)
+│   │   ├── FireBall.h          ← TV3 (Bảo)
+│   │   ├── FireBallPool.h      ← TV3 (Bảo): projectile pooling
+│   │   ├── QuestionBlock.h     ← TV1/TV5: adaptive ?-block entity
+│   │   └── BlockDebris.h       ← TV1: brick-breaking debris particle
 │   │
 │   ├── items/                  ← TV5 (Truyền)
 │   │   ├── Item.h              ← abstract base
@@ -121,7 +169,10 @@ SuperMario/
 │   │
 │   ├── level/                  ← TV4 (Vy)
 │   │   ├── Level.h             ← contains TileMap + entity list
-│   │   ├── TileMap.h           ← parse + render tiles
+│   │   ├── TileMap.h           ← parse + render tiles (+ validator)
+│   │   ├── TileCollisionSpans.h← TV4: merged static-tile collision spans
+│   │   ├── TileSemantics.h     ← TV4: tile symbol semantics (breakable/coin/...)
+│   │   ├── TileFrames.h        ← TV4: per-symbol tile frame lookup
 │   │   └── Camera.h            ← TV2 (Nhật): sf::View follow player
 │   │
 │   ├── patterns/               ← TV1 (Dương) + TV5 (Truyền)
@@ -132,30 +183,43 @@ SuperMario/
 │   │   ├── IObserver.h         ← TV1 (Dương): Observer interface
 │   │   ├── ISubject.h          ← TV1 (Dương)
 │   │   ├── InputHandler.h      ← TV5 (Truyền): map key → command
+│   │   ├── InputState.h        ← TV5 (Truyền): Pressed/Held/Released trigger states
 │   │   ├── JumpCommand.h       ← concrete Command
+│   │   ├── JumpReleaseCommand.h← TV5 (Truyền): jump-release trigger
 │   │   ├── MoveLeftCommand.h   ← concrete Command
 │   │   ├── MoveRightCommand.h  ← concrete Command
+│   │   ├── RunCommand.h        ← TV5 (Truyền): run modifier
+│   │   ├── ShootCommand.h      ← TV5 (Truyền): FireBall shoot trigger
 │   │   └── PauseCommand.h      ← concrete Command
 │   │
 │   ├── physics/                ← TV3 (Bảo)
-│   │   ├── CollisionManager.h
+│   │   ├── CollisionManager.h  ← TV3: central gameplay collision handler
 │   │   ├── ContactListener.h   ← Box2D contact callback listener
-│   │   └── PhysicsEngine.h
+│   │   ├── PhysicsEngine.h
+│   │   └── TileContactResolver.h ← TV3: tile-vs-entity contact resolution
 │   │
 │   └── ui/                     ← TV5 (Truyền)
 │       ├── HUD.h
-│       └── Button.h            ← (planned for interactive UI menus)
+│       ├── UILayoutHelper.h    ← TV2 (Nhật): shared anchor/layout helper
+│       └── UIMenuWidget.h      ← TV2 (Nhật): keyboard/mouse menu widget
 │
 └── src/                        ← all .cpp source files, mirroring include/ structure
+    ├── main.cpp                ← entry point (SuperMario executable)
     ├── core/
     │   ├── AnimationSystem.cpp
     │   ├── Game.cpp
-    │   ├── GameManager.cpp
+    │   ├── GameManager.cpp     ← singleton state stack + shared SaveManager
+    │   ├── SaveManager.cpp
+    │   ├── ScoreRules.cpp
     │   ├── SoundManager.cpp
     │   └── TextureManager.cpp
     ├── demo/
-    │   └── TV3Demo.cpp         ← physical movement testing demo
+    │   └── TV3Demo.cpp         ← physical movement testing demo (excluded from
+    │                             production target by CMake — S6-TV1-26)
     ├── states/
+    │   ├── SmallMarioState.cpp
+    │   ├── SuperMarioState.cpp
+    │   ├── FireMarioState.cpp
     │   ├── MenuState.cpp
     │   ├── PlayState.cpp
     │   ├── PauseState.cpp
@@ -168,7 +232,10 @@ SuperMario/
     │   ├── Enemy.cpp
     │   ├── Goomba.cpp
     │   ├── Koopa.cpp
-    │   └── FireBall.cpp
+    │   ├── FireBall.cpp
+    │   ├── FireBallPool.cpp
+    │   ├── QuestionBlock.cpp
+    │   └── BlockDebris.cpp
     ├── items/
     │   ├── Item.cpp
     │   ├── Coin.cpp
@@ -178,23 +245,29 @@ SuperMario/
     ├── level/
     │   ├── Level.cpp
     │   ├── TileMap.cpp
+    │   ├── TileCollisionSpans.cpp
     │   └── Camera.cpp
     ├── patterns/
     │   ├── EntityFactory.cpp
     │   ├── EventBus.cpp
     │   ├── InputHandler.cpp
+    │   ├── InputState.cpp
     │   ├── JumpCommand.cpp
+    │   ├── JumpReleaseCommand.cpp
     │   ├── MoveLeftCommand.cpp
     │   ├── MoveRightCommand.cpp
+    │   ├── RunCommand.cpp
+    │   ├── ShootCommand.cpp
     │   └── PauseCommand.cpp
     ├── physics/
     │   ├── CollisionManager.cpp
     │   ├── ContactListener.cpp
-    │   └── PhysicsEngine.cpp
-    ├── ui/
-    │   ├── HUD.cpp
-    │   └── Button.cpp          ← (planned for interactive UI menus)
-    └── main.cpp                ← entry point
+    │   ├── PhysicsEngine.cpp
+    │   └── TileContactResolver.cpp
+    └── ui/
+        ├── HUD.cpp
+        ├── UILayoutHelper.cpp
+        └── UIMenuWidget.cpp
 ```
 
 ---
@@ -255,9 +328,6 @@ sprite.setTextureRect(sf::IntRect({FRAME_X, FRAME_Y}, {FRAME_W, FRAME_H}));
 // INCORRECT — file riêng KHÔNG TỒN TẠI, sẽ hiện khối magenta
 texture.loadFromFile("assets/textures/mario/idle.png");   // ❌ file này không có!
 texture.loadFromFile("assets/textures/items/coin.png");   // ❌ file này không có!
-
-// INCORRECT — hardcoded absolute path, will not run on others' machines
-texture.loadFromFile("C:/project/SuperMario/assets/textures/mario/MarioLuigi.png");
 ```
 
 ### Level files

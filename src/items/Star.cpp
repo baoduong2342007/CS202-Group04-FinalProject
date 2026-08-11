@@ -12,7 +12,8 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
+#include "core/ScoreRules.h"
 
 namespace {
 constexpr float STAR_WIDTH  = 32.f;
@@ -20,8 +21,6 @@ constexpr float STAR_HEIGHT = 32.f;
 constexpr float DEFAULT_STAR_SPEED = 80.f;
 constexpr float DEFAULT_STAR_BOUNCE_VELOCITY = -300.f;
 constexpr float STAR_INVINCIBILITY_DURATION = 10.f;
-constexpr int   STAR_SCORE_VALUE  = 1000;
-
 constexpr const char* STAR_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
 } // namespace
@@ -34,7 +33,7 @@ Star::Star()
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::starFrames(), 0.1f));
     playAnimation("idle");
 }
 
@@ -46,11 +45,13 @@ Star::Star(const sf::Vector2f& position, b2World* world)
     initPhysics(world, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::starFrames(), 0.1f));
     playAnimation("idle");
 }
 
 void Star::update(float dt) {
+    updateCollectibleDelay(dt);
+
     // Sync visual position with Box2D body first, then apply patrol velocity
     syncPhysics();
     updateAnimation(dt);
@@ -83,15 +84,11 @@ void Star::onCollect(Mario& mario) {
     m_isCollected = true;
 
     // Grant temporary invincibility regardless of current state
-    mario.setInvincible(STAR_INVINCIBILITY_DURATION);
+    mario.setStarInvincible(STAR_INVINCIBILITY_DURATION);
 
-    // Also upgrade SMALL Mario to SUPER so the player keeps a visual benefit
-    if (mario.getMarioState() == MarioState::SMALL) {
-        mario.powerUp(MarioState::SUPER);
-    }
-
-    mario.addScore(STAR_SCORE_VALUE);
+    ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);
 
     // Notify observers (SoundManager plays powerup.wav, HUD updates score)
     EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+    EventBus::getInstance().notify(EventType::PLAYER_STAR_COLLECTED);
 }

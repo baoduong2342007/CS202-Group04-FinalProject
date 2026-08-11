@@ -474,7 +474,7 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
-            if (!attacker->isKoopa() || victim->isKoopa()) {
+            if (!attacker->isKoopa() || victim == attacker) {
                 return false;
             }
 

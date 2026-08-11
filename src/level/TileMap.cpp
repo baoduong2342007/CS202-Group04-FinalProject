@@ -31,7 +31,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}TLH";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 
@@ -125,14 +125,16 @@ bool isValidTileSymbol(char symbol) {
 }
 
 bool isRenderableTile(char symbol) {
-    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
+    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
+           symbol == 'T' || symbol == 'L' || symbol == 'H' ||
+           symbol == 'S' || symbol == '|' || symbol == 'E' ||
            symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
 }
 
 bool isForegroundTile(char symbol) {
     // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
     return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
-           symbol == 'F' || symbol == '|' ||
+           symbol == 'F' || symbol == 'T' || symbol == '|' || symbol == 'H' ||
            symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
 }
 
@@ -174,10 +176,13 @@ sf::IntRect getTilesetRect(char symbol) {
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
-            return TileFrames::FINISH_TOP;
+            return TileFrames::FINISH_FLAG;
 
         case '|':
             return TileFrames::FINISH_POLE;
+            
+        case 'T':
+            return TileFrames::FINISH_POLE_TOP;
 
         default:
             return TileFrames::GROUND;
@@ -471,6 +476,54 @@ void TileMap::buildVertices() {
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
         for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
             const char symbol = m_grid[row][column];
+            
+            if (symbol == 'L') {
+                const sf::IntRect rect = TileFrames::CASTLE;
+
+                const float left = static_cast<float>(column * TILE_SIZE);
+                const float top = static_cast<float>((static_cast<int>(row) - 4) * TILE_SIZE);
+                const float right = left + static_cast<float>(5 * TILE_SIZE);
+                const float bottom = top + static_cast<float>(5 * TILE_SIZE);
+
+                const float textureLeft = static_cast<float>(rect.position.x);
+                const float textureTop = static_cast<float>(rect.position.y);
+                const float textureRight = textureLeft + static_cast<float>(rect.size.x);
+                const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+
+                appendTexturedVertex(m_vertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_vertices, left, bottom, textureLeft, textureBottom);
+                appendTexturedVertex(m_vertices, right, bottom, textureRight, textureBottom);
+
+                appendTexturedVertex(m_vertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_vertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_vertices, right, top, textureRight, textureTop);
+
+                continue;
+            }
+            
+            if (symbol == 'H') {
+                const sf::IntRect rect = TileFrames::HORIZONTAL_PIPE;
+
+                const float left = static_cast<float>(column * TILE_SIZE);
+                const float top = static_cast<float>((static_cast<int>(row) - 1) * TILE_SIZE);
+                const float right = left + static_cast<float>(3 * TILE_SIZE);
+                const float bottom = top + static_cast<float>(2 * TILE_SIZE);
+
+                const float textureLeft = static_cast<float>(rect.position.x);
+                const float textureTop = static_cast<float>(rect.position.y);
+                const float textureRight = textureLeft + static_cast<float>(rect.size.x);
+                const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+
+                appendTexturedVertex(m_foregroundVertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_foregroundVertices, left, bottom, textureLeft, textureBottom);
+                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
+
+                appendTexturedVertex(m_foregroundVertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_foregroundVertices, right, top, textureRight, textureTop);
+
+                continue;
+            }
 
             if (!isRenderableTile(symbol)) {
                 continue;
@@ -590,6 +643,44 @@ void TileMap::createPhysicsBodies(b2World* world) {
 
         body->CreateFixture(&fixtureDefinition);
         m_physicsBodies.push_back(body);
+    }
+    
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+            if (m_grid[row][column] != 'H') {
+                continue;
+            }
+
+            const float widthPixels = 3.f * tileSize;
+            const float heightPixels = 2.f * tileSize;
+
+            const float left = static_cast<float>(column) * tileSize;
+            const float top = static_cast<float>(static_cast<int>(row) - 1) * tileSize;
+
+            const sf::Vector2f centerPixels(left + widthPixels / 2.f,
+                                            top + heightPixels / 2.f
+                                            );
+
+            const b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
+
+            b2BodyDef bodyDefinition;
+            bodyDefinition.type = b2_staticBody;
+            bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
+
+            b2Body* body = world->CreateBody(&bodyDefinition);
+
+            b2PolygonShape shape;
+            shape.SetAsBox(PhysicsEngine::pixelsToMeters(widthPixels / 2.f),
+                           PhysicsEngine::pixelsToMeters(heightPixels / 2.f)
+            );
+
+            b2FixtureDef fixtureDefinition;
+            fixtureDefinition.shape = &shape;
+            fixtureDefinition.friction = TILE_FRICTION;
+
+            body->CreateFixture(&fixtureDefinition);
+            m_physicsBodies.push_back(body);
+        }
     }
 }
 

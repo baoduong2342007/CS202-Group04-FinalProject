@@ -31,8 +31,14 @@ inline constexpr sf::IntRect PIPE_BODY_LEFT{ {119, 213}, {16, 16} };
 
 inline constexpr sf::IntRect PIPE_BODY_RIGHT{ {136, 213}, {16, 16} };
 
-inline constexpr sf::IntRect FINISH_TOP{ {136, 230}, {16, 16} };
+inline constexpr sf::IntRect FINISH_FLAG{ {136, 230}, {16, 16} };
 
 inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };
+
+inline constexpr sf::IntRect FINISH_POLE_TOP{ {136, 230}, {16, 16} };
+
+inline constexpr sf::IntRect CASTLE{ {328, 196}, {80, 80} };
+
+inline constexpr sf::IntRect HORIZONTAL_PIPE { {328, 298}, {48, 32} };
 
 } // namespace TileFrames

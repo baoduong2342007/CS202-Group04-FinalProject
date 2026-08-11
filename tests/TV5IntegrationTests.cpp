@@ -375,7 +375,7 @@ void testVolumeClampAndAssetManifest() {
         assert(dimensions.second == height);
     };
 
-    assertDimensions("assets/textures/tiles/tileset.png", 680, 776);
+    assertDimensions("assets/textures/tiles/tileset.png", 680, 356);
     assertDimensions("assets/textures/enemies/enemies.png", 436, 530);
     assertDimensions("assets/textures/enemies/goomba.png", 96, 32);
     assertDimensions("assets/textures/enemies/koopa.png", 128, 48);

@@ -98,14 +98,14 @@ Danh sách toàn bộ **157** thành phần liên thông quái vật tách từ 
 | **#68** | (235, 119) | 18 × 17 px | `(236, 120)` | `16 × 16 px` | Vỏ Koopa xanh — Underground + Castle (thò chân / waking) |
 | **#69** | (363, 119) | 18 × 16 px | `(364, 120)` | `16 × 16 px` | Vỏ Koopa xanh — Underwater (rút vào vỏ) |
 | **#70** | (381, 119) | 18 × 17 px | `(382, 120)` | `16 × 16 px` | Vỏ Koopa xanh — Underwater (thò chân / waking) |
-| **#71** | (-1, 138) | 18 × 25 px | `(0, 138)` | `16 × 24 px` | Piranha Plant — Overworld (khép miệng) |
-| **#72** | (17, 137) | 18 × 26 px | `(18, 138)` | `16 × 24 px` | Piranha Plant — Overworld (há miệng) |
+| **#71** | (-1, 138) | 18 × 25 px | `(0, 138)` | `16 × 24 px` | Piranha Plant — Overworld (há miệng) |
+| **#72** | (17, 137) | 18 × 26 px | `(18, 138)` | `16 × 24 px` | Piranha Plant — Overworld (khép miệng) |
 | **#73** | (53, 137) | 18 × 26 px | `(54, 138)` | `16 × 24 px` | Lakitu — Overworld (nhô khỏi mây, chuẩn bị ném trứng Spiny) |
-| **#74** | (145, 138) | 18 × 25 px | `(146, 138)` | `16 × 24 px` | Piranha Plant — Underground + Castle (khép miệng) |
-| **#75** | (163, 137) | 18 × 26 px | `(164, 138)` | `16 × 24 px` | Piranha Plant — Underground + Castle (há miệng) |
+| **#74** | (145, 138) | 18 × 25 px | `(146, 138)` | `16 × 24 px` | Piranha Plant — Underground + Castle (há miệng) |
+| **#75** | (163, 137) | 18 × 26 px | `(164, 138)` | `16 × 24 px` | Piranha Plant — Underground + Castle (khép miệng) |
 | **#76** | (199, 137) | 18 × 26 px | `(200, 138)` | `16 × 24 px` | Lakitu — Underground + Castle (nhô khỏi mây, chuẩn bị ném trứng Spiny) |
-| **#77** | (291, 138) | 18 × 25 px | `(292, 138)` | `16 × 24 px` | Piranha Plant — Underwater (khép miệng) |
-| **#78** | (309, 137) | 18 × 26 px | `(310, 138)` | `16 × 24 px` | Piranha Plant — Underwater (há miệng) |
+| **#77** | (291, 138) | 18 × 25 px | `(292, 138)` | `16 × 24 px` | Piranha Plant — Underwater (há miệng) |
+| **#78** | (309, 137) | 18 × 26 px | `(310, 138)` | `16 × 24 px` | Piranha Plant — Underwater (khép miệng) |
 | **#79** | (345, 137) | 18 × 26 px | `(346, 138)` | `16 × 24 px` | Lakitu — Underwater (nhô khỏi mây, chuẩn bị ném trứng Spiny) |
 | **#80** | (71, 145) | 18 × 18 px | `(72, 146)` | `16 × 16 px` | Lakitu — Overworld (ẩn trong mây / mây trống) |
 | **#81** | (217, 145) | 18 × 18 px | `(218, 146)` | `16 × 16 px` | Lakitu — Underground + Castle (ẩn trong mây / mây trống) |

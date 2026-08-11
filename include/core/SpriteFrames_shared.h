@@ -521,23 +521,23 @@ inline const std::vector<sf::IntRect> &peekFrames() {
 namespace PiranhaPlant {
 // Overworld Palette (Y=138, 16x24)
 inline const sf::IntRect
-    OPEN({18, 138}, {16, 24}); // STT #72: Overworld mouth open (showing teeth)
-inline const sf::IntRect CLOSED({0, 138},
-                                {16, 24}); // STT #71: Overworld mouth closed
+    OPEN({0, 138}, {16, 24}); // STT #71: Overworld mouth open (showing teeth)
+inline const sf::IntRect CLOSED({18, 138},
+                                {16, 24}); // STT #72: Overworld mouth closed
 
 // Underground & Castle Palette (X + 146)
 inline const sf::IntRect
-    UG_CASTLE_OPEN({164, 138},
-                   {16, 24}); // STT #75: Underground & Castle mouth open
+    UG_CASTLE_OPEN({146, 138},
+                   {16, 24}); // STT #74: Underground & Castle mouth open
 inline const sf::IntRect
-    UG_CASTLE_CLOSED({146, 138},
-                     {16, 24}); // STT #74: Underground & Castle mouth closed
+    UG_CASTLE_CLOSED({164, 138},
+                     {16, 24}); // STT #75: Underground & Castle mouth closed
 
 // Underwater Palette (X + 292)
-inline const sf::IntRect UW_OPEN({310, 138},
-                                 {16, 24}); // STT #78: Underwater mouth open
+inline const sf::IntRect UW_OPEN({292, 138},
+                                 {16, 24}); // STT #77: Underwater mouth open
 inline const sf::IntRect
-    UW_CLOSED({292, 138}, {16, 24}); // STT #77: Underwater mouth closed
+    UW_CLOSED({310, 138}, {16, 24}); // STT #78: Underwater mouth closed
 
 inline const std::vector<sf::IntRect> &openFrames() {
   static const std::vector<sf::IntRect> frames = {OPEN, UG_CASTLE_OPEN,
@@ -573,10 +573,10 @@ inline const sf::IntRect WALK_OPEN({34, 208}, {32, 32});   // STT #114
 inline const sf::IntRect FIRE_POSE1({68, 208}, {32, 32});  // STT #115
 inline const sf::IntRect FIRE_POSE2({102, 208}, {32, 32}); // STT #116
 
-inline const sf::IntRect THROW_LEFT({34, 242},
-                                    {32, 26}); // STT #125: Bowser giơ búa, quay trái
-inline const sf::IntRect THROW_RIGHT({68, 242},
-                                     {32, 26}); // STT #126: Bowser giơ búa, quay phải
+inline const sf::IntRect
+    THROW_LEFT({34, 242}, {32, 26}); // STT #125: Bowser giơ búa, quay trái
+inline const sf::IntRect
+    THROW_RIGHT({68, 242}, {32, 26}); // STT #126: Bowser giơ búa, quay phải
 
 // Underground + Castle Palette (X + 146)
 inline const sf::IntRect UG_WALK_CLOSED({146, 208}, {32, 32}); // STT #117
@@ -623,18 +623,14 @@ inline const sf::IntRect UW_FIRE2({394, 252}, {24, 8}); // STT #136
 namespace HammerBro {
 // Special Castle rows (Y=276). STT #137/#138 and #141/#142 are Bowser
 // hammer poses; only STT #139/#140 are Hammer Bro throw poses.
-inline const sf::IntRect BOWSER_HAMMER_LEFT1({34, 276},
-                                             {32, 26}); // STT #137
-inline const sf::IntRect BOWSER_HAMMER_LEFT2({68, 276},
-                                             {32, 26}); // STT #138
+inline const sf::IntRect BOWSER_HAMMER_LEFT1({34, 276}, {32, 26}); // STT #137
+inline const sf::IntRect BOWSER_HAMMER_LEFT2({68, 276}, {32, 26}); // STT #138
 inline const sf::IntRect THROW1({144, 276},
                                 {16, 26}); // STT #139: Hammer Bro throw 1
 inline const sf::IntRect THROW2({162, 276},
                                 {16, 26}); // STT #140: Hammer Bro throw 2
-inline const sf::IntRect BOWSER_HAMMER_RIGHT1({180, 276},
-                                              {32, 26}); // STT #141
-inline const sf::IntRect BOWSER_HAMMER_RIGHT2({214, 276},
-                                              {32, 26}); // STT #142
+inline const sf::IntRect BOWSER_HAMMER_RIGHT1({180, 276}, {32, 26}); // STT #141
+inline const sf::IntRect BOWSER_HAMMER_RIGHT2({214, 276}, {32, 26}); // STT #142
 
 // Legacy aliases kept for callers that used the old, overly broad names.
 inline const sf::IntRect &THROW_HIGH_LEFT1 = BOWSER_HAMMER_LEFT1;

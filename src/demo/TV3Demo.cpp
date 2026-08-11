@@ -160,7 +160,20 @@ int runTV3Demo() {
     if (dt > 0.1f) dt = 0.1f;
 
     // Handle Mario input and physics update
-    mario.handleInput();
+    float inputDirX = 0.0f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) {
+      inputDirX -= 1.0f;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) {
+      inputDirX += 1.0f;
+    }
+    bool isSprint = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::J);
+    mario.setMoveIntent(inputDirX);
+    mario.setRunIntent(isSprint);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) {
+      mario.jump();
+    }
+    mario.preparePhysics(dt);
     PhysicsEngine::update(*world, dt);
     mario.update(dt);
 

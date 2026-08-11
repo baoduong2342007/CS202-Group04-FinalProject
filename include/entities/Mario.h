@@ -38,10 +38,6 @@ public:
     void update(float dt) override;
 
     // 3. Public methods
-    /// @deprecated Legacy input handler — replaced by Command pattern (InputHandler).
-    ///             Only used in Box2DDemo.cpp. Prefer jump()/moveLeft()/moveRight()/stopMoving().
-    [[deprecated("Use Command pattern via InputHandler instead")]]
-    void handleInput();
     void jump();
     void releaseJump();
     void moveLeft();
@@ -67,7 +63,7 @@ public:
     /// Clear grounding when Mario starts an upward movement before the next step.
     void clearGroundedState();
     /// Checks if 32px overhead space is clear of solid terrain before growing (S6-TV3-11).
-    bool hasCeilingClearance() const;
+    bool hasCeilingClearance() const { return hasGrowthClearance(); }
     EntityType getType() const override { return EntityType::MARIO; }
     bool isMario() const override { return true; }
 

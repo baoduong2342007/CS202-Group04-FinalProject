@@ -228,6 +228,14 @@ void Mario::update(float dt) {
   if (!m_active)
     return;
 
+  if (m_pendingGrowthState != MarioState::SMALL) {
+    if (hasGrowthClearance()) {
+      MarioState target = m_pendingGrowthState;
+      m_pendingGrowthState = MarioState::SMALL;
+      setMarioState(target);
+    }
+  }
+
   if (m_pendingFixtureRebuild) {
     rebuildFixture();
   }
@@ -503,16 +511,26 @@ void Mario::initPhysics(b2World *world, b2BodyType type,
 void Mario::rebuildFixture() {
   sf::Vector2f targetSize =
       (m_marioState == MarioState::SMALL) ? SMALL_MARIO_SIZE : SUPER_MARIO_SIZE;
-  m_size = targetSize;
 
-  if (!m_body)
+  if (!m_body) {
+    m_size = targetSize;
     return;
+  }
 
   if (m_body->GetWorld() && m_body->GetWorld()->IsLocked()) {
     m_pendingFixtureRebuild = true;
     return;
   }
   m_pendingFixtureRebuild = false;
+
+  // Preserve foot Y position on ground across SMALL <-> SUPER/FIRE fixture transitions
+  float oldHalfHeight = PhysicsEngine::pixelsToMeters(m_size.y / 2.0f);
+  float newHalfHeight = PhysicsEngine::pixelsToMeters(targetSize.y / 2.0f);
+  b2Vec2 pos = m_body->GetPosition();
+  pos.y -= (newHalfHeight - oldHalfHeight);
+  m_body->SetTransform(pos, m_body->GetAngle());
+
+  m_size = targetSize;
 
   // Remove existing fixtures
   for (b2Fixture *f = m_body->GetFixtureList(); f;) {
@@ -763,7 +781,48 @@ void Mario::setRespawnPosition(const sf::Vector2f &spawnPosition) {
 
 MarioState Mario::getMarioState() const { return m_marioState; }
 
+bool Mario::hasGrowthClearance() const {
+  if (!m_body || !m_body->GetWorld())
+    return true;
+
+  float currentHalfHeight = PhysicsEngine::pixelsToMeters(m_size.y / 2.0f);
+  float superHalfHeight = PhysicsEngine::pixelsToMeters(SUPER_MARIO_SIZE.y / 2.0f);
+  float heightDiff = (superHalfHeight - currentHalfHeight) * 2.0f;
+  if (heightDiff <= 0.001f)
+    return true;
+
+  b2AABB queryAABB;
+  b2Vec2 pos = m_body->GetPosition();
+  float halfWidth = PhysicsEngine::pixelsToMeters(m_size.x / 2.0f) - 0.05f;
+  queryAABB.lowerBound.Set(pos.x - halfWidth, pos.y - currentHalfHeight - heightDiff);
+  queryAABB.upperBound.Set(pos.x + halfWidth, pos.y - currentHalfHeight);
+
+  class ClearanceQueryCallback : public b2QueryCallback {
+  public:
+    b2Body* marioBody;
+    bool blocked = false;
+    ClearanceQueryCallback(b2Body* body) : marioBody(body) {}
+    bool ReportFixture(b2Fixture* fixture) override {
+      if (!fixture || fixture->IsSensor()) return true;
+      if (fixture->GetBody() == marioBody) return true;
+      blocked = true;
+      return false;
+    }
+  } callback(m_body);
+
+  m_body->GetWorld()->QueryAABB(&callback, queryAABB);
+  return !callback.blocked;
+}
+
 void Mario::setMarioState(MarioState state) {
+  if (m_marioState == MarioState::SMALL &&
+      (state == MarioState::SUPER || state == MarioState::FIRE)) {
+    if (!hasGrowthClearance()) {
+      m_pendingGrowthState = state;
+      return;
+    }
+  }
+  m_pendingGrowthState = MarioState::SMALL;
   m_marioState = state;
   // S6-TV1-10: rebuilding just the fixture leaves the previous power state's
   // animation clips registered. Rebuild the clips too so an SMALL/SUPER/FIRE

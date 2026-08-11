@@ -143,6 +143,7 @@ protected:
 
     bool m_pendingFixtureRebuild = false;
     bool m_pendingPowerDown = false;
+    MarioState m_pendingGrowthState = MarioState::SMALL;
     sf::Vector2f m_respawnPosition;
 
     float m_inputDirX = 0.0f;
@@ -158,4 +159,5 @@ protected:
 public:
     void setPitThreshold(float threshold) { m_pitThreshold = threshold; }
     float getPitThreshold() const { return m_pitThreshold; }
+    bool hasGrowthClearance() const;
 };

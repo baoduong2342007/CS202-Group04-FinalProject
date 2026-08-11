@@ -2,7 +2,7 @@
  * @file Mario.h
  * @author TV3 (Bảo)
  * @brief Mario player character class with authentic NES movement physics and states
- * @note Sprint 4: lives, skidding, FireBall support; score & invincibility from develop
+ * @note Sprint 6 TV3: foot-anchored fixture rebuilding, low-ceiling clearance queries, independent invincibility clocks, deterministic death/respawn, and fixture-derived bounds
  */
 
 #pragma once

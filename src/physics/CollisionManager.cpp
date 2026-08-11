@@ -1,6 +1,6 @@
 /**
  * @file CollisionManager.cpp
- * @author TV3 (Bảo)
+ * @author TV3
  * @brief Implementation of CollisionManager with safe pointer handling, wall-sticking prevention, and FireBall bounce resolution
  */
 

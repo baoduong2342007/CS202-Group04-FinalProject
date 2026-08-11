@@ -1,10 +1,8 @@
 /**
  * @file Mario.cpp
  * @author TV3 (Bảo)
- * @brief Mario character implementation with authentic NES movement physics and
- * states
- * @note Sprint 4 merge: lives, skidding, FireBall (TV3) + score, invincibility
- * (develop)
+ * @brief Mario character implementation with authentic NES movement physics and states
+ * @note Sprint 6 TV3: foot-anchored growth, low-ceiling query, independent invincibility clocks, death/respawn lifecycle, fixture bounds
  */
 
 #include "entities/Mario.h"

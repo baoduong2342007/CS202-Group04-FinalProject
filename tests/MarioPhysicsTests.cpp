@@ -1,7 +1,7 @@
 /**
  * @file MarioPhysicsTests.cpp
- * @author TV3 (Bảo), TV5 (Truyền)
- * @brief Regression tests for Mario physics, grounding, growth, death lifecycle, multi-world accumulators, and collision defeat.
+ * @author TV5 (Truyen)
+ * @brief Regression tests for Mario grounding and jumping.
  */
 
 #include <cmath>

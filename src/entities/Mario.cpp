@@ -6,6 +6,7 @@
  */
 
 #include "entities/Mario.h"
+#include "core/SoundManager.h"
 #include "core/AnimationSystem.h"
 #include "core/DisplayConfig.h"
 #include "core/ScoreRules.h"
@@ -1142,7 +1143,7 @@ void Mario::updateInvincibility(float dt) {
 bool Mario::isInvincible() const {
   return m_isInvincible || m_isStarInvincible;
 }
-}
+
 
 bool Mario::canShootFireBall() const {
   return m_marioState == MarioState::FIRE && m_fireCooldown <= 0.0f;

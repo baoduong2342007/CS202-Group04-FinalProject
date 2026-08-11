@@ -2,26 +2,17 @@
 
 ## Kết luận audit — dùng phần này làm source of truth
 
-`assets/textures/tiles/tileset.png` là sheet gốc **680 × 776 px**. Ảnh
-`docs/assets/reference/tileset_all_components_atlas_full.png` là ảnh phân tích
-được dàn lại thành **720 × 2448 px**, không cùng hệ tọa độ với sheet gốc.
-Nhãn `#1…#345` trong atlas chỉ là thứ tự crop; có 340 dòng crop thực tế
-(bỏ qua `#78`, `#84`, `#111`, `#173`, `#179`). Không được lấy số `#N` làm
-tọa độ trực tiếp.
+`assets/textures/tiles/tileset.png` là sheet gốc **680 × 776 px**. Ảnh `docs/assets/reference/tileset_all_components_atlas_full.png` là ảnh phân tích được dàn lại thành **720 × 2448 px**, không cùng hệ tọa độ với sheet gốc.
 
-Bảng component cũ bên dưới vẫn được giữ để truy vết các crop đã đo, nhưng cột
-`Ý nghĩa cũ` là **deprecated**: nhiều nhãn trước đây được suy đoán theo màu
-hoặc vị trí nên đã gọi nhầm brick/question/coin/castle. Mapping gameplay và
-object đã kiểm chứng nằm trong các bảng audit dưới đây.
+Nhãn `#1…#345` trong atlas chỉ là thứ tự crop; có 340 dòng crop thực tế (bỏ qua `#78`, `#84`, `#111`, `#173`, `#179`). Không được lấy số `#N` làm tọa độ trực tiếp.
 
-Nguồn sheet gốc có kích thước và nhóm object tương ứng (coin, question block,
-pipe, tileset) được đối chiếu với [SMB1 Tileset trên The Spriters Resource](https://www.spriters-resource.com/nes/supermariobros/asset/52571/?source=genre).
+Bảng component cũ bên dưới vẫn được giữ để truy vết các crop đã đo, nhưng cột `Ý nghĩa cũ` là **deprecated**: nhiều nhãn trước đây được suy đoán theo màu hoặc vị trí nên đã gọi nhầm brick/question/coin/castle. Mapping gameplay và object đã kiểm chứng nằm trong các bảng audit dưới đây.
+
+Nguồn sheet gốc có kích thước và nhóm object tương ứng (coin, question block, pipe, tileset) được đối chiếu với [SMB1 Tileset trên The Spriters Resource](https://www.spriters-resource.com/nes/supermariobros/asset/52571/?source=genre).
 
 ### 1. Terrain 16 × 16 — bốn palette môi trường
 
-Nhóm Overworld/Castle có các frame ground, brick, stone và hard/filler.
-Riêng Underground có thêm một brick variant; không được nhầm frame này
-với không gian solid block dùng cho `S` trong Level 2.
+Nhóm Overworld/Castle có các frame ground, brick, stone và hard/filler. Riêng Underground có thêm một brick variant; không được nhầm frame này với không gian solid block dùng cho `S` trong Level 2.
 
 | Thành phần | Overworld | Underground | Castle | Underwater |
 |---|---|---|---|---|
@@ -31,15 +22,11 @@ với không gian solid block dùng cho `S` trong Level 2.
 | Stone/solid | `(34,16)` | `(198,16)` | `(34,100)` | `(181,100)` |
 | Hard/filler (palette-specific) | `(51,16)` | — | `(51,100)` | `(198,100)` |
 
-**Level 2 contract:** ký hiệu `S` dùng `TileFrames::HARD_BLOCK_UNDERGROUND`
-ở `(198,16)`. Crop `(181,16)` chỉ là brick variant underground và không được
-dùng để render các cột `S`.
+**Level 2 contract:** ký hiệu `S` dùng `TileFrames::HARD_BLOCK_UNDERGROUND` ở `(198,16)`. Crop `(181,16)` chỉ là brick variant underground và không được dùng để render các cột `S`.
 
 ### 2. Question/used block — Palette 3
 
-Các frame này mới là question/used block của tileset; các ô ở `(85,16)` và
-`(198,16)` chỉ thuộc nhóm terrain/palette 1, không được gán lại thành
-question/used.
+Các frame này mới là question/used block của tileset; các ô ở `(85,16)` và `(198,16)` chỉ thuộc nhóm terrain/palette 1, không được gán lại thành question/used.
 
 | Môi trường | Question animation (3 frame) | Used/empty |
 |---|---|---|
@@ -48,13 +35,11 @@ question/used.
 | Castle | `(490,78)`, `(507,78)`, `(524,78)` | `(541,78)` |
 | Underwater | `(586,78)`, `(603,78)`, `(620,78)` | `(637,78)` |
 
-Runtime vẫn để `QuestionBlock` sở hữu animation/spawn item; bảng trên chỉ là
-catalog tọa độ của tileset, không tạo thêm một question block thứ hai.
+Runtime vẫn để `QuestionBlock` sở hữu animation/spawn item; bảng trên chỉ là catalog tọa độ của tileset, không tạo thêm một question block thứ hai.
 
 ### 3. Coin thường ngoài question block — asset còn thiếu trước đây
 
-Coin map là animation 16 × 16 riêng trong Palette 3, khác với coin popup của
-`QuestionBlock` lấy từ `items_objects.png`.
+Coin map là animation 16 × 16 riêng trong Palette 3, khác với coin popup của `QuestionBlock` lấy từ `items_objects.png`.
 
 | Môi trường | Frame 1 | Frame 2 | Frame 3 |
 |---|---:|---:|---:|
@@ -63,13 +48,11 @@ Coin map là animation 16 × 16 riêng trong Palette 3, khác với coin popup c
 | Castle | `(490,95)` | `(507,95)` | `(524,95)` |
 | Underwater | `(586,95)` | `(603,95)` | `(620,95)` |
 
-`CoinType::COLLECTIBLE` dùng ba frame Overworld ở trên; `QUESTION_POPUP`
-tiếp tục dùng sheet item hiện có để không trộn hai loại coin.
+`CoinType::COLLECTIBLE` dùng ba frame Overworld ở trên; `QUESTION_POPUP` tiếp tục dùng sheet item hiện có để không trộn hai loại coin.
 
 ### 4. Pipe và cột cờ 16 × 16
 
-Mỗi pipe rộng hai tile. Các frame Castle/Underwater trước đây bị bỏ qua nên
-Level 3 rơi về pipe Overworld; chúng đã được bổ sung vào `TileFrames.h`.
+Mỗi pipe rộng hai tile. Các frame Castle/Underwater trước đây bị bỏ qua nên Level 3 rơi về pipe Overworld; chúng đã được bổ sung vào `TileFrames.h`.
 
 | Môi trường | Pipe top L/R | Pipe body L/R | Flag top | Pole body |
 |---|---|---|---|---|
@@ -78,37 +61,30 @@ Level 3 rơi về pipe Overworld; chúng đã được bổ sung vào `TileFrame
 | Castle | `(119,280)`, `(136,280)` | `(119,297)`, `(136,297)` | `(136,314)` | `(136,331)` |
 | Underwater | `(283,280)`, `(300,280)` | `(283,297)`, `(300,297)` | `(300,314)` | `(300,331)` |
 
-### 5. Crop object ghép sẵn trong `Assembled Structures`
+### 5. Composite scenery trong runtime tileset
 
-Đây là bbox một object lớn, không phải một tile map 16 × 16 và không nên đưa
-thẳng vào collision grid. Tọa độ đã được thêm vào `TileFrames::Assembled` để
-structure renderer/exporter có thể cắt trực tiếp từ cùng `tileset.png`.
+Một số scenery khó biểu diễn thuận tiện bằng các tile 16×16 được lưu trực tiếp dưới dạng composite sprite trong runtime `tileset.png`.
 
-| Object | Bbox `(x,y,w,h)` | Ghi chú |
+| Object | Bbox `(x,y,w,h)` | Level marker |
 |---|---|---|
-| Cột cờ đầy đủ | `(0,608,16,168)` | Gồm bóng cờ, thân, chân |
-| Pipe cao A | `(112,624,32,64)` | Pipe assembled Overworld |
-| Pipe cao B | `(152,624,32,64)` | Biến thể pipe assembled Overworld |
-| Cụm bụi cây | `(120,704,64,16)` | Scenery Overworld; không phải tile riêng của Castle |
-| Lâu đài nhỏ | `(24,696,80,80)` | Object kết thúc level nhỏ |
-| Lâu đài lớn | `(400,600,145,176)` | Object assembled đầy đủ |
+| Castle | `(328,196,80,80)` | `L` |
+| Horizontal pipe | `(328,298,48,32)` | `H` |
+
+`L` là bottom-left anchor của castle 5×5 world tiles.
+
+`H` là bottom-left anchor của horizontal pipe 3×2 world tiles.
+
+Hai object được render dưới dạng một texture rectangle hoàn chỉnh thay vì tách thành nhiều frame 16×16.
+
+Flag pole tiếp tục được cấu thành từ các marker `T`, `F` và `|`, nên không cần một assembled flag-pole sprite riêng.
 
 ### 6. Nền của crop và phạm vi sử dụng
 
-Sheet gốc là ảnh compositing không có alpha. Ba màu nền cần chuyển thành
-transparent là `RGB(0,41,140)`, `RGB(146,144,255)` và `RGB(148,148,255)`.
-`TextureManager` đã có
-chroma-key cho entity texture; `TileMap` cũng áp dụng cùng mask khi upload
-tileset, nên pipe/pole/castle không còn kéo theo ô nền tím/xanh. Không xóa
-mọi pixel xanh một cách mù quáng trong file ảnh: chỉ key đúng ba màu nền này,
-giữ nguyên màu đen/castle hole và màu palette thực của sprite.
+Sheet gốc là ảnh compositing không có alpha. Ba màu nền cần chuyển thành transparent là `RGB(0,41,140)`, `RGB(146,144,255)` và `RGB(148,148,255)`.
 
-`#214…#279` là component Palette 0 Overworld/Underground (pipe và scenery),
-`#280…#345` là component Palette 0 Castle/Underwater. Vì vậy các nhãn cũ như
-“White Slopes”, “Peach/Toad Room” cho các vùng này không còn được dùng. Sheet
-có bush ở vùng assembled Overworld, nhưng `levels/level3.txt` là Castle và
-không có symbol bush; không thêm bush vào Level 3 chỉ vì nó xuất hiện trên
-sheet tham khảo.
+`TextureManager` đã có chroma-key cho entity texture; `TileMap` cũng áp dụng cùng mask khi upload tileset, nên pipe/pole/castle không còn kéo theo ô nền tím/xanh. Không xóa mọi pixel xanh một cách mù quáng trong file ảnh: chỉ key đúng ba màu nền này, giữ nguyên màu đen/castle hole và màu palette thực của sprite.
+
+`#214…#279` là component Palette 0 Overworld/Underground (pipe và scenery), `#280…#345` là component Palette 0 Castle/Underwater. Vì vậy các nhãn cũ như “White Slopes”, “Peach/Toad Room” cho các vùng này không còn được dùng. Sheet có bush ở vùng assembled Overworld, nhưng `levels/level3.txt` là Castle và không có symbol bush; không thêm bush vào Level 3 chỉ vì nó xuất hiện trên sheet tham khảo.
 
 ---
 

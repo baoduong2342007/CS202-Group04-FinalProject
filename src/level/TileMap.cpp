@@ -27,6 +27,7 @@
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
 #include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_shared.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "level/TileFrames.h"
@@ -34,13 +35,29 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}prJ";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}prJTLHV";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
+constexpr float FLAG_WAVE_SPEED = 7.0f;
+constexpr float FLAG_WAVE_AMPLITUDE = 1.5f;
+constexpr float FLAG_WAVE_PHASE_OFFSET = 0.75f;
+constexpr float TWO_PI = 6.28318530718f;
 
 bool isSolidTileSymbol(char tile) {
     return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
-           tile == '[' || tile == ']' || tile == 'p' || tile == 'r' || tile == '{' || tile == '}';
+           tile == '[' || tile == ']' ||
+           tile == 'p' || tile == 'r' ||
+           tile == '{' || tile == '}';
+}
+
+bool isForegroundTile(char symbol) {
+    return symbol == 'B' || symbol == '?' ||
+           symbol == 'U' || symbol == 'O' ||
+           symbol == 'F' || symbol == 'T' ||
+           symbol == '|' || symbol == 'H' ||
+           symbol == '[' || symbol == ']' ||
+           symbol == 'p' || symbol == 'r' ||
+           symbol == '{' || symbol == '}';
 }
 
 bool isEnemySupportTileSymbol(char tile) {
@@ -69,6 +86,40 @@ QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entitie
     }
 
     return nullptr;
+}
+
+bool isHorizontalPipeFootprint(const std::vector<std::string>& grid,
+                               int column, int row) {
+    if (column < 0 || row < 0) {
+        return false;
+    }
+
+    // H is the bottom-left anchor of a 3x2 pipe.
+    //
+    //     XXX
+    //     HXX
+    //
+    // Therefore a queried cell can belong to an H whose anchor is:
+    // - on this row or one row below it
+    // - this column, one column left, or two columns left
+    for (int anchorRow = row; anchorRow <= row + 1; ++anchorRow) {
+        if (anchorRow < 0 || anchorRow >= static_cast<int>(grid.size())) {
+            continue;
+        }
+
+        for (int anchorColumn = column - 2; anchorColumn <= column; ++anchorColumn) {
+
+            if (anchorColumn < 0 || anchorColumn >= static_cast<int>(grid[anchorRow].size())) {
+                continue;
+            }
+
+            if (grid[anchorRow][anchorColumn] == 'H') {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 } // namespace
@@ -128,18 +179,17 @@ bool isValidTileSymbol(char symbol) {
 }
 
 bool isRenderableTile(char symbol) {
-    return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
-           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
-}
-
-bool isForegroundTile(char symbol) {
-    // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
-    return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
-           symbol == 'F' || symbol == '|' ||
-           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
+    return symbol == '1' || symbol == 'B' ||
+           symbol == 'F' || symbol == 'T' ||
+           symbol == 'L' || symbol == 'H' ||
+           symbol == 'S' || symbol == '|' || symbol == 'E' ||
+           symbol == '[' || symbol == ']' ||
+           symbol == 'p' || symbol == 'r' ||
+           symbol == '{' || symbol == '}';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
+constexpr std::string_view OBJECTS_TILESET_PATH = "assets/textures/items/items_objects.png";
 
 struct DebrisFrames {
     const sf::IntRect& topLeft;
@@ -164,8 +214,14 @@ const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
         SpriteFrames::castle::Blocks::DEBRIS_TOP_RIGHT,
         SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_LEFT,
         SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames underwater{
+        SpriteFrames::legacy::Blocks::UW_DEBRIS_TOP_LEFT,
+        SpriteFrames::legacy::Blocks::UW_DEBRIS_TOP_RIGHT,
+        SpriteFrames::legacy::Blocks::UW_DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::legacy::Blocks::UW_DEBRIS_BOTTOM_RIGHT};
     switch (theme) {
         case LevelTheme::UNDERGROUND: return underground;
+        case LevelTheme::UNDERWATER:  return underwater;
         case LevelTheme::CASTLE:      return castle;
         case LevelTheme::OVERWORLD:
         default:                      return overworld;
@@ -182,16 +238,19 @@ namespace {
 sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
         case '1':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::GROUND_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::GROUND_CASTLE;
             return TileFrames::GROUND;
 
         case 'S':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::HARD_BLOCK_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
 
         case 'B':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::BRICK_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
             return TileFrames::BRICK;
@@ -203,45 +262,56 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
         case 'o':
         case 'f':
         case 'h':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::QUESTION_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::QUESTION_UNDERGROUND;
             return TileFrames::QUESTION;
 
         case 'E':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::USED_BLOCK_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::USED_BLOCK_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::USED_BLOCK_CASTLE;
             return TileFrames::USED_BLOCK;
 
         case '[':
         case 'p':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::PIPE_TOP_LEFT_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
             return TileFrames::PIPE_TOP_LEFT;
 
         case ']':
         case 'r':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::PIPE_TOP_RIGHT_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_RIGHT_CASTLE;
             return TileFrames::PIPE_TOP_RIGHT;
 
         case '{':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::PIPE_BODY_LEFT_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_LEFT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_LEFT_CASTLE;
             return TileFrames::PIPE_BODY_LEFT;
 
         case '}':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::PIPE_BODY_RIGHT_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_RIGHT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_RIGHT_CASTLE;
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_TOP_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
-            return TileFrames::FINISH_TOP;
+            return TileFrames::FINISH_FLAG;
 
         case '|':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_POLE_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
+            
+        case 'T':
+            return TileFrames::FINISH_POLE_TOP;
 
         default:
             return TileFrames::GROUND;
@@ -423,6 +493,7 @@ bool TileMap::loadFromFile(const std::string& path) {
     }
     
     sf::Texture loadedTileset;
+    sf::Texture loadedObjectsTileset;
     try {
         sf::Image tilesetImage;
         if (!tilesetImage.loadFromFile(std::string(TILESET_PATH))) {
@@ -438,6 +509,17 @@ bool TileMap::loadFromFile(const std::string& path) {
         tilesetImage.createMaskFromColor(sf::Color(148, 148, 255));
         tilesetImage.createMaskFromColor(sf::Color(0, 41, 140));
         loadedTileset = sf::Texture(tilesetImage);
+
+        sf::Image objectsImage;
+        if (!objectsImage.loadFromFile(std::string(OBJECTS_TILESET_PATH))) {
+            std::cerr << "Failed to load TileMap objects tileset image: "
+                      << OBJECTS_TILESET_PATH << std::endl;
+            return false;
+        }
+        objectsImage.createMaskFromColor(sf::Color(146, 144, 255));
+        objectsImage.createMaskFromColor(sf::Color(148, 148, 255));
+        objectsImage.createMaskFromColor(sf::Color(0, 41, 140));
+        loadedObjectsTileset = sf::Texture(objectsImage);
     } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;
@@ -445,6 +527,7 @@ bool TileMap::loadFromFile(const std::string& path) {
     }
 
     loadedTileset.setSmooth(false);
+    loadedObjectsTileset.setSmooth(false);
 
     const sf::Vector2u tilesetSize = loadedTileset.getSize();
 
@@ -457,6 +540,8 @@ bool TileMap::loadFromFile(const std::string& path) {
 
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);
+    m_objectsTileset = std::move(loadedObjectsTileset);
+    m_flagAnimationTime = 0.0f;
     buildVertices();
     return true;
 }
@@ -466,6 +551,12 @@ void TileMap::render(sf::RenderTarget& target) const {
     states.texture = &m_tileset;
 
     target.draw(m_vertices, states);
+
+    // Vines belong to the world layer, so Mario and enemies render in front
+    // of them instead of being hidden by the stem texture.
+    sf::RenderStates objectStates;
+    objectStates.texture = &m_objectsTileset;
+    target.draw(m_objectVertices, objectStates);
 }
 
 void TileMap::renderForeground(sf::RenderTarget& target) const {
@@ -473,6 +564,7 @@ void TileMap::renderForeground(sf::RenderTarget& target) const {
     states.texture = &m_tileset;
 
     target.draw(m_foregroundVertices, states);
+    target.draw(m_flagVertices, states);
 }
 
 char TileMap::getTileAt(int column, int row) const {
@@ -495,13 +587,16 @@ char TileMap::getTileAt(int column, int row) const {
 }
 
 bool TileMap::isEnemySupport(int column, int row) const {
-    return isEnemySupportTileSymbol(getTileAt(column, row));
+    return isEnemySupportTileSymbol(getTileAt(column, row)) || isHorizontalPipeFootprint(m_grid, column, row);
 }
 
 bool TileMap::isSolid(int column, int row) const {
-    return isSolidTileSymbol(getTileAt(column, row));
+    return isSolidTileSymbol(getTileAt(column, row)) || isHorizontalPipeFootprint(m_grid, column, row);
 }
 
+bool TileMap::isClimbable(int column, int row) const {
+    return getTileAt(column, row) == 'V';
+}
 
 std::size_t TileMap::getWidth() const {
     if (m_grid.empty()){
@@ -523,7 +618,14 @@ void TileMap::triggerTileBump(int column, int row) {
 }
 
 void TileMap::update(float dt) {
-    if (m_bumpAnimations.empty()) return;
+    const bool flagChanged = dt > 0.0f;
+    if (flagChanged) {
+        m_flagAnimationTime = std::fmod(
+            m_flagAnimationTime + dt * FLAG_WAVE_SPEED, TWO_PI);
+        if (m_flagAnimationTime < 0.0f) {
+            m_flagAnimationTime += TWO_PI;
+        }
+    }
 
     bool changed = false;
     for (auto it = m_bumpAnimations.begin(); it != m_bumpAnimations.end(); ) {
@@ -538,68 +640,245 @@ void TileMap::update(float dt) {
 
     if (changed) {
         buildVertices();
+    } else if (flagChanged) {
+        buildFlagVertices();
     }
 }
 
 void TileMap::buildVertices() {
     m_vertices.clear();
     m_foregroundVertices.clear();
+    m_objectVertices.clear();
+    m_flagVertices.clear();
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
-        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
-            const char symbol = m_grid[row][col];
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+
+            const char symbol = m_grid[row][column];
+
+            // L = bottom-left anchor of a 5x5 castle.
+            if (symbol == 'L') {
+                const sf::IntRect rect = TileFrames::CASTLE;
+
+                const float left = static_cast<float>(column * TILE_SIZE);
+                const float top = static_cast<float>((static_cast<int>(row) - 4) * TILE_SIZE);
+                const float right = left + static_cast<float>(5 * TILE_SIZE);
+                const float bottom = top + static_cast<float>(5 * TILE_SIZE);
+
+                const float texEpsilon = 0.02f;
+
+                const float textureLeft = static_cast<float>(rect.position.x) + texEpsilon;
+                const float textureTop = static_cast<float>(rect.position.y) + texEpsilon;
+                const float textureRight = static_cast<float>(rect.position.x + rect.size.x) - texEpsilon;
+                const float textureBottom = static_cast<float>(rect.position.y + rect.size.y) - texEpsilon;
+
+                appendTexturedVertex(m_vertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     left, bottom,
+                                     textureLeft, textureBottom
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_vertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+
+                appendTexturedVertex(m_vertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     right, top,
+                                     textureRight, textureTop
+                                     );
+
+                continue;
+            }
+
+            // H = bottom-left anchor of a 3x2 horizontal pipe.
+            if (symbol == 'H') {
+                const sf::IntRect rect = TileFrames::HORIZONTAL_PIPE;
+
+                const float left = static_cast<float>(column * TILE_SIZE);
+                const float top = static_cast<float>((static_cast<int>(row) - 1) * TILE_SIZE);
+                const float right = left + static_cast<float>(3 * TILE_SIZE);
+                const float bottom = top + static_cast<float>(2 * TILE_SIZE);
+
+                const float texEpsilon = 0.02f;
+
+                const float textureLeft = static_cast<float>(rect.position.x) + texEpsilon;
+                const float textureTop = static_cast<float>(rect.position.y) + texEpsilon;
+                const float textureRight = static_cast<float>(rect.position.x + rect.size.x) - texEpsilon;
+                const float textureBottom = static_cast<float>(rect.position.y + rect.size.y) - texEpsilon;
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, bottom,
+                                     textureLeft, textureBottom
+                                     );
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, top,
+                                     textureRight, textureTop
+                                     );
+
+                continue;
+            }
+
+            // F rendered as flag in m_flagVertices — skip from tile grid.
+            if (symbol == 'F') {
+                continue;
+            }
+
+            // V = vine tile (climbable)
+            if (symbol == 'V') {
+                const sf::IntRect textureRect =
+                    (row == 0 || getTileAt(static_cast<int>(column), static_cast<int>(row - 1)) != 'V')
+                        ? SpriteFrames::shared::Items::VINE_TOP
+                        : ((row % 2u) == 0u ? SpriteFrames::shared::Items::VINE_STEM_1
+                                            : SpriteFrames::shared::Items::VINE_STEM_2);
+                const float left = static_cast<float>(column * TILE_SIZE);
+                const float top = static_cast<float>(row * TILE_SIZE);
+                const float right = left + static_cast<float>(TILE_SIZE);
+                const float bottom = top + static_cast<float>(TILE_SIZE);
+                const float textureLeft = static_cast<float>(textureRect.position.x) + 0.02f;
+                const float textureTop = static_cast<float>(textureRect.position.y) + 0.02f;
+                const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - 0.02f;
+                const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - 0.02f;
+                appendTexturedVertex(m_objectVertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_objectVertices, left, bottom, textureLeft, textureBottom);
+                appendTexturedVertex(m_objectVertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_objectVertices, left, top, textureLeft, textureTop);
+                appendTexturedVertex(m_objectVertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_objectVertices, right, top, textureRight, textureTop);
+                continue;
+            }
+
             if (!isRenderableTile(symbol)) {
                 continue;
             }
 
-            const float x = static_cast<float>(col * TILE_SIZE);
+            const float x = static_cast<float>(column * TILE_SIZE);
             const float y = static_cast<float>(row * TILE_SIZE);
 
             const sf::IntRect textureRect = getTilesetRect(symbol, m_theme);
 
             float offsetY = 0.f;
+
             for (const auto& bump : m_bumpAnimations) {
-                if (bump.column == static_cast<int>(col) && bump.row == static_cast<int>(row)) {
-                    float progress = bump.timer / bump.maxDuration;
+                if (bump.column == static_cast<int>(column) && bump.row == static_cast<int>(row)) {
+                    const float progress = bump.timer / bump.maxDuration;
+
                     offsetY = std::sin(progress * 3.14159265f) * bump.maxOffset;
+
                     break;
                 }
             }
 
             const float left = x;
             const float top = y + offsetY;
-
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
             const float texEpsilon = 0.02f;
+
             const float textureLeft = static_cast<float>(textureRect.position.x) + texEpsilon;
             const float textureTop = static_cast<float>(textureRect.position.y) + texEpsilon;
-
             const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - texEpsilon;
             const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - texEpsilon;
 
-            // Route to correct vertex array based on layer classification
-            sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;
+            sf::VertexArray& targetArray = isForegroundTile(symbol)
+                                           ? m_foregroundVertices : m_vertices;
 
-            // First triangle: top-left, bottom-left, bottom-right.
-            appendTexturedVertex(targetArray, left, top,
-                                 textureLeft, textureTop);
+            appendTexturedVertex(targetArray,
+                                 left, top,
+                                 textureLeft, textureTop
+                                 );
+            appendTexturedVertex(targetArray,
+                                 left, bottom,
+                                 textureLeft, textureBottom
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, bottom,
+                                 textureRight, textureBottom
+                                 );
 
-            appendTexturedVertex(targetArray, left, bottom,
-                                 textureLeft, textureBottom);
-            
-            appendTexturedVertex(targetArray, right, bottom,
+            appendTexturedVertex(targetArray,
+                                 left, top,
+                                 textureLeft, textureTop
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, bottom,
+                                 textureRight, textureBottom
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, top,
+                                 textureRight, textureTop
+                                 );
+        }
+    }
+
+    buildFlagVertices();
+}
+
+void TileMap::buildFlagVertices() {
+    m_flagVertices.clear();
+
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
+            if (m_grid[row][col] != 'F') {
+                continue;
+            }
+
+            const sf::IntRect textureRect = getTilesetRect('F', m_theme);
+            const float left = static_cast<float>(col * TILE_SIZE);
+            const float top = static_cast<float>(row * TILE_SIZE);
+            const float right = left + static_cast<float>(TILE_SIZE);
+            const float bottom = top + static_cast<float>(TILE_SIZE);
+
+            // Keep the pole-side edge anchored on the right and gently shear
+            // only the free edge on the left. This animates the existing themed flag tile without
+            // overlaying a second flag sprite or changing collision geometry.
+            const float topWave = std::sin(m_flagAnimationTime) * FLAG_WAVE_AMPLITUDE;
+            const float bottomWave = std::sin(m_flagAnimationTime + FLAG_WAVE_PHASE_OFFSET) * FLAG_WAVE_AMPLITUDE;
+            const float texEpsilon = 0.02f;
+            const float textureLeft = static_cast<float>(textureRect.position.x) + texEpsilon;
+            const float textureTop = static_cast<float>(textureRect.position.y) + texEpsilon;
+            const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - texEpsilon;
+            const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - texEpsilon;
+
+            appendTexturedVertex(m_flagVertices, left + topWave, top, textureLeft, textureTop);
+            appendTexturedVertex(m_flagVertices, left + bottomWave, bottom, textureLeft, textureBottom);
+            appendTexturedVertex(m_flagVertices, right, bottom,
                                  textureRight, textureBottom);
-
-            // Second triangle: top-left, bottom-right, top-right.
-            appendTexturedVertex(targetArray, left, top,
-                                 textureLeft, textureTop);
-            
-            appendTexturedVertex(targetArray, right, bottom,
+            appendTexturedVertex(m_flagVertices, left + topWave, top, textureLeft, textureTop);
+            appendTexturedVertex(m_flagVertices, right, bottom,
                                  textureRight, textureBottom);
-            
-            appendTexturedVertex(targetArray, right, top,
+            appendTexturedVertex(m_flagVertices, right, top,
                                  textureRight, textureTop);
         }
     }
@@ -671,6 +950,48 @@ void TileMap::createPhysicsBodies(b2World* world) {
         body->CreateFixture(&fixtureDefinition);
         m_physicsBodies.push_back(body);
     }
+    
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+            if (m_grid[row][column] != 'H') {
+                continue;
+            }
+
+            const float widthPixels = 3.f * tileSize;
+            const float heightPixels = 2.f * tileSize;
+
+            const float left = static_cast<float>(column) * tileSize;
+            const float top = static_cast<float>(static_cast<int>(row) - 1) * tileSize;
+
+            const sf::Vector2f centerPixels(left + widthPixels / 2.f,
+                                            top + heightPixels / 2.f
+                                            );
+
+            const b2Vec2 centerMeters = PhysicsEngine::pixelsToMeters(centerPixels);
+
+            b2BodyDef bodyDefinition;
+            bodyDefinition.type = b2_staticBody;
+            bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
+
+            // H is a TileMap terrain body.
+            // Stored coordinates are the H bottom-left anchor.
+            bodyDefinition.userData.pointer = TILE_USERDATA_FLAG | (static_cast<uintptr_t>(row) << 16) | static_cast<uintptr_t>(column);
+
+            b2Body* body = world->CreateBody(&bodyDefinition);
+
+            b2PolygonShape shape;
+            shape.SetAsBox(PhysicsEngine::pixelsToMeters(widthPixels / 2.f),
+                           PhysicsEngine::pixelsToMeters(heightPixels / 2.f)
+            );
+
+            b2FixtureDef fixtureDefinition;
+            fixtureDefinition.shape = &shape;
+            fixtureDefinition.friction = TILE_FRICTION;
+
+            body->CreateFixture(&fixtureDefinition);
+            m_physicsBodies.push_back(body);
+        }
+    }
 }
 
 void TileMap::clearPhysicsBodies() {
@@ -687,6 +1008,10 @@ void TileMap::clearPhysicsBodies() {
 
     m_physicsBodies.clear();
     m_physicsWorld = nullptr;
+}
+
+void TileMap::destroyPhysicsBodies() {
+    clearPhysicsBodies();
 }
 
 bool TileMap::hitTile(int column, int row, bool isBigMario,

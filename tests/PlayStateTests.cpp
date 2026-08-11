@@ -53,11 +53,12 @@ bool testRaceConditionGuard() {
 
     // PlayState::onNotify rejects a terminal event if one was already committed
     // this frame (S6-TV1-13). The level-boundary decision it guards is the
-    // catalog boundary below: completing level 3 must be the ONLY path to Win.
+    // catalog boundary below: completing level 4 must be the ONLY path to Win.
     assert(!LevelCatalog::isPastFinalLevel(1));
     assert(!LevelCatalog::isPastFinalLevel(2));
     assert(!LevelCatalog::isPastFinalLevel(3));
-    assert(LevelCatalog::isPastFinalLevel(4));
+    assert(!LevelCatalog::isPastFinalLevel(4));
+    assert(LevelCatalog::isPastFinalLevel(5));
 
     std::cout << "[PASSED] testRaceConditionGuard" << std::endl;
     return true;
@@ -82,6 +83,10 @@ bool testWinDecisionCommittedOnce() {
     assert(LevelCatalog::isPastFinalLevel(progress.currentLevel) == false);
 
     // Simulate LEVEL_COMPLETED (Level 3 -> 4)
+    progress.currentLevel++;
+    assert(LevelCatalog::isPastFinalLevel(progress.currentLevel) == false);
+
+    // Simulate LEVEL_COMPLETED (Level 4 -> 5)
     // S6-TV1-14: Emulate the snapshot before transition
     progress.score = 5000; // Snapshot final score
     progress.currentLevel++;

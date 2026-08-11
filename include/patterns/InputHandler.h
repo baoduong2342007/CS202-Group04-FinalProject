@@ -33,7 +33,8 @@ enum class InputTrigger {
 
 enum class InputGroup {
     None,
-    Horizontal
+    Horizontal,
+    Vertical
 };
 
 class InputHandler {

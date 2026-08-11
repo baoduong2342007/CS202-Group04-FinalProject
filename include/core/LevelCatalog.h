@@ -13,13 +13,15 @@
 enum class LevelTheme {
     OVERWORLD,
     UNDERGROUND,
-    CASTLE
+    CASTLE,
+    UNDERWATER
 };
 
 enum class MusicId {
     OVERWORLD,
     UNDERGROUND,
     CASTLE,
+    UNDERWATER,
     STAR,
     DEATH,
     GAME_OVER,
@@ -28,7 +30,7 @@ enum class MusicId {
 
 // Sprint 6 locked contract (S6-TV1-03)
 struct LevelDefinition {
-    int number;                 // one-based (1, 2, 3)
+    int number;                 // one-based release level number
     std::string filePath;       // e.g. "levels/level1.txt"
     std::string worldLabel;     // e.g. "1-1"
     LevelTheme theme;
@@ -36,12 +38,13 @@ struct LevelDefinition {
 };
 
 namespace LevelCatalog {
-    /// Returns the full list of release levels (1, 2, 3).
+    /// Returns the full list of release levels (1, 2, 3, 4).
     inline const std::vector<LevelDefinition>& getAll() {
         static const std::vector<LevelDefinition> catalog = {
             {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,   MusicId::OVERWORLD},
             {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND, MusicId::UNDERGROUND},
-            {3, "levels/level3.txt", "1-3", LevelTheme::CASTLE,      MusicId::CASTLE},
+            {3, "levels/level3.txt", "1-3", LevelTheme::UNDERWATER,  MusicId::UNDERWATER},
+            {4, "levels/level4.txt", "1-4", LevelTheme::CASTLE,      MusicId::CASTLE},
         };
         return catalog;
     }

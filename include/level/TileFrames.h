@@ -19,7 +19,7 @@ inline constexpr int SOURCE_TILE_SIZE = 16;
 // group; the animated question/used cells belong to Palette 3 below.
 inline constexpr sf::IntRect GROUND{ {0, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK{ {17, 16}, {16, 16} };
-inline constexpr sf::IntRect STONE{ {34, 16}, {16, 16} };
+inline constexpr sf::IntRect STONE{ {0, 33}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK{ {51, 16}, {16, 16} };
 
 // Theme variations — Palette 1 uses theme-specific terrain slots.  The
@@ -28,17 +28,17 @@ inline constexpr sf::IntRect HARD_BLOCK{ {51, 16}, {16, 16} };
 inline constexpr sf::IntRect GROUND_UNDERGROUND{ {147, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERGROUND{ {164, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_VARIANT_UNDERGROUND{ {181, 16}, {16, 16} };
-inline constexpr sf::IntRect STONE_UNDERGROUND{ {198, 16}, {16, 16} };
+inline constexpr sf::IntRect STONE_UNDERGROUND{ {147, 33}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_UNDERGROUND{ {198, 16}, {16, 16} };
 
 inline constexpr sf::IntRect GROUND_CASTLE{ {0, 100}, {16, 16} };
 inline constexpr sf::IntRect BRICK_CASTLE{ {17, 100}, {16, 16} };
-inline constexpr sf::IntRect STONE_CASTLE{ {34, 100}, {16, 16} };
+inline constexpr sf::IntRect STONE_CASTLE{ {0, 117}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_CASTLE{ {51, 100}, {16, 16} };
 
 inline constexpr sf::IntRect GROUND_UNDERWATER{ {147, 100}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERWATER{ {164, 100}, {16, 16} };
-inline constexpr sf::IntRect STONE_UNDERWATER{ {181, 100}, {16, 16} };
+inline constexpr sf::IntRect STONE_UNDERWATER{ {147, 117}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_UNDERWATER{ {198, 100}, {16, 16} };
 
 // Palette 3 — animated question and used blocks.  The game currently uses
@@ -84,8 +84,16 @@ inline constexpr sf::IntRect PIPE_TOP_LEFT{ {119, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT{ {136, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT{ {119, 213}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT{ {136, 213}, {16, 16} };
-inline constexpr sf::IntRect FINISH_TOP{ {136, 230}, {16, 16} };
+
+inline constexpr sf::IntRect FINISH_FLAG{ {136, 230}, {16, 16} };
+
 inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };
+
+inline constexpr sf::IntRect FINISH_POLE_TOP{ {136, 230}, {16, 16} };
+
+inline constexpr sf::IntRect CASTLE{ {328, 196}, {80, 80} };
+
+inline constexpr sf::IntRect HORIZONTAL_PIPE { {328, 298}, {48, 32} };
 
 inline constexpr sf::IntRect PIPE_TOP_LEFT_UNDERGROUND{ {283, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT_UNDERGROUND{ {300, 196}, {16, 16} };
@@ -107,16 +115,5 @@ inline constexpr sf::IntRect PIPE_BODY_LEFT_UNDERWATER{ {283, 297}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT_UNDERWATER{ {300, 297}, {16, 16} };
 inline constexpr sf::IntRect FINISH_TOP_UNDERWATER{ {300, 314}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_UNDERWATER{ {300, 331}, {16, 16} };
-
-// Rectangles for assembled reference objects.  These are not 16x16 map
-// cells: they are one-piece crops for a structure renderer/exporter.
-namespace Assembled {
-inline constexpr sf::IntRect FLAG_POLE{ {0, 608}, {16, 168} };
-inline constexpr sf::IntRect TALL_PIPE_A{ {112, 624}, {32, 64} };
-inline constexpr sf::IntRect TALL_PIPE_B{ {152, 624}, {32, 64} };
-inline constexpr sf::IntRect BUSH_PAIR{ {120, 704}, {64, 16} };
-inline constexpr sf::IntRect SMALL_CASTLE{ {24, 696}, {80, 80} };
-inline constexpr sf::IntRect LARGE_CASTLE{ {400, 600}, {145, 176} };
-} // namespace Assembled
 
 } // namespace TileFrames

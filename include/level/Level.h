@@ -84,6 +84,8 @@ private:
     FireBallPool m_fireBallPool{2};
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
+    bool m_flagSequenceActive = false;
+    float m_flagSequenceTimer = 0.0f;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
     LevelTheme m_theme{LevelTheme::OVERWORLD};

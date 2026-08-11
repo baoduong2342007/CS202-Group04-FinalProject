@@ -1790,7 +1790,200 @@ CTest chạy validator test với repository root làm working directory để `
 
 ---
 
-## 30. Quy Ước Cập Nhật File Này
+## 30. Level 1 Scenery Rendering Update
+
+### File liên quan
+
+* [`include/level/TileFrames.h`](../../include/level/TileFrames.h)
+* [`src/level/TileMap.cpp`](../../src/level/TileMap.cpp)
+* [`levels/level1.txt`](../../levels/level1.txt)
+* [`assets/textures/tiles/tileset.png`](../../assets/textures/tiles/tileset.png)
+
+### Level 1 castle, horizontal pipe và flag-pole-top rendering
+
+Level 1 được cập nhật thêm các scenery marker mới để hỗ trợ layout và tileset đã chỉnh sửa.
+
+Level grammar hiện bổ sung:
+
+```text
+T = top of flag pole
+L = bottom-left anchor của castle
+H = bottom-left anchor của horizontal pipe
+```
+
+`T` sử dụng source frame:
+
+```text
+x = 136
+y = 230
+width = 16
+height = 16
+```
+
+và được ánh xạ tới:
+
+```cpp
+TileFrames::FLAG_POLE_TOP
+```
+
+Tên frame cũ:
+
+```cpp
+FINISH_TOP
+```
+
+được đổi thành:
+
+```cpp
+FINISH_FLAG
+```
+
+để phản ánh chính xác ý nghĩa của symbol:
+
+```text
+F = finish flag
+T = flag-pole top
+| = flag-pole body
+```
+
+### Castle anchor
+
+Symbol:
+
+```text
+L
+```
+
+đại diện cho điểm bottom-left của castle.
+
+Castle sử dụng một vùng texture hoàn chỉnh:
+
+```text
+source position: 328, 196
+source size:     80 × 80
+```
+
+Tương ứng với:
+
+```text
+5 × 5 source tiles
+```
+
+và được render thành:
+
+```text
+5 × 5 world tiles
+```
+
+Do `L` nằm tại bottom-left, vị trí top-left khi render được dịch lên bốn tile so với hàng chứa marker.
+
+Castle được render như một scenery sprite duy nhất thay vì tách thành 25 tile frame độc lập.
+
+Castle không tham gia terrain collision.
+
+### Horizontal pipe anchor
+
+Symbol:
+
+```text
+H
+```
+
+đại diện cho điểm bottom-left của horizontal pipe.
+
+Horizontal pipe sử dụng vùng texture:
+
+```text
+source position: 328, 298
+source size:     48 × 32
+```
+
+Tương ứng với:
+
+```text
+3 × 2 source tiles
+```
+
+và được render thành:
+
+```text
+3 × 2 world tiles
+```
+
+Do `H` nằm tại bottom-left, vị trí top-left của sprite được dịch lên một tile khi render.
+
+Horizontal pipe được đưa vào foreground vertex layer để giữ behavior nhất quán với các pipe hiện có:
+
+```text
+Mario và item có thể được render phía sau pipe.
+```
+
+### TileMap integration
+
+`TileMap` được mở rộng để chấp nhận các marker:
+
+```text
+T
+L
+H
+```
+
+trong level grammar.
+
+`T` tiếp tục sử dụng single-tile rendering thông thường.
+
+`L` và `H` được xử lý riêng trong:
+
+```cpp
+TileMap::buildVertices()
+```
+
+vì một marker trong level đại diện cho một sprite chiếm nhiều world tiles.
+
+Flow rendering hiện tại:
+
+```text
+T -> single tile rendering
+
+L -> 5x5 castle sprite
+
+H -> 3x2 horizontal pipe sprite
+```
+
+Cách xử lý này giữ level file gọn, không yêu cầu biểu diễn toàn bộ castle hoặc horizontal pipe bằng nhiều ký tự riêng biệt.
+
+### Phân chia trách nhiệm
+
+Thay đổi này chỉ xử lý:
+
+```text
+level grammar
+tileset frame definitions
+Level 1 scenery rendering
+```
+
+Castle chỉ là visual scenery nên không tạo physics body.
+
+Horizontal pipe cần collision footprint tương ứng với vùng 3×2 và được xử lý riêng trong phần physics để tránh coi `H` như một solid tile đơn lẻ.
+
+### Kiểm tra
+
+- `T` render đúng flag-pole-top.
+- `F` tiếp tục render đúng finish flag.
+- `|` tiếp tục render đúng flag-pole body.
+- Castle xuất hiện đúng vị trí với kích thước 5×5 tile.
+- `L` nằm tại bottom-left của castle.
+- Castle không tạo terrain collision ngoài ý muốn.
+- Horizontal pipe xuất hiện đúng kích thước 3×2 tile.
+- `H` nằm tại bottom-left của horizontal pipe.
+- Horizontal pipe được render ở foreground layer.
+- Level 1 load thành công với grammar mới.
+- Không còn reference tới tên cũ `FINISH_TOP`.
+- Project build thành công.
+
+---
+
+## 31. Quy Ước Cập Nhật File Này
 
 Sau mỗi task Sprint 6 hoàn tất, TV4 cần bổ sung:
 

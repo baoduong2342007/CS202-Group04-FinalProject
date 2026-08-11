@@ -41,6 +41,10 @@ void PiranhaPlant::initAnimations(LevelTheme theme) {
             closedRect = SpriteFrames::legacy::Enemies::PiranhaPlant::UG_CASTLE_CLOSED;
             openRect = SpriteFrames::legacy::Enemies::PiranhaPlant::UG_CASTLE_OPEN;
             break;
+        case LevelTheme::UNDERWATER:
+            closedRect = SpriteFrames::legacy::Enemies::PiranhaPlant::UW_CLOSED;
+            openRect = SpriteFrames::legacy::Enemies::PiranhaPlant::UW_OPEN;
+            break;
         case LevelTheme::OVERWORLD:
         default:
             closedRect = SpriteFrames::legacy::Enemies::PiranhaPlant::CLOSED;

@@ -44,6 +44,14 @@ public:
     void moveRight();
     void stopMoving();
     void setMoveIntent(float inputDirection);
+    void setVerticalIntent(float inputDirection);
+    void setClimbContext(bool onVine, float vineCenterX = 0.0f);
+    bool isClimbing() const { return m_isClimbing; }
+    void setFlagpoleSliding(bool sliding);
+    void beginFlagpoleSlide(float poleCenterX, float targetTopY);
+    void updateFlagpoleSlide(float dt);
+    bool isFlagpoleSliding() const { return m_isFlagpoleSliding; }
+    static constexpr float FLAGPOLE_SLIDE_SPEED = 120.0f;
     void preparePhysics(float dt);
     void powerUp(MarioState state);
     void powerDown();
@@ -102,6 +110,10 @@ public:
     bool isDeathAnimationFinished() const;
     bool isTransforming() const { return m_isTransforming; }
 
+    /// Underwater swim mode — Level sets this for UNDERWATER theme
+    void setUnderwater(bool underwater) { m_isUnderwater = underwater; }
+    bool isUnderwater() const { return m_isUnderwater; }
+
 protected:
     // 5. Protected methods
     void rebuildFixture();
@@ -149,6 +161,13 @@ protected:
 
     // Dynamic Pit Threshold & Map Bounds (S6-TV3-07)
     float m_pitThreshold = 800.0f;
+
+    // Underwater swimming mode
+    bool m_isUnderwater = false;
+    bool m_isClimbing = false;
+    bool m_isFlagpoleSliding = false;
+    float m_flagpoleTargetTopY = 0.0f;
+    float m_verticalIntent = 0.0f;
 
 public:
     void setPitThreshold(float threshold) { m_pitThreshold = threshold; }

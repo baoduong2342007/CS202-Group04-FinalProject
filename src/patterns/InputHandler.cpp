@@ -94,6 +94,26 @@ void InputHandler::handleInput(const InputState& inputState, bool gameplayEnable
     if (horizontalBinding) {
         horizontalBinding->command->execute();
     }
+
+    const Binding* verticalBinding = nullptr;
+    latestPressOrder = 0;
+    for (const auto& [key, bindings] : m_keyBindings) {
+        for (const auto& binding : bindings) {
+            if (binding.trigger != InputTrigger::Held ||
+                binding.group != InputGroup::Vertical ||
+                !inputState.isActiveThisFrame(key) || !binding.command) {
+                continue;
+            }
+            const std::uint64_t pressOrder = inputState.getPressOrder(key);
+            if (!verticalBinding || pressOrder > latestPressOrder) {
+                verticalBinding = &binding;
+                latestPressOrder = pressOrder;
+            }
+        }
+    }
+    if (verticalBinding) {
+        verticalBinding->command->execute();
+    }
 }
 
 ICommand* InputHandler::getAction(sf::Keyboard::Key key) const {

@@ -453,6 +453,7 @@ void testInputBindingsAndSuppression() {
     InputHandler handler;
     int runRequests = 0;
     int shootRequests = 0;
+    int verticalIntent = 0;
 
     handler.bindKey(
         sf::Keyboard::Key::LShift,
@@ -462,6 +463,16 @@ void testInputBindingsAndSuppression() {
         sf::Keyboard::Key::X,
         std::make_unique<ShootCommand>([&shootRequests] { ++shootRequests; }),
         InputTrigger::Pressed);
+    handler.bindKey(
+        sf::Keyboard::Key::W,
+        std::make_unique<RunCommand>([&verticalIntent] { verticalIntent = -1; }),
+        InputTrigger::Held,
+        InputGroup::Vertical);
+    handler.bindKey(
+        sf::Keyboard::Key::S,
+        std::make_unique<RunCommand>([&verticalIntent] { verticalIntent = 1; }),
+        InputTrigger::Held,
+        InputGroup::Vertical);
 
     input.beginFrame();
     input.handleEvent(keyPressed(sf::Keyboard::Key::LShift));
@@ -484,6 +495,22 @@ void testInputBindingsAndSuppression() {
     assert(runRequests == 2);
 
     input.beginFrame();
+    input.handleEvent(keyPressed(sf::Keyboard::Key::W));
+    handler.handleInput(input);
+    assert(verticalIntent == -1);
+
+    // The latest vertical press wins while both keys remain held.
+    input.beginFrame();
+    input.handleEvent(keyPressed(sf::Keyboard::Key::S));
+    handler.handleInput(input);
+    assert(verticalIntent == 1);
+
+    input.beginFrame();
+    input.handleEvent(keyReleased(sf::Keyboard::Key::W));
+    input.handleEvent(keyReleased(sf::Keyboard::Key::S));
+    handler.handleInput(input);
+
+    input.beginFrame();
     input.handleEvent(keyPressed(sf::Keyboard::Key::X));
     handler.handleInput(input, false); // Pause/death/transition suppression.
     assert(shootRequests == 1);
@@ -493,7 +520,8 @@ void testStarMusicOverrideAndVolumePersistence() {
     SoundManager& sound = SoundManager::getInstance();
     assert(LevelCatalog::find(1)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(2)->music == MusicId::UNDERGROUND);
-    assert(LevelCatalog::find(3)->music == MusicId::CASTLE);
+    assert(LevelCatalog::find(3)->music == MusicId::UNDERWATER);
+    assert(LevelCatalog::find(4)->music == MusicId::CASTLE);
 
     for (const char* effect : {"coin", "stomp", "kick", "shell_kick",
                                "shell_kill", "enemy_fireball", "enemy_star",
@@ -578,9 +606,10 @@ void testStateAudioRuntimeAndLevelTracks() {
     };
 
     completeCurrentLevel(MusicId::UNDERGROUND);
+    completeCurrentLevel(MusicId::UNDERWATER);
     completeCurrentLevel(MusicId::CASTLE);
 
-    // Level 3 completion queues exactly one WinState at the safe point.
+    // Level 4 completion queues exactly one WinState at the safe point.
     EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
     game.update(0.6f);
     game.update(0.f);
@@ -621,7 +650,7 @@ void testVolumeClampAndAssetManifest() {
         assert(dimensions.second == height);
     };
 
-    assertDimensions("assets/textures/tiles/tileset.png", 680, 776);
+    assertDimensions("assets/textures/tiles/tileset.png", 680, 356);
     assertDimensions("assets/textures/enemies/enemies.png", 436, 530);
     assertDimensions("assets/textures/enemies/goomba.png", 96, 32);
     assertDimensions("assets/textures/enemies/koopa.png", 128, 48);
@@ -633,7 +662,7 @@ void testVolumeClampAndAssetManifest() {
     const std::string manifestText(
         (std::istreambuf_iterator<char>(manifest)), std::istreambuf_iterator<char>());
     assert(manifestText.find("assets/textures/tiles/tileset.png") != std::string::npos);
-    assert(manifestText.find("680×776") != std::string::npos);
+    assert(manifestText.find("680×356") != std::string::npos);
     assert(manifestText.find("assets/textures/enemies/enemies.png") != std::string::npos);
     assert(manifestText.find("436×530") != std::string::npos);
     assert(manifestText.find(

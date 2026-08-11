@@ -260,7 +260,7 @@ bool SoundManager::loadMusic(const std::string& filepath) {
 
 bool SoundManager::loadMusic(MusicId id, const std::string& filepath) {
     m_musicPaths[id] = filepath;
-    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE) {
+    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE || id == MusicId::UNDERWATER) {
         setLevelMusic(id);
     }
     return openMusic(id);
@@ -275,7 +275,7 @@ void SoundManager::playMusic() {
 }
 
 void SoundManager::playMusic(MusicId id) {
-    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE) {
+    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE || id == MusicId::UNDERWATER) {
         setLevelMusic(id);
     }
 
@@ -353,6 +353,7 @@ void SoundManager::registerDefaultMusicPaths() {
     m_musicPaths[MusicId::OVERWORLD] = "assets/sounds/music/overworld.flac";
     m_musicPaths[MusicId::UNDERGROUND] = "assets/sounds/music/underground.flac";
     m_musicPaths[MusicId::CASTLE] = "assets/sounds/music/castle.flac";
+    m_musicPaths[MusicId::UNDERWATER] = "assets/sounds/music/underwater.flac";
     m_musicPaths[MusicId::STAR] = "assets/sounds/music/invincible.flac";
     m_musicPaths[MusicId::DEATH] = "assets/sounds/music/death.flac";
     m_musicPaths[MusicId::GAME_OVER] = "assets/sounds/music/gameover.flac";

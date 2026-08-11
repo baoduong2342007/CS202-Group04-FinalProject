@@ -24,7 +24,7 @@ tính từ thư mục executable sau khi CMake copy runtime assets; đường d�
 | `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | QuestionBlock và block frames; không phải atlas runtime của Mushroom. |
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Mushroom, Coin, FireFlower và Star frames; được các item caller load trực tiếp. |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet. |
-| `assets/textures/tiles/tileset.png` | 680×776 | `Runtime` | Tileset thật; `TileMap` dùng các frame catalog trong `TileFrames.h`. |
+| `assets/textures/tiles/tileset.png` | 680×356 | `Runtime` | Tileset thật; `TileMap` dùng các frame catalog trong `TileFrames.h`. |
 | `assets/ui/bg_world.png` | 1857×847 | `Runtime` | Full-frame modern pixel-art overworld; uniformly scaled to the logical view and repeated with alternating mirroring behind every level. |
 | `assets/textures/ui/bg_clouds.png` | 768×1129 | `Future` | Không có caller runtime trong release hiện tại; giữ để tham khảo cho background tương lai. |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld background kept as a reference asset. |

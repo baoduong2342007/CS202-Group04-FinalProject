@@ -484,10 +484,10 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
-            return CollisionManager::defeatEnemy(
-                *victim,
-                DefeatCause::SHELL,
-                koopa->getDefeatOwner());
+            return CollisionManager::defeatEnemy(*victim,
+                                                 DefeatCause::SHELL,
+                                                 koopa->getDefeatOwner()
+                                                 );
         };
 
         tryShellKill(enemyA, enemyB);

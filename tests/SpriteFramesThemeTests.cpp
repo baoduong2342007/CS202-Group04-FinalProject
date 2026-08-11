@@ -158,10 +158,10 @@ void testCanonicalEnemyCoordinates() {
 void testCanonicalTileCoordinates() {
     assert(hasPosition(TileFrames::GROUND, 0, 16));
     assert(hasPosition(TileFrames::BRICK, 17, 16));
-    assert(hasPosition(TileFrames::STONE, 34, 16));
+    assert(hasPosition(TileFrames::STONE, 0, 33));
     assert(hasPosition(TileFrames::BRICK_UNDERGROUND, 164, 16));
     assert(hasPosition(TileFrames::BRICK_VARIANT_UNDERGROUND, 181, 16));
-    assert(hasPosition(TileFrames::STONE_UNDERGROUND, 198, 16));
+    assert(hasPosition(TileFrames::STONE_UNDERGROUND, 147, 33));
     assert(hasPosition(TileFrames::HARD_BLOCK_UNDERGROUND, 198, 16));
 
     // Question/used blocks are in Palette 3, not beside the terrain quartet.
@@ -184,14 +184,16 @@ void testCanonicalTileCoordinates() {
     assert(hasPosition(TileFrames::FINISH_TOP_CASTLE, 136, 314));
     assert(hasPosition(TileFrames::FINISH_POLE_CASTLE, 136, 331));
 
-    assert(TileFrames::Assembled::FLAG_POLE.position.x == 0);
-    assert(TileFrames::Assembled::FLAG_POLE.position.y == 608);
-    assert(TileFrames::Assembled::FLAG_POLE.size.x == 16);
-    assert(TileFrames::Assembled::FLAG_POLE.size.y == 168);
-    assert(TileFrames::Assembled::SMALL_CASTLE.size.x == 80);
-    assert(TileFrames::Assembled::SMALL_CASTLE.size.y == 80);
-    assert(TileFrames::Assembled::LARGE_CASTLE.size.x == 145);
-    assert(TileFrames::Assembled::LARGE_CASTLE.size.y == 176);
+    // TV4 composite scenery stored directly in the runtime atlas.
+    assert(hasPosition(TileFrames::FINISH_POLE_TOP, 136, 230));
+
+    assert(hasPosition(TileFrames::CASTLE, 328, 196));
+    assert(TileFrames::CASTLE.size.x == 80);
+    assert(TileFrames::CASTLE.size.y == 80);
+
+    assert(hasPosition(TileFrames::HORIZONTAL_PIPE, 328, 298));
+    assert(TileFrames::HORIZONTAL_PIPE.size.x == 48);
+    assert(TileFrames::HORIZONTAL_PIPE.size.y == 32);
 }
 
 } // namespace

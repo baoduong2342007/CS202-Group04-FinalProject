@@ -399,7 +399,7 @@ void Level::render(sf::RenderTarget& target) {
     }
 
     // Draw FireBall projectiles
-    m_fireBallPool.render(window);
+    m_fireBallPool.render(target);
 
     // Draw Mario on top
     if (m_mario) {

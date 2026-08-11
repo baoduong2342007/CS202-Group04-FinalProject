@@ -38,10 +38,10 @@ void FireBallPool::update(float dt) {
     }
 }
 
-void FireBallPool::render(sf::RenderWindow& window) {
+void FireBallPool::render(sf::RenderTarget& target) {
     for (const auto& fb : m_pool) {
         if (fb->isActive()) {
-            window.draw(*fb);
+            target.draw(*fb);
         }
     }
 }

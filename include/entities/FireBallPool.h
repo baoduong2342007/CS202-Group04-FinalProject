@@ -34,7 +34,7 @@ public:
     void update(float dt);
 
     /// Render active fireballs in pool
-    void render(sf::RenderWindow& window);
+    void render(sf::RenderTarget& target);
 
     /// Get active fireball count
     size_t getActiveCount() const;

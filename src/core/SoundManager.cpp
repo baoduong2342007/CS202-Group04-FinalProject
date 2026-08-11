@@ -40,9 +40,13 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
     bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.subscribe(EventType::GAME_PAUSED, this);
+    bus.subscribe(EventType::GAME_RESUMED, this);
     bus.subscribe(EventType::LEVEL_COMPLETED, this);
     bus.subscribe(EventType::FIREBALL_SHOT, this);
     bus.subscribe(EventType::SHELL_KICKED, this);
+    bus.subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
+    bus.subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
+    bus.subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
     bus.subscribe(EventType::BLOCK_BUMPED, this);
     bus.subscribe(EventType::BRICK_BROKEN, this);
     bus.subscribe(EventType::ITEM_EMERGED, this);
@@ -60,6 +64,13 @@ SoundManager::SoundManager()
     loadSound("powerup", "assets/sounds/effects/powerup.wav");
     loadSound("powerdown", "assets/sounds/effects/pipepowerdown.wav");
     loadSound("fireball", "assets/sounds/effects/fireball.wav");
+    // Separate logical cues keep shell kick and shell kill from sharing an
+    // EventBus/SFX path. The current packaged sample is reused until a
+    // dedicated shell-kill recording is supplied.
+    loadSound("shell_kick", "assets/sounds/effects/kickkill.wav");
+    loadSound("shell_kill", "assets/sounds/effects/kickkill.wav");
+    loadSound("enemy_fireball", "assets/sounds/effects/kickkill.wav");
+    loadSound("enemy_star", "assets/sounds/effects/kickkill.wav");
     loadSound("flagpole", "assets/sounds/effects/flagpole.wav");
     loadSound("brick", "assets/sounds/effects/brick.wav");
     loadSound("bump", "assets/sounds/effects/bump.wav");
@@ -84,9 +95,13 @@ SoundManager::~SoundManager() {
     bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
     bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
     bus.unsubscribe(EventType::GAME_PAUSED, this);
+    bus.unsubscribe(EventType::GAME_RESUMED, this);
     bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
     bus.unsubscribe(EventType::FIREBALL_SHOT, this);
     bus.unsubscribe(EventType::SHELL_KICKED, this);
+    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
+    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
+    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
     bus.unsubscribe(EventType::BLOCK_BUMPED, this);
     bus.unsubscribe(EventType::BRICK_BROKEN, this);
     bus.unsubscribe(EventType::ITEM_EMERGED, this);
@@ -103,6 +118,15 @@ void SoundManager::onNotify(EventType event) {
             break;
         case EventType::ENEMY_STOMPED:
             playSound("stomp");
+            break;
+        case EventType::ENEMY_DEFEATED_BY_SHELL:
+            playSound("shell_kill");
+            break;
+        case EventType::ENEMY_DEFEATED_BY_FIREBALL:
+            playSound("enemy_fireball");
+            break;
+        case EventType::ENEMY_DEFEATED_BY_STAR:
+            playSound("enemy_star");
             break;
         case EventType::PLAYER_DIED:
             playSound("death");
@@ -129,7 +153,7 @@ void SoundManager::onNotify(EventType event) {
             playSound("fireball");
             break;
         case EventType::SHELL_KICKED:
-            playSound("kick");
+            playSound("shell_kick");
             break;
         case EventType::BLOCK_BUMPED:
             playSound("bump");
@@ -146,6 +170,9 @@ void SoundManager::onNotify(EventType event) {
         case EventType::GAME_PAUSED:
             playSound("pause");
             pauseMusic();
+            break;
+        case EventType::GAME_RESUMED:
+            playMusic();
             break;
         case EventType::LEVEL_COMPLETED:
             playSound("flagpole");

@@ -7,6 +7,7 @@
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <optional>
 #include "ui/UIMenuWidget.h"
 
 enum class PauseVolumeSelection {
@@ -16,12 +17,14 @@ enum class PauseVolumeSelection {
 
 class PauseState : public IGameState {
 public:
+    // 1. Constructor / Destructor
     /**
      * @brief Constructs the PauseState, loading the font and configuring the pause text.
      */
     PauseState();
     ~PauseState() override = default;
 
+    // 2. Override methods
     /**
      * @brief Triggered when the game enters the pause state. Freezes relevant game systems.
      */
@@ -63,12 +66,15 @@ public:
     bool isOverlay() const override { return true; }
 
 private:
+    // 5. Private methods
     void refreshText();
     void adjustSelectedVolume(float delta);
 
-    sf::Font m_font;
-    sf::Text m_titleText;
-    sf::Text m_volumeText;
-    PauseVolumeSelection m_selectedVolume = PauseVolumeSelection::MUSIC;
-    std::unique_ptr<UIMenuWidget> m_menu;
+    // 6. Private members
+    sf::Font m_font;                             ///< Font for rendering text
+    bool m_fontLoaded;                           ///< True if font loaded successfully
+    std::optional<sf::Text> m_titleText;         ///< "PAUSED" text
+    std::optional<sf::Text> m_volumeText;        ///< Volume text overlay
+    PauseVolumeSelection m_selectedVolume = PauseVolumeSelection::MUSIC; ///< Currently selected volume to adjust
+    std::unique_ptr<UIMenuWidget> m_menu;        ///< The UI menu for the state
 };

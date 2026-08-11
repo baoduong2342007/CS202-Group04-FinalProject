@@ -215,6 +215,12 @@ if(BUILD_TESTING)
     target_link_libraries(level_validator_tests PRIVATE game_lib)
     add_test(NAME level_validator_tests COMMAND level_validator_tests)
 
+    add_executable(springboard_tests
+        tests/SpringboardTests.cpp
+    )
+    target_link_libraries(springboard_tests PRIVATE game_lib)
+    add_test(NAME springboard_tests COMMAND springboard_tests)
+
     set_tests_properties(level_validator_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
@@ -238,6 +244,12 @@ if(BUILD_TESTING)
     set_tests_properties(save_session_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+
+    add_executable(sprite_frames_theme_tests
+        tests/SpriteFramesThemeTests.cpp
+    )
+    target_link_libraries(sprite_frames_theme_tests PRIVATE game_lib)
+    add_test(NAME sprite_frames_theme_tests COMMAND sprite_frames_theme_tests)
 endif()
 
 # Platform-specific Release build settings

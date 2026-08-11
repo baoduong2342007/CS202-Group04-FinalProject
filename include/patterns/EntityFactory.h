@@ -17,11 +17,13 @@
 #include <SFML/Graphics.hpp>
 
 // 3. Project headers
+#include "core/LevelCatalog.h"
 #include "entities/Entity.h"
 
 enum class EnemyType {
     GOOMBA,
-    KOOPA
+    KOOPA,
+    PIRANHA_PLANT
 };
 
 enum class ItemType {
@@ -47,11 +49,17 @@ public:
 
     // 3. Public static methods
     /// Create an enemy by type (caller owns the returned unique_ptr)
-    static std::unique_ptr<Entity> createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world);
+    static std::unique_ptr<Entity> createEnemy(EnemyType type,
+                                               const sf::Vector2f& position,
+                                               b2World* world,
+                                               LevelTheme theme = LevelTheme::OVERWORLD);
 
     /// Create an item by type (caller owns the returned unique_ptr)
     static std::unique_ptr<Entity> createItem(ItemType type, const sf::Vector2f& position, b2World* world);
 
     /// Helper for TV4's TileMap parser: maps character code ('G', 'K', 'C', '?') to exact entity
-    static std::unique_ptr<Entity> createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world);
+    static std::unique_ptr<Entity> createFromTileCode(char tileCode,
+                                                      const sf::Vector2f& position,
+                                                      b2World* world,
+                                                      LevelTheme theme = LevelTheme::OVERWORLD);
 };

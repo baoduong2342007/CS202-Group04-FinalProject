@@ -12,7 +12,7 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_shared.h"
 #include "core/ScoreRules.h"
 
 namespace {
@@ -33,7 +33,7 @@ Star::Star()
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::starFrames(), 0.1f));
     playAnimation("idle");
 }
 
@@ -45,7 +45,7 @@ Star::Star(const sf::Vector2f& position, b2World* world)
     initPhysics(world, b2_dynamicBody, sf::Vector2f(STAR_WIDTH, STAR_HEIGHT));
     setSprite(STAR_TEXTURE_PATH);
     m_animationSystem->addAnimation("idle",
-        AnimationSystem::createManualAnimation(SpriteFrames::Items::starFrames(), 0.1f));
+        AnimationSystem::createManualAnimation(SpriteFrames::shared::Items::starFrames(), 0.1f));
     playAnimation("idle");
 }
 

@@ -31,6 +31,7 @@ public:
     // (None — Level does not inherit from a base class)
 
     // 3. Public methods
+    void setTheme(LevelTheme theme);
     bool loadFromFile(const std::string& path);
     void update(float dt);
     void render(sf::RenderTarget& target);
@@ -39,6 +40,9 @@ public:
     /// Spawn one FireBall owned by Mario. Returns false when FIRE/cooldown/pool
     /// rules reject the request.
     bool spawnFireBall();
+
+    /// Spawn a FireballExplosion particle effect at the specified position.
+    void spawnFireballExplosion(const sf::Vector2f& position);
 
     // 4. Getters / Setters
     Mario* getMario();
@@ -74,4 +78,5 @@ private:
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
     std::string m_levelPath;
+    LevelTheme m_theme{LevelTheme::OVERWORLD};
 };

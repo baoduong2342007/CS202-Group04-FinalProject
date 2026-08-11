@@ -11,6 +11,7 @@
 
 class Mario;
 class TextureManager;
+enum class MarioState;
 
 enum class QuestionBlockContent {
     ADAPTIVE,
@@ -42,9 +43,13 @@ public:
     // 3. Public methods
     /// Triggers block hit reaction: 12px bump animation, spawns item & changes sprite to empty block
     void onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities = nullptr, TextureManager* textureManager = nullptr);
+    /// Resolve a 0-99 weighted roll for a normal '?' block.
+    static QuestionBlockContent chooseAdaptiveContent(MarioState marioState, unsigned int roll);
     bool isHit() const { return m_isHit; }
     QuestionBlockContent getContent() const { return m_content; }
     BlockTheme getTheme() const { return m_theme; }
+
+    static constexpr unsigned int COIN_DROP_RATE_PERCENT = 75;
 
 private:
     QuestionBlockContent m_content = QuestionBlockContent::ADAPTIVE;

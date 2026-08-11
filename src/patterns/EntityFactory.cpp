@@ -15,21 +15,44 @@
 // ============================================================
 #include "entities/Goomba.h"          // TV4 (Sprint 4)
 #include "entities/Koopa.h"           // TV4 (Sprint 5)
+#include "entities/PiranhaPlant.h"    // TV4 (Sprint 7)
 #include "items/Coin.h"              // TV5 (Sprint 4)
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
 #include "items/Star.h"             // TV5 (Sprint 5)
+#include "entities/Springboard.h"     // TV1 (Sprint 7)
 #include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
+
+namespace {
+
+BlockTheme toBlockTheme(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return BlockTheme::UNDERGROUND;
+        case LevelTheme::CASTLE:
+            return BlockTheme::CASTLE;
+        case LevelTheme::OVERWORLD:
+        default:
+            return BlockTheme::OVERWORLD;
+    }
+}
+
+} // namespace
 
 // ============================================================
 // PATTERN: Simple Factory Implementation
 // ============================================================
-std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
+                                                   const sf::Vector2f& position,
+                                                   b2World* world,
+                                                   LevelTheme theme) {
     switch (type) {
         case EnemyType::GOOMBA:
-            return std::make_unique<Goomba>(position, world);
+            return std::make_unique<Goomba>(position, world, theme);
         case EnemyType::KOOPA:
-            return std::make_unique<Koopa>(position, world);
+            return std::make_unique<Koopa>(position, world, theme);
+        case EnemyType::PIRANHA_PLANT:
+            return std::make_unique<PiranhaPlant>(position, world, theme);
         default:
             return nullptr;
     }
@@ -50,27 +73,52 @@ std::unique_ptr<Entity> EntityFactory::createItem(ItemType type, const sf::Vecto
     }
 }
 
-std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
+                                                          const sf::Vector2f& position,
+                                                          b2World* world,
+                                                          LevelTheme theme) {
     switch (tileCode) {
         case 'G':
-            return createEnemy(EnemyType::GOOMBA, position, world);
+            return createEnemy(EnemyType::GOOMBA, position, world, theme);
         case 'K':
-            return createEnemy(EnemyType::KOOPA, position, world);
+            return createEnemy(EnemyType::KOOPA, position, world, theme);
+        case 'p':
+        case 'r':
+            return createEnemy(EnemyType::PIRANHA_PLANT, position, world, theme);
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            // The release '?' contract is adaptive. Its content is resolved
-            // once by QuestionBlock::onHit() from Mario's current state.
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ADAPTIVE);
+            // Normal '?' blocks resolve once when hit: mostly coins, otherwise
+            // a power-up adapted to Mario's current state.
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::ADAPTIVE,
+                                                   toBlockTheme(theme));
         case 'f':
         case 'h':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::FIRE_FLOWER);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::FIRE_FLOWER,
+                                                   toBlockTheme(theme));
         case 'U':
         case 'u':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::ONEUP_MUSHROOM);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::ONEUP_MUSHROOM,
+                                                   toBlockTheme(theme));
         case 'O':
         case 'o':
-            return std::make_unique<QuestionBlock>(position, world, QuestionBlockContent::STAR);
+            return std::make_unique<QuestionBlock>(position,
+                                                   world,
+                                                   QuestionBlockContent::STAR,
+                                                   toBlockTheme(theme));
+        case 'J':
+        case 'S':
+            {
+                auto springboard = std::make_unique<Springboard>(position, theme);
+                springboard->initPhysics(world, b2_staticBody, {32.f, 32.f});
+                return springboard;
+            }
         default:
             return nullptr;
     }

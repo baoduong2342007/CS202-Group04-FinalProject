@@ -24,7 +24,9 @@ public:
 
     // 3. Public methods
     void bounce(const sf::Vector2f& surfaceNormal = sf::Vector2f(0.f, -1.f));
-    void deactivate();
+    void deactivate(bool explode = true);
+    bool shouldSpawnExplosion() const { return m_spawnExplosion; }
+    void clearExplosionFlag() { m_spawnExplosion = false; }
     EntityType getType() const override { return EntityType::PROJECTILE; }
     bool isFireBall() const override { return true; }
 
@@ -42,9 +44,14 @@ public:
 
 private:
     // 5. Private members
+    /// Assign the shared negative collision group so this fireball never
+    /// physically collides with Mario (fireballs pass through the plumber).
+    void applyNoPlayerCollision();
+
     Direction m_direction;
     int m_bounceCount;
     float m_lifetime;
     float m_bounceCooldown;
+    bool m_spawnExplosion = false;
     Mario* m_owner = nullptr; // non-owning; Level owns the projectile and Mario
 };

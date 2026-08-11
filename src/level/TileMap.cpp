@@ -24,20 +24,35 @@
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "level/TileFrames.h"
+#include "core/LevelCatalog.h"
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}TLH";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}prJTLH";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 
 bool isSolidTileSymbol(char tile) {
     return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
-           tile == '[' || tile == ']' || tile == '{' || tile == '}';
+           tile == '[' || tile == ']' ||
+           tile == 'p' || tile == 'r' ||
+           tile == '{' || tile == '}';
+}
+
+bool isForegroundTile(char symbol) {
+    return symbol == 'B' || symbol == '?' ||
+           symbol == 'U' || symbol == 'O' ||
+           symbol == 'F' || symbol == 'T' ||
+           symbol == '|' || symbol == 'H' ||
+           symbol == '[' || symbol == ']' ||
+           symbol == 'p' || symbol == 'r' ||
+           symbol == '{' || symbol == '}';
 }
 
 bool isEnemySupportTileSymbol(char tile) {
@@ -159,30 +174,70 @@ bool isValidTileSymbol(char symbol) {
 }
 
 bool isRenderableTile(char symbol) {
-    return symbol == '1' || symbol == 'B' || symbol == 'F' ||
-           symbol == 'T' || symbol == 'L' || symbol == 'H' ||
+    return symbol == '1' || symbol == 'B' ||
+           symbol == 'F' || symbol == 'T' ||
+           symbol == 'L' || symbol == 'H' ||
            symbol == 'S' || symbol == '|' || symbol == 'E' ||
-           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
-}
-
-bool isForegroundTile(char symbol) {
-    // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
-    return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
-           symbol == 'F' || symbol == 'T' || symbol == '|' || symbol == 'H' ||
-           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
+           symbol == '[' || symbol == ']' ||
+           symbol == 'p' || symbol == 'r' ||
+           symbol == '{' || symbol == '}';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 
-sf::IntRect getTilesetRect(char symbol) {
+struct DebrisFrames {
+    const sf::IntRect& topLeft;
+    const sf::IntRect& topRight;
+    const sf::IntRect& bottomLeft;
+    const sf::IntRect& bottomRight;
+};
+
+const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
+    static const DebrisFrames overworld{
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::ovw::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames underground{
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::udg::Blocks::DEBRIS_BOTTOM_RIGHT};
+    static const DebrisFrames castle{
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_TOP_RIGHT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_LEFT,
+        SpriteFrames::castle::Blocks::DEBRIS_BOTTOM_RIGHT};
+    switch (theme) {
+        case LevelTheme::UNDERGROUND: return underground;
+        case LevelTheme::CASTLE:      return castle;
+        case LevelTheme::OVERWORLD:
+        default:                      return overworld;
+    }
+}
+
+} // namespace
+
+void TileMap::setTheme(LevelTheme theme) {
+    m_theme = theme;
+}
+
+namespace {
+sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
         case '1':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::GROUND_CASTLE;
             return TileFrames::GROUND;
 
         case 'S':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
 
         case 'B':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
             return TileFrames::BRICK;
 
         case '?':
@@ -192,27 +247,48 @@ sf::IntRect getTilesetRect(char symbol) {
         case 'o':
         case 'f':
         case 'h':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::QUESTION_UNDERGROUND;
             return TileFrames::QUESTION;
 
         case 'E':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::USED_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::USED_BLOCK_CASTLE;
             return TileFrames::USED_BLOCK;
 
         case '[':
+        case 'p':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
             return TileFrames::PIPE_TOP_LEFT;
 
         case ']':
+        case 'r':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_RIGHT_CASTLE;
             return TileFrames::PIPE_TOP_RIGHT;
 
         case '{':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_LEFT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_LEFT_CASTLE;
             return TileFrames::PIPE_BODY_LEFT;
 
         case '}':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_BODY_RIGHT_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_BODY_RIGHT_CASTLE;
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+            if (theme == LevelTheme::UNDERGROUND)
+                return TileFrames::FINISH_TOP_UNDERGROUND;
+
+            if (theme == LevelTheme::CASTLE)
+                return TileFrames::FINISH_TOP_CASTLE;
+
             return TileFrames::FINISH_FLAG;
 
         case '|':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
             
         case 'T':
@@ -399,7 +475,20 @@ bool TileMap::loadFromFile(const std::string& path) {
     
     sf::Texture loadedTileset;
     try {
-        loadedTileset = sf::Texture(std::string(TILESET_PATH));
+        sf::Image tilesetImage;
+        if (!tilesetImage.loadFromFile(std::string(TILESET_PATH))) {
+            std::cerr << "Failed to load TileMap tileset image: " << TILESET_PATH << std::endl;
+            return false;
+        }
+
+        // The reference sheet is an opaque compositing sheet.  Its three
+        // backdrop colors are not gameplay pixels; key them out before the
+        // atlas is uploaded so pipes, poles, and assembled structures do not
+        // carry lavender/blue rectangles into the level.
+        tilesetImage.createMaskFromColor(sf::Color(146, 144, 255));
+        tilesetImage.createMaskFromColor(sf::Color(148, 148, 255));
+        tilesetImage.createMaskFromColor(sf::Color(0, 41, 140));
+        loadedTileset = sf::Texture(tilesetImage);
     } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
         std::cerr << "Reason: " << exception.what() << std::endl;
@@ -508,8 +597,10 @@ void TileMap::buildVertices() {
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
         for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
+
             const char symbol = m_grid[row][column];
-            
+
+            // L = bottom-left anchor of a 5x5 castle.
             if (symbol == 'L') {
                 const sf::IntRect rect = TileFrames::CASTLE;
 
@@ -518,22 +609,44 @@ void TileMap::buildVertices() {
                 const float right = left + static_cast<float>(5 * TILE_SIZE);
                 const float bottom = top + static_cast<float>(5 * TILE_SIZE);
 
-                const float textureLeft = static_cast<float>(rect.position.x);
-                const float textureTop = static_cast<float>(rect.position.y);
-                const float textureRight = textureLeft + static_cast<float>(rect.size.x);
-                const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+                const float texEpsilon = 0.02f;
 
-                appendTexturedVertex(m_vertices, left, top, textureLeft, textureTop);
-                appendTexturedVertex(m_vertices, left, bottom, textureLeft, textureBottom);
-                appendTexturedVertex(m_vertices, right, bottom, textureRight, textureBottom);
+                const float textureLeft = static_cast<float>(rect.position.x) + texEpsilon;
+                const float textureTop = static_cast<float>(rect.position.y) + texEpsilon;
+                const float textureRight = static_cast<float>(rect.position.x + rect.size.x) - texEpsilon;
+                const float textureBottom = static_cast<float>(rect.position.y + rect.size.y) - texEpsilon;
 
-                appendTexturedVertex(m_vertices, left, top, textureLeft, textureTop);
-                appendTexturedVertex(m_vertices, right, bottom, textureRight, textureBottom);
-                appendTexturedVertex(m_vertices, right, top, textureRight, textureTop);
+                appendTexturedVertex(m_vertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     left, bottom,
+                                     textureLeft, textureBottom
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_vertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+
+                appendTexturedVertex(m_vertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+                appendTexturedVertex(m_vertices,
+                                     right, top,
+                                     textureRight, textureTop
+                                     );
 
                 continue;
             }
-            
+
+            // H = bottom-left anchor of a 3x2 horizontal pipe.
             if (symbol == 'H') {
                 const sf::IntRect rect = TileFrames::HORIZONTAL_PIPE;
 
@@ -542,18 +655,40 @@ void TileMap::buildVertices() {
                 const float right = left + static_cast<float>(3 * TILE_SIZE);
                 const float bottom = top + static_cast<float>(2 * TILE_SIZE);
 
-                const float textureLeft = static_cast<float>(rect.position.x);
-                const float textureTop = static_cast<float>(rect.position.y);
-                const float textureRight = textureLeft + static_cast<float>(rect.size.x);
-                const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+                const float texEpsilon = 0.02f;
 
-                appendTexturedVertex(m_foregroundVertices, left, top, textureLeft, textureTop);
-                appendTexturedVertex(m_foregroundVertices, left, bottom, textureLeft, textureBottom);
-                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
+                const float textureLeft = static_cast<float>(rect.position.x) + texEpsilon;
+                const float textureTop = static_cast<float>(rect.position.y) + texEpsilon;
+                const float textureRight = static_cast<float>(rect.position.x + rect.size.x) - texEpsilon;
+                const float textureBottom = static_cast<float>(rect.position.y + rect.size.y) - texEpsilon;
 
-                appendTexturedVertex(m_foregroundVertices, left, top, textureLeft, textureTop);
-                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
-                appendTexturedVertex(m_foregroundVertices, right, top, textureRight, textureTop);
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, bottom,
+                                     textureLeft, textureBottom
+                                     );
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     left, top,
+                                     textureLeft, textureTop
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, bottom,
+                                     textureRight, textureBottom
+                                     );
+
+                appendTexturedVertex(m_foregroundVertices,
+                                     right, top,
+                                     textureRight, textureTop
+                                     );
 
                 continue;
             }
@@ -562,51 +697,63 @@ void TileMap::buildVertices() {
                 continue;
             }
 
+            const float x = static_cast<float>(column * TILE_SIZE);
+            const float y = static_cast<float>(row * TILE_SIZE);
+
+            const sf::IntRect textureRect = getTilesetRect(symbol, m_theme);
+
             float offsetY = 0.f;
+
             for (const auto& bump : m_bumpAnimations) {
                 if (bump.column == static_cast<int>(column) && bump.row == static_cast<int>(row)) {
-                    float progress = bump.timer / bump.maxDuration;
+                    const float progress = bump.timer / bump.maxDuration;
+
                     offsetY = std::sin(progress * 3.14159265f) * bump.maxOffset;
+
                     break;
                 }
             }
 
-            const float left = static_cast<float>(column * TILE_SIZE);
-            const float top = static_cast<float>(row * TILE_SIZE) + offsetY;
-
+            const float left = x;
+            const float top = y + offsetY;
             const float right = left + static_cast<float>(TILE_SIZE);
             const float bottom = top + static_cast<float>(TILE_SIZE);
 
-            const sf::IntRect rect = getTilesetRect(symbol);
+            const float texEpsilon = 0.02f;
 
-            const float textureLeft = static_cast<float>(rect.position.x);
-            const float textureTop = static_cast<float>(rect.position.y);
+            const float textureLeft = static_cast<float>(textureRect.position.x) + texEpsilon;
+            const float textureTop = static_cast<float>(textureRect.position.y) + texEpsilon;
+            const float textureRight = static_cast<float>(textureRect.position.x + textureRect.size.x) - texEpsilon;
+            const float textureBottom = static_cast<float>(textureRect.position.y + textureRect.size.y) - texEpsilon;
 
-            const float textureRight = textureLeft + static_cast<float>(rect.size.x);
-            const float textureBottom = textureTop + static_cast<float>(rect.size.y);
+            sf::VertexArray& targetArray = isForegroundTile(symbol)
+                                           ? m_foregroundVertices : m_vertices;
 
-            // Route to correct vertex array based on layer classification
-            sf::VertexArray& targetArray = isForegroundTile(symbol) ? m_foregroundVertices : m_vertices;
+            appendTexturedVertex(targetArray,
+                                 left, top,
+                                 textureLeft, textureTop
+                                 );
+            appendTexturedVertex(targetArray,
+                                 left, bottom,
+                                 textureLeft, textureBottom
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, bottom,
+                                 textureRight, textureBottom
+                                 );
 
-            // First triangle: top-left, bottom-left, bottom-right.
-            appendTexturedVertex(targetArray, left, top,
-                                 textureLeft, textureTop);
-
-            appendTexturedVertex(targetArray, left, bottom,
-                                 textureLeft, textureBottom);
-            
-            appendTexturedVertex(targetArray, right, bottom,
-                                 textureRight, textureBottom);
-
-            // Second triangle: top-left, bottom-right, top-right.
-            appendTexturedVertex(targetArray, left, top,
-                                 textureLeft, textureTop);
-            
-            appendTexturedVertex(targetArray, right, bottom,
-                                 textureRight, textureBottom);
-            
-            appendTexturedVertex(targetArray, right, top,
-                                 textureRight, textureTop);
+            appendTexturedVertex(targetArray,
+                                 left, top,
+                                 textureLeft, textureTop
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, bottom,
+                                 textureRight, textureBottom
+                                 );
+            appendTexturedVertex(targetArray,
+                                 right, top,
+                                 textureRight, textureTop
+                                 );
         }
     }
 }
@@ -765,10 +912,11 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
 
             // Spawn 4 flying debris particles (4 corners)
             sf::Vector2f center = tileWorldPos + sf::Vector2f(8.f, 8.f);
-            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_LEFT);
-            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), SpriteFrames::Blocks::DEBRIS_TOP_RIGHT);
-            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_LEFT);
-            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), SpriteFrames::Blocks::DEBRIS_BOTTOM_RIGHT);
+            const DebrisFrames& debris = debrisFramesForTheme(m_theme);
+            auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), debris.topLeft);
+            auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), debris.topRight);
+            auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), debris.bottomLeft);
+            auto d4 = std::make_unique<BlockDebris>(center, sf::Vector2f(80.f, -220.f), debris.bottomRight);
 
             if (textureManager) {
                 d1->setTextureManager(*textureManager);

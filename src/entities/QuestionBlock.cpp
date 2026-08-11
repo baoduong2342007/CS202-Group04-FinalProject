@@ -7,8 +7,12 @@
 
 #include "entities/QuestionBlock.h"
 #include <cmath>
+#include <random>
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 #include "core/TextureManager.h"
 #include "items/Coin.h"
 #include "items/Mushroom.h"
@@ -22,7 +26,30 @@ namespace {
 constexpr float BLOCK_SIZE = 32.f;
 constexpr const char* QUESTION_BLOCK_TEXTURE = "assets/textures/items/items_blocks.png";
 constexpr float ANIM_FRAME_DURATION = 0.2f;
+constexpr unsigned int PERCENT_ROLL_RANGE = 100;
+
+std::mt19937& questionBlockRandomEngine() {
+    static std::mt19937 engine(std::random_device{}());
+    return engine;
+}
+
+unsigned int rollQuestionBlockContent() {
+    static std::uniform_int_distribution<unsigned int> distribution(
+        0, PERCENT_ROLL_RANGE - 1);
+    return distribution(questionBlockRandomEngine());
+}
 } // namespace
+
+QuestionBlockContent QuestionBlock::chooseAdaptiveContent(MarioState marioState,
+                                                          unsigned int roll) {
+    if ((roll % PERCENT_ROLL_RANGE) < COIN_DROP_RATE_PERCENT) {
+        return QuestionBlockContent::COIN;
+    }
+
+    return marioState == MarioState::SMALL
+               ? QuestionBlockContent::SUPER_MUSHROOM
+               : QuestionBlockContent::FIRE_FLOWER;
+}
 
 QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content, BlockTheme theme)
     : Entity(position, sf::Vector2f(BLOCK_SIZE, BLOCK_SIZE)),
@@ -34,21 +61,21 @@ QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, Quest
 
     const auto& animFrames = [theme]() -> const std::vector<sf::IntRect>& {
         switch (theme) {
-            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::ugQuestionBlockFrames();
-            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::castleQuestionBlockFrames();
-            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::uwQuestionBlockFrames();
+            case BlockTheme::UNDERGROUND: return SpriteFrames::udg::Blocks::questionBlockFrames();
+            case BlockTheme::CASTLE:      return SpriteFrames::castle::Blocks::questionBlockFrames();
+            case BlockTheme::UNDERWATER:  return SpriteFrames::udw::Blocks::questionBlockFrames();
             case BlockTheme::OVERWORLD:
-            default:                      return SpriteFrames::Blocks::questionBlockFrames();
+            default:                      return SpriteFrames::ovw::Blocks::questionBlockFrames();
         }
     }();
 
     const sf::IntRect emptyRect = [theme]() -> sf::IntRect {
         switch (theme) {
-            case BlockTheme::UNDERGROUND: return SpriteFrames::Blocks::UG_EMPTY;
-            case BlockTheme::CASTLE:      return SpriteFrames::Blocks::CASTLE_EMPTY;
-            case BlockTheme::UNDERWATER:  return SpriteFrames::Blocks::UW_EMPTY;
+            case BlockTheme::UNDERGROUND: return SpriteFrames::udg::Blocks::EMPTY;
+            case BlockTheme::CASTLE:      return SpriteFrames::castle::Blocks::EMPTY;
+            case BlockTheme::UNDERWATER:  return SpriteFrames::udw::Blocks::EMPTY;
             case BlockTheme::OVERWORLD:
-            default:                      return SpriteFrames::Blocks::EMPTY;
+            default:                      return SpriteFrames::ovw::Blocks::EMPTY;
         }
     }();
 
@@ -93,12 +120,12 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
     playAnimation("empty");
     EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
 
-    // A '?' block resolves its content exactly once at hit time. SMALL Mario
-    // gets a Mushroom; powered-up Mario gets a FireFlower.
+    // A normal '?' block resolves its content exactly once at hit time. Coins
+    // are deliberately common; the remaining rolls use Mario's current state
+    // to choose the useful power-up.
     if (!m_contentResolved && m_content == QuestionBlockContent::ADAPTIVE) {
-        m_content = (mario.getMarioState() == MarioState::SMALL)
-                        ? QuestionBlockContent::SUPER_MUSHROOM
-                        : QuestionBlockContent::FIRE_FLOWER;
+        m_content = chooseAdaptiveContent(mario.getMarioState(),
+                                          rollQuestionBlockContent());
         m_contentResolved = true;
     }
 

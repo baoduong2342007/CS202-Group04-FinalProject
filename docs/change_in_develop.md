@@ -73,6 +73,41 @@
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
+### Entry #36: [Asset & Transparency Fix] - Tách Nền Trong Suốt Cho Vùng Mushroom & Sheet Backdrop (Bảo Tồn Tile Underwater)
+- **Trạng thái:** Đã hoàn thành 100%, 13/13 CTest passed.
+- **File ảnh hưởng:** `assets/textures/enemies/enemies.png`, `assets/textures/items/items_objects.png`, `assets/textures/mario/MarioLuigi.png`, `assets/textures/tiles/tileset.png`
+- **Mô tả:**
+  1. Loại bỏ toàn bộ nền xanh đậm `RGB(12, 69, 176)` và lề `RGB(0, 0, 168)`, `RGB(0, 41, 140)` trong khu vực Mushroom Platforms (`X: 0..323, Y: 356..440`) của `tileset.png`, đưa 14,093 pixel nền về `(0, 0, 0, 0)`.
+  2. **Bảo tồn 100% các tile nội dung**: Giữ nguyên toàn bộ đồ họa nấm, thân nấm, đồi núi cũng như khu vực Underwater (san hô, đồi nước, ống nước dưới nước).
+  3. Biên dịch và kiểm thử tự động thành công 100% (13/13 CTest passed).
+
+### Superseding audit — Tileset coordinates and assembled scenery (2026-08-10)
+
+Entry #35 below is historical and is superseded by the current audit in
+[`docs/tileset_coordinate.md`](tileset_coordinate.md). The current contract
+separates the Palette 1 terrain quartet from Palette 3 question/used blocks,
+adds the standalone map-coin frames, selects Castle palette pipe/pole frames,
+and records assembled bboxes for the full pole, tall pipes, and small/large
+castles. `TileMap` chroma-keys only the two known sheet backdrop colors before
+uploading the tileset; it does not remove gameplay colors such as castle holes.
+
+### Entry #35: [Doc & Asset Sync] - Rà Soát Tọa Độ Tileset Bàn Đồ (`tileset_coordinate.md`) & Khắc Phục Nhãn Sai
+- **Trạng thái:** Đã hoàn thành 100%.
+- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
+- **Mô tả:**
+  1. Tiến hành rà soát trực quan toàn bộ 340 object của `tileset.png` ($680 \times 776 \text{ px}$) đối soát với `TileFrames.h` trong C++ engine.
+  2. Phát hiện và sửa lỗi nhãn sai trong `tileset_coordinate.md` đối với nhóm STT #1–#4 (vốn bị ghi nhầm là 4 khối Ground cho 4 môi trường, thực tế là 4 khối Overworld: Ground, Brick, Stone, Hard) và nhóm STT #9–#12 (khối Underground: Ground Teal, Brick Teal, Stone, Used Block).
+  3. Khẳng định code C++ (`TileFrames.h`) đã chọn chuẩn xác $100\%$ tọa độ của toàn bộ các tile (Ground, Brick, Question Block, Castle Window/Door, Pipes, Finish Pole).
+  4. Đã dọn dẹp các script Python phụ trợ.
+
+### Entry #34: [Asset & Doc Sync] - Khôi Phục Đủ 157 Khung Ảnh Quái Vật & Đồng Bộ Tọa Độ Chuẩn
+- **Trạng thái:** Đã hoàn thành 100%.
+- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `include/core/SpriteFrames_shared.h`, `docs/assets/enemies/enemy_001.png` -> `enemy_157.png`
+- **Mô tả:**
+  1. Xác minh lại tệp ảnh atlas gốc `enemies.png`: Dòng Y=24 thực tế chứa đầy đủ **4 khung Goomba bị giẫm bẹp** (`STOMPED`) ứng với 4 môi trường NES (Overworld, Underground, Castle, Underwater) với giá trị kênh Alpha opaque 255.
+  2. Khôi phục lại danh sách chuẩn xác **157 thành phần quái vật** (`enemy_001.png` đến `enemy_157.png`) trong `docs/enemies_coordinate.md`.
+  3. Đồng bộ chính xác tọa độ Koopa Xanh dưới nước (`UW_WALK1`/`UW_WALK2` và `UW_PARATROOPA_FLY1`/`UW_PARATROOPA_FLY2`) và vỏ Buzzy Beetle trong `SpriteFrames_shared.h`.
+  4. Đã tự động dọn dẹp toàn bộ các script Python phụ trợ.
 ### Entry #1: [Bugfix] - Khắc Phục Lỗi Đồng Hồ Bất Tử 10s Bị Đóng Băng & Quy Tắc Trùng Lặp Hiệu Ứng NES
 - **Trạng thái:** Đã hoàn thành, build & test pass 100%.
 - **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp)
@@ -315,4 +350,145 @@
   3. Cập nhật `InputHandler` với cờ suppression `gameplayEnabled`, khóa phím `Shift` chỉ chạy và `X` chỉ bắn.
   4. Chuẩn hóa `HUD` với timer callbacks, font degrade control, và nhãn `POWER` đồng bộ.
   5. Chuyển toàn bộ reference atlases từ `assets/` ra `docs/assets/reference/` để tối ưu hóa dung lượng gói release.
+
+### Entry #32: [Merge TV5 Feature Branch - Audio Cues, Defeat Centralization & Integration Tests] - Merged feature/sound-input into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
+- **File ảnh hưởng:** `assets/ASSETS_LIST.md`, `docs/management/TV5_AUDIO_HUD_ITEM_CHECKLIST.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `include/core/SpriteFrames.h`, `include/entities/Enemy.h`, `include/entities/Koopa.h`, `include/patterns/EventType.h`, `include/physics/CollisionManager.h`, `src/core/ScoreRules.cpp`, `src/core/SoundManager.cpp`, `src/entities/Enemy.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/physics/CollisionManager.cpp`, `src/states/PlayState.cpp`, `tests/TV5IntegrationTests.cpp`
+- **Mô tả:**
+  1. Hợp nhất nhánh `origin/feature/sound-input` của TV5 vào `develop` theo yêu cầu của Architect (TV1).
+  2. Tập trung xử lý tiêu diệt kẻ địch và tính điểm trong `CollisionManager` với các sự kiện per-cause (`STOMP`, `SHELL`, `FIREBALL`, `STAR`).
+  3. Bổ sung âm thanh SFX đặc thù theo nguyên nhân tiêu diệt (shell kill, fireball hit, star kill) và xử lý phát nhạc khi resume game từ PauseState.
+  4. Mở rộng `TV5IntegrationTests` với kiểm thử cho runtime defeat paths, state audio switching, và asset manifest verification.
+  5. Toàn bộ 12 test suite đều thông qua (100% pass) trên `develop`.
+
+### Entry #33: [Assets & Core] - Tileset & TileMap Multi-Theme Support Integration
+- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
+- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/core/SpriteFrames.h`, `include/level/TileFrames.h`, `include/level/Level.h`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/states/PlayState.cpp`
+- **Mô tả:**
+  1. **Tọa độ Tileset Hoàn Chỉnh (`tileset_coordinate.md`)**: Phân tích toàn bộ 345 object từ `assets/textures/tiles/tileset.png`. Cập nhật tọa độ chuẩn vào `TileFrames.h` cho gạch nền (Ground, Brick, Question Block, Coin...) theo 3 môi trường: Overworld, Underground, Castle. 
+  2. **Tọa độ SpriteFrames Bổ Sung**: Tích hợp tọa độ Map Coins tĩnh, Trampoline, Castle Axe, Bridge Chain và Elevator Pulley vào `SpriteFrames::LevelEntities` ở cuối `SpriteFrames.h`. Cắt bỏ tệp Python dư thừa.
+  3. **TileMap Multi-Theme Engine (`TileMap.cpp`)**: Thay đổi kiến trúc render gạch nền từ hardcode Overworld sang Dynamic Multi-Theme. TileMap giờ đây đọc `LevelTheme` (được truyền vào qua `Level::setTheme()` từ `PlayState`) để render chính xác màu sắc khối gạch (Background, Brick, Question) theo từng màn chơi.
+
+### Entry #34: [Merge TV5 Sound-Input & SpriteFrames Theme Refactoring] - Merged feature/sound-input into develop
+- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
+- **File ảnh hưởng:** `CMakeLists.txt`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/SpriteFrames.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_shared.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_udw.h`, `include/entities/BlockDebris.h`, `include/entities/Goomba.h`, `include/entities/Koopa.h`, `include/level/Level.h`, `include/level/TileFrames.h`, `include/level/TileMap.h`, `include/patterns/EntityFactory.h`, `src/entities/FireBall.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/entities/QuestionBlock.cpp`, `src/items/Coin.cpp`, `src/items/FireFlower.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/patterns/EntityFactory.cpp`, `tests/SpriteFramesThemeTests.cpp`
+- **Mô tả:**
+  1. Hợp nhất thành công nhánh `feature/sound-input` mới nhất (commit `2099602`) vào nhánh `develop`.
+  2. **Refactor SpriteFrames theo Theme Catalog**: Tách tệp header `SpriteFrames.h` thành các catalog riêng biệt theo môi trường (`SpriteFrames_shared.h`, `SpriteFrames_ovw.h`, `SpriteFrames_udg.h`, `SpriteFrames_castle.h`, `SpriteFrames_udw.h`), đồng thời giữ `SpriteFrames.h` làm aggregator thống nhất.
+  3. **Lan truyền LevelTheme**: Truyền `LevelTheme` từ `Level` tới `TileMap`, `EntityFactory` và các thực thể game (`Goomba`, `Koopa`, `QuestionBlock`, `BlockDebris`...) giúp tự động render đúng bảng màu sprite tương ứng.
+  4. **Bổ sung Theme Unit Tests**: Thêm bộ test `SpriteFramesThemeTests.cpp` kiểm thử tính chính xác của các thuộc tính và tọa độ frame theo từng chủ đề màn chơi.
+
+### Entry #35: [Documentation & Assets] - Export Enemy PNG Sprites & Update Enemies Coordinate Documentation
+- **Trạng thái:** Đã hoàn thành, 157/157 PNG frames exported & documented.
+- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `docs/assets/reference/enemies_all_components_atlas.png`, `docs/assets/reference/enemies_all_components_atlas_full.png`, `docs/assets/enemies/enemy_001.png`...`enemy_157.png`, `docs/assets/enemies_loang/enemy_001_loang.png`...`enemy_157_loang.png`, `scripts/export_enemy_pngs.py`, `scripts/update_enemies_md.py`
+- **Mô tả:**
+  1. **Xuất tệp PNG riêng cho từng khung hình quái vật (`docs/assets/enemies/`)**: Trích xuất toàn bộ 157 thành phần quái vật theo tọa độ Grid khung chuẩn (16×16, 16×24, 32×32, v.v.) từ tệp gốc `assets/textures/enemies/enemies.png`, tự động khử màu nền xanh NES `(0, 41, 140)` và `(146, 144, 255)` sang nền trong suốt Alpha.
+  2. **Cập nhật Bảng Tọa Độ & Hình Ảnh (`enemies_coordinate.md`)**: Bổ sung cột `Ảnh PNG` nhúng trực tiếp hình ảnh xem trước (integer scaled) cho tất cả 157 khung hình quái vật từ `#1` đến `#157`.
+  3. **Tạo mới Ảnh minh họa Atlas Tổng hợp (`docs/assets/reference/`)**: Tải lại và tổng hợp tệp Atlas `enemies_all_components_atlas.png` và `enemies_all_components_atlas_full.png` với nét vẽ bounding box và đánh nhãn số STT trực quan.
+
+
+
+
+### 36. Semantic Fix for Enemy Sprite Frames and Animations
+- **Date**: 2026-08-10
+- **Author**: AI Assistant
+- **Modified Files**: 
+  - `docs/enemies_coordinate.md`
+  - `include/core/SpriteFrames_shared.h`
+  - `src/entities/Koopa.cpp`
+  - `src/entities/Goomba.cpp`
+- **Logic Changes**:
+  - Performed a visual deep scan of `enemies.png` and discovered severe semantic misalignments.
+  - Corrected `enemies_coordinate.md` to properly label Underwater Paratroopas and Koopas (STT #61-#64) since their layout in the spritesheet was reversed compared to Overworld.
+  - Overhauled `SpriteFrames_shared.h` to fix critical copy-paste errors across the board:
+    - Fixed Buzzy Beetle shell references (Overworld and Underground were pointing to incorrect or walking frames).
+    - Fixed Blooper and Bullet Bill (Coordinates were totally misaligned for Underground, Castle, and Underwater).
+    - Fixed Piranha Plant (Open and Closed frames were swapped and scrambled across themes).
+    - Fixed Red Koopa and Red Paratroopa (Walk 2 and Fly 2 were swapped).
+    - Fixed Red Spiny Walk frames (inverted animation).
+  - Updated `Koopa.cpp` and `Goomba.cpp` to correctly resolve `LevelTheme::UNDERWATER` animations.
+
+## Entry 36: Fixed TileFrames.h Coordinates & TileMap Texture Bleeding
+
+- **Author**: TV1 (Dương)
+- **Modified Files**:
+  - `include/level/TileFrames.h`
+  - `src/level/TileMap.cpp`
+- **Logic Changes**:
+  - Corrected `STONE` in `TileFrames.h` from `{0, 33}` (which was erroneously pointing to Castle Battlement) to `{34, 16}` (Object #3 - Stone / Solid Stair Block).
+  - Standardized `QUESTION` to `{85, 16}` (Object #6 - Row 1 Question Block) and `USED_BLOCK` to `{51, 16}` (Object #4 - Row 1 Used Block).
+  - Fixed `CASTLE_WALL` from `{102, 33}` (Solid Black Filler) to `{34, 33}` (Object #39 - Castle Brick Wall).
+  - Added `STONE_UNDERGROUND` (`{198, 16}` - Object #12, Khối đá vuông 4 đinh Teal) definition in `TileFrames.h` and updated `TileMap.cpp` (`getTilesetRect`) so symbol `'S'` correctly renders Underground Teal Stone in Level 2 instead of Overworld Brown Stone or Teal Brick.
+  - Added a `0.02f` pixel UV inset in `TileMap::buildVertices` to completely eliminate 1-pixel border texture bleeding caused by subpixel camera position sampling.
+  - Verified full build clean success and 13/13 ctest pass.
+
+### 37. Implemented Fireball Explosion Visual Particle Effect
+- **Date**: 2026-08-11
+- **Author**: TV3 & TV1
+- **Modified Files**:
+  - `include/entities/FireballExplosion.h`
+  - `src/entities/FireballExplosion.cpp`
+  - `include/entities/FireBall.h`
+  - `src/entities/FireBall.cpp`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `src/physics/CollisionManager.cpp`
+- **Logic Changes**:
+  - Implemented `FireballExplosion` visual effect entity displaying 3 animation frames (`fireballExplosionFrames`) from `assets/textures/items/items_objects.png` over 0.15 seconds before self-removal.
+  - Set `FireballExplosion::getType()` to `EntityType::TERRAIN` so explosion particles are not mistakenly identified as `isFireBall()`, preventing invalid pointer casting and preventing particles from blocking Mario's maximum active fireball limit.
+  - Updated `Level::update()` to collect explosion positions into a temporary list prior to spawning `FireballExplosion` entities, completely preventing `std::vector` iterator invalidation during iteration.
+  - Added `CollisionManager.cpp` overhead ceiling contact check (`normal.y < -0.5f`) so fireballs bouncing into low ceilings/overhead blocks explode immediately rather than clipping or gliding through ceilings.
+  - Fixed missing `setOwner(m_mario.get())` calls in `Level::shootFireBall()` and `Level::processPendingFireballs()` ensuring Mario receives full score points when enemies are defeated by fireballs.
+  - Verified clean build and 13/13 test suite pass (`ctest`).
+
+### 38. Implemented Piranha Plant Enemy Class & Sensor Physics Architecture
+- **Date**: 2026-08-11
+- **Author**: TV4 & TV1
+- **Modified Files**:
+  - `include/entities/Entity.h`
+  - `include/entities/PiranhaPlant.h`
+  - `src/entities/PiranhaPlant.cpp`
+  - `include/patterns/EntityFactory.h`
+  - `src/patterns/EntityFactory.cpp`
+  - `src/physics/CollisionManager.cpp`
+  - `src/level/Level.cpp`
+  - `src/level/TileMap.cpp`
+  - `levels/level2.txt`
+- **Logic Changes**:
+  - Implemented `PiranhaPlant` enemy class featuring a 4-stage vertical emergence state machine (`EMERGING`, `WAITING_TOP`, `RETRACTING`, `WAITING_BOTTOM`).
+  - Configured NES-accurate 2.0x scale factor constants: NES sprite 16x24px @ 2.0x scale = 32x48px entity size, with `TRAVEL_DISTANCE = 64.f` px (2 full tiles emergence height) and `PROXIMITY_RADIUS = 44.f` px (1 tile width).
+  - Wired real-time `updateMarioProximity(marioPos)` inside `Level::update` so Piranha Plant dynamically detects Mario's distance before emerging from the pipe.
+  - Configured Box2D physics body as `b2_kinematicBody` with sensor fixture (`isSensor = true`), completely eliminating physics tile collision jittering and tunneling inside solid pipe tiles.
+  - Fixed sprite orientation and pipe fitting: Used upright sprite frames (`CLOSED` `{0, 138}` and `OPEN` `{18, 138}`) ensuring head points UP into the sky, and set retracted base position to `(position.x + 16.f, position.y + 16.f)` with `TRAVEL_DISTANCE = 64.f` so the 48px plant fits 100% inside the 64px pipe (0px exposed below), and emerges 48px high (full plant height) into the air above the pipe rim.
+  - Adjusted `PROXIMITY_RADIUS` to `20.f` px so Piranha Plant aggressive emergence is active as Mario approaches from the sides to attack/bite Mario, only pausing if Mario stands directly centered on top of the pipe rim.
+  - Configured theme-responsive mouth animations (`OPEN` and `CLOSED` frames) supporting Overworld, Underground, Castle, and Underwater palettes from `SpriteFrames_shared.h`.
+  - Updated `CollisionManager` to ensure Mario takes damage (`queuePowerDown()`) when stomping or colliding with Piranha Plant, while allowing `FireBall` projectiles and `Star` invincibility to defeat the plant and award 200 score points.
+  - Configured `p` and `r` tile codes in `TileMap.cpp` (`getTilesetRect`, `isSolidTileSymbol`, `isRenderableTile`, `isForegroundTile`) to render directly as Pipe Top-Left (`PIPE_TOP_LEFT`) and Pipe Top-Right (`PIPE_TOP_RIGHT`) tiles.
+  - Set `'p'` as the sole PiranhaPlant spawn code in `SPAWN_CODES` (removing `'r'`), guaranteeing exactly ONE Piranha Plant per pipe when using `pr` on pipe tops in `levels/level2.txt`.
+  - Verified clean build and 13/13 test suite pass (`ctest`).
+
+### 39. Merged TV5 Spritesheet Coordinate Fixes & Integrated Theme Rects
+- **Date**: 2026-08-11
+- **Author**: TV5 & TV1
+- **Modified Files**:
+  - `docs/enemies_coordinate.md`
+  - `include/core/SpriteFrames_shared.h`
+  - `src/entities/PiranhaPlant.cpp`
+- **Logic Changes**:
+  - Merged TV5's commit `2fec5e5be7867b31602f2bc62e8b16e8ff2e7b32` from `origin/feature/sound-input` into `develop`.
+  - Integrated TV5's corrected PiranhaPlant sprite coordinates in `SpriteFrames_shared.h` (`UG_CASTLE_OPEN` `{146, 138}` and `UG_CASTLE_CLOSED` `{164, 138}`), updating `PiranhaPlant::initAnimations` to use theme-responsive Underground/Castle brown palette rects.
+### 40. Fixed Springboard Texture Path, 2.0x Scaling & Origin Alignment
+- **Date**: 2026-08-11
+- **Author**: TV1
+- **Modified Files**:
+  - `src/entities/Springboard.cpp`
+  - `include/entities/Springboard.h`
+  - `docs/change_in_develop.md`
+- **Logic Changes**:
+  - Fixed invalid texture ID `"items"` in `Springboard::Springboard` constructors to point to `"assets/textures/items/items_objects.png"`. Resolves texture loading failure log `ERROR: Failed to load texture 'items'` and restores real sprite rendering.
+  - Added 2.0x sprite scaling (`setScale({2.0f, 2.0f})`) in `Springboard::initTheme` and `Springboard::update`, scaling NES 16px wide sprites to 32px world tile width.
+  - Fixed sprite origin to bottom-left `(0.f, rect.height)` and set position to `{m_position.x, m_position.y + m_size.y}` in `Springboard::draw`, anchoring the springboard base to the ground cell while expanding upward during compression (`15px`), mid (`23px`), and launching (`31px`) states.
+  - Cleaned up unused `#include <vector>` header in `include/entities/Springboard.h`.
+  - Verified 14/14 test suites pass (`ctest`), including `springboard_tests`.
+
 

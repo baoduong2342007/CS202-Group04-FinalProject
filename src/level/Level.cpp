@@ -18,9 +18,12 @@
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
+#include "entities/PiranhaPlant.h"
 #include "entities/FireBall.h"
-#include "core/SpriteFrames.h"
+#include "entities/FireballExplosion.h"
+#include "core/SpriteFrames_ovw.h"
 #include "core/SoundManager.h"
+#include "core/LevelCatalog.h"
 
 #include "core/DisplayConfig.h"
 
@@ -28,6 +31,7 @@ namespace {
 constexpr unsigned int TILE_SIZE = 32;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
+const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
 
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
@@ -61,8 +65,8 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
            top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock, Springboard)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -103,6 +107,11 @@ float calculateBackgroundTop(const TileMap& tileMap) {
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
 Level::~Level() = default;
+
+void Level::setTheme(LevelTheme theme) {
+    m_theme = theme;
+    m_tileMap.setTheme(theme);
+}
 
 bool Level::loadFromFile(const std::string& path) {
     m_levelPath = path;
@@ -171,7 +180,7 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             auto entity =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get());
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), m_theme);
             if (entity) {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
@@ -236,6 +245,10 @@ void Level::update(float dt) {
             enemy->activate();
         }
 
+        if (enemy->isPiranhaPlant() && m_mario) {
+            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
+        }
+
         enemy->update(dt);
     }
 
@@ -256,6 +269,21 @@ void Level::update(float dt) {
     // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
+
+    // Spawn explosion particle for any deactivated fireball requesting explosion
+    std::vector<sf::Vector2f> explosionPositions;
+    for (auto& entity : m_entities) {
+        if (entity && entity->isFireBall()) {
+            auto* fb = static_cast<FireBall*>(entity.get());
+            if (fb->shouldSpawnExplosion() && (fb->shouldRemove() || fb->isPendingDestroy() || !fb->isActive())) {
+                explosionPositions.push_back(fb->getPosition());
+                fb->clearExplosionFlag();
+            }
+        }
+    }
+    for (const auto& pos : explosionPositions) {
+        spawnFireballExplosion(pos);
+    }
 
     // Remove dead entities
     removeDeadEntities();
@@ -284,32 +312,51 @@ bool Level::spawnFireBall() {
     return true;
 }
 
+void Level::spawnFireballExplosion(const sf::Vector2f& position) {
+    auto explosion = std::make_unique<FireballExplosion>(position);
+    explosion->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(explosion));
+}
+
 void Level::render(sf::RenderTarget& target) {
     // Apply camera view
     target.setView(m_camera.getView());
 
-    // Draw the cheerful pixel-art world background behind the tilemap.
-    const sf::Texture& bgTex = m_textureManager.getTexture(
-        std::string(SpriteFrames::Backgrounds::WORLD_PATH));
-    sf::Sprite bgSprite(bgTex);
-    bgSprite.setTextureRect(SpriteFrames::Backgrounds::WORLD);
-
     const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
-    const float backgroundScale =
-        backgroundHeight / static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.y);
-    const float stripWidth =
-        static_cast<float>(SpriteFrames::Backgrounds::WORLD.size.x) * backgroundScale;
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    const float backgroundTop = calculateBackgroundTop(m_tileMap);
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    std::size_t stripIndex = 0;
-    for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
-        const bool mirrored = (stripIndex % 2u) != 0u;
-        bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
-                                   : sf::Vector2f(backgroundScale, backgroundScale));
-        bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
-                                     : sf::Vector2f(x, backgroundTop));
-        target.draw(bgSprite);
+    if (m_theme == LevelTheme::UNDERGROUND) {
+        // SMB underground stages use a flat dark-blue field behind the same
+        // tile geometry. Extend it beyond the level bounds so camera motion
+        // cannot reveal the sky-blue render-texture clear color.
+        sf::RectangleShape undergroundBackground(
+            sf::Vector2f(levelWidth, levelHeight + backgroundHeight * 2.f));
+        undergroundBackground.setPosition({0.f, -backgroundHeight});
+        undergroundBackground.setFillColor(UNDERGROUND_BACKGROUND_COLOR);
+        target.draw(undergroundBackground);
+    } else {
+        // Draw the cheerful pixel-art world background behind the tilemap.
+        const sf::Texture& bgTex = m_textureManager.getTexture(
+            std::string(SpriteFrames::ovw::Backgrounds::WORLD_PATH));
+        sf::Sprite bgSprite(bgTex);
+        bgSprite.setTextureRect(SpriteFrames::ovw::Backgrounds::WORLD);
+
+        const float backgroundScale =
+            backgroundHeight / static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.y);
+        const float stripWidth =
+            static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.x) * backgroundScale;
+        const float backgroundTop = calculateBackgroundTop(m_tileMap);
+
+        std::size_t stripIndex = 0;
+        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
+            const bool mirrored = (stripIndex % 2u) != 0u;
+            bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
+                                       : sf::Vector2f(backgroundScale, backgroundScale));
+            bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
+                                         : sf::Vector2f(x, backgroundTop));
+            target.draw(bgSprite);
+        }
     }
 
     // Draw tilemap background
@@ -449,6 +496,7 @@ void Level::shootFireBall() {
 
     auto fireball = m_mario->shootFireBall(m_world.get());
     if (fireball) {
+        fireball->setOwner(m_mario.get());
         fireball->setTextureManager(m_textureManager);
         m_entities.push_back(std::move(fireball));
         SoundManager::getInstance().playSound("fireball");
@@ -461,6 +509,9 @@ void Level::processPendingFireballs() {
     for (const auto& req : m_pendingFireBallRequests) {
         auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
         if (fireball) {
+            if (m_mario) {
+                fireball->setOwner(m_mario.get());
+            }
             fireball->setTextureManager(m_textureManager);
             m_entities.push_back(std::move(fireball));
             SoundManager::getInstance().playSound("fireball");

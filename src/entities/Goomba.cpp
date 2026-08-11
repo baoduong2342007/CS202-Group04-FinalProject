@@ -13,8 +13,9 @@
 
 #include <box2d/box2d.h>
 #include "core/AnimationSystem.h"
-#include "core/SpriteFrames.h"
-#include "core/SoundManager.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
 
 namespace {
 
@@ -32,16 +33,40 @@ constexpr float EDGE_PROBE_OFFSET = 2.f;
 
 } // namespace
 
-Goomba::Goomba(const sf::Vector2f& position, b2World* world)
+Goomba::Goomba(const sf::Vector2f& position, b2World* world, LevelTheme theme)
 : Enemy(position, GOOMBA_SIZE, DEFAULT_GOOMBA_HEALTH),
   m_isStomped(false),
   m_patrolSpeed(DEFAULT_GOOMBA_SPEED){
       setFacingDirection(Direction::LEFT);
       initPhysics(world, b2_dynamicBody, GOOMBA_SIZE);
       setSprite(GOOMBA_TEXTURE_PATH);
+
+      const auto& walkFrames = [theme]() -> const std::vector<sf::IntRect>& {
+          switch (theme) {
+              case LevelTheme::UNDERGROUND:
+                  return SpriteFrames::udg::Enemies::Goomba::walkFrames();
+              case LevelTheme::CASTLE:
+                  return SpriteFrames::castle::Enemies::Goomba::walkFrames();
+              case LevelTheme::OVERWORLD:
+              default:
+                  return SpriteFrames::ovw::Enemies::Goomba::walkFrames();
+          }
+      }();
+
+      const sf::IntRect stompFrame = [theme]() {
+          switch (theme) {
+              case LevelTheme::UNDERGROUND:
+                  return SpriteFrames::udg::Enemies::Goomba::STOMPED;
+              case LevelTheme::CASTLE:
+                  return SpriteFrames::castle::Enemies::Goomba::STOMPED;
+              case LevelTheme::OVERWORLD:
+              default:
+                  return SpriteFrames::ovw::Enemies::Goomba::STOMPED;
+          }
+      }();
       
-      m_animationSystem->addAnimation("walk", AnimationSystem::createManualAnimation(SpriteFrames::Enemies::Goomba::walkFrames(), 0.15f));
-      m_animationSystem->addAnimation("squish", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{SpriteFrames::Enemies::Goomba::STOMPED}, 1.f, false));
+      m_animationSystem->addAnimation("walk", AnimationSystem::createManualAnimation(walkFrames, 0.15f));
+      m_animationSystem->addAnimation("squish", AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{stompFrame}, 1.f, false));
       playAnimation("walk");
 }
 
@@ -96,7 +121,6 @@ void Goomba::onFireHit() {
 
     m_isFlippedDead = true;
     setHealth(0);
-    SoundManager::getInstance().playSound("kickkill");
 
     b2Body* body = getBody();
     if (body) {

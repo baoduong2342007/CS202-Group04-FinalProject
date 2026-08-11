@@ -68,6 +68,40 @@ QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entitie
     return nullptr;
 }
 
+bool isHorizontalPipeFootprint(const std::vector<std::string>& grid,
+                               int column, int row) {
+    if (column < 0 || row < 0) {
+        return false;
+    }
+
+    // H is the bottom-left anchor of a 3x2 pipe.
+    //
+    //     XXX
+    //     HXX
+    //
+    // Therefore a queried cell can belong to an H whose anchor is:
+    // - on this row or one row below it
+    // - this column, one column left, or two columns left
+    for (int anchorRow = row; anchorRow <= row + 1; ++anchorRow) {
+        if (anchorRow < 0 || anchorRow >= static_cast<int>(grid.size())) {
+            continue;
+        }
+
+        for (int anchorColumn = column - 2; anchorColumn <= column; ++anchorColumn) {
+
+            if (anchorColumn < 0 || anchorColumn >= static_cast<int>(grid[anchorRow].size())) {
+                continue;
+            }
+
+            if (grid[anchorRow][anchorColumn] == 'H') {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 } // namespace
 
 void TileMap::queueTileHit(int column, int row, float overlap) {
@@ -423,13 +457,12 @@ char TileMap::getTileAt(int column, int row) const {
 }
 
 bool TileMap::isEnemySupport(int column, int row) const {
-    return isEnemySupportTileSymbol(getTileAt(column, row));
+    return isEnemySupportTileSymbol(getTileAt(column, row)) || isHorizontalPipeFootprint(m_grid, column, row);
 }
 
 bool TileMap::isSolid(int column, int row) const {
-    return isSolidTileSymbol(getTileAt(column, row));
+    return isSolidTileSymbol(getTileAt(column, row)) || isHorizontalPipeFootprint(m_grid, column, row);
 }
-
 
 std::size_t TileMap::getWidth() const {
     if (m_grid.empty()){
@@ -666,6 +699,10 @@ void TileMap::createPhysicsBodies(b2World* world) {
             b2BodyDef bodyDefinition;
             bodyDefinition.type = b2_staticBody;
             bodyDefinition.position.Set(centerMeters.x, centerMeters.y);
+
+            // H is a TileMap terrain body.
+            // Stored coordinates are the H bottom-left anchor.
+            bodyDefinition.userData.pointer = TILE_USERDATA_FLAG | (static_cast<uintptr_t>(row) << 16) | static_cast<uintptr_t>(column);
 
             b2Body* body = world->CreateBody(&bodyDefinition);
 

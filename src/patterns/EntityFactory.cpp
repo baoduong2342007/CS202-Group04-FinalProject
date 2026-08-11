@@ -15,6 +15,7 @@
 // ============================================================
 #include "entities/Goomba.h"          // TV4 (Sprint 4)
 #include "entities/Koopa.h"           // TV4 (Sprint 5)
+#include "entities/PiranhaPlant.h"    // TV4 (Sprint 7)
 #include "items/Coin.h"              // TV5 (Sprint 4)
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
@@ -49,6 +50,8 @@ std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
             return std::make_unique<Goomba>(position, world, theme);
         case EnemyType::KOOPA:
             return std::make_unique<Koopa>(position, world, theme);
+        case EnemyType::PIRANHA_PLANT:
+            return std::make_unique<PiranhaPlant>(position, world, theme);
         default:
             return nullptr;
     }
@@ -78,6 +81,9 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
             return createEnemy(EnemyType::GOOMBA, position, world, theme);
         case 'K':
             return createEnemy(EnemyType::KOOPA, position, world, theme);
+        case 'p':
+        case 'r':
+            return createEnemy(EnemyType::PIRANHA_PLANT, position, world, theme);
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':

@@ -18,7 +18,9 @@
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
+#include "entities/PiranhaPlant.h"
 #include "entities/FireBall.h"
+#include "entities/FireballExplosion.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/SoundManager.h"
 #include "core/LevelCatalog.h"
@@ -63,8 +65,8 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
            top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -243,6 +245,10 @@ void Level::update(float dt) {
             enemy->activate();
         }
 
+        if (enemy->isPiranhaPlant() && m_mario) {
+            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
+        }
+
         enemy->update(dt);
     }
 
@@ -263,6 +269,21 @@ void Level::update(float dt) {
     // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
+
+    // Spawn explosion particle for any deactivated fireball requesting explosion
+    std::vector<sf::Vector2f> explosionPositions;
+    for (auto& entity : m_entities) {
+        if (entity && entity->isFireBall()) {
+            auto* fb = static_cast<FireBall*>(entity.get());
+            if (fb->shouldSpawnExplosion() && (fb->shouldRemove() || fb->isPendingDestroy() || !fb->isActive())) {
+                explosionPositions.push_back(fb->getPosition());
+                fb->clearExplosionFlag();
+            }
+        }
+    }
+    for (const auto& pos : explosionPositions) {
+        spawnFireballExplosion(pos);
+    }
 
     // Remove dead entities
     removeDeadEntities();
@@ -289,6 +310,12 @@ bool Level::spawnFireBall() {
     m_entities.push_back(std::move(fireBall));
     EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
     return true;
+}
+
+void Level::spawnFireballExplosion(const sf::Vector2f& position) {
+    auto explosion = std::make_unique<FireballExplosion>(position);
+    explosion->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(explosion));
 }
 
 void Level::render(sf::RenderTarget& target) {
@@ -469,6 +496,7 @@ void Level::shootFireBall() {
 
     auto fireball = m_mario->shootFireBall(m_world.get());
     if (fireball) {
+        fireball->setOwner(m_mario.get());
         fireball->setTextureManager(m_textureManager);
         m_entities.push_back(std::move(fireball));
         SoundManager::getInstance().playSound("fireball");
@@ -481,6 +509,9 @@ void Level::processPendingFireballs() {
     for (const auto& req : m_pendingFireBallRequests) {
         auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
         if (fireball) {
+            if (m_mario) {
+                fireball->setOwner(m_mario.get());
+            }
             fireball->setTextureManager(m_textureManager);
             m_entities.push_back(std::move(fireball));
             SoundManager::getInstance().playSound("fireball");

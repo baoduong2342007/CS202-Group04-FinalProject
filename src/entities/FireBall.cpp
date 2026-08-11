@@ -6,7 +6,6 @@
 
 #include "entities/FireBall.h"
 #include <iostream>
-#include <vector>
 #include "physics/PhysicsEngine.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_shared.h"
@@ -44,6 +43,7 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     m_bounceCount = 0;
     m_lifetime = 0.f;
     m_bounceCooldown = 0.f;
+    m_spawnExplosion = false;
     m_owner = nullptr;
     m_active = true;
     m_pendingDestroy = false;
@@ -81,7 +81,7 @@ void FireBall::update(float dt) {
     }
 
     if (m_lifetime >= MAX_LIFETIME || m_bounceCount >= MAX_BOUNCES) {
-        deactivate();
+        deactivate(true);
         return;
     }
 
@@ -104,7 +104,7 @@ void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
     m_bounceCooldown = MIN_BOUNCE_COOLDOWN;
 
     if (m_bounceCount >= MAX_BOUNCES) {
-        deactivate();
+        deactivate(true);
         return;
     }
 
@@ -120,10 +120,11 @@ void FireBall::bounce(const sf::Vector2f& surfaceNormal) {
 #endif
 }
 
-void FireBall::deactivate() {
+void FireBall::deactivate(bool explode) {
     if (!m_active && m_pendingDestroy) return;
 
     m_active = false;
+    m_spawnExplosion = explode;
     markForDestroy();
     // CRITICAL: Do NOT call destroyPhysicsBody() synchronously here!
     // Calling world->DestroyBody() inside a Box2D step callback crashes Box2D.

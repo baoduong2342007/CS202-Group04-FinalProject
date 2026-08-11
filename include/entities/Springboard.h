@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <vector>
 #include "entities/Entity.h"
 #include "core/LevelCatalog.h"
 

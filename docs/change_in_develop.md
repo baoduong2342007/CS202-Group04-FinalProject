@@ -477,6 +477,18 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Logic Changes**:
   - Merged TV5's commit `2fec5e5be7867b31602f2bc62e8b16e8ff2e7b32` from `origin/feature/sound-input` into `develop`.
   - Integrated TV5's corrected PiranhaPlant sprite coordinates in `SpriteFrames_shared.h` (`UG_CASTLE_OPEN` `{146, 138}` and `UG_CASTLE_CLOSED` `{164, 138}`), updating `PiranhaPlant::initAnimations` to use theme-responsive Underground/Castle brown palette rects.
-  - Verified clean build and 13/13 test suite pass (`ctest`).
+### 40. Fixed Springboard Texture Path, 2.0x Scaling & Origin Alignment
+- **Date**: 2026-08-11
+- **Author**: TV1
+- **Modified Files**:
+  - `src/entities/Springboard.cpp`
+  - `include/entities/Springboard.h`
+  - `docs/change_in_develop.md`
+- **Logic Changes**:
+  - Fixed invalid texture ID `"items"` in `Springboard::Springboard` constructors to point to `"assets/textures/items/items_objects.png"`. Resolves texture loading failure log `ERROR: Failed to load texture 'items'` and restores real sprite rendering.
+  - Added 2.0x sprite scaling (`setScale({2.0f, 2.0f})`) in `Springboard::initTheme` and `Springboard::update`, scaling NES 16px wide sprites to 32px world tile width.
+  - Fixed sprite origin to bottom-left `(0.f, rect.height)` and set position to `{m_position.x, m_position.y + m_size.y}` in `Springboard::draw`, anchoring the springboard base to the ground cell while expanding upward during compression (`15px`), mid (`23px`), and launching (`31px`) states.
+  - Cleaned up unused `#include <vector>` header in `include/entities/Springboard.h`.
+  - Verified 14/14 test suites pass (`ctest`), including `springboard_tests`.
 
 

@@ -11,15 +11,19 @@
 #include "physics/PhysicsEngine.h"
 #include <box2d/box2d.h>
 
+namespace {
+constexpr const char* SPRINGBOARD_TEXTURE_PATH = "assets/textures/items/items_objects.png";
+}
+
 Springboard::Springboard()
     : Entity({0.f, 0.f}, {32.f, 32.f}) {
-    setSprite("items");
+    setSprite(SPRINGBOARD_TEXTURE_PATH);
     initTheme(LevelTheme::OVERWORLD);
 }
 
 Springboard::Springboard(const sf::Vector2f& position, LevelTheme theme)
     : Entity(position, {32.f, 32.f}) {
-    setSprite("items");
+    setSprite(SPRINGBOARD_TEXTURE_PATH);
     initTheme(theme);
 }
 
@@ -45,6 +49,7 @@ void Springboard::initTheme(LevelTheme theme) {
 
     if (m_sprite.has_value()) {
         m_sprite->setTextureRect(m_idleRect);
+        m_sprite->setScale({2.0f, 2.0f});
         m_sprite->setOrigin({0.f, static_cast<float>(m_idleRect.size.y)});
     }
 }
@@ -114,6 +119,7 @@ void Springboard::update(float dt) {
 
     if (m_sprite.has_value()) {
         m_sprite->setTextureRect(currentRect);
+        m_sprite->setScale({2.0f, 2.0f});
         m_sprite->setOrigin({0.f, static_cast<float>(currentRect.size.y)});
     }
 }
@@ -125,6 +131,6 @@ void Springboard::draw(sf::RenderTarget& target, sf::RenderStates states) const 
 
     sf::Sprite drawSprite = *m_sprite;
     // Draw relative to the bottom of the 32x32 tile cell so it expands upwards
-    drawSprite.setPosition({m_position.x, m_position.y + 32.f});
+    drawSprite.setPosition({m_position.x, m_position.y + m_size.y});
     target.draw(drawSprite, states);
 }

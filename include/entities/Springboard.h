@@ -40,8 +40,8 @@ public:
     bool isSpringboard() const override { return true; }
     State getState() const { return m_state; }
 
-    static constexpr float BOUNCE_NORMAL_SPEED = 450.f; // px/s
-    static constexpr float BOUNCE_SUPER_SPEED = 850.f;  // px/s
+    static constexpr float BOUNCE_NORMAL_SPEED = 600.f; // px/s (was 450)
+    static constexpr float BOUNCE_SUPER_SPEED = 1100.f;  // px/s (was 850)
 
 private:
     State m_state = State::IDLE;

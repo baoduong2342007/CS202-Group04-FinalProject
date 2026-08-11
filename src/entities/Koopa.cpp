@@ -18,6 +18,7 @@
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
 #include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "physics/PhysicsEngine.h"
@@ -72,6 +73,7 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
 
     const bool useUndergroundPalette = theme == LevelTheme::UNDERGROUND ||
                                        theme == LevelTheme::CASTLE;
+    const bool useUnderwaterPalette = theme == LevelTheme::UNDERWATER;
 
     const auto& walkFrames = [theme]() -> const std::vector<sf::IntRect>& {
         switch (theme) {
@@ -79,6 +81,8 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
                 return SpriteFrames::udg::Enemies::Koopa::walkFrames();
             case LevelTheme::CASTLE:
                 return SpriteFrames::castle::Enemies::Koopa::walkFrames();
+            case LevelTheme::UNDERWATER:
+                return SpriteFrames::udw::Enemies::Koopa::walkFrames();
             case LevelTheme::OVERWORLD:
             default:
                 return SpriteFrames::ovw::Enemies::Koopa::walkFrames();
@@ -96,7 +100,8 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
                  ? (theme == LevelTheme::CASTLE
                         ? SpriteFrames::castle::Enemies::Koopa::SHELL
                         : SpriteFrames::udg::Enemies::Koopa::SHELL)
-                 : SpriteFrames::ovw::Enemies::Koopa::SHELL},
+                 : (useUnderwaterPalette ? SpriteFrames::udw::Enemies::Koopa::SHELL
+                 : SpriteFrames::ovw::Enemies::Koopa::SHELL)},
             KOOPA_SHELL_FRAME_DURATION,
             false);
 

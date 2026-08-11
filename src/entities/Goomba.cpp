@@ -16,6 +16,7 @@
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
 #include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 
 namespace {
 
@@ -47,6 +48,8 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world, LevelTheme theme)
                   return SpriteFrames::udg::Enemies::Goomba::walkFrames();
               case LevelTheme::CASTLE:
                   return SpriteFrames::castle::Enemies::Goomba::walkFrames();
+              case LevelTheme::UNDERWATER:
+                  return SpriteFrames::udw::Enemies::Goomba::walkFrames();
               case LevelTheme::OVERWORLD:
               default:
                   return SpriteFrames::ovw::Enemies::Goomba::walkFrames();
@@ -59,6 +62,8 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world, LevelTheme theme)
                   return SpriteFrames::udg::Enemies::Goomba::STOMPED;
               case LevelTheme::CASTLE:
                   return SpriteFrames::castle::Enemies::Goomba::STOMPED;
+              case LevelTheme::UNDERWATER:
+                  return SpriteFrames::udw::Enemies::Goomba::STOMPED;
               case LevelTheme::OVERWORLD:
               default:
                   return SpriteFrames::ovw::Enemies::Goomba::STOMPED;

@@ -29,6 +29,11 @@ Springboard::Springboard(const sf::Vector2f& position, LevelTheme theme)
 
 void Springboard::initTheme(LevelTheme theme) {
     switch (theme) {
+        case LevelTheme::UNDERWATER:
+            m_idleRect = SpriteFrames::shared::Items::UW_SPRING_IDLE;
+            m_midRect = SpriteFrames::shared::Items::UW_SPRING_MID;
+            m_extendedRect = SpriteFrames::shared::Items::UW_SPRING_EXTENDED;
+            break;
         case LevelTheme::UNDERGROUND:
             m_idleRect = SpriteFrames::shared::Items::UG_SPRING_IDLE;
             m_midRect = SpriteFrames::shared::Items::UG_SPRING_MID;

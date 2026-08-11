@@ -10,6 +10,7 @@
 
 #include <box2d/box2d.h>
 
+#include "core/AnimationSystem.h"
 #include "entities/Mario.h"
 #include "physics/PhysicsEngine.h"
 
@@ -23,6 +24,15 @@ bool check(bool condition, const char* message) {
     }
     return true;
 }
+
+class MarioAnimationProbe final : public Mario {
+public:
+    using Mario::Mario;
+
+    const std::string& currentAnimation() const {
+        return m_animationSystem->getCurrentAnimationName();
+    }
+};
 
 b2Body* createPlatform(b2World& world) {
     b2BodyDef bodyDef;
@@ -231,6 +241,102 @@ bool testSuperMarioTraversesTwoBlockPassage() {
     return check(endX > startX + 50.0f,
                  "Super Mario must move smoothly through 2-block-high passage without getting stuck");
 }
+
+bool testUnderwaterSwimStrokeWorksInMidAir() {
+    b2World world({0.0f, 8.0f});
+
+    Mario mario({134.0f, 100.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+    mario.setUnderwater(true);
+
+    // Swimming must not depend on grounded state: a stroke is valid in open water.
+    mario.jump();
+    mario.preparePhysics(TIME_STEP);
+
+    const float swimVelocity = mario.getBody()->GetLinearVelocity().y;
+    return check(swimVelocity < -4.0f,
+                 "underwater jump input must apply an upward swim impulse in mid-air");
+}
+
+bool testVineClimbUsesVerticalVelocityAndDetachesHorizontally() {
+    b2World world({0.0f, 25.0f});
+
+    Mario mario({134.0f, 160.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    mario.setVerticalIntent(-1.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.preparePhysics(TIME_STEP);
+
+    const float climbVelocity = mario.getBody()->GetLinearVelocity().y;
+    if (!check(mario.isClimbing(), "vertical input on a vine must enter climbing state") ||
+        !check(mario.getBody()->GetGravityScale() == 0.0f,
+               "climbing must disable gravity while attached to a vine") ||
+        !check(climbVelocity < -2.0f,
+               "upward vine input must produce deterministic upward velocity")) {
+        return false;
+    }
+
+    mario.setVerticalIntent(1.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.preparePhysics(TIME_STEP);
+    if (!check(mario.getBody()->GetLinearVelocity().y > 2.0f,
+               "downward vine input must produce deterministic downward velocity")) {
+        return false;
+    }
+
+    mario.setVerticalIntent(0.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.preparePhysics(TIME_STEP);
+    if (!check(std::abs(mario.getBody()->GetLinearVelocity().y) < 0.01f,
+               "released vertical input must hold Mario still on the vine")) {
+        return false;
+    }
+
+    // Horizontal intent must win over vertical intent so the player can leave the vine.
+    mario.setMoveIntent(1.0f);
+    mario.setVerticalIntent(-1.0f);
+    mario.setClimbContext(true, 150.0f);
+    return check(!mario.isClimbing(),
+                 "horizontal intent must prevent immediate reattachment to a vine") &&
+           check(mario.getBody()->GetGravityScale() == 1.0f,
+                 "leaving a vine must restore normal gravity");
+}
+
+bool testClimbAnimationDirectionSelection() {
+    b2World world({0.0f, 25.0f});
+    MarioAnimationProbe mario({134.0f, 160.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    mario.setVerticalIntent(-1.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.update(0.0f);
+    if (!check(mario.currentAnimation() == "climb_up",
+               "upward vine intent must select climb_up animation")) {
+        return false;
+    }
+
+    mario.setVerticalIntent(1.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.update(0.0f);
+    if (!check(mario.currentAnimation() == "climb_down",
+               "downward vine intent must select climb_down animation")) {
+        return false;
+    }
+
+    mario.setVerticalIntent(0.0f);
+    mario.setClimbContext(true, 150.0f);
+    mario.update(0.0f);
+    if (!check(mario.currentAnimation() == "climb_idle",
+               "released vertical intent must select climb_idle animation")) {
+        return false;
+    }
+
+    mario.setFlagpoleSliding(true);
+    mario.update(0.0f);
+    return check(mario.currentAnimation() == "climb",
+                 "flagpole sliding must retain the dedicated climb animation");
+}
 } // namespace
 
 int main() {
@@ -238,6 +344,9 @@ int main() {
                          testGroundingRecoversAfterTerrainRebuild() &&
                          testShortJumpVsLongJump() &&
                          testSmallMarioTraversesOneBlockPassage() &&
-                         testSuperMarioTraversesTwoBlockPassage();
+                         testSuperMarioTraversesTwoBlockPassage() &&
+                         testUnderwaterSwimStrokeWorksInMidAir() &&
+                         testVineClimbUsesVerticalVelocityAndDetachesHorizontally() &&
+                         testClimbAnimationDirectionSelection();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

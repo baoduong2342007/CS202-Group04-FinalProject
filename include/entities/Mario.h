@@ -104,6 +104,7 @@ public:
     void setRunning(bool running) { setRunIntent(running); }
     bool isSkidding() const;
     bool isDying() const;
+    bool isDeathAnimationFinished() const;
     bool isTransforming() const { return m_isTransforming; }
 
 protected:

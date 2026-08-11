@@ -720,6 +720,10 @@ void Mario::loseLife() {
     return;
 
   m_isDying = true;
+  m_inputDirX = 0.f;
+  m_jumpRequested = false;
+  m_jumpReleased = false;
+  m_isRunning = false;
 
   if (m_lives > 0) {
     m_lives--;
@@ -736,6 +740,9 @@ void Mario::loseLife() {
 
   if (m_body) {
     m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    for (b2Fixture* f = m_body->GetFixtureList(); f; f = f->GetNext()) {
+      f->SetSensor(true);
+    }
   }
 
 #ifdef DEBUG
@@ -743,25 +750,36 @@ void Mario::loseLife() {
             << std::endl;
 #endif
 
-  // S6-TV1-18: PLAYER_DIED fires on EVERY death (life already decremented
-  // exactly once above). Whether this results in a level reload (non-terminal
-  // death) or a GameOver is decided by the observer (PlayState) from the
-  // remaining lives. We keep m_active = true while dying so the death animation
-  // plays.
+  SoundManager::getInstance().playSound("death");
   EventBus::getInstance().notify(EventType::PLAYER_DIED);
+}
+
+bool Mario::isDeathAnimationFinished() const {
+  return m_isDying && (!m_animationSystem || m_animationSystem->isFinished());
 }
 
 void Mario::respawn(const sf::Vector2f &spawnPosition) {
   m_marioState = MarioState::SMALL;
+  m_pendingGrowthState = MarioState::SMALL;
   m_size = SMALL_MARIO_SIZE;
   m_health = DEFAULT_MARIO_HEALTH;
   m_active = true;
   m_isDying = false;
   m_isSpawning = true;
+  m_isInvincible = false;
+  m_isStarInvincible = false;
+  m_invincibilityTimer = 0.f;
+  m_starInvincibilityTimer = 0.f;
+  m_fireCooldown = 0.f;
+  m_inputDirX = 0.f;
+  m_jumpRequested = false;
+  m_jumpReleased = false;
+  m_isRunning = false;
   clearGroundedState();
   setPosition(spawnPosition);
 
   if (m_body) {
+    m_body->SetTransform(PhysicsEngine::pixelsToMeters(spawnPosition), 0.0f);
     m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
     m_body->SetAngularVelocity(0.f);
     m_body->SetAwake(true);

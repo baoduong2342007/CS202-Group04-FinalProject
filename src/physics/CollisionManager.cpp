@@ -18,6 +18,7 @@
 #include "items/Star.h"
 #include "level/TileMap.h"
 #include "entities/QuestionBlock.h"
+#include "entities/Springboard.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/TileContactResolver.h"
 #include "patterns/EventBus.h"
@@ -561,6 +562,17 @@ void CollisionManager::handleMarioCollision(Mario* mario,
             if (normal.y < BOTTOM_BLOCK_NORMAL_THRESHOLD && marioVel.y < -0.1f) {
                 queueTileBlockHitFromContact(tileMap, mario, marioBody, contact, worldManifold);
             }
+        }
+    }
+
+    if (other && other->isSpringboard()) {
+        if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && marioVel.y >= -0.1f) {
+            bool isHoldingJump = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+                                 sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) ||
+                                 sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
+            Springboard* springboard = static_cast<Springboard*>(other);
+            springboard->triggerSpring(*mario, isHoldingJump);
+            return;
         }
     }
 

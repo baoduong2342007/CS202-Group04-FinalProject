@@ -57,11 +57,27 @@ void FireBall::spawn(const sf::Vector2f& position, Direction direction, b2World*
     }
 
     if (m_body) {
+        applyNoPlayerCollision();
         float dirMultiplier = (direction == Direction::RIGHT) ? 1.0f : -1.0f;
         float vxMeters = PhysicsEngine::pixelsToMeters(FIREBALL_SPEED * dirMultiplier);
         float vyMeters = PhysicsEngine::pixelsToMeters(FIREBALL_BOUNCE_SPEED * 0.5f);
         m_body->SetLinearVelocity(b2Vec2(vxMeters, vyMeters));
     }
+}
+
+void FireBall::applyNoPlayerCollision() {
+    if (!m_body) return;
+
+    // The body owns a single fixture (box). Tag it with the shared negative
+    // collision group so it never generates contacts / never resolves against
+    // Mario. All other bodies (tiles, enemies) keep default group 0, so they
+    // still collide with the fireball normally.
+    b2Fixture* fixture = m_body->GetFixtureList();
+    if (!fixture) return;
+
+    b2Filter filter = fixture->GetFilterData();
+    filter.groupIndex = COLLISION_GROUP_PLAYER_PROJECTILE;
+    fixture->SetFilterData(filter);
 }
 
 

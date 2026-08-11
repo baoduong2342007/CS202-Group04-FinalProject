@@ -44,6 +44,10 @@ public:
 
 private:
     // 5. Private members
+    /// Assign the shared negative collision group so this fireball never
+    /// physically collides with Mario (fireballs pass through the plumber).
+    void applyNoPlayerCollision();
+
     Direction m_direction;
     int m_bounceCount;
     float m_lifetime;

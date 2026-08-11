@@ -815,10 +815,26 @@ inline const sf::IntRect SCORE_8000({234, 46}, {16, 8});
 inline const sf::IntRect SCORE_1UP({252, 46}, {16, 8});
 
 // Trampoline / Springboard
-inline const sf::IntRect SPRING_IDLE({32, 44}, {16, 16});
-inline const sf::IntRect SPRING_COMPRESSED({32, 64}, {16, 8});
-inline const sf::IntRect SPRING_EXTENDED({32, 75}, {16, 31});
-inline const sf::IntRect SPRING_MID({50, 83}, {16, 23});
+// Overworld Palette (Y offset = 0)
+inline const sf::IntRect SPRING_IDLE({68, 91}, {16, 15});       // Normal / Flat spring with base
+inline const sf::IntRect SPRING_COMPRESSED({68, 91}, {16, 15}); // Alias for IDLE
+inline const sf::IntRect SPRING_MID({50, 83}, {16, 23});        // Medium spring with base
+inline const sf::IntRect SPRING_EXTENDED({32, 75}, {16, 31});   // Full extended spring with base
+
+// Underground Palette (Y offset + 108)
+inline const sf::IntRect UG_SPRING_IDLE({68, 199}, {16, 15});
+inline const sf::IntRect UG_SPRING_MID({50, 191}, {16, 23});
+inline const sf::IntRect UG_SPRING_EXTENDED({32, 183}, {16, 31});
+
+// Castle Palette (Y offset + 216)
+inline const sf::IntRect CASTLE_SPRING_IDLE({68, 307}, {16, 15});
+inline const sf::IntRect CASTLE_SPRING_MID({50, 299}, {16, 23});
+inline const sf::IntRect CASTLE_SPRING_EXTENDED({32, 291}, {16, 31});
+
+// Underwater Palette (Y offset + 324)
+inline const sf::IntRect UW_SPRING_IDLE({68, 415}, {16, 14});
+inline const sf::IntRect UW_SPRING_MID({50, 407}, {16, 22});
+inline const sf::IntRect UW_SPRING_EXTENDED({32, 399}, {16, 30});
 
 // Firebar Base
 inline const sf::IntRect FIREBAR_BASE({80, 64}, {32, 8});
@@ -1629,8 +1645,20 @@ inline const sf::IntRect &SCORE_1UP = legacy::Items::SCORE_1UP;
 
 inline const sf::IntRect &SPRING_IDLE = legacy::Items::SPRING_IDLE;
 inline const sf::IntRect &SPRING_COMPRESSED = legacy::Items::SPRING_COMPRESSED;
-inline const sf::IntRect &SPRING_EXTENDED = legacy::Items::SPRING_EXTENDED;
 inline const sf::IntRect &SPRING_MID = legacy::Items::SPRING_MID;
+inline const sf::IntRect &SPRING_EXTENDED = legacy::Items::SPRING_EXTENDED;
+
+inline const sf::IntRect &UG_SPRING_IDLE = legacy::Items::UG_SPRING_IDLE;
+inline const sf::IntRect &UG_SPRING_MID = legacy::Items::UG_SPRING_MID;
+inline const sf::IntRect &UG_SPRING_EXTENDED = legacy::Items::UG_SPRING_EXTENDED;
+
+inline const sf::IntRect &CASTLE_SPRING_IDLE = legacy::Items::CASTLE_SPRING_IDLE;
+inline const sf::IntRect &CASTLE_SPRING_MID = legacy::Items::CASTLE_SPRING_MID;
+inline const sf::IntRect &CASTLE_SPRING_EXTENDED = legacy::Items::CASTLE_SPRING_EXTENDED;
+
+inline const sf::IntRect &UW_SPRING_IDLE = legacy::Items::UW_SPRING_IDLE;
+inline const sf::IntRect &UW_SPRING_MID = legacy::Items::UW_SPRING_MID;
+inline const sf::IntRect &UW_SPRING_EXTENDED = legacy::Items::UW_SPRING_EXTENDED;
 inline const sf::IntRect &FIREBAR_BASE = legacy::Items::FIREBAR_BASE;
 inline const sf::IntRect &PLATFORM_SHORT = legacy::Items::PLATFORM_SHORT;
 inline const sf::IntRect &PLATFORM_LONG = legacy::Items::PLATFORM_LONG;

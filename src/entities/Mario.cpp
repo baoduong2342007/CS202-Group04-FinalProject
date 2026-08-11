@@ -547,6 +547,15 @@ void Mario::rebuildFixture() {
   fixtureDef.friction = MARIO_FIXTURE_FRICTION;
   m_body->CreateFixture(&fixtureDef);
 
+  // Share the negative collision group used by FireBall so projectiles pass
+  // THROUGH Mario physically instead of bumping/pushing him. Applied on every
+  // fixture rebuild so the group survives Small<->Super/Fire state switches.
+  if (b2Fixture* marioFixture = m_body->GetFixtureList()) {
+    b2Filter filter = marioFixture->GetFilterData();
+    filter.groupIndex = COLLISION_GROUP_PLAYER_PROJECTILE;
+    marioFixture->SetFilterData(filter);
+  }
+
 #ifdef DEBUG
   std::cout << "[DEBUG][Mario] Rebuilt fixture for state size: ("
             << targetSize.x << ", " << targetSize.y << ")" << std::endl;

@@ -20,6 +20,7 @@
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
 #include "items/Star.h"             // TV5 (Sprint 5)
+#include "entities/Springboard.h"     // TV1 (Sprint 7)
 #include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
 
 namespace {
@@ -111,6 +112,13 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
                                                    world,
                                                    QuestionBlockContent::STAR,
                                                    toBlockTheme(theme));
+        case 'J':
+        case 'S':
+            {
+                auto springboard = std::make_unique<Springboard>(position, theme);
+                springboard->initPhysics(world, b2_staticBody, {32.f, 32.f});
+                return springboard;
+            }
         default:
             return nullptr;
     }

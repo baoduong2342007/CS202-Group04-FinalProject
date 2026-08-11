@@ -65,8 +65,8 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
            top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock, Springboard)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();

@@ -12,7 +12,6 @@
 
 namespace {
 const sf::Vector2f PIRANHA_SIZE(32.f, 48.f);
-const sf::Vector2f PIRANHA_PHYSICS_SIZE(28.f, 44.f);
 constexpr const char* ENEMIES_TEXTURE_PATH = "assets/textures/enemies/enemies.png";
 } // namespace
 
@@ -24,7 +23,9 @@ PiranhaPlant::PiranhaPlant(const sf::Vector2f& position,
     setSprite(ENEMIES_TEXTURE_PATH);
 
     if (world) {
-        initPhysics(world, b2_kinematicBody, PIRANHA_PHYSICS_SIZE, true);
+        // Physics box matches the sprite (32x48) so the sensor contact area is
+        // centered consistently with m_size used by syncPhysics()/SetTransform().
+        initPhysics(world, b2_kinematicBody, PIRANHA_SIZE, true);
     }
 
     initAnimations(theme);

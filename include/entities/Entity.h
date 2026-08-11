@@ -18,6 +18,14 @@
 class TextureManager;
 class AnimationSystem;
 
+// ── Collision Filter Groups ───────────────────────────────────────────
+// Box2D rule: two fixtures that share the same NEGATIVE groupIndex never
+// generate contacts / never resolve physically, regardless of category/mask.
+// Mario's fixture and every FireBall fixture use this group so fireballs
+// truly pass THROUGH the plumber (no push, no jitter) while every other
+// body keeps default category/mask collisions.
+inline constexpr int16_t COLLISION_GROUP_PLAYER_PROJECTILE = -1;
+
 class Entity : public sf::Drawable {
 public:
     // 1. Constructor / Destructor
@@ -61,6 +69,7 @@ public:
         ENEMY,
         ITEM,
         PROJECTILE,
+        SPRINGBOARD,
         TERRAIN,
         UNKNOWN
     };
@@ -77,6 +86,7 @@ public:
     virtual bool isMario() const { return getType() == EntityType::MARIO; }
     virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
     virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
+    virtual bool isSpringboard() const { return getType() == EntityType::SPRINGBOARD; }
     virtual bool isKoopa() const { return false; }
     virtual bool isPiranhaPlant() const { return false; }
     virtual bool isMushroom() const { return false; }

@@ -321,6 +321,24 @@ bool testWalkingVsSprintingSeparatedByShift() {
            check(walkVx <= 181.0f, "Walking max speed must be capped at WALK_MAX_SPEED (180 px/s)") &&
            check(runVx > walkVx + 100.0f, "Sprinting with shift must achieve significantly higher velocity than walking");
 }
+
+bool testIsolatedWorldAccumulators() {
+    b2World world1({0.0f, 25.0f});
+    b2World world2({0.0f, 25.0f});
+
+    float accum1 = 0.0f;
+    float accum2 = 0.0f;
+
+    PhysicsEngine::update(world1, TIME_STEP * 0.5f, accum1);
+
+    if (!check(accum1 > 0.0f, "World 1 accumulator must store time fraction")) return false;
+    if (!check(accum2 == 0.0f, "World 2 accumulator must remain unaffected by World 1 update")) return false;
+
+    PhysicsEngine::update(world2, TIME_STEP * 0.2f, accum2);
+    if (!check(accum2 > 0.0f && accum2 < accum1, "World 2 accumulator must operate independently")) return false;
+
+    return true;
+}
 } // namespace
 
 int main() {
@@ -332,6 +350,7 @@ int main() {
                          testTimestepSubstepClamp() &&
                          testStarmanVsDamageGraceIndependence() &&
                          testFireBallPoolLimitAndMasks() &&
-                         testWalkingVsSprintingSeparatedByShift();
+                         testWalkingVsSprintingSeparatedByShift() &&
+                         testIsolatedWorldAccumulators();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

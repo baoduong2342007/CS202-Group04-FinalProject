@@ -90,7 +90,6 @@ public:
     void setStarInvincible(float duration);
     void activateStarman(float duration = 10.0f);
     void activateDamageGrace(float duration = 2.0f);
-    void setInvincible(float duration);
     bool canShootFireBall() const;
     int getLives() const;
     void setLives(int lives);
@@ -119,7 +118,6 @@ protected:
     CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
-    float m_moveSpeed;
     int m_score;
     int m_coinCount;
     bool m_isInvincible;
@@ -132,7 +130,6 @@ protected:
     bool m_isSpawning;
     bool m_isRunning;
     bool m_isSkidding;
-    bool m_wasJumpPressed;
 
     // Transformation effect
     bool m_isTransforming;

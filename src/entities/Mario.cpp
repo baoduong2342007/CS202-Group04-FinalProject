@@ -198,10 +198,10 @@ Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
-      m_jumpForce(DEFAULT_JUMP_FORCE), m_moveSpeed(WALK_MAX_SPEED), m_score(0),
+      m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0),
       m_coinCount(0), m_isInvincible(false), m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES), m_isDying(false), m_isSpawning(false),
-      m_isRunning(false), m_isSkidding(false), m_wasJumpPressed(false),
+      m_isRunning(false), m_isSkidding(false),
       m_isTransforming(false), m_transformTimer(0.f), m_pendingPowerDown(false),
       m_respawnPosition(DEFAULT_MARIO_POSITION) {
   setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
@@ -213,10 +213,10 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
-      m_jumpForce(DEFAULT_JUMP_FORCE), m_moveSpeed(WALK_MAX_SPEED), m_score(0),
+      m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0),
       m_coinCount(0), m_isInvincible(false), m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES), m_isDying(false), m_isSpawning(false),
-      m_isRunning(false), m_isSkidding(false), m_wasJumpPressed(false),
+      m_isRunning(false), m_isSkidding(false),
       m_isTransforming(false), m_transformTimer(0.f), m_pendingPowerDown(false),
       m_respawnPosition(position) {
   setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
@@ -388,19 +388,7 @@ void Mario::preparePhysics(float dt) {
   m_jumpReleased = false;
 }
 
-// DEPRECATED: Replaced by InputHandler (Command Pattern) in Game::update().
-// Kept as fallback for debugging. Remove after team confirms InputHandler
-// works.
-void Mario::handleInput() {
-  if (!m_body || !m_active || m_isDying)
-    return;
 
-  // Input polling decoupled — actions are handled via InputHandler commands
-  // (Task 3.2).
-  constexpr float FIXED_DT =
-      1.0f / static_cast<float>(DisplayConfig::FRAMERATE_LIMIT);
-  applyMovementPhysics(FIXED_DT, 0.0f, m_isRunning, false, false);
-}
 
 void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput,
                                bool jumpKeyPressed, float &currentVy,

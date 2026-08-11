@@ -322,6 +322,13 @@ bool testWalkingVsSprintingSeparatedByShift() {
            check(runVx > walkVx + 100.0f, "Sprinting with shift must achieve significantly higher velocity than walking");
 }
 
+#include "entities/Goomba.h"
+#include "entities/Koopa.h"
+#include "physics/CollisionManager.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
+#include "core/ScoreRules.h"
+
 bool testIsolatedWorldAccumulators() {
     b2World world1({0.0f, 25.0f});
     b2World world2({0.0f, 25.0f});
@@ -339,6 +346,82 @@ bool testIsolatedWorldAccumulators() {
 
     return true;
 }
+
+bool testGrowthFootAnchorAndClearance() {
+    b2World world({0.0f, 25.0f});
+    Mario mario({100.0f, 100.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    float initialFootY = mario.getPosition().y + mario.getSize().y / 2.0f;
+    mario.setMarioState(MarioState::SUPER);
+
+    float newFootY = mario.getPosition().y + mario.getSize().y / 2.0f;
+    if (!check(std::abs(newFootY - initialFootY) < 1.0f,
+               "Growth to SUPER must preserve foot Y position on ground")) return false;
+
+    // Test low ceiling clearance deferral
+    Mario smallMario({200.0f, 200.0f}, {32.0f, 32.0f});
+    smallMario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    b2BodyDef ceilingDef;
+    ceilingDef.type = b2_staticBody;
+    ceilingDef.position.Set(PhysicsEngine::pixelsToMeters(200.0f), PhysicsEngine::pixelsToMeters(175.0f));
+    b2Body* ceiling = world.CreateBody(&ceilingDef);
+    b2PolygonShape shape;
+    shape.SetAsBox(PhysicsEngine::pixelsToMeters(16.0f), PhysicsEngine::pixelsToMeters(10.0f));
+    ceiling->CreateFixture(&shape, 0.0f);
+
+    smallMario.setMarioState(MarioState::SUPER);
+    if (!check(smallMario.getMarioState() == MarioState::SMALL,
+               "Growth under low ceiling must be deferred while trapped")) return false;
+
+    return true;
+}
+
+bool testDeathLifecycleAndDeterministicRespawn() {
+    b2World world({0.0f, 25.0f});
+    Mario mario({100.0f, 100.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    int initialLives = mario.getLives();
+    mario.loseLife();
+
+    if (!check(mario.isDying(), "loseLife must set m_isDying to true")) return false;
+    if (!check(mario.getLives() == initialLives - 1, "loseLife must decrement lives by 1")) return false;
+    if (!check(!mario.isRunning(), "loseLife must clear movement/run intent")) return false;
+
+    mario.respawn({300.0f, 300.0f});
+    if (!check(!mario.isDying(), "respawn must clear isDying flag")) return false;
+    if (!check(mario.getMarioState() == MarioState::SMALL, "respawn must reset state to SMALL")) return false;
+    if (!check(mario.getPosition().x == 300.0f && mario.getPosition().y == 300.0f,
+               "respawn must reset position deterministically")) return false;
+
+    return true;
+}
+
+bool testCollisionManagerDefeatCausesAndSingleScore() {
+    b2World world({0.0f, 0.0f});
+    Mario mario({0.0f, 0.0f}, {32.0f, 32.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+
+    Goomba goomba1({100.0f, 100.0f}, &world);
+    int initialScore = mario.getScore();
+
+    bool defeat1 = CollisionManager::defeatEnemy(goomba1, DefeatCause::STOMP, &mario);
+    if (!check(defeat1, "First stomp attempt must return true")) return false;
+    if (!check(mario.getScore() == initialScore + 100, "STOMP cause must award 100 points")) return false;
+
+    bool defeat2 = CollisionManager::defeatEnemy(goomba1, DefeatCause::STOMP, &mario);
+    if (!check(!defeat2, "Second defeat attempt on dying victim must return false (idempotent)")) return false;
+    if (!check(mario.getScore() == initialScore + 100, "Second defeat attempt must NOT award points twice")) return false;
+
+    Goomba goomba2({150.0f, 150.0f}, &world);
+    bool defeatFire = CollisionManager::defeatEnemy(goomba2, DefeatCause::FIREBALL, &mario);
+    if (!check(defeatFire, "Fireball defeat must return true")) return false;
+    if (!check(mario.getScore() == initialScore + 100 + 200, "FIREBALL cause must award 200 points")) return false;
+
+    return true;
+}
 } // namespace
 
 int main() {
@@ -351,6 +434,9 @@ int main() {
                          testStarmanVsDamageGraceIndependence() &&
                          testFireBallPoolLimitAndMasks() &&
                          testWalkingVsSprintingSeparatedByShift() &&
-                         testIsolatedWorldAccumulators();
+                         testIsolatedWorldAccumulators() &&
+                         testGrowthFootAnchorAndClearance() &&
+                         testDeathLifecycleAndDeterministicRespawn() &&
+                         testCollisionManagerDefeatCausesAndSingleScore();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

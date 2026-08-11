@@ -37,6 +37,7 @@ public:
     char getTileAt(int column, int row) const;
     bool isEnemySupport(int column, int row) const;
     bool isSolid(int column, int row) const;
+    bool isClimbable(int column, int row) const;
 
     std::size_t getWidth() const;
     std::size_t getHeight() const;
@@ -46,6 +47,8 @@ public:
     static sf::Vector2f gridToWorldPosition(const sf::Vector2i& gridPosition);
     
     void createPhysicsBodies(b2World* world);
+    /// Release tile bodies while their owning Box2D world is still alive.
+    void destroyPhysicsBodies();
     
     // UserData packing constants for Box2D tile bodies
     static constexpr uintptr_t TILE_USERDATA_FLAG = 0x8000000000000000ULL;
@@ -89,12 +92,17 @@ private:
     };
 
     void buildVertices();
+    void buildFlagVertices();
     void clearPhysicsBodies();
 
     std::vector<std::string> m_grid;
     sf::VertexArray m_vertices{sf::PrimitiveType::Triangles};
     sf::VertexArray m_foregroundVertices{sf::PrimitiveType::Triangles};
+    sf::VertexArray m_objectVertices{sf::PrimitiveType::Triangles};
+    sf::VertexArray m_flagVertices{sf::PrimitiveType::Triangles};
     sf::Texture m_tileset;
+    sf::Texture m_objectsTileset;
+    float m_flagAnimationTime{0.0f};
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;

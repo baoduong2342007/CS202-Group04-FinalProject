@@ -77,6 +77,8 @@ private:
     std::vector<std::unique_ptr<Entity>> m_entities;
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
+    bool m_flagSequenceActive = false;
+    float m_flagSequenceTimer = 0.0f;
     std::string m_levelPath;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
 };

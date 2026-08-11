@@ -102,6 +102,9 @@ public:
      */
     bool isFinished() const;
 
+    /// Read-only diagnostic hook used by gameplay regression tests.
+    const std::string& getCurrentAnimationName() const { return m_currentAnimation; }
+
     // 4. Getters / Setters
     // (None currently required for this class)
 

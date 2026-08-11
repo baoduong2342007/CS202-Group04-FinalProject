@@ -31,6 +31,8 @@ BlockTheme toBlockTheme(LevelTheme theme) {
             return BlockTheme::UNDERGROUND;
         case LevelTheme::CASTLE:
             return BlockTheme::CASTLE;
+        case LevelTheme::UNDERWATER:
+            return BlockTheme::UNDERWATER;
         case LevelTheme::OVERWORLD:
         default:
             return BlockTheme::OVERWORLD;

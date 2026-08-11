@@ -491,4 +491,30 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - Cleaned up unused `#include <vector>` header in `include/entities/Springboard.h`.
   - Verified 14/14 test suites pass (`ctest`), including `springboard_tests`.
 
-
+### 41. Added Level 4 Castle Mechanics Test Level
+- **Date:** 2026-08-11
+- **Author:** Codex
+- **Status:** Completed; clean build and 14/14 CTest suites passed.
+- **Modified Files:**
+  - `levels/level4.txt`
+  - `include/core/LevelCatalog.h`
+  - `include/core/AnimationSystem.h`
+  - `include/entities/Mario.h`, `src/entities/Mario.cpp`
+  - `include/level/Level.h`, `src/level/Level.cpp`
+  - `include/level/TileMap.h`, `src/level/TileMap.cpp`
+  - `include/patterns/InputHandler.h`, `src/patterns/InputHandler.cpp`
+  - `src/states/PlayState.cpp`
+  - `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`
+  - `src/entities/PiranhaPlant.cpp`
+  - `tests/LevelCatalogTests.cpp`, `tests/PlayStateTests.cpp`, `tests/MarioPhysicsTests.cpp`, `tests/TV5IntegrationTests.cpp`, `tests/Gate0ContractTests.cpp`
+- **Logic Changes:**
+  1. Added release progression `1-1 Overworld -> 1-2 Underground -> 1-3 Underwater -> 1-4 Castle -> Win`, with Castle music assigned to Level 4 and unlock persistence capped at the playable catalog size.
+  2. Added `levels/level4.txt` as a 96x16 integration map containing blocks, question blocks, coins, power-ups, Goomba, Koopa, Piranha pipe symbols, springboard, solid Castle terrain, vine markers and a validated `F/|` finish pole.
+  3. Added non-solid `V` climbable tiles and a textured vine render layer using `items_objects.png`. Mario can attach while holding W/Up or S/Down, climb at a fixed speed, and detach with A/D.
+  4. Added Mario `swim` and `climb` animation clips for Mario/Luigi power states. Existing Underwater physics now selects the swim animation while submerged.
+  5. Replaced immediate finish completion with a one-shot flagpole sequence: input and gravity are locked, Mario slides to the pole base at a fixed speed, and exactly one `LEVEL_COMPLETED` event is emitted afterward.
+  6. Added Underwater Goomba, Koopa and Piranha Plant frame selection so Level 3 no longer falls back to Overworld enemy sprites.
+  7. Made Level cleanup explicitly destroy entity/tile Box2D bodies before the owning world, preventing stale-world destruction during reload/destruction.
+  8. Updated catalog, progression, audio-track, Level 4 marker/V checks and flag-sequence integration tests for all four release levels. Verified `cmake --build build-tests --parallel 4` and `ctest --test-dir build-tests --output-on-failure` with 14/14 tests passing.
+  9. Added direct Mario physics regression coverage for mid-air swim strokes and vine climbing (vertical velocity, gravity lock and horizontal detach), prevented simultaneous horizontal input from reattaching Mario to a vine, and verified Level theme wiring plus Level 4 enemy/item spawning.
+  10. Added a procedural wave phase to every themed `F` flag quad, kept the pole-side edge anchored, and added `climb_up`, `climb_down`, and `climb_idle` clips for all Mario/Luigi power states. Off-screen rendering now verifies flag motion across Overworld, Underground, Underwater, and Castle.

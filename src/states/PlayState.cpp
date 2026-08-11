@@ -19,10 +19,12 @@
 #include "states/WinState.h"
 #include "states/PauseState.h"
 #include "states/MenuState.h"
-#include "core/GameManager.h"
-#include "core/SoundManager.h"
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
+
+#include "core/GameManager.h"
+#include "core/SoundManager.h"
 
 namespace {
     const sf::Color FADE_START_COLOR(0, 0, 0, 0);
@@ -83,6 +85,17 @@ void PlayState::rebindCommands() {
         m_inputHandler.bindKey(sf::Keyboard::Key::Space,
                                std::make_unique<JumpCommand>(m_level->getMario()),
                                InputTrigger::Pressed);
+
+        const auto requestUp = [this] {
+            if (m_level && m_level->getMario()) m_level->getMario()->setVerticalIntent(-1.0f);
+        };
+        const auto requestDown = [this] {
+            if (m_level && m_level->getMario()) m_level->getMario()->setVerticalIntent(1.0f);
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Up, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler.bindKey(sf::Keyboard::Key::S, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Down, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
 
         const auto requestRun = [this] {
             if (m_level && m_level->getMario()) {
@@ -184,7 +197,8 @@ void PlayState::onNotify(EventType event) {
         // data from a Mario that is about to be destroyed.
         snapshotProgress();
         m_progress.currentLevel++;
-        GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(m_progress.currentLevel);
+        GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(
+            std::min(m_progress.currentLevel, LevelCatalog::count()));
         // S6-TV1-19: persist the high score at level completion too, so reaching
         // the finish right before quitting is never lost.
         GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
@@ -216,11 +230,13 @@ void PlayState::processInput(const InputState& inputState) {
     // S6-TV5-05: block commands when death/GameOver pending or player inactive.
     if (!m_level || !m_level->getMario() ||
         m_needsReload || m_needsGameOver ||
-        !m_level->getMario()->isActive()) {
+        !m_level->getMario()->isActive() ||
+        m_level->getMario()->isFlagpoleSliding()) {
         return;
     }
 
     m_level->getMario()->setMoveIntent(0.0f);
+    m_level->getMario()->setVerticalIntent(0.0f);
     m_inputHandler.handleInput(inputState);
 
     if (inputState.wasReleased(sf::Keyboard::Key::W) ||

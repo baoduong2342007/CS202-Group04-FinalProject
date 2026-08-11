@@ -106,7 +106,16 @@ float calculateBackgroundTop(const TileMap& tileMap) {
 
 
 Level::Level() : m_textureManager(TextureManager::getInstance()) {}
-Level::~Level() = default;
+
+Level::~Level() {
+    // Entity and tile bodies must be destroyed before the Box2D world.  This
+    // also keeps TileMap's destructor from observing a dead world pointer.
+    m_entities.clear();
+    m_mario.reset();
+    m_tileMap.destroyPhysicsBodies();
+    m_contactListener.reset();
+    m_world.reset();
+}
 
 void Level::setTheme(LevelTheme theme) {
     m_theme = theme;
@@ -114,6 +123,14 @@ void Level::setTheme(LevelTheme theme) {
 }
 
 bool Level::loadFromFile(const std::string& path) {
+    m_entities.clear();
+    m_mario.reset();
+    m_tileMap.destroyPhysicsBodies();
+    m_contactListener.reset();
+    m_world.reset();
+    m_levelCompleted = false;
+    m_flagSequenceActive = false;
+    m_flagSequenceTimer = 0.0f;
     m_levelPath = path;
     if (!m_tileMap.loadFromFile(path)) {
 
@@ -134,7 +151,8 @@ bool Level::loadFromFile(const std::string& path) {
     );
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
-    m_world = std::make_unique<b2World>(b2Vec2(0.f, 25.0f));
+    const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
+    m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
     m_contactListener = std::make_unique<ContactListener>(m_tileMap);
     m_world->SetContactListener(m_contactListener.get());
 
@@ -173,6 +191,14 @@ void Level::spawnEntitiesFromTileMap() {
     // Initialize Mario physics body
     m_mario->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
 
+    // Wire underwater mode so Mario uses swim mechanics
+    if (m_theme == LevelTheme::UNDERWATER) {
+        m_mario->setUnderwater(true);
+        if (m_mario->getBody()) {
+            m_mario->getBody()->SetLinearDamping(1.5f);
+        }
+    }
+
     // --- Spawn enemies and items via Factory ---
     for (char code : SPAWN_CODES) {
         auto positions = m_tileMap.findTiles(code);
@@ -196,7 +222,24 @@ void Level::spawnEntitiesFromTileMap() {
 }
 
 void Level::update(float dt) {
+    if (m_flagSequenceActive && m_mario) {
+        m_mario->setMoveIntent(0.0f);
+        m_mario->updateFlagpoleSlide(dt);
+        m_flagSequenceTimer -= dt;
+        if (m_flagSequenceTimer <= 0.0f) {
+            m_flagSequenceActive = false;
+            m_mario->setFlagpoleSliding(false);
+            m_levelCompleted = true;
+            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        }
+    }
     if (m_mario) {
+        const sf::Vector2f center = m_mario->getPosition() + m_mario->getSize() / 2.0f;
+        const int column = static_cast<int>(center.x / static_cast<float>(TILE_SIZE));
+        const int row = static_cast<int>(center.y / static_cast<float>(TILE_SIZE));
+        const bool onVine = m_tileMap.isClimbable(column, row);
+        const float vineCenterX = static_cast<float>(column * TILE_SIZE) + TILE_SIZE / 2.0f;
+        m_mario->setClimbContext(onVine, vineCenterX);
         m_mario->preparePhysics(dt);
     }
 
@@ -326,8 +369,8 @@ void Level::render(sf::RenderTarget& target) {
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    if (m_theme == LevelTheme::UNDERGROUND) {
-        // SMB underground stages use a flat dark-blue field behind the same
+    if (m_theme == LevelTheme::UNDERGROUND || m_theme == LevelTheme::UNDERWATER) {
+        // SMB underground/underwater stages use a flat dark-blue field behind the same
         // tile geometry. Extend it beyond the level bounds so camera motion
         // cannot reveal the sky-blue render-texture clear color.
         sf::RectangleShape undergroundBackground(
@@ -404,7 +447,7 @@ void Level::checkItemCollisions() {
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_levelCompleted) {
+    if (!m_mario || m_levelCompleted || m_flagSequenceActive) {
         return;
     }
 
@@ -438,9 +481,15 @@ void Level::checkFinishFlag() {
     const sf::FloatRect marioBounds = m_mario->getBoundingBox();
 
     if (marioBounds.findIntersection(finishTrigger)) {
-        m_levelCompleted = true;
-
-        EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        // The flag is a one-shot gameplay sequence.  Keep the level active
+        // until Mario's climb animation has had time to play.
+        m_flagSequenceActive = true;
+        const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
+        const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
+                                 m_mario->getSize().y;
+        m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);
+        const float slideDistance = std::max(0.0f, targetTopY - m_mario->getPosition().y);
+        m_flagSequenceTimer = slideDistance / Mario::FLAGPOLE_SLIDE_SPEED + 0.25f;
     }
 }
 

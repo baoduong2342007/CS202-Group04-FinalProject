@@ -49,6 +49,14 @@ constexpr float SPAWN_ANIMATION_DURATION = 0.5f;
 constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
 constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 
+// Underwater swim physics constants
+constexpr float UNDERWATER_WALK_MAX_SPEED = 100.f;
+constexpr float UNDERWATER_RUN_MAX_SPEED = 160.f;
+constexpr float UNDERWATER_SWIM_IMPULSE = -5.5f;   // upward impulse per swim stroke (in m/s)
+constexpr float UNDERWATER_MAX_SINK_SPEED = 3.0f;   // max downward velocity (in m/s)
+constexpr float UNDERWATER_ACCEL = 400.f;
+constexpr float UNDERWATER_FRICTION = 600.f;
+
 // Dimensions & Physics Constants
 const sf::Vector2f DEFAULT_MARIO_POSITION(100.f, 100.f);
 const sf::Vector2f SMALL_MARIO_SIZE(28.f, 30.f);
@@ -62,6 +70,17 @@ constexpr const char *MARIO_TEXTURE_PATH =
 // Helper: register animation clips for the current MarioState and CharacterType
 void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                              CharacterType charType) {
+  auto addSwimAndClimb = [&animSys](const auto& climbFrames, const auto& swimFrames) {
+    animSys.addAnimation("climb", AnimationSystem::createManualAnimation(climbFrames, 0.12f));
+    animSys.addAnimation("climb_up", AnimationSystem::createManualAnimation(climbFrames, 0.12f));
+
+    std::vector<sf::IntRect> climbDownFrames(climbFrames.rbegin(), climbFrames.rend());
+    animSys.addAnimation("climb_down", AnimationSystem::createManualAnimation(climbDownFrames, 0.12f));
+    animSys.addAnimation("climb_idle", AnimationSystem::createManualAnimation(
+        std::vector<sf::IntRect>{climbFrames.front()}, 1.0f));
+
+    animSys.addAnimation("swim", AnimationSystem::createManualAnimation(swimFrames, 0.10f));
+  };
   if (charType == CharacterType::LUIGI) {
     switch (state) {
     case MarioState::SMALL: {
@@ -70,6 +89,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -88,6 +108,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -108,6 +129,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -134,6 +156,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -152,6 +175,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -172,6 +196,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
       animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
                                        F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
@@ -308,7 +333,19 @@ void Mario::update(float dt) {
   }
 
   // Animation state machine (develop)
-  if (!isGrounded()) {
+  if (m_isFlagpoleSliding) {
+    playAnimation("climb");
+  } else if (m_isClimbing) {
+    if (m_verticalIntent < 0.0f) {
+      playAnimation("climb_up");
+    } else if (m_verticalIntent > 0.0f) {
+      playAnimation("climb_down");
+    } else {
+      playAnimation("climb_idle");
+    }
+  } else if (m_isUnderwater) {
+    playAnimation("swim");
+  } else if (!isGrounded()) {
     playAnimation("jump");
   } else if (m_isSkidding) {
     playAnimation("skid");
@@ -470,15 +507,63 @@ void Mario::applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased,
 }
 
 void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
-                                 bool jumpKeyPressed, bool jumpKeyReleased) {
+                                  bool jumpKeyPressed, bool jumpKeyReleased) {
   if (!m_body || m_isDying)
     return;
+
+  if (m_isFlagpoleSliding) {
+    // Level::updateFlagpoleSlide owns the deterministic slide velocity.
+    return;
+  }
+
+  if (m_isClimbing) {
+    const float climbSpeed = 96.0f;
+    m_body->SetLinearVelocity(b2Vec2(0.0f,
+        PhysicsEngine::pixelsToMeters(m_verticalIntent * climbSpeed)));
+    return;
+  }
 
   b2Vec2 currentVelMeters = m_body->GetLinearVelocity();
   float currentVx = PhysicsEngine::metersToPixels(currentVelMeters.x);
   float currentVy = currentVelMeters.y;
 
   m_isRunning = isRunningInput;
+
+  // Underwater: override speeds and allow swim strokes mid-air
+  if (m_isUnderwater) {
+    float targetMaxSpeed = isRunningInput ? UNDERWATER_RUN_MAX_SPEED : UNDERWATER_WALK_MAX_SPEED;
+    float newVx = currentVx;
+
+    // Horizontal movement (sluggish underwater feel)
+    if (inputDirX != 0.0f) {
+      newVx += inputDirX * UNDERWATER_ACCEL * dt;
+      newVx = std::clamp(newVx, -targetMaxSpeed, targetMaxSpeed);
+    } else {
+      float frictionStep = UNDERWATER_FRICTION * dt;
+      if (newVx > 0.0f) {
+        newVx = std::max(0.0f, newVx - frictionStep);
+      } else if (newVx < 0.0f) {
+        newVx = std::min(0.0f, newVx + frictionStep);
+      }
+      if (std::abs(newVx) < 1.0f) newVx = 0.0f;
+    }
+
+    // Swim stroke: jump key gives upward impulse
+    if (jumpKeyPressed) {
+      currentVy = UNDERWATER_SWIM_IMPULSE;
+      EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
+    }
+
+    // Cap sinking speed
+    if (currentVy > UNDERWATER_MAX_SINK_SPEED) {
+      currentVy = UNDERWATER_MAX_SINK_SPEED;
+    }
+
+    float newVxMeters = PhysicsEngine::pixelsToMeters(newVx);
+    m_body->SetLinearVelocity(b2Vec2(newVxMeters, currentVy));
+    return;
+  }
+
   float targetMaxSpeed = isRunningInput ? RUN_MAX_SPEED : WALK_MAX_SPEED;
   float newVx = currentVx;
 
@@ -487,7 +572,7 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
                        newVx, targetMaxSpeed);
   } else {
     applyAirPhysics(dt, inputDirX, jumpKeyReleased, currentVy, newVx,
-                    targetMaxSpeed);
+                     targetMaxSpeed);
   }
 
   float newVxMeters = PhysicsEngine::pixelsToMeters(newVx);
@@ -563,7 +648,16 @@ void Mario::rebuildFixture() {
 }
 
 void Mario::jump() {
-  if (!m_body || !isGrounded() || m_isDying)
+  if (!m_body || m_isDying)
+    return;
+
+  // Underwater: swim stroke works any time (not just grounded)
+  if (m_isUnderwater) {
+    m_jumpRequested = true;
+    return;
+  }
+
+  if (!isGrounded())
     return;
 
   m_jumpRequested = true;
@@ -579,10 +673,73 @@ void Mario::stopMoving() { setMoveIntent(0.0f); }
 
 void Mario::setMoveIntent(float inputDirection) {
   m_inputDirX = std::clamp(inputDirection, -1.0f, 1.0f);
+  if (m_isClimbing && m_inputDirX != 0.0f) {
+    m_isClimbing = false;
+    if (m_body) m_body->SetGravityScale(1.0f);
+  }
   if (m_inputDirX < 0.0f) {
     setFacingDirection(Direction::LEFT);
   } else if (m_inputDirX > 0.0f) {
     setFacingDirection(Direction::RIGHT);
+  }
+}
+
+void Mario::setVerticalIntent(float inputDirection) {
+  m_verticalIntent = std::clamp(inputDirection, -1.0f, 1.0f);
+}
+
+void Mario::setClimbContext(bool onVine, float vineCenterX) {
+  if (!onVine) {
+    if (m_isClimbing && m_body) m_body->SetGravityScale(1.0f);
+    m_isClimbing = false;
+    return;
+  }
+  if (m_verticalIntent != 0.0f && m_inputDirX == 0.0f &&
+      !m_isUnderwater && !m_isDying) {
+    m_isClimbing = true;
+    if (m_body) {
+      m_body->SetGravityScale(0.0f);
+      const float alignedLeft = vineCenterX - m_size.x / 2.0f;
+      if (std::abs(m_position.x - alignedLeft) > 0.01f) {
+        setPosition({alignedLeft, m_position.y});
+      }
+    }
+  }
+}
+
+void Mario::setFlagpoleSliding(bool sliding) {
+  m_isFlagpoleSliding = sliding;
+  m_verticalIntent = 0.0f;
+  if (sliding) {
+    m_jumpRequested = false;
+    m_jumpReleased = false;
+  }
+  if (m_body) {
+    m_body->SetGravityScale(sliding ? 0.0f : 1.0f);
+    if (!sliding) {
+      m_body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+    }
+  }
+}
+
+void Mario::beginFlagpoleSlide(float poleCenterX, float targetTopY) {
+  m_flagpoleTargetTopY = targetTopY;
+  setFlagpoleSliding(true);
+  setPosition({poleCenterX - m_size.x / 2.0f, m_position.y});
+}
+
+void Mario::updateFlagpoleSlide(float /*dt*/) {
+  if (!m_isFlagpoleSliding || !m_body) {
+    return;
+  }
+
+  const float currentTopY = m_position.y;
+  if (currentTopY < m_flagpoleTargetTopY) {
+    m_body->SetLinearVelocity(
+        b2Vec2(0.0f, PhysicsEngine::pixelsToMeters(FLAGPOLE_SLIDE_SPEED)));
+  } else {
+    setPosition({m_position.x, m_flagpoleTargetTopY});
+    m_body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
   }
 }
 

@@ -41,6 +41,9 @@ public:
     /// rules reject the request.
     bool spawnFireBall();
 
+    /// Spawn a FireballExplosion particle effect at the specified position.
+    void spawnFireballExplosion(const sf::Vector2f& position);
+
     // 4. Getters / Setters
     Mario* getMario();
     const Mario* getMario() const;

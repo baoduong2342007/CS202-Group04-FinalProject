@@ -34,13 +34,13 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}pr";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 
 bool isSolidTileSymbol(char tile) {
     return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
-           tile == '[' || tile == ']' || tile == '{' || tile == '}';
+           tile == '[' || tile == ']' || tile == 'p' || tile == 'r' || tile == '{' || tile == '}';
 }
 
 bool isEnemySupportTileSymbol(char tile) {
@@ -129,14 +129,14 @@ bool isValidTileSymbol(char symbol) {
 
 bool isRenderableTile(char symbol) {
     return symbol == '1' || symbol == 'B' || symbol == 'F' || symbol == 'S' || symbol == '|' || symbol == 'E' ||
-           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
+           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
 }
 
 bool isForegroundTile(char symbol) {
     // Blocks, flagpoles, and pipes go to the foreground so items spawn behind them and Mario goes behind pipes
     return symbol == 'B' || symbol == '?' || symbol == 'U' || symbol == 'O' ||
            symbol == 'F' || symbol == '|' ||
-           symbol == '[' || symbol == ']' || symbol == '{' || symbol == '}';
+           symbol == '[' || symbol == ']' || symbol == 'p' || symbol == 'r' || symbol == '{' || symbol == '}';
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
@@ -212,11 +212,13 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::USED_BLOCK;
 
         case '[':
+        case 'p':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
             return TileFrames::PIPE_TOP_LEFT;
 
         case ']':
+        case 'r':
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_RIGHT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_RIGHT_CASTLE;
             return TileFrames::PIPE_TOP_RIGHT;

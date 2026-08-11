@@ -418,8 +418,8 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (normal.y > 0.5f) {
             fireBall->bounce(sf::Vector2f(normal.x, normal.y));
         }
-        // Wall contact: Deactivate FireBall (require small lifetime grace period so initial spawn doesn't instantly die)
-        else if (std::abs(normal.x) > 0.5f) {
+        // Wall or Overhead Ceiling contact: Deactivate FireBall (require small lifetime grace period so initial spawn doesn't instantly die)
+        else if (std::abs(normal.x) > 0.5f || normal.y < -0.5f) {
             if (fireBall->getLifetime() > 0.05f) {
                 fireBall->deactivate();
             }
@@ -580,6 +580,11 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         if (mario->isStarInvincible()) {
             CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
             mario->clearGroundedState();
+            return;
+        }
+
+        if (enemy->isPiranhaPlant()) {
+            mario->queuePowerDown();
             return;
         }
 

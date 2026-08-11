@@ -128,13 +128,13 @@ void testCanonicalEnemyCoordinates() {
     assert(hasPosition(Enemies::GreenEnemiesBlock::UW_PARATROOPA_FLY2,
                        346, 112));
 
-    // Piranha Plant uses closed/open order in every palette group.
-    assert(hasPosition(Enemies::PiranhaPlant::CLOSED, 0, 138));
-    assert(hasPosition(Enemies::PiranhaPlant::OPEN, 18, 138));
-    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_CLOSED, 146, 138));
-    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_OPEN, 164, 138));
-    assert(hasPosition(Enemies::PiranhaPlant::UW_CLOSED, 292, 138));
-    assert(hasPosition(Enemies::PiranhaPlant::UW_OPEN, 310, 138));
+    // Piranha Plant uses open/closed order in every palette group.
+    assert(hasPosition(Enemies::PiranhaPlant::OPEN, 0, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::CLOSED, 18, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_OPEN, 146, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UG_CASTLE_CLOSED, 164, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UW_OPEN, 292, 138));
+    assert(hasPosition(Enemies::PiranhaPlant::UW_CLOSED, 310, 138));
 
     // The large Castle rows are Bowser hammer poses; only #139/#140 are the
     // small Hammer Bro special frames.

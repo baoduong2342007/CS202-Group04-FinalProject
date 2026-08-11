@@ -78,6 +78,7 @@ public:
     virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
     virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
     virtual bool isKoopa() const { return false; }
+    virtual bool isPiranhaPlant() const { return false; }
     virtual bool isMushroom() const { return false; }
     virtual bool isStar() const { return false; }
     virtual bool isQuestionBlock() const { return false; }

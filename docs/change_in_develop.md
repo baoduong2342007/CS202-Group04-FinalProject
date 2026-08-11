@@ -73,6 +73,14 @@
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
+### Entry #36: [Asset & Transparency Fix] - Tách Nền Trong Suốt Cho Vùng Mushroom & Sheet Backdrop (Bảo Tồn Tile Underwater)
+- **Trạng thái:** Đã hoàn thành 100%, 13/13 CTest passed.
+- **File ảnh hưởng:** `assets/textures/enemies/enemies.png`, `assets/textures/items/items_objects.png`, `assets/textures/mario/MarioLuigi.png`, `assets/textures/tiles/tileset.png`
+- **Mô tả:**
+  1. Loại bỏ toàn bộ nền xanh đậm `RGB(12, 69, 176)` và lề `RGB(0, 0, 168)`, `RGB(0, 41, 140)` trong khu vực Mushroom Platforms (`X: 0..323, Y: 356..440`) của `tileset.png`, đưa 14,093 pixel nền về `(0, 0, 0, 0)`.
+  2. **Bảo tồn 100% các tile nội dung**: Giữ nguyên toàn bộ đồ họa nấm, thân nấm, đồi núi cũng như khu vực Underwater (san hô, đồi nước, ống nước dưới nước).
+  3. Biên dịch và kiểm thử tự động thành công 100% (13/13 CTest passed).
+
 ### Superseding audit — Tileset coordinates and assembled scenery (2026-08-10)
 
 Entry #35 below is historical and is superseded by the current audit in
@@ -413,3 +421,62 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - Added `STONE_UNDERGROUND` (`{198, 16}` - Object #12, Khối đá vuông 4 đinh Teal) definition in `TileFrames.h` and updated `TileMap.cpp` (`getTilesetRect`) so symbol `'S'` correctly renders Underground Teal Stone in Level 2 instead of Overworld Brown Stone or Teal Brick.
   - Added a `0.02f` pixel UV inset in `TileMap::buildVertices` to completely eliminate 1-pixel border texture bleeding caused by subpixel camera position sampling.
   - Verified full build clean success and 13/13 ctest pass.
+
+### 37. Implemented Fireball Explosion Visual Particle Effect
+- **Date**: 2026-08-11
+- **Author**: TV3 & TV1
+- **Modified Files**:
+  - `include/entities/FireballExplosion.h`
+  - `src/entities/FireballExplosion.cpp`
+  - `include/entities/FireBall.h`
+  - `src/entities/FireBall.cpp`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `src/physics/CollisionManager.cpp`
+- **Logic Changes**:
+  - Implemented `FireballExplosion` visual effect entity displaying 3 animation frames (`fireballExplosionFrames`) from `assets/textures/items/items_objects.png` over 0.15 seconds before self-removal.
+  - Set `FireballExplosion::getType()` to `EntityType::TERRAIN` so explosion particles are not mistakenly identified as `isFireBall()`, preventing invalid pointer casting and preventing particles from blocking Mario's maximum active fireball limit.
+  - Updated `Level::update()` to collect explosion positions into a temporary list prior to spawning `FireballExplosion` entities, completely preventing `std::vector` iterator invalidation during iteration.
+  - Added `CollisionManager.cpp` overhead ceiling contact check (`normal.y < -0.5f`) so fireballs bouncing into low ceilings/overhead blocks explode immediately rather than clipping or gliding through ceilings.
+  - Fixed missing `setOwner(m_mario.get())` calls in `Level::shootFireBall()` and `Level::processPendingFireballs()` ensuring Mario receives full score points when enemies are defeated by fireballs.
+  - Verified clean build and 13/13 test suite pass (`ctest`).
+
+### 38. Implemented Piranha Plant Enemy Class & Sensor Physics Architecture
+- **Date**: 2026-08-11
+- **Author**: TV4 & TV1
+- **Modified Files**:
+  - `include/entities/Entity.h`
+  - `include/entities/PiranhaPlant.h`
+  - `src/entities/PiranhaPlant.cpp`
+  - `include/patterns/EntityFactory.h`
+  - `src/patterns/EntityFactory.cpp`
+  - `src/physics/CollisionManager.cpp`
+  - `src/level/Level.cpp`
+  - `src/level/TileMap.cpp`
+  - `levels/level2.txt`
+- **Logic Changes**:
+  - Implemented `PiranhaPlant` enemy class featuring a 4-stage vertical emergence state machine (`EMERGING`, `WAITING_TOP`, `RETRACTING`, `WAITING_BOTTOM`).
+  - Configured NES-accurate 2.0x scale factor constants: NES sprite 16x24px @ 2.0x scale = 32x48px entity size, with `TRAVEL_DISTANCE = 64.f` px (2 full tiles emergence height) and `PROXIMITY_RADIUS = 44.f` px (1 tile width).
+  - Wired real-time `updateMarioProximity(marioPos)` inside `Level::update` so Piranha Plant dynamically detects Mario's distance before emerging from the pipe.
+  - Configured Box2D physics body as `b2_kinematicBody` with sensor fixture (`isSensor = true`), completely eliminating physics tile collision jittering and tunneling inside solid pipe tiles.
+  - Fixed sprite orientation and pipe fitting: Used upright sprite frames (`CLOSED` `{0, 138}` and `OPEN` `{18, 138}`) ensuring head points UP into the sky, and set retracted base position to `(position.x + 16.f, position.y + 16.f)` with `TRAVEL_DISTANCE = 64.f` so the 48px plant fits 100% inside the 64px pipe (0px exposed below), and emerges 48px high (full plant height) into the air above the pipe rim.
+  - Adjusted `PROXIMITY_RADIUS` to `20.f` px so Piranha Plant aggressive emergence is active as Mario approaches from the sides to attack/bite Mario, only pausing if Mario stands directly centered on top of the pipe rim.
+  - Configured theme-responsive mouth animations (`OPEN` and `CLOSED` frames) supporting Overworld, Underground, Castle, and Underwater palettes from `SpriteFrames_shared.h`.
+  - Updated `CollisionManager` to ensure Mario takes damage (`queuePowerDown()`) when stomping or colliding with Piranha Plant, while allowing `FireBall` projectiles and `Star` invincibility to defeat the plant and award 200 score points.
+  - Configured `p` and `r` tile codes in `TileMap.cpp` (`getTilesetRect`, `isSolidTileSymbol`, `isRenderableTile`, `isForegroundTile`) to render directly as Pipe Top-Left (`PIPE_TOP_LEFT`) and Pipe Top-Right (`PIPE_TOP_RIGHT`) tiles.
+  - Set `'p'` as the sole PiranhaPlant spawn code in `SPAWN_CODES` (removing `'r'`), guaranteeing exactly ONE Piranha Plant per pipe when using `pr` on pipe tops in `levels/level2.txt`.
+  - Verified clean build and 13/13 test suite pass (`ctest`).
+
+### 39. Merged TV5 Spritesheet Coordinate Fixes & Integrated Theme Rects
+- **Date**: 2026-08-11
+- **Author**: TV5 & TV1
+- **Modified Files**:
+  - `docs/enemies_coordinate.md`
+  - `include/core/SpriteFrames_shared.h`
+  - `src/entities/PiranhaPlant.cpp`
+- **Logic Changes**:
+  - Merged TV5's commit `2fec5e5be7867b31602f2bc62e8b16e8ff2e7b32` from `origin/feature/sound-input` into `develop`.
+  - Integrated TV5's corrected PiranhaPlant sprite coordinates in `SpriteFrames_shared.h` (`UG_CASTLE_OPEN` `{146, 138}` and `UG_CASTLE_CLOSED` `{164, 138}`), updating `PiranhaPlant::initAnimations` to use theme-responsive Underground/Castle brown palette rects.
+  - Verified clean build and 13/13 test suite pass (`ctest`).
+
+

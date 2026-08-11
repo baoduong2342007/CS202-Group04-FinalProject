@@ -73,6 +73,14 @@
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
+### Entry #37: [Branch Merge & Test Sync] - Merge Branch `feature/sound-input` Vào `develop`
+- **Trạng thái:** Đã hoàn thành 100%, 14/14 CTest passed.
+- **File ảnh hưởng:** `tests/MarioPhysicsTests.cpp`, và các file từ `feature/sound-input` branch merge.
+- **Mô tả:**
+  1. Fast-forward merge thành công branch `feature/sound-input` vào branch `develop`.
+  2. Cập nhật `tests/MarioPhysicsTests.cpp` để khởi tạo thứ tự state `SUPER` trước `initPhysics` với kích thước `SUPER_MARIO_SIZE` (28x60) trong test `testSuperMarioTraversesTwoBlockPassage`, đồng thời đồng bộ physics foot Y calculation trong test `testGrowthFootAnchorAndClearance`.
+  3. Biên dịch 100% không cảnh báo/lỗi và vượt qua toàn bộ 14/14 unit test ctest suite.
+
 ### Entry #36: [Asset & Transparency Fix] - Tách Nền Trong Suốt Cho Vùng Mushroom & Sheet Backdrop (Bảo Tồn Tile Underwater)
 - **Trạng thái:** Đã hoàn thành 100%, 13/13 CTest passed.
 - **File ảnh hưởng:** `assets/textures/enemies/enemies.png`, `assets/textures/items/items_objects.png`, `assets/textures/mario/MarioLuigi.png`, `assets/textures/tiles/tileset.png`

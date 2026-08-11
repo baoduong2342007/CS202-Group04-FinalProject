@@ -227,9 +227,9 @@ bool testSuperMarioTraversesTwoBlockPassage() {
     ceiling->CreateFixture(&ceilingShape, 0.0f);
 
     // Spawn Super Mario at Y = 200px inside the 2-block passage
-    Mario mario({134.0f, 200.0f}, {32.0f, 64.0f});
-    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 64.0f});
+    Mario mario({134.0f, 200.0f}, {28.0f, 60.0f});
     mario.setMarioState(MarioState::SUPER);
+    mario.initPhysics(&world, b2_dynamicBody, {28.0f, 60.0f});
     settleMarioOnPlatform(world, mario);
 
     float startX = PhysicsEngine::metersToPixels(mario.getBody()->GetPosition().x);
@@ -361,13 +361,15 @@ bool testIsolatedWorldAccumulators() {
 
 bool testGrowthFootAnchorAndClearance() {
     b2World world({0.0f, 25.0f});
-    Mario mario({100.0f, 100.0f}, {32.0f, 32.0f});
-    mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+    Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
+    mario.syncPhysics();
 
-    float initialFootY = mario.getPosition().y + mario.getSize().y / 2.0f;
+    float initialFootY = mario.getPosition().y + mario.getSize().y;
     mario.setMarioState(MarioState::SUPER);
+    mario.syncPhysics();
 
-    float newFootY = mario.getPosition().y + mario.getSize().y / 2.0f;
+    float newFootY = mario.getPosition().y + mario.getSize().y;
     if (!check(std::abs(newFootY - initialFootY) < 1.0f,
                "Growth to SUPER must preserve foot Y position on ground")) return false;
 

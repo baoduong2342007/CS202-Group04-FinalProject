@@ -63,6 +63,10 @@ void Entity::setTextureManager(TextureManager& textureManager) {
     m_textureManager = &textureManager;
     if (!m_textureId.empty()) {
         setSprite(m_textureId);
+        // A sprite is created after many entities register/play their first
+        // animation. Apply that frame immediately instead of leaving SFML's
+        // default full-texture rectangle visible until the next update tick.
+        updateAnimation(0.f);
     }
 }
 
@@ -227,4 +231,3 @@ void Entity::onCollisionEnd(Entity* other, b2Contact* contact) {
     (void)other;
     (void)contact;
 }
-

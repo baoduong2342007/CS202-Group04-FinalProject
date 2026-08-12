@@ -28,6 +28,7 @@
 
 namespace {
 constexpr unsigned int TILE_SIZE = 32;
+constexpr float FLAGPOLE_WALK_SPEED = 150.0f;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
 const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
@@ -137,7 +138,9 @@ bool Level::loadFromFile(const std::string& path) {
     m_world.reset();
     m_levelCompleted = false;
     m_flagSequenceActive = false;
+    m_flagWalkActive = false;
     m_flagSequenceTimer = 0.0f;
+    m_flagWalkTargetX = 0.0f;
     m_physicsAccumulator = 0.0f;
     m_levelPath = path;
     if (!m_tileMap.loadFromFile(path)) {
@@ -232,14 +235,41 @@ void Level::spawnEntitiesFromTileMap() {
 
 void Level::update(float dt) {
     if (m_flagSequenceActive && m_mario) {
-        m_mario->setMoveIntent(0.0f);
-        m_mario->updateFlagpoleSlide(dt);
-        m_flagSequenceTimer -= dt;
-        if (m_flagSequenceTimer <= 0.0f) {
-            m_flagSequenceActive = false;
-            m_mario->setFlagpoleSliding(false);
-            m_levelCompleted = true;
-            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        if (!m_flagWalkActive) {
+            m_mario->setMoveIntent(0.0f);
+            m_mario->setRunIntent(false);
+            m_mario->updateFlagpoleSlide(dt);
+            m_flagSequenceTimer -= dt;
+            if (m_flagSequenceTimer <= 0.0f) {
+                // The original game gives Mario a short pause at the bottom,
+                // then takes control and walks him right into the castle.
+                m_mario->setFlagpoleSliding(false);
+                m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
+                m_flagWalkActive = true;
+                m_mario->setMoveIntent(1.0f);
+                m_mario->setRunIntent(false);
+                const float walkDistance = std::max(
+                    0.0f, m_flagWalkTargetX - m_mario->getPosition().x);
+                m_flagSequenceTimer = walkDistance / FLAGPOLE_WALK_SPEED;
+            }
+        } else {
+            m_mario->setMoveIntent(1.0f);
+            m_mario->setRunIntent(false);
+            m_flagSequenceTimer -= dt;
+
+            if (m_mario->getPosition().x >= m_flagWalkTargetX ||
+                m_flagSequenceTimer <= 0.0f) {
+                const sf::Vector2f stopPosition(m_flagWalkTargetX,
+                                                m_mario->getPosition().y);
+                m_mario->setPosition(stopPosition);
+                m_mario->stopMoving();
+                m_mario->setVelocity({0.0f, 0.0f});
+                m_mario->setAutomaticWalkSpeed(0.0f);
+                m_flagSequenceActive = false;
+                m_flagWalkActive = false;
+                m_levelCompleted = true;
+                EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+            }
         }
     }
     if (m_mario) {
@@ -266,8 +296,14 @@ void Level::update(float dt) {
     m_tileMap.update(dt);
 
     // Process queued tile hits (bumping Question blocks & shattering Brick blocks)
-    bool isBigMario = (m_mario && m_mario->getMarioState() != MarioState::SMALL);
-    m_tileMap.processPendingHits(m_entities, m_textureManager, isBigMario, m_mario.get());
+    // Small Fire Mario keeps the small body and must not break brick blocks.
+    // Only the Super body can shatter them: SUPER or Super Fire.
+    const bool canBreakBlocks =
+        m_mario && (m_mario->getMarioState() == MarioState::SUPER ||
+                    (m_mario->getMarioState() == MarioState::FIRE &&
+                     m_mario->isSuperFireMario()));
+    m_tileMap.processPendingHits(m_entities, m_textureManager,
+                                 canBreakBlocks, m_mario.get());
 
     // Update Mario
     if (m_mario) {
@@ -352,6 +388,9 @@ void Level::update(float dt) {
 void Level::spawnFireballExplosion(const sf::Vector2f& position) {
     auto explosion = std::make_unique<FireballExplosion>(position);
     explosion->setTextureManager(m_textureManager);
+    // The effect is inserted after the entity-update loop, so initialize its
+    // position/scale immediately for the frame in which it is spawned.
+    explosion->update(0.f);
     m_entities.push_back(std::move(explosion));
 }
 
@@ -419,7 +458,7 @@ void Level::render(sf::RenderTarget& target) {
 }
 
 void Level::checkItemCollisions() {
-    if (!m_mario) return;
+    if (!m_mario || m_mario->isCollisionLocked()) return;
 
     for (auto& entity : m_entities) {
         // Use virtual isItem() instead of dynamic_cast to avoid RTTI overhead
@@ -446,7 +485,8 @@ void Level::checkItemCollisions() {
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_levelCompleted || m_flagSequenceActive) {
+    if (!m_mario || m_mario->isCollisionLocked() || m_levelCompleted ||
+        m_flagSequenceActive) {
         return;
     }
 
@@ -481,14 +521,32 @@ void Level::checkFinishFlag() {
 
     if (marioBounds.findIntersection(finishTrigger)) {
         // The flag is a one-shot gameplay sequence.  Keep the level active
-        // until Mario's climb animation has had time to play.
+        // until Mario has finished the climb and walked into the exit.
         m_flagSequenceActive = true;
+        m_flagWalkActive = false;
         const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
         const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
                                  m_mario->getSize().y;
         m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);
         const float slideDistance = std::max(0.0f, targetTopY - m_mario->getPosition().y);
         m_flagSequenceTimer = slideDistance / Mario::FLAGPOLE_SLIDE_SPEED + 0.25f;
+
+        // `L` is the bottom-left anchor of the five-tile-wide castle. Aim for
+        // its center door. Levels without a castle still get a short,
+        // authentic-looking walk toward the right edge before transitioning.
+        const auto castleAnchors = m_tileMap.findTiles('L');
+        if (!castleAnchors.empty()) {
+            const float castleLeft = static_cast<float>(castleAnchors.front().x) * TILE_SIZE;
+            const float castleCenter = castleLeft + 2.5f * TILE_SIZE;
+            m_flagWalkTargetX = castleCenter - m_mario->getSize().x / 2.0f;
+        } else {
+            const float levelRight = static_cast<float>(m_tileMap.getWidth()) * TILE_SIZE;
+            const float rightEdgeTarget = levelRight - m_mario->getSize().x - 8.0f;
+            const float shortWalkTarget = m_mario->getPosition().x + 4.0f * TILE_SIZE;
+            m_flagWalkTargetX = std::min(rightEdgeTarget, shortWalkTarget);
+        }
+        m_flagWalkTargetX = std::max(m_flagWalkTargetX,
+                                     m_mario->getPosition().x + TILE_SIZE);
     }
 }
 

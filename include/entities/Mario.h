@@ -48,6 +48,9 @@ public:
     void setFlagpoleSliding(bool sliding);
     void beginFlagpoleSlide(float poleCenterX, float targetTopY);
     void updateFlagpoleSlide(float dt);
+    /// Limit Mario's automatic walk speed during the flagpole exit sequence.
+    /// Pass a non-positive value to restore the normal movement cap.
+    void setAutomaticWalkSpeed(float speed);
     bool isFlagpoleSliding() const { return m_isFlagpoleSliding; }
     static constexpr float FLAGPOLE_SLIDE_SPEED = 120.0f;
     void preparePhysics(float dt);
@@ -113,6 +116,8 @@ public:
     void setRunning(bool running) { setRunIntent(running); }
     bool isSkidding() const;
     bool isDying() const;
+    /// True while Mario must not participate in gameplay collisions.
+    bool isCollisionLocked() const { return !m_active || m_isDying || m_pendingPowerDown; }
     bool isDeathAnimationFinished() const;
     bool isTransforming() const { return m_isTransforming; }
     /// True when FIRE uses the Super/Big body; false means Small Fire Mario.
@@ -163,6 +168,7 @@ protected:
     MarioState m_pendingGrowthState = MarioState::SMALL;
     bool m_pendingGrowthPresentation = false;
     bool m_deathAnimationFinished = false;
+    float m_deathFallDelayTimer = 0.0f;
     sf::Vector2f m_respawnPosition;
 
     float m_inputDirX = 0.0f;
@@ -180,6 +186,7 @@ protected:
     bool m_isClimbing = false;
     bool m_isFlagpoleSliding = false;
     float m_flagpoleTargetTopY = 0.0f;
+    float m_automaticWalkSpeed = 0.0f;
     float m_verticalIntent = 0.0f;
 
 public:

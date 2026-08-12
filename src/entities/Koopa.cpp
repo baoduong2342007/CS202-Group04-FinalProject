@@ -146,6 +146,15 @@ void Koopa::update(float dt) {
 
     if (m_state == KoopaState::WALKING) {
         patrol();
+    } else if (m_state == KoopaState::SHELL_IDLE) {
+        // Box2D can leave a small horizontal impulse on the shell after the
+        // stomp contact has been solved. An idle shell must stay put until
+        // Mario explicitly kicks/pushes it into the sliding state; preserve
+        // the vertical velocity so it can still settle onto the ground.
+        const sf::Vector2f velocity = getVelocity();
+        if (std::abs(velocity.x) > 0.001f) {
+            setVelocity({0.f, velocity.y});
+        }
     } else if (m_state == KoopaState::SHELL_SLIDING) {
         sf::Vector2f velocity = getVelocity();
 

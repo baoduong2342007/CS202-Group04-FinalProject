@@ -23,6 +23,11 @@ FireballExplosion::FireballExplosion(const sf::Vector2f& position)
         AnimationSystem::createManualAnimation(
             SpriteFrames::shared::Items::fireballExplosionFrames(), FRAME_DURATION));
     playAnimation("explode");
+
+    // The explosion is spawned after Level has already updated its entities for
+    // the current frame. Apply frame 0 immediately so the sprite never renders
+    // the default full-texture rectangle for one frame.
+    updateAnimation(0.f);
 }
 
 void FireballExplosion::update(float dt) {

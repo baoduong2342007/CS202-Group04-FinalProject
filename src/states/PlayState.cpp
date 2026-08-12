@@ -237,7 +237,8 @@ void PlayState::processInput(const InputState& inputState) {
         !m_level->getMario()->isActive() ||
         m_level->getMario()->isDying() ||
         m_level->getMario()->isTransforming() ||
-        m_level->getMario()->isFlagpoleSliding()) {
+        m_level->getMario()->isFlagpoleSliding() ||
+        m_level->isFlagSequenceActive()) {
         return;
     }
 

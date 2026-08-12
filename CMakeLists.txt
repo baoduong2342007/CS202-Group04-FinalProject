@@ -255,6 +255,9 @@ if(BUILD_TESTING)
     )
     target_link_libraries(collision_matrix_tests PRIVATE game_lib)
     add_test(NAME collision_matrix_tests COMMAND collision_matrix_tests)
+    set_tests_properties(collision_matrix_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 
     add_executable(fireball_request_tests
         tests/FireBallRequestTests.cpp

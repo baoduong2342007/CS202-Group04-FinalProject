@@ -5,6 +5,7 @@
  */
 
 #include <cassert>
+#include <cmath>
 #include <memory>
 
 #include <box2d/box2d.h>
@@ -148,11 +149,61 @@ void runShell(bool shellFixtureFirst) {
     shell->setVelocity({0.f, 0.f});
     stepTwice(world);
     assert(victim->isDead());
+    assert(victim->isDying());
+    assert(!victim->shouldRemove());
+    assert(victim->getBody()->GetLinearVelocity().y < 0.f);
     assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::SHELL));
     assert(events.shellKick == 1);
     assert(events.shellKill == 1);
     assert(SoundManager::getInstance().getSoundPlayRequestCount("shell_kick") == 1);
     assert(SoundManager::getInstance().getSoundPlayRequestCount("shell_kill") == 1);
+}
+
+void runIdleShellStaysStationary() {
+    b2World world({0.f, 0.f});
+    Koopa shell({0.f, 0.f}, &world);
+
+    shell.onStomp();
+    // Simulate a horizontal impulse left by the stomp contact solver. The
+    // idle-shell update must clear it before the shell can start sliding.
+    shell.setVelocity({120.f, 0.f});
+    shell.update(1.f / 60.f);
+
+    assert(shell.getState() == KoopaState::SHELL_IDLE);
+    assert(std::abs(shell.getVelocity().x) < 0.001f);
+
+    shell.kick(Direction::RIGHT);
+    assert(shell.isShellSliding());
+    assert(shell.getVelocity().x > 0.f);
+}
+
+void runKoopaPitFallsPastPitWall() {
+    b2World world({0.f, 25.f});
+    TileMap tileMap;
+    assert(tileMap.loadFromFile("levels/level1.txt"));
+    tileMap.createPhysicsBodies(&world);
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    constexpr float gapStart = 69.f * 32.f;
+    constexpr float floorTop = 13.f * 32.f;
+
+    Koopa koopa({0.f, 0.f}, &world, LevelTheme::UNDERGROUND);
+    koopa.setTileMap(&tileMap);
+    koopa.setFacingDirection(Direction::RIGHT);
+    koopa.setPosition({gapStart + 28.f, floorTop - 48.f});
+
+    bool reversedAtWall = false;
+    for (int frame = 0; frame < 60; ++frame) {
+        world.Step(1.f / 60.f, 8, 3);
+        koopa.update(1.f / 60.f);
+        reversedAtWall = reversedAtWall ||
+                         koopa.getFacingDirection() == Direction::LEFT;
+    }
+
+    assert(reversedAtWall);
+    assert(koopa.getPosition().y > floorTop);
+    assert(koopa.getVelocity().y > 0.f);
 }
 
 void runFireBall(bool projectileFixtureFirst) {
@@ -217,9 +268,11 @@ int main() {
     for (bool orderA : {true, false}) {
         runStomp(orderA);
         runSideHit(orderA);
+        runIdleShellStaysStationary();
         runShell(orderA);
         runFireBall(orderA);
         runStar(orderA);
     }
+    runKoopaPitFallsPastPitWall();
     return 0;
 }

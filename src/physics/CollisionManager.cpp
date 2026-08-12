@@ -37,6 +37,7 @@ constexpr float BLOCK_SIZE_PIXELS = 32.f;
 constexpr float ENEMY_SUPPORT_PROBE_OFFSET = 2.f;
 constexpr float ENEMY_WALL_NORMAL_THRESHOLD = 0.5f;
 constexpr float TILE_SIZE_PIXELS = 32.f;
+constexpr float ENEMY_FALLING_VELOCITY_THRESHOLD = 0.01f;
 
 bool isEnemySupportObstacle(
     Entity* obstacle,
@@ -70,6 +71,15 @@ bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
     }
 
     if (std::abs(enemyNormal.x) <= ENEMY_WALL_NORMAL_THRESHOLD) {
+        return false;
+    }
+
+    // A side contact can look like a one-tile step when the enemy is falling
+    // beside a pit wall. Disabling that contact lets the lower corner of the
+    // next tile catch the enemy and leaves it stuck against the wall. Seam
+    // suppression is only valid while the enemy is travelling horizontally
+    // along the top of the terrain.
+    if (enemyBody->GetLinearVelocity().y > ENEMY_FALLING_VELOCITY_THRESHOLD) {
         return false;
     }
 
@@ -272,8 +282,10 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
 
     switch (cause) {
         case DefeatCause::SHELL:
-            victim.takeDamage(victim.getHealth());
-            victim.markForRemoval();
+            // Shell defeats use the same launched, flipped presentation as a
+            // FireBall. The defeat transaction still owns the shell-specific
+            // score/event; the enemy owns its death animation and cleanup.
+            victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_SHELL);
             break;
         case DefeatCause::FIREBALL:
@@ -281,8 +293,11 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_FIREBALL);
             break;
         case DefeatCause::STAR:
-            victim.takeDamage(victim.getHealth());
-            victim.markForRemoval();
+            // Star contact uses the same visual defeat response as a FireBall:
+            // the enemy flips and gets launched upward instead of disappearing
+            // immediately. The transaction latch above still owns score/event
+            // deduplication, while the enemy owns its presentation/lifecycle.
+            victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
             break;
         case DefeatCause::PIT:
@@ -314,6 +329,18 @@ void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
 
     Entity* entityA = entityFromBody(fixtureA->GetBody());
     Entity* entityB = entityFromBody(fixtureB->GetBody());
+
+    const auto isLockedMario = [](Entity* entity) {
+        return entity && entity->isMario() &&
+               static_cast<Mario*>(entity)->isCollisionLocked();
+    };
+
+    if (isLockedMario(entityA) || isLockedMario(entityB)) {
+        // A dying Mario remains in the world only to render the death jump;
+        // he must not resolve any new terrain, item, or enemy contacts.
+        contact->SetEnabled(false);
+        return;
+    }
 
     if (entityA && entityB &&
         entityA->isEnemy() && entityB->isEnemy()) {
@@ -444,6 +471,11 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     }
 
     if (mario && marioBody) {
+        if (mario->isCollisionLocked()) {
+            contact->SetEnabled(false);
+            return;
+        }
+
         // Item pickup is resolved here, alongside every other Mario gameplay
         // collision. Level's overlap sweep remains a fallback for items whose
         // sensor contact was not reported by Box2D, while Item::isCollectible()

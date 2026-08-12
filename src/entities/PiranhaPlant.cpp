@@ -148,8 +148,9 @@ void PiranhaPlant::onWallCollision() {
 }
 
 void PiranhaPlant::onFireHit() {
-    if (!tryCommitDefeat()) return;
-
+    // CollisionManager owns the shared defeat transaction/latch. This hook is
+    // only responsible for the enemy's flipped-and-launched presentation.
+    if (m_isFlippedDead) return;
     m_isFlippedDead = true;
     m_flipTimer = 0.f;
 

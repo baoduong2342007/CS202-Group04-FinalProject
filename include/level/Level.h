@@ -56,6 +56,8 @@ public:
         return m_pendingFireBallRequests.size();
     }
     bool isLevelCompleted() const;
+    /// True while the flagpole slide and the automatic walk into the exit are running.
+    bool isFlagSequenceActive() const { return m_flagSequenceActive; }
 
 
 private:
@@ -83,7 +85,9 @@ private:
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
     bool m_flagSequenceActive = false;
+    bool m_flagWalkActive = false;
     float m_flagSequenceTimer = 0.0f;
+    float m_flagWalkTargetX = 0.0f;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
     LevelTheme m_theme{LevelTheme::OVERWORLD};

@@ -419,7 +419,7 @@ bool testGrowthFootAnchorAndClearance() {
 
 bool testDeathLifecycleAndDeterministicRespawn() {
     b2World world({0.0f, 25.0f});
-    Mario mario({100.0f, 100.0f}, {32.0f, 32.0f});
+    MarioAnimationProbe mario({100.0f, 100.0f}, {32.0f, 32.0f});
     mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
 
     int initialLives = mario.getLives();
@@ -430,13 +430,49 @@ bool testDeathLifecycleAndDeterministicRespawn() {
     mario.setFlagpoleSliding(true);
     mario.loseLife();
 
-    if (!check(mario.isDying(), "loseLife must set m_isDying to true")) return false;
+    if (!check(mario.isDying(), "loseLife must set m_isDying to true") ||
+        !check(mario.isCollisionLocked(),
+               "dying Mario must be locked out of gameplay collisions") ||
+        !check(mario.currentAnimation() == "death",
+               "loseLife must activate the shared DEATH animation") ||
+        !check(mario.getBody()->GetLinearVelocity().y < -1.0f,
+               "loseLife must apply an upward death jump")) return false;
     if (!check(mario.getLives() == initialLives - 1, "loseLife must decrement lives by 1")) return false;
     if (!check(!mario.isRunning(), "loseLife must clear movement/run intent")) return false;
 
-    mario.update(0.6f);
+    const float deathStartY = mario.getPosition().y;
+    mario.preparePhysics(TIME_STEP);
+    if (!check(mario.getBody()->GetLinearVelocity().y < -1.0f,
+               "preparePhysics must preserve the upward death jump")) return false;
+    world.Step(TIME_STEP, 8, 3);
+    mario.update(TIME_STEP);
+    if (!check(mario.getPosition().y < deathStartY,
+               "death jump must move Mario upward before the death clip ends")) return false;
+
+    // Run through the end of the DEATH clip. Completion must still be held
+    // back while the short post-clip fall tail is playing.
+    for (int frame = 0; frame < 30; ++frame) {
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.update(TIME_STEP);
+    }
+    const float deathClipEndY = mario.getPosition().y;
+    if (!check(!mario.isDeathAnimationFinished(),
+               "death completion must wait for the post-clip fall tail")) return false;
+
+    for (int frame = 0; frame < 30 && !mario.isDeathAnimationFinished(); ++frame) {
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.update(TIME_STEP);
+    }
     if (!check(mario.isDeathAnimationFinished(),
-               "death animation must publish its completion signal")) return false;
+               "death animation must publish its completion signal") ||
+        !check(mario.getPosition().y > deathClipEndY,
+               "Mario must fall visibly after the DEATH clip ends") ||
+        !check(mario.currentAnimation() == "death",
+               "the final DEATH frame must remain selected after the clip ends") ||
+        !check(mario.isCollisionLocked(),
+               "Mario must remain collision-locked until respawn/transition")) return false;
 
     mario.respawn({300.0f, 300.0f});
     if (!check(!mario.isDying(), "respawn must clear isDying flag")) return false;

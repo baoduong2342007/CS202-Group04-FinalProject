@@ -1,12 +1,10 @@
-# Sprint 6 — Khóa Public Interfaces
+# Sprint 6 Locked Interfaces
 
-> **Owner:** TV1 (Dương) — S6-TV1-03
-> **Mục đích:** Chốt các contract public giữa các module. Thay đổi interface sau khi khóa phải được TV1 approve.
-> **DoD:** Thay đổi interface sau khi khóa phải được TV1 approve.
+> Owner: TV1 — S6-TV1-03
+> Updated: 2026-08-12
+> Status: implemented; future changes require architecture review
 
----
-
-## 1. Progress & Level catalog
+## Progress and release catalog
 
 ```cpp
 struct GameProgress {
@@ -17,19 +15,24 @@ struct GameProgress {
     MarioState power = MarioState::SMALL;
 };
 
+enum class CameraVerticalMode {
+    LOCKED,
+    DEAD_ZONE
+};
+
 struct LevelDefinition {
     int number;
     std::string filePath;
     std::string worldLabel;
     LevelTheme theme;
     MusicId music;
+    CameraVerticalMode cameraMode;
 };
 ```
 
-> `GameProgress` đã implement tại `include/core/GameProgress.h` (S6-TV1-08).
-> `LevelDefinition` chờ TV4 xác nhận metadata (S6-TV1-05).
+The additional camera mode was approved during Sprint 6 remediation because camera behavior is level metadata, not a global theme guess. `LevelCatalog::getAll()` contains exactly Levels 1, 2, and 3.
 
-## 2. Save data
+## Save data
 
 ```cpp
 struct SaveData {
@@ -41,9 +44,9 @@ struct SaveData {
 };
 ```
 
-> TV4 sở hữu SaveManager; TV1 chỉ tích hợp state (S6-TV1-19).
+SaveManager owns persistence. Loaded/unlocked level values are clamped to `LevelCatalog::count()` without discarding other valid fields.
 
-## 3. State lifecycle
+## State lifecycle
 
 ```cpp
 virtual void onEnter();
@@ -52,16 +55,16 @@ virtual void onPause();
 virtual void onResume();
 ```
 
-> Đã implement tại `include/states/IGameState.h` (S6-TV1-15).
-> `GameManager` gọi `onPause()` khi push, `onResume()` khi pop (S6-TV1-16).
+`GameManager` defers state operations. Push pauses the prior state; pop exits the overlay and resumes the state below.
 
-## 4. Input & Command
+## Input and commands
 
-- `InputState` phân biệt `Pressed`, `Held`, `Released`.
-- Bổ sung `RunCommand` và `ShootCommand` (TV5).
-- `ICommand` đã bỏ `undo()` (S6-TV1-24).
+- `InputState` distinguishes Pressed, Held, and Released.
+- Run is a held Shift command.
+- Shoot is a pressed X command.
+- `ICommand` has no undo API because the runtime has no undo stack.
 
-## 5. Enemy defeat
+## Enemy defeat
 
 ```cpp
 enum class DefeatCause {
@@ -73,16 +76,40 @@ enum class DefeatCause {
 };
 ```
 
-## 6. Ownership
+`CollisionManager::defeatEnemy(Enemy&, DefeatCause, Mario*)` is the single score/event commit transaction.
 
-- `EntityFactory` trả `std::unique_ptr<Entity>` (S6-TV1-22).
-- Raw pointer chỉ dùng làm non-owning reference.
-- Box2D body không destroy trực tiếp trong contact callback.
+## FireBall request
 
----
+```cpp
+bool Level::requestFireBallShot(Mario& mario);
+bool Level::requestFireBallShot();
+```
 
-## Quy trình thay đổi
+These are the only production request overloads. Level owns projectile construction, active maximum two, locked-world deferral, and entity storage. Mario owns the authoritative shot cooldown. `FIREBALL_SHOT` is published only after construction; SoundManager owns playback.
 
-1. Mọi thay đổi interface phải tạo PR ghi rõ lý do.
-2. TV1 review và approve trước khi merge.
-3. Cập nhật file này sau khi approve.
+## Power-up progression
+
+The body tier and FIRE capability are separate parts of Mario's runtime form:
+
+```text
+SMALL + Mushroom       -> SUPER
+SMALL + FireFlower     -> SMALL FIRE
+SUPER + FireFlower     -> SUPER FIRE
+```
+
+Normal `?` blocks remain adaptive (Small -> Mushroom, Super/Fire -> FireFlower). Explicit `f` blocks always spawn a FireFlower. `Mario::powerUp()` preserves the current body tier, and the atlas selects `FireSmallMario` or `FireBigMario` accordingly. `Mario::setMarioState()` remains the exact-state API used by restore/debug flows; the overload with `fireIsSuper` preserves the form across level transitions.
+
+## Ownership
+
+- EntityFactory returns `std::unique_ptr<Entity>`.
+- Level owns Mario, TileMap, Camera, Box2D world/listener, and the entity collection.
+- Raw pointers are non-owning references only.
+- A Box2D body is never destroyed inside a contact callback.
+- Entity bounds have one source of truth derived from current position/size or the active fixture; no stale parallel cache is public.
+
+## Change process
+
+1. State the reason and affected producer/consumer modules.
+2. Add or update regression evidence for the public behavior.
+3. Obtain TV1 architecture approval before merge.
+4. Update this document and the class diagram in the same change.

@@ -1,71 +1,82 @@
-# Bug Register P0/P1/P2 — Sprint 1–6
+# Sprint 1–6 Bug Register
 
-> **Owner:** TV1 (Dương) — S6-TV1-02
-> **Mục đích:** Gộp bug camera, progress, state, physics, enemy, item, audio, save, build và documentation.
-> **DoD:** Mỗi bug có severity, reproduction, owner và task ID.
+> Owner: TV1 — S6-TV1-02
+> Updated: 2026-08-12
+> Candidate: base `3047252` plus remediation working tree; final RC commit pending
 
----
+## Status and severity
 
-## Cách dùng
+- Severity: `P0` crash/blocker, `P1` major runtime/contract issue, `P2` minor/documentation/evidence issue.
+- `FIXED-AUTO`: corrected and protected by automated evidence in the current working tree.
+- `REVIEW`: implementation is present, but a required manual or final-commit check is pending.
+- `OPEN`: no acceptable fix exists.
 
-- **Severity:** `P0` (crash/blocker), `P1` (major), `P2` (minor).
-- **Trạng thái:** `OPEN` / `FIXED` / `REOPENED`.
-- **Task ID:** ID task Sprint 6 xử lý bug này.
+## P0
 
----
+| ID | Problem and reproduction | Owner / task | Status | Evidence |
+|---|---|---|---|---|
+| BUG-001 | Missing/corrupt level result ignored; remove `level1.txt`, then start | TV1 / S6-TV1-11 | FIXED-AUTO | `level_validator_tests`, PlayState load-error path |
+| BUG-002 | Observer destroyed during notification is called from stale snapshot | TV1 / S6-TV1-20 | FIXED-AUTO | `event_bus_tests` |
+| BUG-003 | State is destroyed while still on its call stack | TV1 / S6-TV1-16 | FIXED-AUTO | deferred operations in `game_manager_tests` |
 
-## P0 — Crash / Blocker
+No P0 bug is open.
 
-| ID | Mô tả | Reproduction | Owner | Task ID | Trạng thái |
-|---|---|---|---|---|---|
-| BUG-001 | Level load fail bị bỏ qua → crash | Xóa level1.txt rồi New Game | TV1 | S6-TV1-11 | FIXED |
-| BUG-002 | Observer bị hủy vẫn được gọi trong notify | Unsubscribe trong callback | TV1 | S6-TV1-20 | FIXED |
-| BUG-003 | State bị hủy khi đang trên call stack | pushState trong onNotify | TV1 | S6-TV1-16 | FIXED |
+## P1
 
-## P1 — Major
+| ID | Problem and reproduction | Owner / task | Status | Evidence |
+|---|---|---|---|---|
+| BUG-004 | Score/coins/lives reset between levels | TV1 / 08–10 | FIXED-AUTO | `play_state_tests`, `save_session_tests` |
+| BUG-005 | New Game starts at Level 0 | TV1 / 05–07 | FIXED-AUTO | catalog and Gate 0 tests |
+| BUG-006 | Death and flag completion both commit in one frame | TV1 / 13 | FIXED-AUTO | `play_state_tests` |
+| BUG-007 | Pause omits `onPause()`/`onResume()` | TV1 / 15–17 | FIXED-AUTO | `game_manager_tests`, TV5 integration |
+| BUG-010 | SFML bootstrap disables TLS or deletes local dependency state | TV1 / 27 | FIXED-AUTO | CMake configure contract |
+| BUG-011 | Every incremental build recopies all assets | TV1 / 29 | FIXED-AUTO | clean build copied once; second Debug/Release/Tests build copied no assets |
+| BUG-022 | One death dispatches multiple death/life events | TV1/TV3 / TV1-18, TV3-15 | FIXED-AUTO | death lifecycle and SFX counters |
+| BUG-023 | FireBall hard limit is 4 instead of 2 | TV3 / 19 | FIXED-AUTO | `fireball_request_tests` |
+| BUG-027 | High score is not persisted during intermediate death/level change | TV1 / 19 | FIXED-AUTO | `save_session_tests` |
+| BUG-028 | Resize is forced to 16:9, pixels blur, camera lacks Y clamp | TV2 / 05–11 | FIXED-AUTO | `display_camera_ui_tests` |
+| BUG-029 | Mushroom/Flower growth under a low ceiling overlaps tiles | TV3 / 10–11 | FIXED-AUTO | pickup-path clearance and pending-growth tests |
+| BUG-030 | Static physics accumulator leaks timing between Level instances | TV3 / 01–02 | FIXED-AUTO | accumulator is a Level member; physics tests |
+| BUG-031 | Multiple public FireBall APIs bypass limit/cooldown | TV3 / 18–19 | FIXED-AUTO | one Level request API; queue/limit tests |
+| BUG-032 | Collision double-dispatch bypasses central defeat rules | TV3 / 20/26/37 | FIXED-AUTO | `collision_matrix_tests` |
+| BUG-034 | Release graph changes to four levels; Level 3 is underwater | TV1/TV4/TV5 / TV1-05/14, TV4-17, TV5-27 | FIXED-AUTO | exact `[1,2,3]`, Castle Level 3, Level 4 absent |
+| BUG-035 | Normal `?` block uses a weighted Coin roll | TV4/TV5 / TV4-19, TV5-11 | FIXED-AUTO | deterministic selector called repeatedly; hit idempotence |
+| BUG-036 | One FireBall creates two SFX requests | TV3/TV5 / TV3-19, TV5-31 | FIXED-AUTO | one creation event and one SoundManager request counter |
+| BUG-037 | Runtime pickup growth differs from the helper exercised by tests | TV3 / 10–11/36 | FIXED-AUTO | Mushroom/FireFlower pickup path now uses unified transition |
+| BUG-039 | Mouse targets are wrong after letterboxing; bar clicks leak into UI | TV2 / 10/16/28 | FIXED-AUTO | four-resolution viewport/remap/widget matrix |
+| BUG-040 | Death SFX is played directly and through EventBus | TV3/TV5 / TV1-18, TV5-44 | FIXED-AUTO | SoundManager request counter verifies one death cue |
+| BUG-041 | Springboard calls the unregistered SFX ID `jump.wav`, so Castle spring launches are silent | TV4/TV5 / TV4-17, TV5-33 | FIXED-AUTO | Springboard publishes `PLAYER_JUMPED`; state-cycle test verifies one `jump` request per accepted launch |
+| BUG-042 | FireFlower always selects the Big/Fire atlas and the transform loop leaves the old Small frame on screen | TV3/TV5 / TV3-10, TV5-09/11 | FIXED-AUTO | Small/Super Fire form tests, GrowShrink frame animation, and continuous transform layout updates |
 
-| ID | Mô tả | Reproduction | Owner | Task ID | Trạng thái |
-|---|---|---|---|---|---|
-| BUG-004 | Score/coin/lives reset khi chuyển level | Hoàn thành level 1 | TV1 | S6-TV1-08/09/10 | FIXED |
-| BUG-005 | New Game bắt đầu từ Level 0 | New Game | TV1 | S6-TV1-07 | FIXED |
-| BUG-006 | Death và completion race cùng frame | Chết khi chạm flag | TV1 | S6-TV1-13 | FIXED |
-| BUG-007 | Pause không gọi onPause/onResume | ESC trong gameplay | TV1 | S6-TV1-15 | FIXED |
-| BUG-008 | `ICommand::undo()` rỗng gây nhầm lẫn | — | TV1 | S6-TV1-24 | FIXED |
-| BUG-009 | PauseCommand giữ dependency thừa | — | TV1 | S6-TV1-25 | FIXED |
-| BUG-010 | SFML download dùng TLS_VERIFY OFF | Configure lần đầu | TV1 | S6-TV1-27 | FIXED |
-| BUG-011 | Asset copy toàn bộ mỗi build | Build lặp | TV1 | S6-TV1-29 | FIXED |
-| BUG-022 | Death phát cặp `PLAYER_DIED` + `PLAYER_LOST_LIFE` và Mario inactive lúc chết (level cũ) | Chết trong gameplay (commit 881335d) | TV1 | S6-TV1-18 | FIXED — `loseLife()` chỉ phát 1 event, trừ 1 life, giữ `m_active`; có `play_state_tests` |
-| BUG-023 | Giới hạn FireBall còn `MAX_ACTIVE_FIREBALLS = 4` trái contract max 2 | Bắn 3–4 viên | TV3 | S6-TV3-19 | OPEN |
-| BUG-027 | High score không lưu khi chết còn mạng hoặc qua màn trước khi GameOver/Win | Chết khi còn mạng -> thoát game -> restart | TV1 | S6-TV1-19 | FIXED — `PlayState::onNotify` cập nhật high score tức thì cho `PLAYER_DIED` & `LEVEL_COMPLETED`; log lỗi save không điều kiện; có `save_session_tests` |
-| BUG-028 | Camera ép 16:9 liên tục gây mờ pixel, thiếu Y-clamp | Kéo resize cửa sổ hoặc nhảy lên cao | TV2 | S6-TV2-10 | OPEN |
-| BUG-029 | Lỗi kẹt tường/gạch khi ăn Mushroom (Growth clearance) | Ăn Mushroom trong không gian hẹp (thiếu trần) | TV3 | S6-TV3-16 | OPEN |
-| BUG-030 | Lỗi physics lố nhịp do Static Accumulator | Chuyển level hoặc reload map liên tục | TV1 | S6-TV1-36 | OPEN |
-| BUG-031 | Duplicate FireBall API (bỏ qua max limit = 2) | Gọi spawnFireBall thay vì shootFireBall | TV3 | S6-TV3-19 | OPEN |
-| BUG-032 | Collision Double-Dispatch bypass rules trung tâm | Entity bị hit bởi Shell/Fireball | TV3 | S6-TV3-20 | OPEN |
+No P1 bug is open.
 
-## P2 — Minor
+## P2
 
-| ID | Mô tả | Reproduction | Owner | Task ID | Trạng thái |
-|---|---|---|---|---|---|
-| BUG-012 | README link tới file không tồn tại | Mở README | TV1 | S6-TV1-30 | FIXED |
-| BUG-013 | FILE_STRUCTURE mô tả file không có | Đọc FILE_STRUCTURE | TV1 | S6-TV1-31 | FIXED |
-| BUG-014 | Class diagram dùng API draft cũ | Đọc class_diagram | TV1 | S6-TV1-32 | FIXED |
-| BUG-015 | Sprint 5 error plan còn là instruction | Đọc doc cũ | TV1 | S6-TV1-33 | FIXED |
-| BUG-016 | .gitattributes thiếu FLAC/PDF binary | Git add | TV1 | S6-TV1-34 | FIXED |
-| BUG-017 | EntityFactory gọi sai tên Factory Method | Code review | TV1 | S6-TV1-23 | FIXED |
-| BUG-018 | Transition: 1-frame mờ dần nháy sáng | Chuyển level (LOADING->FADE_IN) | TV1 | S6-TV1-12 | FIXED |
-| BUG-019 | Transition: Camera giật & Sprite thu nhỏ | Quan sát 0.5s đầu FADE_IN | TV1 | S6-TV1-12 | FIXED |
-| BUG-020 | Ghost Collisions: Mario kẹt khi trượt ngang trên Question Block | Spam trái/phải trên Question Block | TV3 | S6-TV3-25 (contact normalization) | OPEN — chờ TV3-25 merge + regression test |
-| BUG-021 | WinState bị mất chữ (màn hình đen thui) | Hoàn thành World 3 | TV1 | S6-TV1-12 | FIXED |
-| BUG-024 | README ghi Shoot = `J/F/X/Ctrl/Shift` — Shift vừa Run vừa Shoot, sai contract | Đọc README / Controls | TV1 | S6-TV1-30 | FIXED — Shift=Run (hold), X=Shoot (press) |
-| BUG-025 | FILE_STRUCTURE liệt kê file không tồn tại: `implementation_plan_sprint5_error.md`, `docs/PLAN_TV1.md`, `ui/Button.h/.cpp` | Đọc FILE_STRUCTURE | TV1 | S6-TV1-31/33 | FIXED — gỡ mọi entry phantom; Sprint 5 error plan không còn trong repo (lý do ghi tracker) |
-| BUG-026 | Tracker ghi "7/7 pass", SaveManager `BLOCKED`, quyết định giữ tên `main` — không khớp code thật | Đọc S6_AUDIT_TRACKER | TV1 | S6-TV1-01/35 | FIXED — 12/12 pass, SaveManager REVIEW, target `SuperMario` |
-| BUG-033 | UI High score / Mouse không cập nhật đúng ngoài màn 1 | Chơi sang Level 2 và kiểm tra UI/Mouse click | TV5 | S6-TV5-26 | OPEN |
----
+| ID | Problem and reproduction | Owner / task | Status | Evidence / next action |
+|---|---|---|---|---|
+| BUG-008 | Empty `ICommand::undo()` API implies unsupported behavior | TV1 / 24 | FIXED-AUTO | API removed; input tests |
+| BUG-009 | PauseCommand stores unused dependency | TV1 / 25 | FIXED-AUTO | dependency removed |
+| BUG-012 | README contains missing/stale links | TV1 / 30 | FIXED-AUTO | Markdown link check required in final gate |
+| BUG-013 | FILE_STRUCTURE lists phantom/deleted files | TV1 / 31 | FIXED-AUTO | regenerated structure; no FireBallPool entry |
+| BUG-014 | Class diagram describes draft APIs | TV1 / 32 | FIXED-AUTO | regenerated from current headers |
+| BUG-015 | Old Sprint 5 plan appears to be current instruction | TV1 / 33 | FIXED-AUTO | archive policy retained |
+| BUG-016 | Binary file types lack Git attributes | TV1 / 34 | FIXED-AUTO | `.gitattributes` |
+| BUG-017 | Simple Factory is mislabeled Factory Method | TV1 / 23 | FIXED-AUTO | source/docs terminology corrected |
+| BUG-018 | Transition flashes for one frame | TV1/TV2 / TV1-12, TV2-21 | FIXED-AUTO | transition state tests |
+| BUG-019 | Camera/sprite jump during first fade-in frame | TV1/TV2 / TV1-12, TV2-21 | FIXED-AUTO | zero-delta initialization path |
+| BUG-020 | Mario catches on QuestionBlock seam/ghost contact | TV3 / 25/37 | FIXED-AUTO | normalized collision regression |
+| BUG-021 | WinState text is absent | TV1/TV2 / TV1-14, TV2-20 | FIXED-AUTO | state construction/render contract |
+| BUG-024 | README binds Shift to both run and shoot | TV1 / 30 | FIXED-AUTO | Shift=run; X=shoot |
+| BUG-025 | Structure documentation names nonexistent files | TV1 / 31/33 | FIXED-AUTO | current repository tree only |
+| BUG-026 | Tracker reports stale suite counts and blockers | TV1 / 01/35 | REVIEW | content corrected; final build/hash row pending |
+| BUG-033 | High score and mouse behavior are inconsistent outside Menu | TV2/TV5 / TV2-16/19/20, TV5-26 | FIXED-AUTO | shared widget/remap and persisted high-score text |
+| BUG-038 | Reports claim manual PASS from an older commit or unresolved observation | TV1/TV4/TV5 / TV1-35, TV4-40, TV5-43/44 | REVIEW | stale claims removed; rerun playthrough/screenshots/audio on final RC |
 
-## Ghi chú
+## Release decision
 
-- Bug mới phát hiện trong Sprint 6 phải được thêm vào đây với đầy đủ severity/reproduction/owner.
-- Bug P0/P1 chưa xong → Sprint 6 không đạt DoD.
-- Mỗi dòng `FIXED` phải có bằng chứng build/CTest hoặc manual checklist tương ứng; nếu chưa xác minh thì giữ `OPEN`/`REVIEW`.
-- `BUG-008`/`BUG-009` (reproduction `—`) và `BUG-014/015` được cập nhật tại `class_diagram.md`/archive ngày 08/08/2026.
+- Open P0: 0
+- Open P1: 0
+- Automated implementation defects identified by `Evaluate_v4.md`: fixed
+- Remaining reviews: final RC hash, 15 human playthroughs, four visual screenshots/click checks, and device-audio acceptance
+
+`REVIEW` entries must not be changed to `FIXED` or `PASS` until their evidence references the same final RC commit.

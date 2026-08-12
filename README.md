@@ -1,150 +1,132 @@
-# Super Mario — CS202 Final Project
+# Super Mario — CS202 Group 04 Final Project
 
-> 2D Mario-style game project written in C++17 + SFML 3.0.0  
-> 5 members · 6 weeks
+A C++17 platform game built with SFML 3.0.0 and Box2D 2.4.1.
 
----
+## Sprint 6 release contract
 
-## Team Members & Quick Roles
+The release flow is locked to:
 
-| Member | Name | Role | Main Module |
-|---|---|---|---|
-| TV1 | Dương | Architect / Team Lead | OOP design, design patterns, integration |
-| TV2 | Nhật | Engine & Render | SFML wrapper, animation, camera |
-| TV3 | Bảo | Mario & Physics | Character controller, collision |
-| TV4 | Vy | Level & Enemy | Tilemap, enemy AI, level design |
-| TV5 | Truyền | UI, Sound & Items | HUD, menu, sound, power-up |
+`Menu -> Level 1 (Overworld) -> Level 2 (Underground) -> Level 3 (Castle) -> Win`
 
-→ Detailed roles: see [`docs/management/ROLES.md`](docs/management/ROLES.md)  
-→ Weekly plan: see [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md)
+`levels/level0.txt` is a test fixture. `levels/level4.txt` and the underwater theme are future/reference content and are not reachable through the release catalog.
 
----
+## Team
 
-## Tech Stack
+| Member | Name | Primary area |
+|---|---|---|
+| TV1 | Dương | Architecture, states, integration |
+| TV2 | Nhật | Engine, rendering, camera, UI states |
+| TV3 | Bảo | Mario, physics, collision |
+| TV4 | Vy | Levels, enemies, persistence |
+| TV5 | Truyền | Input, sound, HUD, items |
 
-| Component | Details |
-|---|---|
-| Language | C++17 |
-| Game Engine | SFML 3.0.0 (graphics, window, system, audio) |
-| Build System | CMake 3.16+ |
-| Compiler | g++ (MinGW-w64) 14.2.0+ |
-| Version Control | Git + GitHub |
+See [roles](docs/management/ROLES.md) and the [Sprint 6 plan](docs/management/s6_plan.md) for detailed ownership.
 
----
+## Requirements
 
-## Installation & Build
+- CMake 3.16 or newer
+- A C++17 compiler; MinGW-w64 GCC 14.2 or newer is the supported Windows toolchain
+- SFML 3.0.0
+- Box2D 2.4.1, obtained through CMake FetchContent
 
-### 1. Install Build Tools
+On Windows, the repository can bootstrap the pinned SFML archive if `thirdparty/SFML` is absent. CMake verifies TLS and the archive hash.
 
-**Windows (MinGW):**
-- Install **g++ (MinGW-w64) 14.2.0 or higher** and **CMake 3.16 or higher**.
-- If `thirdparty/SFML` does not exist, **SFML 3.0.0 pre-built binaries** (~30MB) will be automatically downloaded and extracted into `thirdparty/SFML` on the first build.
+## Configure, build, and run
 
-**macOS (Homebrew):**
-```bash
-brew install cmake sfml
+### Windows with MinGW
+
+```powershell
+cmake --preset mingw-debug
+cmake --build --preset mingw-debug --parallel 2
+.\build-debug\SuperMario.exe
 ```
 
-### 2. Clone the repository
+Release build:
 
-```bash
-git clone https://github.com/baoduong2342007/CS202-Group04-FinalProject.git
-cd CS202-Group04-FinalProject
+```powershell
+cmake --preset mingw-release
+cmake --build --preset mingw-release --parallel 2
+.\build-release\SuperMario.exe
 ```
 
-### 3. Build
+### macOS or Linux
 
-**Windows (MinGW):**
+Install SFML with the platform package manager, then run:
+
 ```bash
-cmake -B build -G "MinGW Makefiles"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
-```
-
-**macOS / Linux:**
-```bash
-cmake -B build
-cmake --build build
-```
-
-### 4. Run the game
-
-**Windows:**
-```bash
-.\build\SuperMario.exe
-```
-
-**macOS / Linux:**
-```bash
 ./build/SuperMario
 ```
 
-> **Note:** The executable is built into the `build/` directory, and all required DLLs (on Windows) as well as the `assets/` and `levels/` folders are automatically copied there during the build.
+The build copies the runtime `assets` and `levels` directories next to the executable. The incremental copy step only reruns when its inputs change.
 
----
+## Tests
 
-### 5. Build & Run the tests (CTest)
-
-Tests are enabled when `BUILD_TESTING=ON` (Debug and Tests presets). Run them with:
-
-**Windows (MinGW):**
-```bash
+```powershell
 cmake --preset mingw-tests
-cmake --build --preset mingw-tests
+cmake --build --preset mingw-tests --parallel 2
 ctest --preset mingw-tests --output-on-failure
 ```
 
-**Manually (any generator):**
-```bash
-cmake -B build-tests -D BUILD_TESTING=ON
-cmake --build build-tests
-ctest --test-dir build-tests --output-on-failure
-```
+The Sprint 6 candidate contains 17 CTest suites:
 
-Test suites: `input_state_tests`, `tile_collision_span_tests`, `mario_physics_tests`, `play_state_tests`, `game_manager_tests`, `event_bus_tests`, `tv5_integration_tests`, `level_catalog_tests`, `save_manager_tests`, `level_validator_tests`, `gate0_contract_tests`, `save_session_tests`.
+- `input_state_tests`
+- `tile_collision_span_tests`
+- `mario_physics_tests`
+- `play_state_tests`
+- `game_manager_tests`
+- `event_bus_tests`
+- `tv5_integration_tests`
+- `level_catalog_tests`
+- `save_manager_tests`
+- `level_validator_tests`
+- `springboard_tests`
+- `gate0_contract_tests`
+- `save_session_tests`
+- `sprite_frames_theme_tests`
+- `collision_matrix_tests`
+- `fireball_request_tests`
+- `display_camera_ui_tests`
 
----
+Automated tests cover the three-level graph, deterministic item blocks, save migration, power-state transitions, collision order/idempotence, FireBall queue/limit/SFX behavior, camera clamping, integer letterboxing, mouse remapping, HUD, audio events, and state transitions. Manual acceptance remains separately recorded in [the release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md).
 
 ## Controls
 
-| Action | Key |
+| Action | Input |
 |---|---|
-| Move left | `A` / `←` (hold) |
-| Move right | `D` / `→` (hold) |
-| Jump | `W` / `↑` / `Space` |
-| Run (hold) | `LShift` / `RShift` |
-| Shoot FireBall (Fire Mario) | `X` (press) |
+| Move left | `A` or Left Arrow, held |
+| Move right | `D` or Right Arrow, held |
+| Jump | `W`, Up Arrow, or Space |
+| Run | Left Shift or Right Shift, held |
+| Shoot as Fire Mario | `X`, pressed |
 | Pause | `Esc` |
-| Pause | `Esc` |
-| Menu / Confirm (in menus) | `Enter` or mouse click |
+| Navigate menus | Arrow keys |
+| Confirm menu selection | Enter or logical mouse click |
 
-> **Sprint 6 release contract:** `Shift` runs only; `X` shoots only. No other key
-> is bound to shooting or running.
+Clicks in letterbox bars are intentionally ignored. The game renders to a logical 640x360 canvas using centered integer scaling.
 
----
+## Repository map
 
-## Directory Structure Summary
+| Path | Purpose |
+|---|---|
+| `include/` | Public C++ headers grouped by module |
+| `src/` | Production implementations and a separately excluded demo |
+| `levels/` | Release level data plus labeled test/future fixtures |
+| `assets/` | Runtime textures, font, sounds, and asset manifest |
+| `tests/` | Automated CTest executables |
+| `docs/` | Design, management, specification, and acceptance evidence |
+| `thirdparty/` | Local third-party binaries when present |
 
-```
-CS202-Group04-FinalProject/
-├── assets/          # Sprite sheets, sounds, background music, fonts
-├── include/         # Header files (.h) organized by module (core, entities, states...)
-├── src/             # Source files (.cpp) corresponding to include/
-├── levels/          # Text files containing level designs (.txt)
-├── tests/           # Automated unit tests (CTest)
-├── thirdparty/      # External libraries (SFML binaries are auto-downloaded here on Windows)
-└── CMakeLists.txt   # CMake build configuration file
-```
+The detailed, current tree is in [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 
-For detailed file structure and naming rules, see [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md).
+## Project documentation
 
----
-
-## Related Documents
-
-- [`docs/management/ROLES.md`](docs/management/ROLES.md) — Detailed role assignments
-- [`docs/management/WEEKLY_PLAN.md`](docs/management/WEEKLY_PLAN.md) — 6-week plan by member
-- [`FILE_STRUCTURE.md`](FILE_STRUCTURE.md) — Folder & file structure
-- [`CODING_RULES.md`](CODING_RULES.md) — Coding conventions, Git, naming rules
-- [`docs/design_patterns.md`](docs/design_patterns.md) — Design patterns documentation
-- [`docs/class_diagram.md`](docs/class_diagram.md) — Class diagram _(Week 6)_
-- [`PLAN.md`](PLAN.md) — Sprint 6 plan (current sprint)
+- [Coding rules](CODING_RULES.md)
+- [Class diagram](docs/class_diagram.md)
+- [Design patterns](docs/design_patterns.md)
+- [Asset manifest](assets/ASSETS_LIST.md)
+- [Sprint 6 audit tracker](docs/management/S6_AUDIT_TRACKER.md)
+- [Sprint 6 bug register](docs/management/S6_BUG_REGISTER.md)
+- [Sprint 6 integration report](docs/management/TV1_CHANGES_SUMMARY.md)
+- [Sprint 6 remediation plan](s6_fix_plan_v4.md)

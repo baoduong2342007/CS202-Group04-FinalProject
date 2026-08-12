@@ -1,58 +1,66 @@
-# TV5 — Checklist tích hợp Audio/HUD/Item và runtime
+# TV5 Audio, HUD, and Item Acceptance Checklist
 
-Tài liệu này ghi lại bằng chứng cho S6-TV5-44 và các đường chạy runtime liên
-quan đến S6-TV5-16/S6-TV5-32. Snapshot kiểm tra là `HEAD
-128e047d876adcc06cfa672d66613c050d32059c + working tree`, ngày 2026-08-09.
+> Updated: 2026-08-12
+> Candidate: base `3047252` plus remediation working tree
+> Final RC commit: `PENDING`
 
-## 1. Kiểm tra tự động
+## Automated gate
 
-Chạy từ repository root:
+Run from the repository root:
 
 ```powershell
+cmake --preset mingw-tests
 cmake --build --preset mingw-tests --parallel 2
 ctest --preset mingw-tests --output-on-failure
 ```
 
-Kết quả snapshot này: `12/12` test pass, bao gồm `tv5_integration_tests`.
+Expected suite count for this candidate: 17.
 
-| Luồng | Bằng chứng | Kết quả |
-|---|---|---|
-| Score stomp/shell/fireball/star | Box2D contact thật trong `testDefeatScoreAndShellEventsThroughCollisionRuntime` | PASS |
-| Shell kick không lặp khi contact kéo dài | Hai physics step, kiểm tra score và event count | PASS |
-| Level 1 → Level 2 → Level 3 | `testStateAudioRuntimeAndLevelTracks` qua `GameManager`/`PlayState` thật | PASS |
-| Level 3 → Win | `LEVEL_COMPLETED` và `WinState::onEnter()` | PASS |
-| Player death → Death music | `EventBus::PLAYER_DIED` tới `SoundManager` | PASS |
-| GameOver music | `GameOverState::onEnter()` | PASS |
-| Pause/resume music | 20 vòng `PauseState` push/pop, không đổi track | PASS |
-| Star music override/restore | Star track và restore track level sau expiry | PASS |
-| Sound/music volume persistence | `SaveManager` save/reload hai volume độc lập | PASS |
-| HUD star/timeout/pause/death/level guard | `testStarTimerHudAndExpiryEvent` và `testHudTimeoutAndGameplayFreeze` | PASS |
-| Item score và pickup idempotency | Coin 100, power-up 1000, one-up threshold, adaptive block | PASS |
-| Runtime asset dimensions/manifest | PNG dimensions và `ASSETS_LIST.md` caller/path assertions | PASS |
+| Contract | Automated evidence |
+|---|---|
+| Shift runs; X shoots; edge/held/release semantics | `input_state_tests`, `tv5_integration_tests` |
+| Adaptive `?`, explicit `f`, Small Fire/Super Fire form, and one first-hit item/event | `gate0_contract_tests`, `mario_physics_tests`, `tv5_integration_tests` |
+| Coin, power-up, Star, 1-Up score/HUD behavior | `tv5_integration_tests` |
+| Stomp/side/shell/FireBall/Star order and idempotence | `collision_matrix_tests` |
+| FireBall max two, cooldown, deferred queue, rejected-request silence | `fireball_request_tests` |
+| One death/shot/kick/defeat event maps to one SFX request | `collision_matrix_tests`, `fireball_request_tests` |
+| Springboard launch uses the registered jump cue once per accepted cycle | `springboard_tests` |
+| Level 1/2/3 music and Level 3 -> Win | catalog, PlayState, and TV5 integration suites |
+| Star expiry and independent damage-grace clock | Mario physics and TV5 integration suites |
+| HUD freeze during pause/death/transition | PlayState and TV5 integration suites |
+| High score and independent volume persistence | save manager/session suites |
 
-Các test runtime chính nằm trong
-[`tests/TV5IntegrationTests.cpp`](../../tests/TV5IntegrationTests.cpp).
+Automated result: `PASS — 17/17 suites after BUG-042 (12.17 seconds)`.
 
-## 2. Checklist thủ công khi chạy game có audio device
+## Device-audio and interactive UI gate
 
-Phần này không thay thế test headless và không được đánh dấu PASS nếu chưa
-nghe/chụp bằng chứng trên máy chạy game.
+Status: `NOT RUN`.
 
-1. Chạy `build-debug/SuperMario.exe` từ thư mục `build-debug`.
-2. Ở Level 1, nhặt Coin, Mushroom/FireFlower và Star; xác nhận HUD đổi state,
-   score tăng một lần cho mỗi pickup, Star hiện trong 10 giây rồi HUD trở về
-   state Mario trước đó.
-3. Stomp một Goomba, kick một Koopa rồi để shell chạm một enemy khác; xác nhận
-   stomp chỉ có SFX stomp, kick và shell-kill là hai lần phát độc lập, không
-   lặp liên tục khi shell còn tiếp xúc.
-4. Hoàn thành tuần tự Level 1, 2, 3; xác nhận nhạc lần lượt là overworld,
-   underground, castle và nhạc Win sau Level 3.
-5. Pause/resume nhiều lần; xác nhận nhạc không bị nhân bản hoặc tự chuyển track.
-6. Chết rồi để hết lượt; xác nhận Death rồi GameOver music, không bị Star expiry
-   ghi đè.
-7. Trong Pause, chỉnh Music và SFX riêng; thoát/chạy lại game và xác nhận hai
-   volume được khôi phục độc lập.
+Do not change a row to PASS without entering tester, timestamp, final RC hash, executable path, and an actual observation from a machine with a working audio device.
 
-Khi thực hiện manual QA, ghi ngày, build directory, người kiểm tra và ảnh/video
-hoặc mô tả kết quả vào ticket/release note tương ứng; không dùng checklist này
-để suy diễn rằng thiết bị audio đã được kiểm tra nếu chỉ chạy CTest.
+| Scenario | Expected | Result | Actual / evidence |
+|---|---|---|---|
+| Small/Super Mario collects Level 1 `f` | FireFlower grants FIRE while preserving the current body size; matching FireSmall/FireBig sprite and one cue/score | NOT RUN | — |
+| Stomp a Goomba | One stomp cue and one score transaction | NOT RUN | — |
+| Kick a Koopa shell, then defeat another enemy | One kick cue plus one later shell-defeat cue; no contact loop | NOT RUN | — |
+| Shoot FireBalls 1, 2, then attempt 3 | First two accepted subject to cooldown; third blocked by active limit; one cue per created shot | NOT RUN | — |
+| Lose one life, then reach GameOver | One death cue per death; GameOver music only at terminal state | NOT RUN | — |
+| Collect Star while damage grace is active | Star music expires once and restores the correct level track | NOT RUN | — |
+| Complete Levels 1, 2, and 3 | Overworld -> Underground -> Castle -> Win music | NOT RUN | — |
+| Pause/resume 20 times | Track resumes without duplicate voices or timer drift | NOT RUN | — |
+| Change SFX and music volumes independently, restart | Both values reload independently | NOT RUN | — |
+| Click Menu/Pause/GameOver/Win controls | Correct item activates; bar clicks do nothing | NOT RUN | — |
+
+### Manual execution record
+
+- Tester: `PENDING`
+- Timestamp/time zone: `PENDING`
+- RC commit: `PENDING`
+- Build directory/executable: `PENDING`
+- Audio device: `PENDING`
+- Screenshot/video/log location: `PENDING`
+- Overall result: `NOT RUN`
+
+## Acceptance rule
+
+TV5-44 remains `REVIEW` until both the 17-suite automated run and every required device row above reference the same immutable release-candidate commit.

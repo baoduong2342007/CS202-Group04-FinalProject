@@ -331,7 +331,7 @@ enum class DefeatCause {
 
 - [ ] **S6-TV5-07 — Sửa duplicate power-up event** — **DoD:** Một pickup có một event/SFX/score update. **Ước lượng:** 30 phút.
 - [ ] **S6-TV5-08 — Hoàn thiện Mushroom** — SMALL→SUPER; SUPER/FIRE không downgrade. **DoD:** State và animation đúng. **Ước lượng:** 30 phút.
-- [ ] **S6-TV5-09 — Hoàn thiện FireFlower** — **DoD:** Mario vào FIRE và bắn được. **Phụ thuộc:** TV3 shoot. **Ước lượng:** 30 phút.
+- [ ] **S6-TV5-09 — Hoàn thiện FireFlower** — **DoD:** Small Mario vào Small FIRE, Super Mario vào Super FIRE; cả hai giữ đúng kích thước thân và bắn được. **Phụ thuộc:** TV3 shoot. **Ước lượng:** 30 phút.
 - [ ] **S6-TV5-10 — Sửa Star semantics** — **DoD:** Không grow vĩnh viễn; chỉ timed invincibility. **Phụ thuộc:** TV3 timer. **Ước lượng:** 45 phút.
 - [ ] **S6-TV5-11 — Adaptive `?` block** — SMALL nhận Mushroom; SUPER/FIRE nhận FireFlower. **DoD:** Content xác định một lần khi hit. **Ước lượng:** 45 phút.
 - [ ] **S6-TV5-12 — Hoàn thiện `U` 1-Up block** — **DoD:** Spawn một lần và cộng một life. **Ước lượng:** 30 phút.

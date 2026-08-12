@@ -133,16 +133,17 @@ int runTV3Demo() {
           mario.setMarioState(MarioState::SMALL);
           std::cout << "[TV3 Demo] Switched Mario state to SMALL" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::Num2) {
-          mario.powerUp(MarioState::SUPER);
+          mario.setMarioState(MarioState::SUPER);
           std::cout << "[TV3 Demo] Switched Mario state to SUPER" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::Num3) {
-          mario.powerUp(MarioState::FIRE);
+          mario.setMarioState(MarioState::FIRE);
           std::cout << "[TV3 Demo] Switched Mario state to FIRE" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::F) {
-          auto fb = mario.shootFireBall(world);
-          if (fb) {
+          if (mario.tryStartFireBallShot()) {
+            auto fb = std::make_unique<FireBall>(
+                mario.getPosition(), mario.getFacingDirection(), world);
             fireballs.push_back(std::move(fb));
-            std::cout << "[TV3 Demo] FireBall shot via mario.shootFireBall()! Active fireballs: " << fireballs.size() << std::endl;
+            std::cout << "[TV3 Demo] FireBall shot accepted. Active fireballs: " << fireballs.size() << std::endl;
           } else {
             std::cout << "[TV3 Demo] Cannot shoot FireBall! Mario must be in FIRE state (Press 3)." << std::endl;
           }

@@ -107,11 +107,7 @@ public:
     void markForDestroy() { m_pendingDestroy = true; m_active = false; }
 
 protected:
-    // 5. Protected methods
-    virtual void updateBoundingBox();
-
     // 6. Protected members
-    sf::FloatRect m_boundingBox;
     sf::Vector2f m_position;
     sf::Vector2f m_size;
     std::optional<sf::Sprite> m_sprite;

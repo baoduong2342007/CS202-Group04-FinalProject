@@ -161,7 +161,6 @@ void Goomba::onStomp() {
 
     playAnimation("squish");
     updateAnimation(0.f);
-    updateBoundingBox();
     syncSpriteToFeet();
 }
 

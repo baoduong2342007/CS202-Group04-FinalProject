@@ -7,6 +7,8 @@
 #include "states/IGameState.h"
 #include <SFML/Graphics.hpp>
 #include <optional>
+#include <memory>
+#include "ui/UIMenuWidget.h"
 
 class MenuState : public IGameState {
 public:
@@ -61,6 +63,7 @@ private:
     sf::Font m_font;                            ///< Font for rendering text
     bool m_fontLoaded;                          ///< True if font loaded successfully
     std::optional<sf::Text> m_pressToPlayText;  ///< Blinking "PRESS TO PLAY" text
+    std::unique_ptr<UIMenuWidget> m_menu;       ///< Shared keyboard/mouse menu widget
 
     int m_score;                                ///< Current score
     int m_coins;                                ///< Current coins

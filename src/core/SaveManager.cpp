@@ -6,6 +6,7 @@
  */
 
 #include "core/SaveManager.h"
+#include "core/LevelCatalog.h"
 
 #include <filesystem>
 #include <fstream>
@@ -124,6 +125,10 @@ bool SaveManager::load() {
     }
 
     m_data = loadedData;
+    // Saves created against experimental catalogs must not unlock content
+    // outside the locked Sprint 6 release graph.
+    m_data.highestUnlockedLevel = std::min(
+        m_data.highestUnlockedLevel, LevelCatalog::count());
     return true;
 }
 
@@ -186,13 +191,14 @@ bool SaveManager::updateHighScore(int score) {
 }
 
 bool SaveManager::updateHighestUnlockedLevel(int level) {
-    if (level <= m_data.highestUnlockedLevel) {
+    const int releaseLevel = std::clamp(level, 1, LevelCatalog::count());
+    if (releaseLevel <= m_data.highestUnlockedLevel) {
         return false;
     }
 
     const int previousHighestUnlockedLevel = m_data.highestUnlockedLevel;
 
-    m_data.highestUnlockedLevel = level;
+    m_data.highestUnlockedLevel = releaseLevel;
 
     if (!save()) {
         m_data.highestUnlockedLevel = previousHighestUnlockedLevel;

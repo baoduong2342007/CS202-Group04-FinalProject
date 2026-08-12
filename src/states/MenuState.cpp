@@ -10,6 +10,7 @@
 #include "core/GameManager.h"
 #include "patterns/InputState.h"
 #include "core/DisplayConfig.h"
+#include "ui/UILayoutHelper.h"
 
 #include <iomanip>
 #include <sstream>
@@ -68,6 +69,8 @@ MenuState::MenuState(int score, int coins, int world, int level, int topScore)
 
 void MenuState::onEnter() {
     m_topScore = GameManager::getInstance().getSaveManager().getData().highScore;
+    m_dynamicTextSprites.clear();
+    m_transitioning = false;
 
     try {
         m_hudTexture = sf::Texture("assets/textures/ui/hud.png");
@@ -145,30 +148,38 @@ void MenuState::onEnter() {
         sf::FloatRect bounds = m_pressToPlayText->getLocalBounds();
         m_pressToPlayText->setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
         m_pressToPlayText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, DisplayConfig::LOGICAL_HEIGHT - PRESS_TO_PLAY_OFFSET_Y});
+
+        m_menu = std::make_unique<UIMenuWidget>(m_font);
+        m_menu->addItem("START GAME", [this]() {
+            if (m_transitioning) return;
+            m_transitioning = true;
+            GameManager::getInstance().changeState(std::make_unique<PlayState>());
+        });
+        m_menu->setPosition(
+            UILayoutHelper::getAnchorPosition(UIAnchor::BottomCenter) +
+                sf::Vector2f(0.f, -45.f),
+            UIAnchor::Center);
     }
 }
 
 void MenuState::onExit() {}
 
 void MenuState::processEvents(const sf::Event& event) {
-    if (m_transitioning) return;
-
-    if (const auto* mouseBtn = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mouseBtn->button == sf::Mouse::Button::Left) {
-            m_transitioning = true;
-            GameManager::getInstance().changeState(std::make_unique<PlayState>());
-        }
+    if (!m_transitioning && m_menu) {
+        m_menu->processEvents(event);
     }
 }
 
 void MenuState::processInput(const InputState& inputState) {
-    if (!m_transitioning && inputState.wasPressed(sf::Keyboard::Key::Enter)) {
-        m_transitioning = true;
-        GameManager::getInstance().changeState(std::make_unique<PlayState>());
+    if (!m_transitioning && m_menu) {
+        m_menu->processInput(inputState);
     }
 }
 
 void MenuState::update(float dt) {
+    if (m_menu) {
+        m_menu->update(dt);
+    }
     // Coin Animation Logic
     m_coinAnimTimer += dt;
     if (m_coinAnimTimer >= COIN_ANIM_DURATION) {
@@ -203,5 +214,8 @@ void MenuState::render(sf::RenderTarget& target) {
     target.draw(m_coinSprite);
     if (m_fontLoaded && m_showPressToPlay && m_pressToPlayText) {
         target.draw(*m_pressToPlayText);
+    }
+    if (m_menu) {
+        m_menu->draw(target);
     }
 }

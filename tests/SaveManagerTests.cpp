@@ -12,6 +12,7 @@
 #include <string>
 
 #include "core/SaveManager.h"
+#include "core/LevelCatalog.h"
 
 namespace {
 
@@ -88,6 +89,31 @@ bool testValidSaveLoadsCorrectly() {
     assert(data.musicVolume == 35.0f);
 
     std::cout << "[PASSED] testValidSaveLoadsCorrectly" << std::endl;
+
+    return true;
+}
+
+bool testUnlockedLevelIsClampedToReleaseCatalog() {
+    std::cout << "[RUNNING] testUnlockedLevelIsClampedToReleaseCatalog..."
+              << std::endl;
+
+    cleanTestDirectory();
+
+    writeSaveFile("version 1\n"
+                  "highScore 12345\n"
+                  "highestUnlockedLevel 4\n"
+                  "soundVolume 80\n"
+                  "musicVolume 70\n");
+
+    SaveManager manager(TEST_SAVE_PATH.string());
+
+    assert(manager.load());
+    assert(manager.getData().highScore == 12345);
+    assert(manager.getData().highestUnlockedLevel == LevelCatalog::count());
+    assert(!manager.updateHighestUnlockedLevel(99));
+
+    std::cout << "[PASSED] testUnlockedLevelIsClampedToReleaseCatalog"
+              << std::endl;
 
     return true;
 }
@@ -192,6 +218,7 @@ bool testSuccessfulSaveRemovesTemporaryFile() {
 int main() {
     const bool success = testMissingSaveUsesDefaults() &&
                          testValidSaveLoadsCorrectly() &&
+                         testUnlockedLevelIsClampedToReleaseCatalog() &&
                          testCorruptSaveUsesDefaults() &&
                          testVersionMismatchUsesDefaults() &&
                          testHighScoreIsMonotonic() &&

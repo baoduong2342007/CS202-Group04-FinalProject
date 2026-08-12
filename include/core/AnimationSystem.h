@@ -96,6 +96,9 @@ public:
      */
     void update(float dt, sf::Sprite& sprite);
 
+    /// Advances animation state without a sprite (headless/runtime lifecycle tests).
+    void update(float dt);
+
     /**
      * @brief Checks if the current non-looping animation has finished playing.
      * @return true if the animation has finished, false otherwise.
@@ -110,7 +113,7 @@ public:
 
 private:
     // 5. Private methods
-    // (None currently required for this class)
+    void advance(float dt);
 
     // 6. Private members
     static constexpr float RESET_TIME = 0.0f;

@@ -22,7 +22,6 @@
 #include "entities/FireBall.h"
 #include "entities/FireballExplosion.h"
 #include "core/SpriteFrames_ovw.h"
-#include "core/SoundManager.h"
 #include "core/LevelCatalog.h"
 
 #include "core/DisplayConfig.h"
@@ -32,6 +31,8 @@ constexpr unsigned int TILE_SIZE = 32;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
 const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
+const sf::Color UNDERWATER_BACKGROUND_COLOR(0, 48, 112);
+const sf::Color CASTLE_BACKGROUND_COLOR(28, 8, 36);
 
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
@@ -122,8 +123,14 @@ void Level::setTheme(LevelTheme theme) {
     m_tileMap.setTheme(theme);
 }
 
+void Level::setCameraVerticalMode(CameraVerticalMode mode) {
+    m_cameraVerticalMode = mode;
+    m_camera.setVerticalMode(mode);
+}
+
 bool Level::loadFromFile(const std::string& path) {
     m_entities.clear();
+    m_pendingFireBallRequests.clear();
     m_mario.reset();
     m_tileMap.destroyPhysicsBodies();
     m_contactListener.reset();
@@ -131,6 +138,7 @@ bool Level::loadFromFile(const std::string& path) {
     m_levelCompleted = false;
     m_flagSequenceActive = false;
     m_flagSequenceTimer = 0.0f;
+    m_physicsAccumulator = 0.0f;
     m_levelPath = path;
     if (!m_tileMap.loadFromFile(path)) {
 
@@ -149,6 +157,7 @@ bool Level::loadFromFile(const std::string& path) {
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
+    m_camera.setVerticalMode(m_cameraVerticalMode);
 
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
@@ -309,9 +318,6 @@ void Level::update(float dt) {
         }
     }
 
-    // Update active FireBall projectiles
-    m_fireBallPool.update(dt);
-
     // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
@@ -357,15 +363,20 @@ void Level::render(sf::RenderTarget& target) {
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
-    if (m_theme == LevelTheme::UNDERGROUND || m_theme == LevelTheme::UNDERWATER) {
-        // SMB underground/underwater stages use a flat dark-blue field behind the same
-        // tile geometry. Extend it beyond the level bounds so camera motion
-        // cannot reveal the sky-blue render-texture clear color.
-        sf::RectangleShape undergroundBackground(
+    if (m_theme != LevelTheme::OVERWORLD) {
+        const sf::Color themeColor =
+            m_theme == LevelTheme::UNDERGROUND
+                ? UNDERGROUND_BACKGROUND_COLOR
+                : (m_theme == LevelTheme::UNDERWATER
+                       ? UNDERWATER_BACKGROUND_COLOR
+                       : CASTLE_BACKGROUND_COLOR);
+        // Each non-overworld theme has a deliberate palette. Extend it beyond
+        // the map so shake/dead-zone motion cannot expose the clear color.
+        sf::RectangleShape themeBackground(
             sf::Vector2f(levelWidth, levelHeight + backgroundHeight * 2.f));
-        undergroundBackground.setPosition({0.f, -backgroundHeight});
-        undergroundBackground.setFillColor(UNDERGROUND_BACKGROUND_COLOR);
-        target.draw(undergroundBackground);
+        themeBackground.setPosition({0.f, -backgroundHeight});
+        themeBackground.setFillColor(themeColor);
+        target.draw(themeBackground);
     } else {
         // Draw the cheerful pixel-art world background behind the tilemap.
         const sf::Texture& bgTex = m_textureManager.getTexture(
@@ -397,9 +408,6 @@ void Level::render(sf::RenderTarget& target) {
     for (const auto& entity : m_entities) {
         target.draw(*entity);
     }
-
-    // Draw FireBall projectiles
-    m_fireBallPool.render(target);
 
     // Draw Mario on top
     if (m_mario) {
@@ -510,42 +518,43 @@ TileMap& Level::getTileMap() { return m_tileMap; }
 Camera& Level::getCamera() { return m_camera; }
 TextureManager& Level::getTextureManager() { return m_textureManager; }
 
-constexpr int MAX_ACTIVE_FIREBALLS = 4;
-
 bool Level::requestFireBallShot(Mario& mario) {
-    if (!m_world || !mario.canShootFireBall()) {
+    if (!m_world) {
         return false;
     }
 
-    int activeFireballs = 0;
-    for (const auto& entity : m_entities) {
-        if (entity && entity->isFireBall() && entity->isActive()) {
-            activeFireballs++;
-        }
-    }
-    activeFireballs += static_cast<int>(m_pendingFireBallRequests.size());
-
-    if (activeFireballs >= 2) {
+    constexpr std::size_t MAX_ACTIVE_FIREBALLS = 2;
+    if (getActiveFireBallCount() + m_pendingFireBallRequests.size() >=
+        MAX_ACTIVE_FIREBALLS) {
         return false;
     }
+
+    // Reserve the cooldown before checking IsLocked so accepted deferred shots
+    // cannot bypass cadence or be accepted twice during one physics step.
+    if (!mario.tryStartFireBallShot()) {
+        return false;
+    }
+
+    const float spawnX = mario.getPosition().x +
+        (mario.getFacingDirection() == Direction::RIGHT
+             ? mario.getSize().x + 4.f
+             : -16.f);
+    const sf::Vector2f spawnPosition(spawnX, mario.getPosition().y + 4.f);
+    const FireBallSpawnRequest request{
+        spawnPosition, mario.getFacingDirection(), &mario};
 
     if (m_world->IsLocked()) {
-        float spawnX = mario.getPosition().x + (mario.getFacingDirection() == Direction::RIGHT ? mario.getSize().x + 4.f : -16.f);
-        float spawnY = mario.getPosition().y + 4.f;
-        m_pendingFireBallRequests.push_back({sf::Vector2f(spawnX, spawnY), mario.getFacingDirection()});
+        m_pendingFireBallRequests.push_back(request);
         return true;
     }
 
-    auto fireball = mario.shootFireBall(m_world.get());
-    if (fireball) {
-        fireball->setOwner(&mario);
-        fireball->setTextureManager(m_textureManager);
-        m_entities.push_back(std::move(fireball));
-        EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
-        SoundManager::getInstance().playSound("fireball");
-        return true;
-    }
-    return false;
+    auto fireball = std::make_unique<FireBall>(
+        request.position, request.direction, m_world.get());
+    fireball->setOwner(request.owner);
+    fireball->setTextureManager(m_textureManager);
+    m_entities.push_back(std::move(fireball));
+    EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
+    return true;
 }
 
 bool Level::requestFireBallShot() {
@@ -558,15 +567,18 @@ void Level::processPendingFireballs() {
 
     for (const auto& req : m_pendingFireBallRequests) {
         auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
-        if (fireball) {
-            if (m_mario) {
-                fireball->setOwner(m_mario.get());
-            }
-            fireball->setTextureManager(m_textureManager);
-            m_entities.push_back(std::move(fireball));
-            EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
-            SoundManager::getInstance().playSound("fireball");
-        }
+        fireball->setOwner(req.owner);
+        fireball->setTextureManager(m_textureManager);
+        m_entities.push_back(std::move(fireball));
+        EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
     }
     m_pendingFireBallRequests.clear();
+}
+
+std::size_t Level::getActiveFireBallCount() const {
+    return static_cast<std::size_t>(std::count_if(
+        m_entities.begin(), m_entities.end(),
+        [](const std::unique_ptr<Entity>& entity) {
+            return entity && entity->isFireBall() && entity->isActive();
+        }));
 }

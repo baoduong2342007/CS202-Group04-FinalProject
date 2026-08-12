@@ -65,9 +65,29 @@ void UIMenuWidget::updateSelectionColors() {
 }
 
 void UIMenuWidget::processEvents(const sf::Event& event) {
-    // Mouse support can be added later when we map window coordinates to logical coordinates.
-    // For now, this is cleanly handled by processInput using keyboard.
-    (void)event;
+    const auto selectAt = [this](const sf::Vector2i& position, bool activate) {
+        const sf::Vector2f logicalPosition{
+            static_cast<float>(position.x), static_cast<float>(position.y)};
+        for (std::size_t index = 0; index < m_items.size(); ++index) {
+            if (!m_items[index].text.getGlobalBounds().contains(logicalPosition)) {
+                continue;
+            }
+            m_selectedIndex = static_cast<int>(index);
+            updateSelectionColors();
+            if (activate && m_items[index].onSelect) {
+                m_items[index].onSelect();
+            }
+            return;
+        }
+    };
+
+    if (const auto* moved = event.getIf<sf::Event::MouseMoved>()) {
+        selectAt(moved->position, false);
+    } else if (const auto* pressed =
+                   event.getIf<sf::Event::MouseButtonPressed>();
+               pressed && pressed->button == sf::Mouse::Button::Left) {
+        selectAt(pressed->position, true);
+    }
 }
 
 void UIMenuWidget::processInput(const InputState& inputState) {
@@ -96,4 +116,10 @@ void UIMenuWidget::draw(sf::RenderTarget& target) const {
     for (const auto& item : m_items) {
         target.draw(item.text);
     }
+}
+
+std::optional<sf::FloatRect> UIMenuWidget::getItemBounds(
+    std::size_t index) const {
+    if (index >= m_items.size()) return std::nullopt;
+    return m_items[index].text.getGlobalBounds();
 }

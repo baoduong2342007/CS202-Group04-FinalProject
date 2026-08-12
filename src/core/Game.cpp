@@ -9,8 +9,6 @@
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
 #include "states/MenuState.h"
-#include <algorithm>
-#include <cmath>
 #include <iostream>
 #include <memory>
 
@@ -20,10 +18,30 @@ namespace {
      */
     constexpr float MAX_DELTA_TIME = 0.1f;
 
-    /**
-     * @brief The allowable tolerance when checking if the aspect ratio matches the target ratio.
-     */
-    constexpr float ASPECT_RATIO_TOLERANCE = 0.01f;
+    std::optional<sf::Event> mapMouseEventToLogical(
+        const sf::Event& event, const sf::Vector2u& windowSize) {
+      if (const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+        const auto position = DisplayConfig::mapPhysicalToLogical(
+            pressed->position, windowSize);
+        if (!position) return std::nullopt;
+        return sf::Event(sf::Event::MouseButtonPressed{
+            pressed->button, *position});
+      }
+      if (const auto* released = event.getIf<sf::Event::MouseButtonReleased>()) {
+        const auto position = DisplayConfig::mapPhysicalToLogical(
+            released->position, windowSize);
+        if (!position) return std::nullopt;
+        return sf::Event(sf::Event::MouseButtonReleased{
+            released->button, *position});
+      }
+      if (const auto* moved = event.getIf<sf::Event::MouseMoved>()) {
+        const auto position = DisplayConfig::mapPhysicalToLogical(
+            moved->position, windowSize);
+        if (!position) return std::nullopt;
+        return sf::Event(sf::Event::MouseMoved{*position});
+      }
+      return event;
+    }
 } // namespace
 
 Game::Game()
@@ -32,6 +50,8 @@ Game::Game()
                "Super Mario - CS202 Group 04",
                sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize) {
   m_window.setFramerateLimit(DisplayConfig::FRAMERATE_LIMIT);
+  m_window.setMinimumSize(sf::Vector2u{
+      DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
 
   if (!m_renderTexture.resize(
           {DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT})) {
@@ -93,18 +113,11 @@ void Game::processEvents() {
       return;
     }
     
-    if (const auto* resized = event->getIf<sf::Event::Resized>()) {
-        float targetRatio = static_cast<float>(DisplayConfig::WINDOW_WIDTH) / DisplayConfig::WINDOW_HEIGHT;
-        float currentRatio = static_cast<float>(resized->size.x) / resized->size.y;
-        
-        if (std::abs(currentRatio - targetRatio) > ASPECT_RATIO_TOLERANCE) {
-            // Force the window to maintain the 16:9 aspect ratio by adjusting height
-            m_window.setSize({resized->size.x, static_cast<unsigned int>(resized->size.x / targetRatio)});
-        }
+    // States consume logical mouse coordinates. A mouse event in a black bar
+    // is rejected, while keyboard/window events pass through unchanged.
+    if (const auto mapped = mapMouseEventToLogical(*event, m_window.getSize())) {
+      GameManager::getInstance().processEvents(*mapped);
     }
-
-    // Delegate event to current state
-    GameManager::getInstance().processEvents(*event);
   }
 }
 
@@ -124,14 +137,15 @@ void Game::render() {
 
   m_renderTexture.display();
 
-  // Draw RenderTexture to Window with continuous scaling (no offset needed due to locked ratio)
   m_window.clear(sf::Color::Black);
 
   sf::Sprite renderSprite(m_renderTexture.getTexture());
-
-  float scale = static_cast<float>(m_window.getSize().x) / DisplayConfig::LOGICAL_WIDTH;
+  const DisplayConfig::IntegerViewport viewport =
+      DisplayConfig::calculateIntegerViewport(m_window.getSize());
+  const float scale = static_cast<float>(viewport.scale);
   renderSprite.setScale({scale, scale});
-  renderSprite.setPosition({0.f, 0.f});
+  renderSprite.setPosition({static_cast<float>(viewport.position.x),
+                            static_cast<float>(viewport.position.y)});
 
   // Explicitly set the view to match the physical window size 
   // to prevent SFML from applying a second layer of scaling

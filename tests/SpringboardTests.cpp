@@ -11,6 +11,7 @@
 
 #include "entities/Springboard.h"
 #include "entities/Mario.h"
+#include "core/SoundManager.h"
 #include "patterns/EntityFactory.h"
 #include "physics/PhysicsEngine.h"
 
@@ -42,10 +43,17 @@ void testSpringboardStateCycleAndBounce() {
 
     Mario mario({100.f, 160.f}, {28.f, 30.f});
     mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    SoundManager& sound = SoundManager::getInstance();
+    sound.resetDiagnosticCounters();
 
     // 1. Normal Bounce (without holding jump)
     spring.triggerSpring(mario, false);
     assert(spring.getState() == Springboard::State::COMPRESSING);
+    assert(sound.getSoundPlayRequestCount("jump") == 1);
+
+    // Persistent/repeated activation during the state cycle is ignored.
+    spring.triggerSpring(mario, false);
+    assert(sound.getSoundPlayRequestCount("jump") == 1);
 
     // Verify Mario's launch velocity
     b2Body* marioBody = mario.getBody();
@@ -69,6 +77,7 @@ void testSpringboardStateCycleAndBounce() {
     // 2. Super Spring Jump (holding jump key)
     spring.triggerSpring(mario, true);
     assert(spring.getState() == Springboard::State::COMPRESSING);
+    assert(sound.getSoundPlayRequestCount("jump") == 2);
 
     float superVy = marioBody->GetLinearVelocity().y;
     float expectedSuperVy = -PhysicsEngine::pixelsToMeters(Springboard::BOUNCE_SUPER_SPEED);

@@ -10,9 +10,9 @@
  *     make any re-introduction a compile-time failure.
  *   - Default character is Mario (`CharacterType::MARIO`); Luigi stays out of
  *     the release flow.
- *   - FireFlower ALWAYS ends in `MarioState::FIRE`, whatever the prior state.
+ *   - FireFlower preserves the body tier: SMALL -> Small Fire, SUPER -> Super Fire.
  *   - Mushroom never downgrades an already-powered-up Mario.
- *   - All four release levels (1, 2, 3, 4) are loadable through the validator and
+ *   - The three release levels (1, 2, 3) are loadable through the validator and
  *     the tileset, each with exactly one Mario spawn and one finish flag.
  *
  * NOTE: The FireBall active-limit guard (max 2, never 4) is a runtime property
@@ -29,6 +29,7 @@
 
 #include "core/LevelCatalog.h"
 #include "entities/Mario.h"
+#include "entities/QuestionBlock.h"
 #include "items/FireFlower.h"
 #include "items/Mushroom.h"
 #include "level/Level.h"
@@ -55,6 +56,20 @@ public:
         }
     }
 
+    int count = 0;
+};
+
+class BlockBumpCounter final : public IObserver {
+public:
+    BlockBumpCounter() {
+        EventBus::getInstance().subscribe(EventType::BLOCK_BUMPED, this);
+    }
+    ~BlockBumpCounter() override {
+        EventBus::getInstance().unsubscribe(EventType::BLOCK_BUMPED, this);
+    }
+    void onNotify(EventType event) override {
+        if (event == EventType::BLOCK_BUMPED) ++count;
+    }
     int count = 0;
 };
 
@@ -88,23 +103,34 @@ void testDefaultCharacterAndState() {
     std::cout << "[PASSED] testDefaultCharacterAndState" << std::endl;
 }
 
-void testFireFlowerAlwaysGrantsFireFromSmall() {
-    std::cout << "[RUNNING] testFireFlowerAlwaysGrantsFireFromSmall..." << std::endl;
+void testFireFlowerPreservesBodyTier() {
+    std::cout << "[RUNNING] testFireFlowerPreservesBodyTier..." << std::endl;
 
     Mario mario; // starts SMALL
     FireFlower flower;
     flower.onCollect(mario);
 
-    // A SMALL Mario picking up a FireFlower must end in FIRE directly
-    // (exactly one result), never in a small-fire variant.
+    // Small Mario keeps the Small body while gaining the FIRE capability.
     assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getSize().y == 30.f);
+    assert(!mario.isSuperFireMario());
     assert(mario.canShootFireBall());
 
-    std::cout << "[PASSED] testFireFlowerAlwaysGrantsFireFromSmall" << std::endl;
+    // Super Mario keeps the large body while gaining FIRE.
+    Mario superMario;
+    superMario.setMarioState(MarioState::SUPER);
+    FireFlower superFlower;
+    superFlower.onCollect(superMario);
+    assert(superMario.getMarioState() == MarioState::FIRE);
+    assert(superMario.getSize().y == 60.f);
+    assert(superMario.isSuperFireMario());
+    assert(superMario.canShootFireBall());
+
+    std::cout << "[PASSED] testFireFlowerPreservesBodyTier" << std::endl;
 }
 
-void testFireFlowerAlwaysGrantsFireFromSuper() {
-    std::cout << "[RUNNING] testFireFlowerAlwaysGrantsFireFromSuper..." << std::endl;
+void testFireFlowerGrantsFireFromSuper() {
+    std::cout << "[RUNNING] testFireFlowerGrantsFireFromSuper..." << std::endl;
 
     Mario mario;
     mario.setMarioState(MarioState::SUPER);
@@ -112,9 +138,11 @@ void testFireFlowerAlwaysGrantsFireFromSuper() {
     flower.onCollect(mario);
 
     assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getSize().y == 60.f);
+    assert(mario.isSuperFireMario());
     assert(mario.canShootFireBall());
 
-    std::cout << "[PASSED] testFireFlowerAlwaysGrantsFireFromSuper" << std::endl;
+    std::cout << "[PASSED] testFireFlowerGrantsFireFromSuper" << std::endl;
 }
 void testMushroomPromotesAndNeverDowngrades() {
     std::cout << "[RUNNING] testMushroomPromotesAndNeverDowngrades..." << std::endl;
@@ -145,12 +173,11 @@ void testMushroomPromotesAndNeverDowngrades() {
 void testReleaseLevelsAreLoadable() {
     std::cout << "[RUNNING] testReleaseLevelsAreLoadable..." << std::endl;
 
-    // S6-TV1-14 dependency evidence: the four release levels must pass the
+    // S6-TV1-14 dependency evidence: the three release levels must pass the
     // validator and load their tileset before PlayState can ever reach Win.
     assert(loadReleaseLevel("levels/level1.txt"));
     assert(loadReleaseLevel("levels/level2.txt"));
     assert(loadReleaseLevel("levels/level3.txt"));
-    assert(loadReleaseLevel("levels/level4.txt"));
 
     std::cout << "[PASSED] testReleaseLevelsAreLoadable" << std::endl;
 }
@@ -162,7 +189,6 @@ void testReleaseLevelMarkers() {
         "levels/level1.txt",
         "levels/level2.txt",
         "levels/level3.txt",
-        "levels/level4.txt",
     };
 
     for (const std::string& filePath : levelFiles) {
@@ -176,7 +202,7 @@ void testReleaseLevelMarkers() {
     }
 
     TileMap castle;
-    assert(castle.loadFromFile("levels/level4.txt"));
+    assert(castle.loadFromFile("levels/level3.txt"));
     assert(castle.getWidth() == 96);
     assert(castle.getHeight() == 16);
     assert(castle.findTiles('V').size() >= 7);
@@ -184,6 +210,73 @@ void testReleaseLevelMarkers() {
     assert(!castle.isSolid(60, 5));
 
     std::cout << "[PASSED] testReleaseLevelMarkers" << std::endl;
+}
+
+void testDeterministicAdaptiveBlocksAndItemRoutes() {
+    for (int sample = 0; sample < 100; ++sample) {
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL) ==
+               QuestionBlockContent::SUPER_MUSHROOM);
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER) ==
+               QuestionBlockContent::FIRE_FLOWER);
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE) ==
+               QuestionBlockContent::FIRE_FLOWER);
+    }
+
+    BlockBumpCounter events;
+    Mario mario;
+    QuestionBlock block({0.f, 0.f}, nullptr);
+    block.onHit(mario);
+    block.onHit(mario);
+    assert(block.getContent() == QuestionBlockContent::SUPER_MUSHROOM);
+    assert(events.count == 1);
+
+    // An explicit 'f' block always exposes a Fire Flower. The collected item
+    // preserves Small/Super body size through Mario::powerUp().
+    Mario explicitSmallMario;
+    QuestionBlock explicitFlowerForSmall(
+        {0.f, 0.f}, nullptr, QuestionBlockContent::FIRE_FLOWER);
+    explicitFlowerForSmall.onHit(explicitSmallMario);
+    assert(explicitFlowerForSmall.getContent() ==
+           QuestionBlockContent::FIRE_FLOWER);
+
+    Mario explicitSuperMario;
+    explicitSuperMario.setMarioState(MarioState::SUPER);
+    QuestionBlock explicitFlowerForSuper(
+        {0.f, 0.f}, nullptr, QuestionBlockContent::FIRE_FLOWER);
+    explicitFlowerForSuper.onHit(explicitSuperMario);
+    assert(explicitFlowerForSuper.getContent() ==
+           QuestionBlockContent::FIRE_FLOWER);
+
+    const auto hasUsableBlockRoute = [](const TileMap& tileMap,
+                                        char symbol) {
+        for (const sf::Vector2i& tile : tileMap.findTiles(symbol)) {
+            if (tile.y + 2 >= static_cast<int>(tileMap.getHeight()) ||
+                tileMap.isSolid(tile.x, tile.y + 1) ||
+                tileMap.isSolid(tile.x, tile.y + 2)) {
+                continue;
+            }
+
+            // A floor three to six tiles below leaves enough headroom for
+            // Mario to stand and jump into the block from underneath.
+            for (int distance = 3; distance <= 6; ++distance) {
+                const int floorRow = tile.y + distance;
+                if (floorRow < static_cast<int>(tileMap.getHeight()) &&
+                    tileMap.isSolid(tile.x, floorRow)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    for (const LevelDefinition& definition : LevelCatalog::getAll()) {
+        TileMap tileMap;
+        assert(tileMap.loadFromFile(definition.filePath));
+        assert(hasUsableBlockRoute(tileMap, '?'));
+        assert(hasUsableBlockRoute(tileMap, 'f'));
+        assert(hasUsableBlockRoute(tileMap, 'U'));
+        assert(hasUsableBlockRoute(tileMap, 'O'));
+    }
 }
 
 #include "level/Level.h"
@@ -225,20 +318,11 @@ void testFireBallActiveLimitOfTwo() {
     std::cout << "[PASSED] testFireBallActiveLimitOfTwo" << std::endl;
 }
 
-void testThemeWiringAndLevel4Spawns() {
-    std::cout << "[RUNNING] testThemeWiringAndLevel4Spawns..." << std::endl;
-
-    Level underwater;
-    underwater.setTheme(LevelTheme::UNDERWATER);
-    assert(underwater.loadFromFile("levels/level3.txt"));
-    assert(underwater.getMario());
-    assert(underwater.getMario()->isUnderwater());
-    assert(underwater.getMario()->getBody());
-    assert(underwater.getMario()->getBody()->GetLinearDamping() == 1.5f);
-
+void testThemeWiringAndLevel3Spawns() {
+    std::cout << "[RUNNING] testThemeWiringAndLevel3Spawns..." << std::endl;
     Level castle;
     castle.setTheme(LevelTheme::CASTLE);
-    assert(castle.loadFromFile("levels/level4.txt"));
+    assert(castle.loadFromFile("levels/level3.txt"));
 
     int enemyCount = 0;
     bool hasKoopa = false;
@@ -260,7 +344,7 @@ void testThemeWiringAndLevel4Spawns() {
     assert(hasQuestionBlock);
     assert(hasSpringboard);
 
-    std::cout << "[PASSED] testThemeWiringAndLevel4Spawns" << std::endl;
+    std::cout << "[PASSED] testThemeWiringAndLevel3Spawns" << std::endl;
 }
 
 void testFlagAnimationChangesPixelsForEveryTheme() {
@@ -274,8 +358,7 @@ void testFlagAnimationChangesPixelsForEveryTheme() {
     const ThemeCase cases[] = {
         {"levels/level1.txt", LevelTheme::OVERWORLD},
         {"levels/level2.txt", LevelTheme::UNDERGROUND},
-        {"levels/level3.txt", LevelTheme::UNDERWATER},
-        {"levels/level4.txt", LevelTheme::CASTLE},
+        {"levels/level3.txt", LevelTheme::CASTLE},
     };
 
     for (const ThemeCase& testCase : cases) {
@@ -318,12 +401,12 @@ void testFlagAnimationChangesPixelsForEveryTheme() {
     std::cout << "[PASSED] testFlagAnimationChangesPixelsForEveryTheme" << std::endl;
 }
 
-void testLevel4FlagSequencePublishesOnce() {
-    std::cout << "[RUNNING] testLevel4FlagSequencePublishesOnce..." << std::endl;
+void testLevel3FlagSequencePublishesOnce() {
+    std::cout << "[RUNNING] testLevel3FlagSequencePublishesOnce..." << std::endl;
 
     Level level;
     level.setTheme(LevelTheme::CASTLE);
-    assert(level.loadFromFile("levels/level4.txt"));
+    assert(level.loadFromFile("levels/level3.txt"));
 
     CompletionCounter counter;
     const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
@@ -335,7 +418,7 @@ void testLevel4FlagSequencePublishesOnce() {
     assert(!level.isLevelCompleted());
     assert(counter.count == 0);
 
-    // The long Level 4 pole is traversed at the fixed slide speed.
+    // The Castle pole is traversed at the fixed slide speed.
     for (int step = 0; step < 6 && !level.isLevelCompleted(); ++step) {
         level.update(1.0f);
     }
@@ -345,22 +428,23 @@ void testLevel4FlagSequencePublishesOnce() {
     level.update(1.0f);
     assert(counter.count == 1);
 
-    std::cout << "[PASSED] testLevel4FlagSequencePublishesOnce" << std::endl;
+    std::cout << "[PASSED] testLevel3FlagSequencePublishesOnce" << std::endl;
 }
 
 } // namespace
 
 int main() {
     testDefaultCharacterAndState();
-    testFireFlowerAlwaysGrantsFireFromSmall();
-    testFireFlowerAlwaysGrantsFireFromSuper();
+    testFireFlowerPreservesBodyTier();
+    testFireFlowerGrantsFireFromSuper();
     testMushroomPromotesAndNeverDowngrades();
     testReleaseLevelsAreLoadable();
     testReleaseLevelMarkers();
+    testDeterministicAdaptiveBlocksAndItemRoutes();
     testFireBallActiveLimitOfTwo();
-    testThemeWiringAndLevel4Spawns();
+    testThemeWiringAndLevel3Spawns();
     testFlagAnimationChangesPixelsForEveryTheme();
-    testLevel4FlagSequencePublishesOnce();
+    testLevel3FlagSequencePublishesOnce();
 
     std::cout << "All Gate0 contract tests passed successfully!" << std::endl;
     return 0;

@@ -28,6 +28,11 @@ enum class MusicId {
     WIN
 };
 
+enum class CameraVerticalMode {
+    LOCKED,
+    DEAD_ZONE
+};
+
 // Sprint 6 locked contract (S6-TV1-03)
 struct LevelDefinition {
     int number;                 // one-based release level number
@@ -35,16 +40,19 @@ struct LevelDefinition {
     std::string worldLabel;     // e.g. "1-1"
     LevelTheme theme;
     MusicId music;
+    CameraVerticalMode cameraMode;
 };
 
 namespace LevelCatalog {
-    /// Returns the full list of release levels (1, 2, 3, 4).
+    /// Returns the locked Sprint 6 release graph: Level 1 -> 2 -> 3 -> Win.
     inline const std::vector<LevelDefinition>& getAll() {
         static const std::vector<LevelDefinition> catalog = {
-            {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,   MusicId::OVERWORLD},
-            {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND, MusicId::UNDERGROUND},
-            {3, "levels/level3.txt", "1-3", LevelTheme::UNDERWATER,  MusicId::UNDERWATER},
-            {4, "levels/level4.txt", "1-4", LevelTheme::CASTLE,      MusicId::CASTLE},
+            {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,
+                MusicId::OVERWORLD, CameraVerticalMode::LOCKED},
+            {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND,
+                MusicId::UNDERGROUND, CameraVerticalMode::LOCKED},
+            {3, "levels/level3.txt", "1-3", LevelTheme::CASTLE,
+                MusicId::CASTLE, CameraVerticalMode::LOCKED},
         };
         return catalog;
     }

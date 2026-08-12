@@ -83,7 +83,7 @@ void AnimationSystem::play(const std::string& name) {
 
 
 
-void AnimationSystem::update(float dt, sf::Sprite& sprite) {
+void AnimationSystem::advance(float dt) {
     if (!m_isPlaying || m_currentAnimation.empty()) {
         return;
     }
@@ -118,7 +118,18 @@ void AnimationSystem::update(float dt, sf::Sprite& sprite) {
         }
     }
 
-    sprite.setTextureRect(anim.frames[m_currentFrame]);
+}
+
+void AnimationSystem::update(float dt, sf::Sprite& sprite) {
+    advance(dt);
+    const auto animation = m_animations.find(m_currentAnimation);
+    if (animation != m_animations.end() && !animation->second.frames.empty()) {
+        sprite.setTextureRect(animation->second.frames[m_currentFrame]);
+    }
+}
+
+void AnimationSystem::update(float dt) {
+    advance(dt);
 }
 
 bool AnimationSystem::isFinished() const {

@@ -32,5 +32,6 @@ private:
     std::optional<sf::Text> m_titleText;         ///< "YOU WIN!" text
     GameProgress m_progress;                     ///< Reference to the current game progress
     std::optional<sf::Text> m_scoreText;         ///< Text displaying the final score
+    std::optional<sf::Text> m_highScoreText;     ///< Persisted high score
     std::unique_ptr<UIMenuWidget> m_menu;        ///< The UI menu for the state
 };

@@ -34,6 +34,7 @@ namespace {
     constexpr float DEATH_SHAKE_INTENSITY = 15.0f;
     constexpr float DAMAGE_SHAKE_DURATION = 0.3f;
     constexpr float DAMAGE_SHAKE_INTENSITY = 8.0f;
+    constexpr float DEATH_ANIMATION_FALLBACK_TIMEOUT = 1.0f;
 }
 
 PlayState::PlayState() {
@@ -50,6 +51,7 @@ PlayState::PlayState() {
 
 PlayState::~PlayState() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
+    EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
     EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
     EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
 }
@@ -173,7 +175,9 @@ void PlayState::onNotify(EventType event) {
             m_level->getCamera().shake(DEATH_SHAKE_DURATION, DEATH_SHAKE_INTENSITY);
         }
         m_terminalCommittedThisFrame = true;
-        m_deathDelayTimer = DEATH_SHAKE_DURATION; // Wait for camera shake to finish before state change
+        // Mario's animation completion is authoritative. This longer timer is
+        // only a fail-safe for a missing/corrupt animation asset.
+        m_deathDelayTimer = DEATH_ANIMATION_FALLBACK_TIMEOUT;
         // S6-TV1-19: commit the current score to the high score the moment a
         // death happens — dying with lives left must STILL persist the session
         // score. GameOver/Win keep calling updateHighScore (monotonic) as a
@@ -231,6 +235,8 @@ void PlayState::processInput(const InputState& inputState) {
     if (!m_level || !m_level->getMario() ||
         m_needsReload || m_needsGameOver ||
         !m_level->getMario()->isActive() ||
+        m_level->getMario()->isDying() ||
+        m_level->getMario()->isTransforming() ||
         m_level->getMario()->isFlagpoleSliding()) {
         return;
     }
@@ -262,6 +268,7 @@ void PlayState::snapshotProgress() {
     m_progress.coins = m_level->getMario()->getCoinCount();
     m_progress.lives = m_level->getMario()->getLives();
     m_progress.power = m_level->getMario()->getMarioState();
+    m_progress.fireIsSuper = m_level->getMario()->isSuperFireMario();
 }
 
 void PlayState::restoreProgress() {
@@ -274,7 +281,8 @@ void PlayState::restoreProgress() {
     m_level->getMario()->setCoinCount(m_progress.coins);
     m_level->getMario()->setLives(m_progress.lives);
     if (m_progress.power != MarioState::SMALL) {
-        m_level->getMario()->setMarioState(m_progress.power);
+        m_level->getMario()->setMarioState(m_progress.power,
+                                           m_progress.fireIsSuper);
     }
 
     if (m_hud) {
@@ -297,6 +305,7 @@ bool PlayState::loadLevel(int levelNumber) {
     // S6-TV1-11: never ignore the loadFromFile() result.
     m_level = std::make_unique<Level>();
     m_level->setTheme(def->theme);
+    m_level->setCameraVerticalMode(def->cameraMode);
     if (!m_level->loadFromFile(def->filePath)) {
         m_level.reset();
         return false;
@@ -358,9 +367,13 @@ void PlayState::update(float dt) {
         return;
     }
 
-    if (m_deathDelayTimer > 0.f) {
-        m_deathDelayTimer -= dt;
-        if (m_deathDelayTimer <= 0.f) {
+    if (m_isGameOverPending || m_isReloadPending) {
+        m_deathDelayTimer = std::max(0.f, m_deathDelayTimer - dt);
+        const bool animationFinished =
+            m_level && m_level->getMario() &&
+            m_level->getMario()->isDeathAnimationFinished();
+        const bool fallbackExpired = m_deathDelayTimer <= 0.f;
+        if (animationFinished || fallbackExpired) {
             if (m_isGameOverPending) {
                 m_needsGameOver = true;
             } else if (m_isReloadPending) {

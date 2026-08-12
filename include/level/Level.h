@@ -21,8 +21,6 @@
 #include <box2d/box2d.h>
 class ContactListener;
 
-#include "entities/FireBallPool.h"
-
 class Level {
 public:
     // 1. Constructor / Destructor
@@ -34,17 +32,14 @@ public:
 
     // 3. Public methods
     void setTheme(LevelTheme theme);
+    void setCameraVerticalMode(CameraVerticalMode mode);
     bool loadFromFile(const std::string& path);
     void update(float dt);
     void render(sf::RenderTarget& target);
     /// Consolidated production entry point for FireBall shooting.
-    /// Checks FIRE state, 250ms cooldown, hard limit of 2 active projectiles, world-lock queueing, and triggers SFX/Event.
+    /// Checks FIRE state, cooldown, hard limit of two, and safe world-lock queueing.
     bool requestFireBallShot(Mario& mario);
     bool requestFireBallShot();
-
-    /// Legacy wrappers delegating to requestFireBallShot for backward compatibility.
-    bool spawnFireBall() { return requestFireBallShot(); }
-    void shootFireBall() { requestFireBallShot(); }
 
     /// Spawn a FireballExplosion particle effect at the specified position.
     void spawnFireballExplosion(const sf::Vector2f& position);
@@ -56,7 +51,10 @@ public:
     Camera& getCamera();
     TextureManager& getTextureManager();
     std::vector<std::unique_ptr<Entity>>& getEntities() { return m_entities; }
-    FireBallPool& getFireBallPool() { return m_fireBallPool; }
+    std::size_t getActiveFireBallCount() const;
+    std::size_t getPendingFireBallCount() const {
+        return m_pendingFireBallRequests.size();
+    }
     bool isLevelCompleted() const;
 
 
@@ -64,6 +62,7 @@ private:
     struct FireBallSpawnRequest {
         sf::Vector2f position;
         Direction direction;
+        Mario* owner;
     };
 
     // 5. Private methods
@@ -81,7 +80,6 @@ private:
     TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
     std::vector<std::unique_ptr<Entity>> m_entities;
-    FireBallPool m_fireBallPool{2};
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_levelCompleted = false;
     bool m_flagSequenceActive = false;
@@ -89,4 +87,5 @@ private:
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
+    CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
 };

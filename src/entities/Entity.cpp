@@ -14,8 +14,7 @@
 #include "physics/PhysicsEngine.h"
 
 Entity::Entity()
-    : m_boundingBox({0.f, 0.f}, {0.f, 0.f}),
-      m_position(0.f, 0.f),
+    : m_position(0.f, 0.f),
       m_size(0.f, 0.f),
       m_velocity(0.f, 0.f),
       m_body(nullptr),
@@ -26,8 +25,7 @@ Entity::Entity()
 }
 
 Entity::Entity(const sf::Vector2f& position, const sf::Vector2f& size)
-    : m_boundingBox(position, size),
-      m_position(position),
+    : m_position(position),
       m_size(size),
       m_velocity(0.f, 0.f),
       m_body(nullptr),
@@ -102,10 +100,14 @@ void Entity::playAnimation(const std::string& clipName) {
 }
 
 void Entity::updateAnimation(float dt) {
-    if (!m_animationSystem || !m_sprite) {
+    if (!m_animationSystem) {
         return;
     }
-    m_animationSystem->update(dt, *m_sprite);
+    if (m_sprite) {
+        m_animationSystem->update(dt, *m_sprite);
+    } else {
+        m_animationSystem->update(dt);
+    }
 }
 
 // ── Box2D Physics ──────────────────────────────────────────────
@@ -172,7 +174,6 @@ void Entity::syncPhysics() {
                                 m_size.y / static_cast<float>(texRect.size.y)});
         }
     }
-    updateBoundingBox();
 }
 
 // ── Getters / Setters ──────────────────────────────────────────
@@ -201,7 +202,6 @@ void Entity::setPosition(const sf::Vector2f& position) {
     if (m_sprite) {
         m_sprite->setPosition(m_position);
     }
-    updateBoundingBox();
 }
 
 void Entity::setVelocity(const sf::Vector2f& velocity) {
@@ -213,10 +213,6 @@ void Entity::setVelocity(const sf::Vector2f& velocity) {
 
 void Entity::markForRemoval() {
     m_markedForRemoval = true;
-}
-
-void Entity::updateBoundingBox() {
-    m_boundingBox = sf::FloatRect(m_position, m_size);
 }
 
 // ── Polymorphic Collision Dispatch Defaults ─────────────────────
@@ -231,5 +227,4 @@ void Entity::onCollisionEnd(Entity* other, b2Contact* contact) {
     (void)other;
     (void)contact;
 }
-
 

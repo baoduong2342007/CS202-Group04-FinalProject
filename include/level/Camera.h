@@ -8,6 +8,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "core/LevelCatalog.h"
 
 class Camera {
 public:
@@ -37,6 +38,8 @@ public:
      */
     void shake(float duration, float magnitude);
 
+    void setVerticalMode(CameraVerticalMode mode) { m_verticalMode = mode; }
+
     /**
      * @brief Updates the camera's center position to follow a target.
      * @details Tracks the X-axis continuously but utilizes a vertical deadzone for the Y-axis 
@@ -52,6 +55,7 @@ public:
      * @return const sf::View& reference to the updated view for the current frame.
      */
     const sf::View& getView() const;
+    CameraVerticalMode getVerticalMode() const { return m_verticalMode; }
 
 private:
     // 5. Private methods
@@ -59,10 +63,13 @@ private:
      * @brief Adjusts the view's center point so its edges never exceed m_levelBounds.
      */
     void clampToBoundaries();
+    sf::Vector2f clampCenter(const sf::Vector2f& center) const;
 
     // 6. Private members
     sf::FloatRect m_levelBounds;
     sf::View m_view;
+    sf::Vector2f m_stableCenter{0.f, 0.f};
+    CameraVerticalMode m_verticalMode = CameraVerticalMode::LOCKED;
 
     float m_shakeTimer = 0.f;
     float m_shakeMagnitude = 0.f;

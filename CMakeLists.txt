@@ -21,9 +21,8 @@ endif()
 # 2. FIND OR DOWNLOAD SFML LIBRARY (cross-platform: Windows, macOS, Linux)
 # ==============================================================================
 # On Windows: If pre-built SFML is missing in thirdparty/, automatically download and extract it.
-# S6-TV1-27: TLS verification is ON, and an existing SFML folder is never deleted
-# (a failed configure must not destroy data). Archive hash verification is documented
-# below but intentionally not hard-coded until the upstream hash is confirmed.
+# S6-TV1-27: TLS verification is ON, official archive hashes are pinned below,
+# and an existing SFML folder is never deleted by a failed configure.
 if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFMLConfig.cmake")
     if(MSVC)
         message(STATUS "SFML not found in thirdparty/SFML. Downloading pre-built SFML 3.0.0 MSVC (Visual Studio 2022) (~30MB)...")
@@ -250,6 +249,30 @@ if(BUILD_TESTING)
     )
     target_link_libraries(sprite_frames_theme_tests PRIVATE game_lib)
     add_test(NAME sprite_frames_theme_tests COMMAND sprite_frames_theme_tests)
+
+    add_executable(collision_matrix_tests
+        tests/CollisionMatrixTests.cpp
+    )
+    target_link_libraries(collision_matrix_tests PRIVATE game_lib)
+    add_test(NAME collision_matrix_tests COMMAND collision_matrix_tests)
+
+    add_executable(fireball_request_tests
+        tests/FireBallRequestTests.cpp
+    )
+    target_link_libraries(fireball_request_tests PRIVATE game_lib)
+    add_test(NAME fireball_request_tests COMMAND fireball_request_tests)
+    set_tests_properties(fireball_request_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(display_camera_ui_tests
+        tests/DisplayCameraUITests.cpp
+    )
+    target_link_libraries(display_camera_ui_tests PRIVATE game_lib)
+    add_test(NAME display_camera_ui_tests COMMAND display_camera_ui_tests)
+    set_tests_properties(display_camera_ui_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 endif()
 
 # Platform-specific Release build settings

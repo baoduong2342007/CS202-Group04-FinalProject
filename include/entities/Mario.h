@@ -11,8 +11,6 @@
 #include "entities/Character.h"
 #include "states/IMarioState.h"
 
-class FireBall;
-
 // Define Mario's power-up states strictly according to project specifications
 enum class MarioState {
     SMALL,
@@ -53,13 +51,17 @@ public:
     bool isFlagpoleSliding() const { return m_isFlagpoleSliding; }
     static constexpr float FLAGPOLE_SLIDE_SPEED = 120.0f;
     void preparePhysics(float dt);
+    /// Apply a gameplay power-up while preserving the Small/Super body tier.
+    /// A FireFlower adds FIRE without forcing Small Mario to grow.
     void powerUp(MarioState state);
     void powerDown();
     void queuePowerDown();
     void addScore(int points);
     void addCoin();
     void collectCoin(int scoreValue = 100);
-    std::unique_ptr<FireBall> shootFireBall(b2World* world);
+    /// Reserve an accepted shot by consuming Mario's authoritative cooldown.
+    /// Level owns projectile construction and the active-projectile limit.
+    bool tryStartFireBallShot();
     void setInvincible(float duration);
     void updateInvincibility(float dt);
     void loseLife();
@@ -81,7 +83,11 @@ public:
 
     // 4. Getters / Setters
     MarioState getMarioState() const;
+    /// Select a state using the current body tier for FIRE when no explicit
+    /// fire-body flag is supplied.
     void setMarioState(MarioState state);
+    /// Restore/debug overload that preserves Small Fire vs Super Fire.
+    void setMarioState(MarioState state, bool fireIsSuper);
     int getScore() const;
     int getCoinCount() const;
     /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
@@ -109,6 +115,11 @@ public:
     bool isDying() const;
     bool isDeathAnimationFinished() const;
     bool isTransforming() const { return m_isTransforming; }
+    /// True when FIRE uses the Super/Big body; false means Small Fire Mario.
+    bool isSuperFireMario() const { return m_fireIsSuper; }
+    bool hasPendingGrowth() const { return m_pendingGrowthState != MarioState::SMALL; }
+    MarioState getPendingGrowthState() const { return m_pendingGrowthState; }
+    float getFireCooldownRemaining() const { return m_fireCooldown; }
 
     /// Underwater swim mode — Level sets this for UNDERWATER theme
     void setUnderwater(bool underwater) { m_isUnderwater = underwater; }
@@ -116,13 +127,17 @@ public:
 
 protected:
     // 5. Protected methods
+    bool applyStateTransition(MarioState state, bool withPresentation);
     void rebuildFixture();
+    void updateSpriteLayout();
     void applyMovementPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, bool jumpKeyReleased);
     void applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, float& currentVy, float& newVx, float targetMaxSpeed);
     void applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, float& currentVy, float& newVx, float targetMaxSpeed);
 
     // 6. Protected / Private members
     MarioState m_marioState;
+    // FIRE is a capability layered on the current Small/Super body tier.
+    bool m_fireIsSuper = false;
     CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
@@ -143,13 +158,11 @@ protected:
     bool m_isTransforming;
     float m_transformTimer;
 
-    // Fixture Caching
-    b2Fixture* m_smallFixture = nullptr;
-    b2Fixture* m_superFixture = nullptr;
-
     bool m_pendingFixtureRebuild = false;
     bool m_pendingPowerDown = false;
     MarioState m_pendingGrowthState = MarioState::SMALL;
+    bool m_pendingGrowthPresentation = false;
+    bool m_deathAnimationFinished = false;
     sf::Vector2f m_respawnPosition;
 
     float m_inputDirX = 0.0f;

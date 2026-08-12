@@ -10,6 +10,7 @@
 #include "patterns/InputState.h"
 #include "ui/UILayoutHelper.h"
 #include "states/PlayState.h"
+#include <algorithm>
 #include <iostream>
 
 namespace {
@@ -17,6 +18,7 @@ namespace {
     constexpr unsigned int SCORE_FONT_SIZE = 14;
     constexpr float TITLE_OFFSET_Y = 40.f;
     constexpr float SCORE_OFFSET_Y = 80.f;
+    constexpr float HIGH_SCORE_OFFSET_Y = 105.f;
     constexpr float MENU_OFFSET_Y = 20.f;
     constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
 }
@@ -40,6 +42,16 @@ GameOverState::GameOverState(const GameProgress& progress)
         m_scoreText->setCharacterSize(SCORE_FONT_SIZE);
         m_scoreText->setFillColor(sf::Color::White);
         UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, SCORE_OFFSET_Y});
+
+        m_highScoreText.emplace(m_font);
+        const int highScore = std::max(
+            m_progress.score,
+            GameManager::getInstance().getSaveManager().getData().highScore);
+        m_highScoreText->setString("HIGH SCORE: " + std::to_string(highScore));
+        m_highScoreText->setCharacterSize(SCORE_FONT_SIZE);
+        m_highScoreText->setFillColor(sf::Color::Yellow);
+        UILayoutHelper::setPosition(*m_highScoreText, UIAnchor::TopCenter,
+                                    {0.f, HIGH_SCORE_OFFSET_Y});
 
         m_menu = std::make_unique<UIMenuWidget>(m_font);
         m_menu->addItem("RETRY", []() {
@@ -84,6 +96,7 @@ void GameOverState::render(sf::RenderTarget& target) {
     if (m_fontLoaded) {
         if (m_titleText) target.draw(*m_titleText);
         if (m_scoreText) target.draw(*m_scoreText);
+        if (m_highScoreText) target.draw(*m_highScoreText);
     }
     if (m_menu) {
         m_menu->draw(target);

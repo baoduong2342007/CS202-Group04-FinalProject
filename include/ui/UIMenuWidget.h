@@ -10,6 +10,8 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <optional>
+#include <optional>
 #include "patterns/InputState.h"
 #include "ui/UILayoutHelper.h"
 
@@ -37,6 +39,8 @@ public:
     
     /// Draws all menu items to the target.
     void draw(sf::RenderTarget& target) const;
+
+    std::optional<sf::FloatRect> getItemBounds(std::size_t index) const;
 
 private:
     void updateLayout();

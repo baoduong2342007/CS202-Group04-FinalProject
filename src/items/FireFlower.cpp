@@ -1,8 +1,8 @@
 /**
  * @file FireFlower.cpp
  * @author TV5 (Truyền)
- * @brief Fire Flower — stationary item that turns Mario into FIRE state
- * @note Week 5 — power-up logic queries Mario's state directly (no EventBus payload)
+ * @brief Fire Flower — stationary item that applies FIRE to the current body tier
+ * @note Small Mario becomes Small Fire Mario; Super Mario becomes Super Fire Mario
  */
 
 #include "items/FireFlower.h"
@@ -56,6 +56,8 @@ void FireFlower::onCollect(Mario& mario) {
     m_isCollected = true;
 
     const MarioState currentState = mario.getMarioState();
+    // Mario::powerUp preserves the current Small/Super body tier while adding
+    // the FIRE capability and matching sprite set.
     const MarioState targetState = MarioState::FIRE;
 
     const bool stateChanged = (currentState != targetState);

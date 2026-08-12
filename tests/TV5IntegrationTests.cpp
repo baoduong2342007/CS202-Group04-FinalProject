@@ -300,16 +300,25 @@ void testPowerUpAndOneUpEvents() {
     FireFlower fireFlower;
     fireFlower.onCollect(mario);
     assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getSize().y == 30.f);
+    assert(!mario.isSuperFireMario());
     assert(mario.canShootFireBall());
     assert(mario.getScore() == 1000);
     assert(events.powerUpEvents == 1);
 
+    FireFlower secondFireFlower;
+    secondFireFlower.onCollect(mario);
+    assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.canShootFireBall());
+    assert(mario.getScore() == 2000);
+    assert(events.powerUpEvents == 2);
+
     Mushroom oneUp(MushroomType::ONE_UP);
     oneUp.onCollect(mario);
     assert(mario.getLives() == initialLives + 1);
-    assert(mario.getScore() == 2000);
+    assert(mario.getScore() == 3000);
     assert(events.oneUpEvents == 1);
-    assert(events.powerUpEvents == 1);
+    assert(events.powerUpEvents == 2);
 }
 
 void testAdaptiveQuestionBlockAndFireFlowerContract() {
@@ -319,27 +328,19 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     assert(adaptiveBlock != nullptr);
     assert(adaptiveBlock->getContent() == QuestionBlockContent::ADAPTIVE);
 
-    unsigned int coinRolls = 0;
-    for (unsigned int roll = 0; roll < 100; ++roll) {
-        if (QuestionBlock::chooseAdaptiveContent(MarioState::SMALL, roll) ==
-            QuestionBlockContent::COIN) {
-            ++coinRolls;
-        }
+    for (unsigned int sample = 0; sample < 100; ++sample) {
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL) ==
+               QuestionBlockContent::SUPER_MUSHROOM);
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER) ==
+               QuestionBlockContent::FIRE_FLOWER);
+        assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE) ==
+               QuestionBlockContent::FIRE_FLOWER);
     }
-    assert(coinRolls == QuestionBlock::COIN_DROP_RATE_PERCENT);
-    assert(coinRolls > 50);
-    assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL, 75) ==
-           QuestionBlockContent::SUPER_MUSHROOM);
-    assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER, 75) ==
-           QuestionBlockContent::FIRE_FLOWER);
-    assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE, 99) ==
-           QuestionBlockContent::FIRE_FLOWER);
 
     Mario smallMario;
     adaptiveBlock->onHit(smallMario);
     const QuestionBlockContent smallMarioContent = adaptiveBlock->getContent();
-    assert(smallMarioContent == QuestionBlockContent::COIN ||
-           smallMarioContent == QuestionBlockContent::SUPER_MUSHROOM);
+    assert(smallMarioContent == QuestionBlockContent::SUPER_MUSHROOM);
     const int coinsAfterFirstHit = smallMario.getCoinCount();
     adaptiveBlock->onHit(smallMario);
     assert(adaptiveBlock->getContent() == smallMarioContent);
@@ -350,15 +351,28 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     Mario superMario;
     superMario.setMarioState(MarioState::SUPER);
     poweredBlock.onHit(superMario);
-    assert(poweredBlock.getContent() == QuestionBlockContent::COIN ||
-           poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
+    assert(poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
+
+    // An explicit 'f' tile spawns a FireFlower for Small Mario; collection
+    // keeps the small body and selects the Small Fire sprite set.
+    QuestionBlock explicitFlowerBlock(
+        {0.f, 0.f}, nullptr, QuestionBlockContent::FIRE_FLOWER);
+    Mario explicitSmallMario;
+    std::vector<std::unique_ptr<Entity>> explicitSpawnedEntities;
+    TextureManager& textureManager = TextureManager::getInstance();
+    explicitFlowerBlock.onHit(
+        explicitSmallMario, &explicitSpawnedEntities, &textureManager);
+    assert(explicitFlowerBlock.getContent() ==
+           QuestionBlockContent::FIRE_FLOWER);
+    assert(explicitSpawnedEntities.size() == 1);
+    assert(dynamic_cast<FireFlower*>(explicitSpawnedEntities.front().get()) !=
+           nullptr);
 
     EventCounter coinEvents;
     Mario coinMario;
     QuestionBlock coinBlock(
         {0.f, 0.f}, nullptr, QuestionBlockContent::COIN);
     std::vector<std::unique_ptr<Entity>> spawnedEntities;
-    TextureManager& textureManager = TextureManager::getInstance();
     coinBlock.onHit(coinMario, &spawnedEntities, &textureManager);
     assert(coinMario.getCoinCount() == 1);
     assert(coinMario.getScore() ==
@@ -520,8 +534,8 @@ void testStarMusicOverrideAndVolumePersistence() {
     SoundManager& sound = SoundManager::getInstance();
     assert(LevelCatalog::find(1)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(2)->music == MusicId::UNDERGROUND);
-    assert(LevelCatalog::find(3)->music == MusicId::UNDERWATER);
-    assert(LevelCatalog::find(4)->music == MusicId::CASTLE);
+    assert(LevelCatalog::find(3)->music == MusicId::CASTLE);
+    assert(LevelCatalog::find(4) == nullptr);
 
     for (const char* effect : {"coin", "stomp", "kick", "shell_kick",
                                "shell_kill", "enemy_fireball", "enemy_star",
@@ -606,10 +620,9 @@ void testStateAudioRuntimeAndLevelTracks() {
     };
 
     completeCurrentLevel(MusicId::UNDERGROUND);
-    completeCurrentLevel(MusicId::UNDERWATER);
     completeCurrentLevel(MusicId::CASTLE);
 
-    // Level 4 completion queues exactly one WinState at the safe point.
+    // Level 3 completion queues exactly one WinState at the safe point.
     EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
     game.update(0.6f);
     game.update(0.f);
@@ -675,7 +688,7 @@ void testVolumeClampAndAssetManifest() {
         "assets/textures/ui/bg_clouds.png` | 768×1129 | `Future`") !=
         std::string::npos);
     assert(manifestText.find(
-        "Tile catalog dùng `assets/textures/tiles/tileset.png`") !=
+        "Tile catalog uses `assets/textures/tiles/tileset.png`") !=
         std::string::npos);
     assert(manifestText.find("docs/assets/reference/blocks_all_components_atlas_full.png") !=
            std::string::npos);

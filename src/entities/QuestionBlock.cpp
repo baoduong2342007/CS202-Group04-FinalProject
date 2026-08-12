@@ -7,7 +7,6 @@
 
 #include "entities/QuestionBlock.h"
 #include <cmath>
-#include <random>
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
@@ -26,26 +25,9 @@ namespace {
 constexpr float BLOCK_SIZE = 32.f;
 constexpr const char* QUESTION_BLOCK_TEXTURE = "assets/textures/items/items_blocks.png";
 constexpr float ANIM_FRAME_DURATION = 0.2f;
-constexpr unsigned int PERCENT_ROLL_RANGE = 100;
-
-std::mt19937& questionBlockRandomEngine() {
-    static std::mt19937 engine(std::random_device{}());
-    return engine;
-}
-
-unsigned int rollQuestionBlockContent() {
-    static std::uniform_int_distribution<unsigned int> distribution(
-        0, PERCENT_ROLL_RANGE - 1);
-    return distribution(questionBlockRandomEngine());
-}
 } // namespace
 
-QuestionBlockContent QuestionBlock::chooseAdaptiveContent(MarioState marioState,
-                                                          unsigned int roll) {
-    if ((roll % PERCENT_ROLL_RANGE) < COIN_DROP_RATE_PERCENT) {
-        return QuestionBlockContent::COIN;
-    }
-
+QuestionBlockContent QuestionBlock::chooseAdaptiveContent(MarioState marioState) {
     return marioState == MarioState::SMALL
                ? QuestionBlockContent::SUPER_MUSHROOM
                : QuestionBlockContent::FIRE_FLOWER;
@@ -120,12 +102,11 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
     playAnimation("empty");
     EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
 
-    // A normal '?' block resolves its content exactly once at hit time. Coins
-    // are deliberately common; the remaining rolls use Mario's current state
-    // to choose the useful power-up.
+    // Normal '?' blocks resolve exactly once from Mario's current state.
+    // Explicit flower tiles remain flowers for both body tiers; Mario keeps
+    // the Small/Super body while entering the matching Fire form.
     if (!m_contentResolved && m_content == QuestionBlockContent::ADAPTIVE) {
-        m_content = chooseAdaptiveContent(mario.getMarioState(),
-                                          rollQuestionBlockContent());
+        m_content = chooseAdaptiveContent(mario.getMarioState());
         m_contentResolved = true;
     }
 

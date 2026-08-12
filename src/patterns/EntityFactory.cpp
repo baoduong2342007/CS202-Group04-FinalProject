@@ -90,14 +90,15 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            // Normal '?' blocks resolve once when hit: mostly coins, otherwise
-            // a power-up adapted to Mario's current state.
+            // Normal '?' blocks resolve once to a tier-appropriate power-up.
             return std::make_unique<QuestionBlock>(position,
                                                    world,
                                                    QuestionBlockContent::ADAPTIVE,
                                                    toBlockTheme(theme));
         case 'f':
         case 'h':
+            // Explicit flower routes always spawn a FireFlower. Mario keeps
+            // the current Small/Super body tier when collecting it.
             return std::make_unique<QuestionBlock>(position,
                                                    world,
                                                    QuestionBlockContent::FIRE_FLOWER,

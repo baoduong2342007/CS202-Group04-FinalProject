@@ -1,9 +1,8 @@
 /**
  * @file FireFlower.h
  * @author TV5 (Truyền)
- * @brief Fire Flower — stationary item that turns Mario into FIRE state
- * @note Week 5 — spawned by EntityFactory; power-up logic queries Mario's state
- *       (no EventBus payload needed — the item decides the target state itself)
+ * @brief Fire Flower — stationary item that applies FIRE to the current body tier
+ * @note Small Mario becomes Small Fire Mario; Super Mario becomes Super Fire Mario
  */
 
 #pragma once

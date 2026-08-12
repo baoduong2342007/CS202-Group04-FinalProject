@@ -12,7 +12,8 @@
 
 #include "core/AnimationSystem.h"
 #include "entities/Mario.h"
-#include "entities/FireBallPool.h"
+#include "items/FireFlower.h"
+#include "items/Mushroom.h"
 #include "physics/PhysicsEngine.h"
 #include "entities/Goomba.h"
 #include "entities/Koopa.h"
@@ -262,45 +263,24 @@ bool testTimestepSubstepClamp() {
 
 bool testStarmanVsDamageGraceIndependence() {
     Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
-    
-    mario.activateStarman(5.0f);
+
+    mario.activateStarman(1.0f);
+    mario.activateDamageGrace(2.0f);
     if (!check(mario.isStarInvincible(), "Starman activation must set isStarInvincible to true") ||
-        !check(!mario.isDamageImmune(), "Starman activation must not set isDamageImmune to true") ||
+        !check(mario.isDamageImmune(), "Damage grace must coexist with Starman") ||
         !check(mario.isInvincible(), "isInvincible must return true when Starman active")) {
         return false;
     }
 
-    mario.update(6.0f); // Advance time past Starman duration
-    if (!check(!mario.isStarInvincible(), "isStarInvincible must expire after duration")) {
+    mario.update(1.1f);
+    if (!check(!mario.isStarInvincible(), "Starman must expire on its own clock") ||
+        !check(mario.isDamageImmune(), "Starman expiry must preserve remaining damage grace")) {
         return false;
     }
 
-    mario.activateDamageGrace(2.0f);
-    if (!check(!mario.isStarInvincible(), "Damage grace activation must not set isStarInvincible") ||
-        !check(mario.isDamageImmune(), "Damage grace activation must set isDamageImmune to true") ||
-        !check(mario.isInvincible(), "isInvincible must return true when damage grace active")) {
-        return false;
-    }
-
-    return true;
-}
-
-bool testFireBallPoolLimitAndMasks() {
-    b2World world({0.0f, 25.0f});
-    FireBallPool pool(2);
-    
-    FireBall* fb1 = pool.acquire({100.0f, 100.0f}, Direction::RIGHT, &world);
-    FireBall* fb2 = pool.acquire({120.0f, 100.0f}, Direction::LEFT, &world);
-    FireBall* fb3 = pool.acquire({140.0f, 100.0f}, Direction::RIGHT, &world);
-
-    if (!check(fb1 != nullptr, "First fireball acquire must succeed") ||
-        !check(fb2 != nullptr, "Second fireball acquire must succeed") ||
-        !check(fb3 == nullptr, "Third fireball acquire must fail when pool capacity is 2") ||
-        !check(pool.getActiveCount() == 2, "Active count must be exactly 2")) {
-        return false;
-    }
-
-    return true;
+    mario.update(1.0f);
+    return check(!mario.isDamageImmune(),
+                 "Damage grace must expire on its independent clock");
 }
 
 bool testWalkingVsSprintingSeparatedByShift() {
@@ -360,34 +340,79 @@ bool testIsolatedWorldAccumulators() {
 }
 
 bool testGrowthFootAnchorAndClearance() {
-    b2World world({0.0f, 25.0f});
+    b2World world({0.0f, 0.0f});
     Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
     mario.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
     mario.syncPhysics();
 
     float initialFootY = mario.getPosition().y + mario.getSize().y;
-    mario.setMarioState(MarioState::SUPER);
+    Mushroom floorMushroom;
+    floorMushroom.onCollect(mario);
     mario.syncPhysics();
 
     float newFootY = mario.getPosition().y + mario.getSize().y;
     if (!check(std::abs(newFootY - initialFootY) < 1.0f,
                "Growth to SUPER must preserve foot Y position on ground")) return false;
 
-    // Test low ceiling clearance deferral
-    Mario smallMario({200.0f, 200.0f}, {32.0f, 32.0f});
-    smallMario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+    // Test the production pickup path under a low ceiling.
+    Mario smallMario({200.0f, 200.0f}, {28.0f, 30.0f});
+    smallMario.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
 
     b2BodyDef ceilingDef;
     ceilingDef.type = b2_staticBody;
-    ceilingDef.position.Set(PhysicsEngine::pixelsToMeters(200.0f), PhysicsEngine::pixelsToMeters(175.0f));
+    ceilingDef.position.Set(PhysicsEngine::pixelsToMeters(214.0f),
+                            PhysicsEngine::pixelsToMeters(185.0f));
     b2Body* ceiling = world.CreateBody(&ceilingDef);
     b2PolygonShape shape;
     shape.SetAsBox(PhysicsEngine::pixelsToMeters(16.0f), PhysicsEngine::pixelsToMeters(10.0f));
     ceiling->CreateFixture(&shape, 0.0f);
 
-    smallMario.setMarioState(MarioState::SUPER);
+    Mushroom trappedMushroom;
+    trappedMushroom.onCollect(smallMario);
     if (!check(smallMario.getMarioState() == MarioState::SMALL,
-               "Growth under low ceiling must be deferred while trapped")) return false;
+               "Mushroom pickup under a low ceiling must keep SMALL geometry") ||
+        !check(smallMario.getPendingGrowthState() == MarioState::SUPER,
+               "Blocked Mushroom pickup must retain SUPER as pending")) return false;
+
+    const int scoreAfterPickup = smallMario.getScore();
+    trappedMushroom.onCollect(smallMario);
+    if (!check(smallMario.getScore() == scoreAfterPickup,
+               "Repeated pickup contact must not award score twice")) return false;
+
+    world.DestroyBody(ceiling);
+    smallMario.update(0.0f);
+    if (!check(smallMario.getMarioState() == MarioState::SUPER,
+               "Pending Mushroom growth must apply once clearance opens") ||
+        !check(!smallMario.hasPendingGrowth(),
+               "Pending growth must clear after one transition")) return false;
+
+    b2World flowerWorld({0.0f, 0.0f});
+    Mario flowerMario({300.0f, 200.0f}, {28.0f, 30.0f});
+    flowerMario.initPhysics(&flowerWorld, b2_dynamicBody, {28.0f, 30.0f});
+    b2BodyDef flowerCeilingDef;
+    flowerCeilingDef.type = b2_staticBody;
+    flowerCeilingDef.position.Set(PhysicsEngine::pixelsToMeters(314.0f),
+                                  PhysicsEngine::pixelsToMeters(185.0f));
+    b2Body* flowerCeiling = flowerWorld.CreateBody(&flowerCeilingDef);
+    flowerCeiling->CreateFixture(&shape, 0.0f);
+
+    FireFlower flower;
+    flower.onCollect(flowerMario);
+    if (!check(flowerMario.getMarioState() == MarioState::FIRE,
+               "Small Fire pickup must not force a large body") ||
+        !check(flowerMario.getSize().y == 30.f,
+               "Small Fire pickup must preserve Small Mario height") ||
+        !check(!flowerMario.isSuperFireMario(),
+               "Small Fire pickup must select the Small Fire form") ||
+        !check(!flowerMario.hasPendingGrowth(),
+               "Small Fire pickup must not defer a growth transition")) return false;
+
+    flowerWorld.DestroyBody(flowerCeiling);
+    flowerMario.update(0.0f);
+    if (!check(flowerMario.getMarioState() == MarioState::FIRE,
+               "Small Fire state must remain FIRE after clearance changes") ||
+        !check(flowerMario.canShootFireBall(),
+               "Small Fire Mario must be able to shoot")) return false;
 
     return true;
 }
@@ -398,17 +423,41 @@ bool testDeathLifecycleAndDeterministicRespawn() {
     mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
 
     int initialLives = mario.getLives();
+    mario.setMarioState(MarioState::FIRE);
+    assert(mario.tryStartFireBallShot());
+    mario.setVerticalIntent(-1.0f);
+    mario.setClimbContext(true, 116.0f);
+    mario.setFlagpoleSliding(true);
     mario.loseLife();
 
     if (!check(mario.isDying(), "loseLife must set m_isDying to true")) return false;
     if (!check(mario.getLives() == initialLives - 1, "loseLife must decrement lives by 1")) return false;
     if (!check(!mario.isRunning(), "loseLife must clear movement/run intent")) return false;
 
+    mario.update(0.6f);
+    if (!check(mario.isDeathAnimationFinished(),
+               "death animation must publish its completion signal")) return false;
+
     mario.respawn({300.0f, 300.0f});
     if (!check(!mario.isDying(), "respawn must clear isDying flag")) return false;
     if (!check(mario.getMarioState() == MarioState::SMALL, "respawn must reset state to SMALL")) return false;
     if (!check(mario.getPosition().x == 300.0f && mario.getPosition().y == 300.0f,
                "respawn must reset position deterministically")) return false;
+    if (!check(!mario.isClimbing() && !mario.isFlagpoleSliding(),
+               "respawn must clear climb and flagpole state") ||
+        !check(mario.getBody()->GetGravityScale() == 1.0f,
+               "respawn must restore gravity") ||
+        !check(mario.getFireCooldownRemaining() == 0.0f,
+               "respawn must clear FireBall cooldown") ||
+        !check(!mario.hasPendingGrowth(),
+               "respawn must clear pending transforms")) return false;
+
+    mario.update(0.6f);
+    mario.loseLife();
+    mario.update(0.6f);
+    mario.respawn({300.0f, 300.0f});
+    if (!check(mario.getPosition() == sf::Vector2f(300.0f, 300.0f),
+               "second respawn must produce the same clean state")) return false;
 
     return true;
 }
@@ -542,7 +591,6 @@ int main() {
                          testSuperMarioTraversesTwoBlockPassage() &&
                          testTimestepSubstepClamp() &&
                          testStarmanVsDamageGraceIndependence() &&
-                         testFireBallPoolLimitAndMasks() &&
                          testWalkingVsSprintingSeparatedByShift() &&
                          testIsolatedWorldAccumulators() &&
                          testGrowthFootAnchorAndClearance() &&

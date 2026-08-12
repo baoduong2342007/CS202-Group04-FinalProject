@@ -16,10 +16,10 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "physics/PhysicsEngine.h"
-#include "states/SmallMarioState.h"
 #include "states/SmallFireMarioState.h"
-#include "states/SuperMarioState.h"
+#include "states/SmallMarioState.h"
 #include "states/SuperFireMarioState.h"
+#include "states/SuperMarioState.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -33,13 +33,18 @@ constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
 constexpr float WALK_MAX_SPEED = 180.f;
-constexpr float RUN_MAX_SPEED = 340.f;
-constexpr float GROUND_ACCEL = 900.f;
-constexpr float RUN_ACCEL = 1400.f;
-constexpr float GROUND_FRICTION = 1100.f;
-constexpr float SKID_FRICTION = 1200.f;
-constexpr float AIR_ACCEL = 450.f;
-constexpr float AIR_FRICTION = 150.f;
+constexpr float RUN_MAX_SPEED = 280.f;
+// Build speed progressively so Mario does not reach the movement cap almost
+// immediately after the direction key is pressed.
+constexpr float GROUND_ACCEL = 220.f;
+constexpr float RUN_ACCEL = 400.f;
+// Lower friction preserves more horizontal momentum when the input is
+// released or reversed, giving Mario a slightly longer, harder-to-control
+// slide.
+constexpr float GROUND_FRICTION = 400.f;
+constexpr float SKID_FRICTION = 575.f;
+constexpr float AIR_ACCEL = 125.f;
+constexpr float AIR_FRICTION = 200.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
@@ -178,8 +183,8 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
     case MarioState::FIRE_SMALL: {
       namespace F = SpriteFrames::shared::FireSmallMario;
       addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-          F::JUMP, F::SKID,
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+          F::SKID,
           std::vector<sf::IntRect>{
               SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1,
               SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT2,
@@ -190,8 +195,8 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
     case MarioState::FIRE_SUPER: {
       namespace F = SpriteFrames::shared::FireBigMario;
       addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-          F::JUMP, F::SKID,
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+          F::SKID,
           std::vector<sf::IntRect>{
               SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT},
           SpriteFrames::shared::SmallLuigi::DEATH);
@@ -243,8 +248,8 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
     case MarioState::FIRE_SMALL: {
       namespace F = SpriteFrames::shared::FireSmallMario;
       addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-          F::JUMP, F::SKID,
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+          F::SKID,
           std::vector<sf::IntRect>{
               SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT1,
               SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT2,
@@ -255,8 +260,8 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
     case MarioState::FIRE_SUPER: {
       namespace F = SpriteFrames::shared::FireBigMario;
       addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-          F::JUMP, F::SKID,
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+          F::SKID,
           std::vector<sf::IntRect>{
               SpriteFrames::shared::FireShooting::Mario::BIG_SHOOT},
           SpriteFrames::shared::SmallMario::DEATH);
@@ -269,8 +274,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
 
 Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL),
-      m_characterType(CharacterType::MARIO),
+      m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
       m_isInvincible(false), m_invincibilityTimer(0.f),
@@ -285,8 +289,7 @@ Mario::Mario()
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL),
-      m_characterType(CharacterType::MARIO),
+      m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
       m_isInvincible(false), m_invincibilityTimer(0.f),
@@ -922,7 +925,8 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
           "transform",
           AnimationSystem::createManualAnimation(
               usesFireTransition
-                  ? SpriteFrames::shared::GrowShrink::FireMario::shrinkSequence()
+                  ? SpriteFrames::shared::GrowShrink::FireMario::
+                        shrinkSequence()
                   : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence(),
               TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
@@ -1152,7 +1156,9 @@ bool Mario::hasGrowthClearance() const {
   return !callback.blocked;
 }
 
-void Mario::setMarioState(MarioState state) { applyStateTransition(state, false); }
+void Mario::setMarioState(MarioState state) {
+  applyStateTransition(state, false);
+}
 
 void Mario::addScore(int points) { m_score += points; }
 

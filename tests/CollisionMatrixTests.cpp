@@ -1,0 +1,225 @@
+/**
+ * @file CollisionMatrixTests.cpp
+ * @author TV3, TV5
+ * @brief Runtime collision matrix with fixture creation order A/B and idempotence.
+ */
+
+#include <cassert>
+#include <memory>
+
+#include <box2d/box2d.h>
+
+#include "core/ScoreRules.h"
+#include "core/SoundManager.h"
+#include "entities/FireBall.h"
+#include "entities/Goomba.h"
+#include "entities/Koopa.h"
+#include "entities/Mario.h"
+#include "level/TileMap.h"
+#include "patterns/EventBus.h"
+#include "patterns/IObserver.h"
+#include "physics/ContactListener.h"
+
+namespace {
+class CollisionEvents final : public IObserver {
+public:
+    CollisionEvents() {
+        auto& bus = EventBus::getInstance();
+        for (EventType event : {EventType::ENEMY_STOMPED,
+                                EventType::SHELL_KICKED,
+                                EventType::ENEMY_DEFEATED_BY_SHELL,
+                                EventType::ENEMY_DEFEATED_BY_FIREBALL,
+                                EventType::ENEMY_DEFEATED_BY_STAR,
+                                EventType::PLAYER_DIED}) {
+            bus.subscribe(event, this);
+        }
+    }
+    ~CollisionEvents() override {
+        auto& bus = EventBus::getInstance();
+        for (EventType event : {EventType::ENEMY_STOMPED,
+                                EventType::SHELL_KICKED,
+                                EventType::ENEMY_DEFEATED_BY_SHELL,
+                                EventType::ENEMY_DEFEATED_BY_FIREBALL,
+                                EventType::ENEMY_DEFEATED_BY_STAR,
+                                EventType::PLAYER_DIED}) {
+            bus.unsubscribe(event, this);
+        }
+    }
+    void onNotify(EventType event) override {
+        if (event == EventType::ENEMY_STOMPED) ++stomp;
+        else if (event == EventType::SHELL_KICKED) ++shellKick;
+        else if (event == EventType::ENEMY_DEFEATED_BY_SHELL) ++shellKill;
+        else if (event == EventType::ENEMY_DEFEATED_BY_FIREBALL) ++fireKill;
+        else if (event == EventType::ENEMY_DEFEATED_BY_STAR) ++starKill;
+        else if (event == EventType::PLAYER_DIED) ++death;
+    }
+    int stomp = 0;
+    int shellKick = 0;
+    int shellKill = 0;
+    int fireKill = 0;
+    int starKill = 0;
+    int death = 0;
+};
+
+void stepTwice(b2World& world) {
+    world.Step(1.f / 60.f, 8, 3);
+    world.Step(1.f / 60.f, 8, 3);
+}
+
+void runStomp(bool marioFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    std::unique_ptr<Mario> mario;
+    std::unique_ptr<Goomba> goomba;
+    if (marioFixtureFirst) {
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+        goomba = std::make_unique<Goomba>(sf::Vector2f(0.f, 25.f), &world);
+    } else {
+        goomba = std::make_unique<Goomba>(sf::Vector2f(0.f, 25.f), &world);
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    }
+    CollisionEvents events;
+    stepTwice(world);
+    assert(goomba->isDead());
+    assert(mario->getScore() == ScoreRules::pointsFor(DefeatCause::STOMP));
+    assert(events.stomp == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("stomp") == 1);
+}
+
+void runSideHit(bool marioFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    std::unique_ptr<Mario> mario;
+    std::unique_ptr<Goomba> goomba;
+    if (marioFixtureFirst) {
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+        goomba = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+    } else {
+        goomba = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    }
+    CollisionEvents events;
+    const int lives = mario->getLives();
+    world.Step(1.f / 60.f, 8, 3);
+    mario->update(0.f); // flush the world-lock-safe queued damage transaction
+    world.Step(1.f / 60.f, 8, 3);
+    assert(mario->getLives() == lives - 1);
+    assert(mario->getScore() == 0);
+    assert(events.stomp == 0);
+    assert(events.death == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("death") == 1);
+}
+
+void runShell(bool shellFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    Mario owner;
+    std::unique_ptr<Koopa> shell;
+    std::unique_ptr<Goomba> victim;
+    if (shellFixtureFirst) {
+        shell = std::make_unique<Koopa>(sf::Vector2f(0.f, 0.f), &world);
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+    } else {
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+        shell = std::make_unique<Koopa>(sf::Vector2f(0.f, 0.f), &world);
+    }
+    CollisionEvents events;
+    shell->onStomp();
+    shell->update(0.f);
+    shell->setDefeatOwner(&owner);
+    shell->kick(Direction::RIGHT);
+    shell->setVelocity({0.f, 0.f});
+    stepTwice(world);
+    assert(victim->isDead());
+    assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::SHELL));
+    assert(events.shellKick == 1);
+    assert(events.shellKill == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("shell_kick") == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("shell_kill") == 1);
+}
+
+void runFireBall(bool projectileFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    Mario owner;
+    std::unique_ptr<FireBall> fireBall;
+    std::unique_ptr<Goomba> victim;
+    if (projectileFixtureFirst) {
+        fireBall = std::make_unique<FireBall>(sf::Vector2f(0.f, 0.f),
+                                              Direction::RIGHT, &world);
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+    } else {
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+        fireBall = std::make_unique<FireBall>(sf::Vector2f(0.f, 0.f),
+                                              Direction::RIGHT, &world);
+    }
+    CollisionEvents events;
+    fireBall->setOwner(&owner);
+    fireBall->setVelocity({0.f, 0.f});
+    stepTwice(world);
+    assert(victim->isDead());
+    assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::FIREBALL));
+    assert(events.fireKill == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("enemy_fireball") == 1);
+}
+
+void runStar(bool marioFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    std::unique_ptr<Mario> mario;
+    std::unique_ptr<Goomba> victim;
+    if (marioFixtureFirst) {
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+        victim = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+    } else {
+        victim = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    }
+    CollisionEvents events;
+    mario->setStarInvincible(5.f);
+    stepTwice(world);
+    assert(victim->isDead());
+    assert(mario->getScore() == ScoreRules::pointsFor(DefeatCause::STAR));
+    assert(events.starKill == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("enemy_star") == 1);
+}
+} // namespace
+
+int main() {
+    SoundManager::getInstance(); // install the production SFX observer
+    for (bool orderA : {true, false}) {
+        runStomp(orderA);
+        runSideHit(orderA);
+        runShell(orderA);
+        runFireBall(orderA);
+        runStar(orderA);
+    }
+    return 0;
+}

@@ -32,6 +32,8 @@ public:
     bool loadFromFile(const std::string& path);
 
     void render(sf::RenderTarget& target) const;
+    /// Draw the flag cloth between the world layer and Mario/entities.
+    void renderFlags(sf::RenderTarget& target) const;
     void renderForeground(sf::RenderTarget& target) const;
 
     char getTileAt(int column, int row) const;
@@ -43,6 +45,7 @@ public:
     std::size_t getHeight() const;
 
     std::vector<sf::Vector2i> findTiles(char symbol) const;
+    float getFlagDropDistance() const { return m_flagDropDistance; }
 
     static sf::Vector2f gridToWorldPosition(const sf::Vector2i& gridPosition);
     
@@ -75,6 +78,10 @@ public:
     void update(float dt);
     void triggerTileBump(int column, int row);
 
+    /// Move the rendered flag down the validated pole without changing map
+    /// markers or collision geometry. The value is clamped by the renderer.
+    void setFlagDropDistance(float distancePixels);
+
 private:
     static constexpr unsigned int TILE_SIZE = 32;
 
@@ -103,6 +110,7 @@ private:
     sf::Texture m_tileset;
     sf::Texture m_objectsTileset;
     float m_flagAnimationTime{0.0f};
+    float m_flagDropDistance{0.0f};
     b2World* m_physicsWorld{nullptr};
     std::vector<b2Body*> m_physicsBodies;
     std::vector<TileBump> m_bumpAnimations;

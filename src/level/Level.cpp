@@ -141,6 +141,8 @@ bool Level::loadFromFile(const std::string& path) {
     m_flagWalkActive = false;
     m_flagSequenceTimer = 0.0f;
     m_flagWalkTargetX = 0.0f;
+    m_flagSlideStartMarioY = 0.0f;
+    m_flagSlideStartDropDistance = 0.0f;
     m_physicsAccumulator = 0.0f;
     m_levelPath = path;
     if (!m_tileMap.loadFromFile(path)) {
@@ -239,6 +241,7 @@ void Level::update(float dt) {
             m_mario->setMoveIntent(0.0f);
             m_mario->setRunIntent(false);
             m_mario->updateFlagpoleSlide(dt);
+
             m_flagSequenceTimer -= dt;
             if (m_flagSequenceTimer <= 0.0f) {
                 // The original game gives Mario a short pause at the bottom,
@@ -295,19 +298,25 @@ void Level::update(float dt) {
     // Update tilemap bump animations
     m_tileMap.update(dt);
 
-    // Process queued tile hits (bumping Question blocks & shattering Brick blocks)
-    // Small Fire Mario keeps the small body and must not break brick blocks.
-    // Only the Super body can shatter them: SUPER or Super Fire.
-    const bool canBreakBlocks =
-        m_mario && (m_mario->getMarioState() == MarioState::SUPER ||
-                    (m_mario->getMarioState() == MarioState::FIRE &&
-                     m_mario->isSuperFireMario()));
+    // Process queued tile hits (bumping Question blocks & shattering Brick blocks).
+    // Mario owns the capability rule so Star power applies to every body tier.
+    const bool canBreakBlocks = m_mario && m_mario->canBreakBricks();
     m_tileMap.processPendingHits(m_entities, m_textureManager,
                                  canBreakBlocks, m_mario.get());
 
     // Update Mario
     if (m_mario) {
         m_mario->update(dt);
+
+        if (m_flagSequenceActive) {
+            // Use the displacement since attachment, not Mario's absolute
+            // position. This preserves both starting positions and keeps the
+            // flag's downward speed exactly matched to Mario's slide speed.
+            const float marioDisplacement =
+                m_mario->getPosition().y - m_flagSlideStartMarioY;
+            m_tileMap.setFlagDropDistance(
+                std::max(0.0f, m_flagSlideStartDropDistance + marioDisplacement));
+        }
     }
 
     // Update all entities (enemies, items)
@@ -443,6 +452,11 @@ void Level::render(sf::RenderTarget& target) {
     // Draw tilemap background
     m_tileMap.render(target);
 
+    // The cloth belongs behind the actors, while the pole shaft/cap remains
+    // in the foreground layer below. This keeps the pole connector visible
+    // and prevents the flag quad from hiding Mario during the slide.
+    m_tileMap.renderFlags(target);
+
     // Draw all entities (enemies, items)
     for (const auto& entity : m_entities) {
         target.draw(*entity);
@@ -524,10 +538,13 @@ void Level::checkFinishFlag() {
         // until Mario has finished the climb and walked into the exit.
         m_flagSequenceActive = true;
         m_flagWalkActive = false;
+        m_flagSlideStartMarioY = m_mario->getPosition().y;
+        m_flagSlideStartDropDistance = 0.0f;
         const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
         const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
                                  m_mario->getSize().y;
         m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);
+        m_tileMap.setFlagDropDistance(m_flagSlideStartDropDistance);
         const float slideDistance = std::max(0.0f, targetTopY - m_mario->getPosition().y);
         m_flagSequenceTimer = slideDistance / Mario::FLAGPOLE_SLIDE_SPEED + 0.25f;
 

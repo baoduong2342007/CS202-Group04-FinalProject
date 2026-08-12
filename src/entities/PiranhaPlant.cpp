@@ -5,6 +5,7 @@
  */
 
 #include "entities/PiranhaPlant.h"
+#include <algorithm>
 #include <cmath>
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_shared.h"
@@ -62,8 +63,20 @@ void PiranhaPlant::update(float dt) {
     if (!isActive()) return;
 
     if (m_isFlippedDead) {
+        // Box2D is stepped before entity updates in Level. Defer disabling the
+        // body until this safe point instead of mutating the world from the
+        // BeginContact callback that calls onFireHit().
+        if (m_pendingDisablePhysics && m_body &&
+            !m_body->GetWorld()->IsLocked()) {
+            m_body->SetEnabled(false);
+            m_pendingDisablePhysics = false;
+        }
+
         m_flipTimer += dt;
-        m_position.y += 200.f * dt;
+        // Retract to the pipe base and never re-enter the normal emergence
+        // state machine after defeat.
+        m_position.y = std::min(m_basePosition.y,
+                                m_position.y + MOVE_SPEED * dt);
         if (m_sprite) {
             m_sprite->setPosition(m_position);
             m_sprite->setScale({2.f, -2.f}); // Flipped upside down
@@ -152,9 +165,7 @@ void PiranhaPlant::onFireHit() {
     // only responsible for the enemy's flipped-and-launched presentation.
     if (m_isFlippedDead) return;
     m_isFlippedDead = true;
+    setHealth(0);
     m_flipTimer = 0.f;
-
-    if (m_body) {
-        m_body->SetEnabled(false);
-    }
+    m_pendingDisablePhysics = m_body != nullptr;
 }

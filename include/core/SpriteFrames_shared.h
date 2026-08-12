@@ -844,10 +844,20 @@ inline const sf::IntRect PLATFORM_SHORT({52, 64}, {24, 8});
 inline const sf::IntRect PLATFORM_LONG({116, 64}, {48, 8});
 
 // Flags and Vines
-inline const sf::IntRect FLAGPOLE_FLAG({68, 91}, {16, 15});
-inline const sf::IntRect CASTLE_FLAG({92, 90}, {16, 16});
-inline const sf::IntRect VINE_TOP({110, 90}, {16, 16});
-inline const sf::IntRect VINE_STEM_1({130, 90}, {16, 16});
+// The flag and castle-flag cells are adjacent to the springboard and vine
+// cells, so keep the atlas coordinates explicit instead of relying on a
+// positional offset from the preceding object.
+inline const sf::IntRect FLAGPOLE_FLAG({92, 90}, {16, 16});
+inline const sf::IntRect UG_FLAGPOLE_FLAG({92, 198}, {16, 16});
+inline const sf::IntRect CASTLE_FLAGPOLE_FLAG({92, 306}, {16, 16});
+inline const sf::IntRect UW_FLAGPOLE_FLAG({92, 414}, {16, 15});
+
+inline const sf::IntRect CASTLE_FLAG({110, 90}, {16, 16});
+inline const sf::IntRect VINE_TOP({130, 90}, {16, 16});
+inline const sf::IntRect VINE_STEM_1({148, 90}, {16, 16});
+// The coordinate audit contains one vine-stem cell. Keep the second legacy
+// name as an alias so existing alternating-render callers remain source
+// compatible without pointing at the castle flag.
 inline const sf::IntRect VINE_STEM_2({148, 90}, {16, 16});
 
 } // namespace Items

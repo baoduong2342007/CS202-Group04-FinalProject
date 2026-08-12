@@ -21,17 +21,20 @@
 #include "level/TileCollisionSpans.h"
 #include "level/TileSemantics.h"
 #include "entities/Entity.h"
+#include "entities/Enemy.h"
 #include "entities/BlockDebris.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
 #include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 #include "core/SpriteFrames_shared.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "level/TileFrames.h"
 #include "core/LevelCatalog.h"
+#include "physics/CollisionManager.h"
 
 namespace {
 
@@ -86,6 +89,53 @@ QuestionBlock* findQuestionBlockAt(std::vector<std::unique_ptr<Entity>>& entitie
     }
 
     return nullptr;
+}
+
+void defeatEnemiesAboveBlock(
+    std::vector<std::unique_ptr<Entity>>& entities,
+    const sf::Vector2f& blockPosition,
+    const sf::Vector2f& blockSize,
+    Mario* mario) {
+    if (!mario || blockSize.x <= 0.f || blockSize.y <= 0.f) {
+        return;
+    }
+
+    constexpr float DIRECT_SUPPORT_EPSILON_PIXELS = 8.f;
+    const float blockLeft = blockPosition.x;
+    const float blockRight = blockPosition.x + blockSize.x;
+    const float blockTop = blockPosition.y;
+
+    for (const auto& entity : entities) {
+        if (!entity || !entity->isEnemy()) {
+            continue;
+        }
+
+        Enemy* enemy = static_cast<Enemy*>(entity.get());
+        b2Body* enemyBody = enemy->getBody();
+        if (enemy->isDying() || enemy->shouldRemove() ||
+            enemy->isPendingDestroy() || !enemy->isActive() ||
+            !enemyBody || !enemyBody->IsEnabled()) {
+            continue;
+        }
+
+        // Entity render positions can lag one frame behind the post-Step
+        // physics state. Read the Box2D center and convert it once to pixels.
+        const sf::Vector2f enemyCenter =
+            PhysicsEngine::metersToPixels(enemyBody->GetPosition());
+        const sf::Vector2f enemySize = enemy->getSize();
+        const float enemyLeft = enemyCenter.x - enemySize.x / 2.f;
+        const float enemyRight = enemyCenter.x + enemySize.x / 2.f;
+        const float enemyBottom = enemyCenter.y + enemySize.y / 2.f;
+        const float horizontalOverlap =
+            std::min(enemyRight, blockRight) - std::max(enemyLeft, blockLeft);
+
+        if (horizontalOverlap <= 0.f ||
+            std::abs(enemyBottom - blockTop) > DIRECT_SUPPORT_EPSILON_PIXELS) {
+            continue;
+        }
+
+        CollisionManager::defeatEnemy(*enemy, DefeatCause::BLOCK_BUMP, mario);
+    }
 }
 
 bool isHorizontalPipeFootprint(const std::vector<std::string>& grid,
@@ -150,10 +200,23 @@ void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities,
     const sf::Vector2i bestGridPos = bestHit.gridPosition;
     if (mario) {
         if (QuestionBlock* block = findQuestionBlockAt(entities, bestGridPos.x, bestGridPos.y)) {
+            defeatEnemiesAboveBlock(entities,
+                                    block->getPosition(),
+                                    block->getSize(),
+                                    mario);
             block->onHit(*mario, &entities, &textureManager);
             m_pendingTileHits.clear();
             return;
         }
+    }
+
+    if (TileSemantics::isBreakable(
+            getTileAt(bestGridPos.x, bestGridPos.y))) {
+        defeatEnemiesAboveBlock(
+            entities,
+            gridToWorldPosition(bestGridPos),
+            {TILE_SIZE_PIXELS, TILE_SIZE_PIXELS},
+            mario);
     }
 
     hitTile(bestGridPos.x, bestGridPos.y,
@@ -197,6 +260,20 @@ struct DebrisFrames {
     const sf::IntRect& bottomLeft;
     const sf::IntRect& bottomRight;
 };
+
+const sf::IntRect& flagFrameForTheme(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return SpriteFrames::udg::Items::FLAGPOLE_FLAG;
+        case LevelTheme::CASTLE:
+            return SpriteFrames::castle::Items::FLAGPOLE_FLAG;
+        case LevelTheme::UNDERWATER:
+            return SpriteFrames::udw::Items::FLAGPOLE_FLAG;
+        case LevelTheme::OVERWORLD:
+        default:
+            return SpriteFrames::ovw::Items::FLAGPOLE_FLAG;
+    }
+}
 
 const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
     static const DebrisFrames overworld{
@@ -299,10 +376,11 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::PIPE_BODY_RIGHT;
 
         case 'F':
+        case 'T':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_TOP_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
-            return TileFrames::FINISH_FLAG;
+            return TileFrames::FINISH_POLE_TOP;
 
         case '|':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_POLE_UNDERWATER;
@@ -310,9 +388,6 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
             
-        case 'T':
-            return TileFrames::FINISH_POLE_TOP;
-
         default:
             return TileFrames::GROUND;
     }
@@ -333,6 +408,7 @@ struct LevelValidationState {
     std::size_t expectedWidth{0};
     std::size_t marioSpawnCount{0};
     std::size_t finishCount{0};
+    std::size_t flagpoleTopCount{0};
 };
 
 bool validateRow(const std::string& row,
@@ -362,6 +438,8 @@ bool validateRow(const std::string& row,
             ++state.marioSpawnCount;
         } else if (symbol == 'F') {
             ++state.finishCount;
+        } else if (symbol == 'T') {
+            ++state.flagpoleTopCount;
         }
     }
     
@@ -380,6 +458,12 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
 
         return false;
     }
+
+    if (state.flagpoleTopCount != 1) {
+        std::cerr << "Invalid level file: expected exactly one flagpole top marker but found " << state.flagpoleTopCount << " in " << path << std::endl;
+
+        return false;
+    }
     
     return true;
 }
@@ -388,6 +472,9 @@ bool validateFlagPole(const std::vector<std::string>& grid, const std::string& p
     std::size_t finishRow = 0;
     std::size_t finishColumn = 0;
     bool finishFound = false;
+    std::size_t topRow = 0;
+    std::size_t topColumn = 0;
+    bool topFound = false;
 
     for (std::size_t row = 0; row < grid.size(); ++row) {
         const std::size_t column = grid[row].find('F');
@@ -400,7 +487,25 @@ bool validateFlagPole(const std::vector<std::string>& grid, const std::string& p
         }
     }
 
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        const std::size_t column = grid[row].find('T');
+
+        if (column != std::string::npos) {
+            topRow = row;
+            topColumn = column;
+            topFound = true;
+            break;
+        }
+    }
+
     if (!finishFound) {
+        return false;
+    }
+
+    if (!topFound || finishRow == 0 || topRow != finishRow - 1 ||
+        topColumn != finishColumn) {
+        std::cerr << "Invalid level file: flagpole top marker must be directly above the finish point in " << path << std::endl;
+
         return false;
     }
 
@@ -542,6 +647,7 @@ bool TileMap::loadFromFile(const std::string& path) {
     m_tileset = std::move(loadedTileset);
     m_objectsTileset = std::move(loadedObjectsTileset);
     m_flagAnimationTime = 0.0f;
+    m_flagDropDistance = 0.0f;
     buildVertices();
     return true;
 }
@@ -559,12 +665,20 @@ void TileMap::render(sf::RenderTarget& target) const {
     target.draw(m_objectVertices, objectStates);
 }
 
+void TileMap::renderFlags(sf::RenderTarget& target) const {
+    sf::RenderStates flagStates;
+    flagStates.texture = &m_objectsTileset;
+    target.draw(m_flagVertices, flagStates);
+}
+
 void TileMap::renderForeground(sf::RenderTarget& target) const {
     sf::RenderStates states;
     states.texture = &m_tileset;
 
+    // The pole shaft/cap stays above the flag cloth. This restores the small
+    // pole-colored connector at the flag edge without putting the cloth above
+    // Mario while he slides.
     target.draw(m_foregroundVertices, states);
-    target.draw(m_flagVertices, states);
 }
 
 char TileMap::getTileAt(int column, int row) const {
@@ -615,6 +729,16 @@ void TileMap::triggerTileBump(int column, int row) {
         if (bump.column == column && bump.row == row) return;
     }
     m_bumpAnimations.push_back({column, row, 0.f, 0.16f, -12.f});
+}
+
+void TileMap::setFlagDropDistance(float distancePixels) {
+    const float clampedDistance = std::max(0.0f, distancePixels);
+    if (std::abs(clampedDistance - m_flagDropDistance) < 0.01f) {
+        return;
+    }
+
+    m_flagDropDistance = clampedDistance;
+    buildFlagVertices();
 }
 
 void TileMap::update(float dt) {
@@ -854,15 +978,34 @@ void TileMap::buildFlagVertices() {
                 continue;
             }
 
-            const sf::IntRect textureRect = getTilesetRect('F', m_theme);
-            const float left = static_cast<float>(col * TILE_SIZE);
-            const float top = static_cast<float>(row * TILE_SIZE);
-            const float right = left + static_cast<float>(TILE_SIZE);
-            const float bottom = top + static_cast<float>(TILE_SIZE);
+            const sf::IntRect textureRect = flagFrameForTheme(m_theme);
+
+            int bottomRow = static_cast<int>(row);
+            while (bottomRow + 1 < static_cast<int>(m_grid.size()) &&
+                   getTileAt(static_cast<int>(col), bottomRow + 1) == '|') {
+                ++bottomRow;
+            }
+
+            // Let the flag occupy the pole body all the way to the solid base.
+            // The bottom edge reaches the base without entering its tile, so
+            // the flag can keep the same downward displacement as Mario.
+            const float maxDropDistance = std::max(
+                0.0f,
+                static_cast<float>(bottomRow - static_cast<int>(row)) * TILE_SIZE_PIXELS);
+            const float dropDistance = std::min(m_flagDropDistance, maxDropDistance);
+
+            const float poleCenterX = static_cast<float>(col * TILE_SIZE) + TILE_SIZE_PIXELS / 2.0f;
+            // The right edge of the triangular flag is the pole-side edge.
+            // Move the 32px world quad half a tile left so it meets the pole
+            // center rather than the right edge of the F marker cell.
+            const float left = poleCenterX - TILE_SIZE_PIXELS;
+            const float top = static_cast<float>(row * TILE_SIZE) + dropDistance;
+            const float right = poleCenterX;
+            const float bottom = top + TILE_SIZE_PIXELS;
 
             // Keep the pole-side edge anchored on the right and gently shear
-            // only the free edge on the left. This animates the existing themed flag tile without
-            // overlaying a second flag sprite or changing collision geometry.
+            // only the free edge on the left. This animates the objects-atlas
+            // flag without changing collision geometry.
             const float topWave = std::sin(m_flagAnimationTime) * FLAG_WAVE_AMPLITUDE;
             const float bottomWave = std::sin(m_flagAnimationTime + FLAG_WAVE_PHASE_OFFSET) * FLAG_WAVE_AMPLITUDE;
             const float texEpsilon = 0.02f;

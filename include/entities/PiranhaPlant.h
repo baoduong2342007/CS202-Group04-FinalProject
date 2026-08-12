@@ -53,6 +53,7 @@ private:
     float m_stateTimer{0.f};
     bool m_isFlippedDead{false};
     float m_flipTimer{0.f};
+    bool m_pendingDisablePhysics{false};
     bool m_isMarioNear{false};
 
     // --- NES Scale Factors (Original NES 16x24 sprite @ 2.0x scale -> 32x48px) ---

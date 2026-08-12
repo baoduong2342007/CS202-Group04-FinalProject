@@ -1,7 +1,7 @@
 /**
  * @file Mushroom.cpp
  * @author TV5 (Truyền)
- * @brief Super Mushroom — horizontal patrol, grows Mario from SMALL to SUPER
+ * @brief Super Mushroom — horizontal patrol and body-tier growth
  * @note Week 5 — power-up logic queries Mario's state directly (no EventBus payload)
  */
 
@@ -94,8 +94,15 @@ void Mushroom::onCollect(Mario& mario) {
         EventBus::getInstance().notify(EventType::ONE_UP_COLLECTED);
         return;
     } else {
-        if (mario.getMarioState() == MarioState::SMALL) {
-            mario.powerUp(MarioState::SUPER);
+        MarioState targetState = mario.getMarioState();
+        if (targetState == MarioState::SMALL) {
+            targetState = MarioState::SUPER;
+        } else if (targetState == MarioState::FIRE_SMALL) {
+            targetState = MarioState::FIRE_SUPER;
+        }
+
+        if (targetState != mario.getMarioState()) {
+            mario.powerUp(targetState);
             eventPublished = true;
         }
         ScoreRules::award(mario, ScoreEvent::POWER_UP_COLLECTED);

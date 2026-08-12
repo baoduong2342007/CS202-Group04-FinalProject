@@ -12,10 +12,12 @@
 
 #include "core/ScoreRules.h"
 #include "core/SoundManager.h"
+#include "core/TextureManager.h"
 #include "entities/FireBall.h"
 #include "entities/Goomba.h"
 #include "entities/Koopa.h"
 #include "entities/Mario.h"
+#include "entities/PiranhaPlant.h"
 #include "level/TileMap.h"
 #include "patterns/EventBus.h"
 #include "patterns/IObserver.h"
@@ -31,6 +33,7 @@ public:
                                 EventType::ENEMY_DEFEATED_BY_SHELL,
                                 EventType::ENEMY_DEFEATED_BY_FIREBALL,
                                 EventType::ENEMY_DEFEATED_BY_STAR,
+                                EventType::ENEMY_DEFEATED_BY_BLOCK,
                                 EventType::PLAYER_DIED}) {
             bus.subscribe(event, this);
         }
@@ -42,6 +45,7 @@ public:
                                 EventType::ENEMY_DEFEATED_BY_SHELL,
                                 EventType::ENEMY_DEFEATED_BY_FIREBALL,
                                 EventType::ENEMY_DEFEATED_BY_STAR,
+                                EventType::ENEMY_DEFEATED_BY_BLOCK,
                                 EventType::PLAYER_DIED}) {
             bus.unsubscribe(event, this);
         }
@@ -52,6 +56,7 @@ public:
         else if (event == EventType::ENEMY_DEFEATED_BY_SHELL) ++shellKill;
         else if (event == EventType::ENEMY_DEFEATED_BY_FIREBALL) ++fireKill;
         else if (event == EventType::ENEMY_DEFEATED_BY_STAR) ++starKill;
+        else if (event == EventType::ENEMY_DEFEATED_BY_BLOCK) ++blockKill;
         else if (event == EventType::PLAYER_DIED) ++death;
     }
     int stomp = 0;
@@ -59,6 +64,7 @@ public:
     int shellKill = 0;
     int fireKill = 0;
     int starKill = 0;
+    int blockKill = 0;
     int death = 0;
 };
 
@@ -288,6 +294,171 @@ void runFireBall(bool projectileFixtureFirst) {
     assert(SoundManager::getInstance().getSoundPlayRequestCount("enemy_fireball") == 1);
 }
 
+void runFireBallPassesDeadEnemy(bool projectileFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    Mario owner;
+    std::unique_ptr<FireBall> firstFireBall;
+    std::unique_ptr<Goomba> victim;
+
+    if (projectileFixtureFirst) {
+        firstFireBall = std::make_unique<FireBall>(
+            sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+    } else {
+        victim = std::make_unique<Goomba>(sf::Vector2f(0.f, 0.f), &world);
+        firstFireBall = std::make_unique<FireBall>(
+            sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+    }
+
+    CollisionEvents events;
+    firstFireBall->setOwner(&owner);
+    firstFireBall->setVelocity({0.f, 0.f});
+    stepTwice(world);
+    assert(victim->isDying());
+    assert(!firstFireBall->isActive());
+    assert(events.fireKill == 1);
+
+    // The dead enemy body remains temporarily for its flipped animation. A
+    // later projectile must pass through its sensor and stay active.
+    auto secondFireBall = std::make_unique<FireBall>(
+        sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+    secondFireBall->setOwner(&owner);
+    secondFireBall->setVelocity({0.f, 0.f});
+    world.Step(1.f / 60.f, 8, 3);
+
+    assert(secondFireBall->isActive());
+    assert(!secondFireBall->isPendingDestroy());
+    assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::FIREBALL));
+    assert(events.fireKill == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("enemy_fireball") == 1);
+}
+
+void runPiranhaFireBall(bool projectileFixtureFirst) {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    Mario owner;
+    std::unique_ptr<FireBall> fireBall;
+    std::unique_ptr<PiranhaPlant> plant;
+
+    if (projectileFixtureFirst) {
+        fireBall = std::make_unique<FireBall>(
+            sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+        plant = std::make_unique<PiranhaPlant>(
+            sf::Vector2f(0.f, 0.f), &world);
+    } else {
+        plant = std::make_unique<PiranhaPlant>(
+            sf::Vector2f(0.f, 0.f), &world);
+        fireBall = std::make_unique<FireBall>(
+            sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+    }
+
+    CollisionEvents events;
+    fireBall->setOwner(&owner);
+    fireBall->setVelocity({0.f, 0.f});
+    stepTwice(world);
+
+    assert(plant->isDying());
+    assert(plant->getBody()->IsEnabled());
+    const float initialY = plant->getPosition().y;
+
+    // This update is the first world-unlocked safe point after the contact.
+    // It must disable the body and start the downward death motion without
+    // calling b2Body::SetEnabled() from BeginContact.
+    plant->update(0.25f);
+    assert(!plant->getBody()->IsEnabled());
+    assert(plant->getPosition().y >= initialY);
+    assert(events.fireKill == 1);
+    assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::FIREBALL));
+
+    plant->update(1.f);
+    assert(plant->shouldRemove());
+}
+
+void runBlockBumpDefeatsEnemy() {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    assert(tileMap.loadFromFile("levels/level1.txt"));
+    tileMap.createPhysicsBodies(&world);
+
+    const auto brickTiles = tileMap.findTiles('B');
+    assert(!brickTiles.empty());
+    const sf::Vector2i brick = brickTiles.front();
+    const sf::Vector2f brickPosition = TileMap::gridToWorldPosition(brick);
+
+    Mario mario;
+    auto victim = std::make_unique<Goomba>(
+        sf::Vector2f(brickPosition.x, brickPosition.y - 32.f), &world);
+    Goomba* victimPtr = victim.get();
+    std::vector<std::unique_ptr<Entity>> entities;
+    entities.push_back(std::move(victim));
+    CollisionEvents events;
+
+    tileMap.queueTileHit(brick.x, brick.y, 32.f);
+    tileMap.processPendingHits(entities,
+                               TextureManager::getInstance(),
+                               false,
+                               &mario);
+
+    assert(victimPtr->isDead());
+    assert(victimPtr->isDying());
+    assert(victimPtr->getBody()->GetLinearVelocity().y < 0.f);
+    assert(mario.getScore() == ScoreRules::pointsFor(DefeatCause::BLOCK_BUMP));
+    assert(events.blockKill == 1);
+    assert(SoundManager::getInstance().getSoundPlayRequestCount("stomp") == 1);
+
+    // Re-queueing the same hit cannot award the dead enemy a second time.
+    tileMap.queueTileHit(brick.x, brick.y, 32.f);
+    tileMap.processPendingHits(entities,
+                               TextureManager::getInstance(),
+                               false,
+                               &mario);
+    assert(events.blockKill == 1);
+    assert(mario.getScore() == ScoreRules::pointsFor(DefeatCause::BLOCK_BUMP));
+}
+
+void runStarBrickCapability() {
+    auto breakBrickFor = [](Mario& mario) {
+        TileMap tileMap;
+        assert(tileMap.loadFromFile("levels/level1.txt"));
+        const auto brickTiles = tileMap.findTiles('B');
+        assert(!brickTiles.empty());
+        const sf::Vector2i brick = brickTiles.front();
+        std::vector<std::unique_ptr<Entity>> entities;
+        const bool hit = tileMap.hitTile(brick.x,
+                                         brick.y,
+                                         mario.canBreakBricks(),
+                                         entities,
+                                         nullptr);
+        return hit && tileMap.getTileAt(brick.x, brick.y) == '.';
+    };
+
+    Mario smallMario;
+    assert(!smallMario.canBreakBricks());
+    smallMario.setStarInvincible(0.1f);
+    assert(smallMario.canBreakBricks());
+    assert(breakBrickFor(smallMario));
+    smallMario.update(0.2f);
+    assert(!smallMario.isStarInvincible());
+    assert(!smallMario.canBreakBricks());
+
+    Mario smallFireMario;
+    smallFireMario.setMarioState(MarioState::FIRE_SMALL);
+    assert(!smallFireMario.canBreakBricks());
+    smallFireMario.setStarInvincible(0.1f);
+    assert(smallFireMario.canBreakBricks());
+    assert(breakBrickFor(smallFireMario));
+    smallFireMario.update(0.2f);
+    assert(!smallFireMario.canBreakBricks());
+}
+
 void runStar(bool marioFixtureFirst) {
     SoundManager::getInstance().resetDiagnosticCounters();
     b2World world({0.f, 0.f});
@@ -326,8 +497,12 @@ int main() {
         runIdleShellStaysStationary();
         runShell(orderA);
         runFireBall(orderA);
+        runFireBallPassesDeadEnemy(orderA);
+        runPiranhaFireBall(orderA);
         runStar(orderA);
     }
     runKoopaPitFallsPastPitWall();
+    runBlockBumpDefeatsEnemy();
+    runStarBrickCapability();
     return 0;
 }

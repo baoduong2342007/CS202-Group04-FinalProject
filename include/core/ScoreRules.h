@@ -17,6 +17,7 @@ enum class DefeatCause {
     SHELL,
     FIREBALL,
     STAR,
+    BLOCK_BUMP,
     PIT
 };
 
@@ -26,7 +27,8 @@ enum class ScoreEvent {
     ENEMY_STOMPED,
     SHELL_DEFEATED,
     FIREBALL_DEFEATED,
-    STAR_DEFEATED
+    STAR_DEFEATED,
+    BLOCK_BUMP_DEFEATED
 };
 
 namespace ScoreRules {
@@ -44,6 +46,8 @@ constexpr int pointsFor(ScoreEvent event) {
         case ScoreEvent::FIREBALL_DEFEATED:
         case ScoreEvent::STAR_DEFEATED:
             return 200;
+        case ScoreEvent::BLOCK_BUMP_DEFEATED:
+            return 100;
     }
 
     return 0;
@@ -60,6 +64,8 @@ constexpr int pointsFor(DefeatCause cause) {
             return pointsFor(ScoreEvent::FIREBALL_DEFEATED);
         case DefeatCause::STAR:
             return pointsFor(ScoreEvent::STAR_DEFEATED);
+        case DefeatCause::BLOCK_BUMP:
+            return pointsFor(ScoreEvent::BLOCK_BUMP_DEFEATED);
         case DefeatCause::PIT:
             return 0;
     }

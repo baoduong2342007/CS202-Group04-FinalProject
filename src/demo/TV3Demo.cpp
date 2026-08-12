@@ -136,8 +136,11 @@ int runTV3Demo() {
           mario.setMarioState(MarioState::SUPER);
           std::cout << "[TV3 Demo] Switched Mario state to SUPER" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::Num3) {
-          mario.setMarioState(MarioState::FIRE);
-          std::cout << "[TV3 Demo] Switched Mario state to FIRE" << std::endl;
+          mario.setMarioState(MarioState::FIRE_SMALL);
+          std::cout << "[TV3 Demo] Switched Mario state to FIRE_SMALL" << std::endl;
+        } else if (keyPressed->code == sf::Keyboard::Key::Num4) {
+          mario.setMarioState(MarioState::FIRE_SUPER);
+          std::cout << "[TV3 Demo] Switched Mario state to FIRE_SUPER" << std::endl;
         } else if (keyPressed->code == sf::Keyboard::Key::F) {
           if (mario.tryStartFireBallShot()) {
             auto fb = std::make_unique<FireBall>(
@@ -198,7 +201,8 @@ int runTV3Demo() {
       marioShape.setFillColor(sf::Color(231, 76, 60)); // Small Red
     } else if (mario.getMarioState() == MarioState::SUPER) {
       marioShape.setFillColor(sf::Color(155, 89, 182)); // Super Purple
-    } else if (mario.getMarioState() == MarioState::FIRE) {
+    } else if (mario.getMarioState() == MarioState::FIRE_SMALL ||
+               mario.getMarioState() == MarioState::FIRE_SUPER) {
       marioShape.setFillColor(sf::Color(230, 126, 34)); // Fire Orange
     }
 

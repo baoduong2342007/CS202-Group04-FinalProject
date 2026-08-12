@@ -196,6 +196,37 @@ void testCanonicalTileCoordinates() {
     assert(TileFrames::HORIZONTAL_PIPE.size.y == 32);
 }
 
+void testCanonicalFlagpoleCoordinates() {
+    assert(hasPosition(SpriteFrames::ovw::Items::FLAGPOLE_FLAG, 92, 90));
+    assert(SpriteFrames::ovw::Items::FLAGPOLE_FLAG.size.x == 16 &&
+           SpriteFrames::ovw::Items::FLAGPOLE_FLAG.size.y == 16);
+
+    assert(hasPosition(SpriteFrames::udg::Items::FLAGPOLE_FLAG, 92, 198));
+    assert(SpriteFrames::udg::Items::FLAGPOLE_FLAG.size.x == 16 &&
+           SpriteFrames::udg::Items::FLAGPOLE_FLAG.size.y == 16);
+
+    assert(hasPosition(SpriteFrames::castle::Items::FLAGPOLE_FLAG, 92, 306));
+    assert(SpriteFrames::castle::Items::FLAGPOLE_FLAG.size.x == 16 &&
+           SpriteFrames::castle::Items::FLAGPOLE_FLAG.size.y == 16);
+
+    assert(hasPosition(SpriteFrames::udw::Items::FLAGPOLE_FLAG, 92, 414));
+    assert(SpriteFrames::udw::Items::FLAGPOLE_FLAG.size.x == 16 &&
+           SpriteFrames::udw::Items::FLAGPOLE_FLAG.size.y == 15);
+
+    // T is the round pole cap and uses the matching themed tileset palette.
+    assert(hasPosition(TileFrames::FINISH_POLE_TOP, 136, 230));
+    assert(hasPosition(TileFrames::FINISH_TOP_UNDERGROUND, 300, 230));
+    assert(hasPosition(TileFrames::FINISH_TOP_CASTLE, 136, 314));
+    assert(hasPosition(TileFrames::FINISH_TOP_UNDERWATER, 300, 314));
+
+    // The old names remain valid aliases after correcting the adjacent atlas
+    // entries for castle flag and vine frames.
+    assert(hasPosition(SpriteFrames::legacy::Items::CASTLE_FLAG, 110, 90));
+    assert(hasPosition(SpriteFrames::legacy::Items::VINE_TOP, 130, 90));
+    assert(hasPosition(SpriteFrames::legacy::Items::VINE_STEM_1, 148, 90));
+    assert(hasPosition(SpriteFrames::legacy::Items::VINE_STEM_2, 148, 90));
+}
+
 } // namespace
 
 int main() {
@@ -205,6 +236,7 @@ int main() {
     testThemeFrameGeometry();
     testCanonicalEnemyCoordinates();
     testCanonicalTileCoordinates();
+    testCanonicalFlagpoleCoordinates();
 
     std::cout << "SpriteFramesThemeTests passed." << std::endl;
     return 0;

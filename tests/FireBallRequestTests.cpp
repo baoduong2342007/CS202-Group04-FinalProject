@@ -53,7 +53,7 @@ void testLimitReleaseAndSingleSfx() {
     Level level;
     assert(level.loadFromFile("levels/level1.txt"));
     Mario& mario = *level.getMario();
-    mario.setMarioState(MarioState::FIRE);
+    mario.setMarioState(MarioState::FIRE_SMALL);
 
     assert(level.requestFireBallShot(mario));
     assert(level.getActiveFireBallCount() == 1);
@@ -90,7 +90,7 @@ void testWorldLockedRequestReservesCooldownAndOwner() {
     Level level;
     assert(level.loadFromFile("levels/level1.txt"));
     Mario& mario = *level.getMario();
-    mario.setMarioState(MarioState::FIRE);
+    mario.setMarioState(MarioState::FIRE_SMALL);
     mario.moveLeft();
 
     b2World* world = mario.getBody()->GetWorld();

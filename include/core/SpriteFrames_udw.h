@@ -49,6 +49,7 @@ inline const std::vector<sf::IntRect>& walkFrames() {
 namespace Items {
 inline const sf::IntRect& SUPER_MUSHROOM = legacy::Items::SUPER_MUSHROOM_UW;
 inline const sf::IntRect& ONE_UP_MUSHROOM = legacy::Items::ONE_UP_MUSHROOM_UW;
+inline const sf::IntRect& FLAGPOLE_FLAG = legacy::Items::UW_FLAGPOLE_FLAG;
 } // namespace Items
 
 namespace Blocks {

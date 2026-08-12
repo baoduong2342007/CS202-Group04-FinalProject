@@ -334,6 +334,12 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
             break;
+        case DefeatCause::BLOCK_BUMP:
+            // A block bump uses the same launched death presentation as a
+            // FireBall while keeping its own score/event identity.
+            victim.onFireHit();
+            EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_BLOCK);
+            break;
         case DefeatCause::PIT:
             victim.takeDamage(victim.getHealth());
             victim.markForRemoval();
@@ -485,8 +491,20 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         if (target) {
             if (target->isEnemy()) {
                 Enemy* enemy = static_cast<Enemy*>(target);
-                defeatEnemy(*enemy, DefeatCause::FIREBALL, fireBall->getOwner());
-                fireBall->deactivate();
+                // A defeated enemy may keep its body for a short death
+                // animation. It is no longer a gameplay target, so the
+                // projectile must pass through it and remain active.
+                if (enemy->isDying()) {
+                    return;
+                }
+
+                // Only consume a FireBall when the defeat transaction really
+                // claimed a living enemy. This also protects against a
+                // duplicate contact from another fixture in the same frame.
+                if (defeatEnemy(*enemy, DefeatCause::FIREBALL,
+                                fireBall->getOwner())) {
+                    fireBall->deactivate();
+                }
                 return;
             }
         }

@@ -1,7 +1,7 @@
 /**
  * @file SuperMarioState.h
  * @author TV3 (Bảo)
- * @brief Concrete Super Mario power-up state (32x64 hitbox, breaks bricks)
+ * @brief Concrete Super Mario power-up state (super body, breaks bricks)
  */
 
 #pragma once

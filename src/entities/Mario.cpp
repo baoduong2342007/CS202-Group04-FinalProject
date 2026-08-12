@@ -16,9 +16,10 @@
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "physics/PhysicsEngine.h"
-#include "states/FireMarioState.h"
 #include "states/SmallMarioState.h"
+#include "states/SmallFireMarioState.h"
 #include "states/SuperMarioState.h"
+#include "states/SuperFireMarioState.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -53,11 +54,6 @@ constexpr float TRANSFORM_PRESENTATION_DURATION = 0.5f;
 constexpr float TRANSFORM_FRAME_DURATION = 0.07f;
 constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
 constexpr float MAX_GROUND_NORMAL_X = 0.5f;
-// The flagpole sprite is authored with Mario's hands reaching to the right.
-// Keep his body a little left of the pole so the hands, rather than the torso,
-// meet the pole in the game world.
-constexpr float FLAGPOLE_MARIO_OFFSET_X = -14.0f;
-
 // Underwater swim physics constants
 constexpr float UNDERWATER_WALK_MAX_SPEED = 100.f;
 constexpr float UNDERWATER_RUN_MAX_SPEED = 160.f;
@@ -78,21 +74,22 @@ constexpr float MARIO_FIXTURE_FRICTION = 0.0f;
 constexpr const char *MARIO_TEXTURE_PATH =
     "assets/textures/mario/MarioLuigi.png";
 
-bool usesSuperBody(MarioState state, bool fireIsSuper) {
-  return state == MarioState::SUPER ||
-         (state == MarioState::FIRE && fireIsSuper);
+bool usesSuperBody(MarioState state) {
+  return state == MarioState::SUPER || state == MarioState::FIRE_SUPER;
 }
 
-sf::Vector2f bodySizeForState(MarioState state, bool fireIsSuper) {
-  return usesSuperBody(state, fireIsSuper) ? SUPER_MARIO_SIZE
-                                           : SMALL_MARIO_SIZE;
+bool usesFire(MarioState state) {
+  return state == MarioState::FIRE_SMALL || state == MarioState::FIRE_SUPER;
+}
+
+sf::Vector2f bodySizeForState(MarioState state) {
+  return usesSuperBody(state) ? SUPER_MARIO_SIZE : SMALL_MARIO_SIZE;
 }
 
 // Helper: register animation clips for the current MarioState and
-// CharacterType. FIRE keeps the body's Small/Super tier, so the caller supplies
-// fireIsSuper to select the matching atlas row.
+// CharacterType. Fire body size is encoded directly in the enum.
 void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
-                             CharacterType charType, bool fireIsSuper) {
+                             CharacterType charType) {
   auto addSwimAndClimb = [&animSys](const auto &climbFrames,
                                     const auto &swimFrames) {
     animSys.addAnimation(
@@ -178,26 +175,26 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                         SPAWN_ANIMATION_DURATION, false));
       break;
     }
-    case MarioState::FIRE: {
-      if (fireIsSuper) {
-        namespace F = SpriteFrames::shared::FireBigMario;
-        addFireAnimations(
-            F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-            F::JUMP, F::SKID,
-            std::vector<sf::IntRect>{
-                SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT},
-            SpriteFrames::shared::SmallLuigi::DEATH);
-      } else {
-        namespace F = SpriteFrames::shared::FireSmallMario;
-        addFireAnimations(
-            F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-            F::JUMP, F::SKID,
-            std::vector<sf::IntRect>{
-                SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1,
-                SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT2,
-                SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT3},
-            F::DEATH);
-      }
+    case MarioState::FIRE_SMALL: {
+      namespace F = SpriteFrames::shared::FireSmallMario;
+      addFireAnimations(
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
+          F::JUMP, F::SKID,
+          std::vector<sf::IntRect>{
+              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1,
+              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT2,
+              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT3},
+          F::DEATH);
+      break;
+    }
+    case MarioState::FIRE_SUPER: {
+      namespace F = SpriteFrames::shared::FireBigMario;
+      addFireAnimations(
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
+          F::JUMP, F::SKID,
+          std::vector<sf::IntRect>{
+              SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT},
+          SpriteFrames::shared::SmallLuigi::DEATH);
       break;
     }
     }
@@ -243,26 +240,26 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                         SPAWN_ANIMATION_DURATION, false));
       break;
     }
-    case MarioState::FIRE: {
-      if (fireIsSuper) {
-        namespace F = SpriteFrames::shared::FireBigMario;
-        addFireAnimations(
-            F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-            F::JUMP, F::SKID,
-            std::vector<sf::IntRect>{
-                SpriteFrames::shared::FireShooting::Mario::BIG_SHOOT},
-            SpriteFrames::shared::SmallMario::DEATH);
-      } else {
-        namespace F = SpriteFrames::shared::FireSmallMario;
-        addFireAnimations(
-            F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
-            F::JUMP, F::SKID,
-            std::vector<sf::IntRect>{
-                SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT1,
-                SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT2,
-                SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT3},
-            F::DEATH);
-      }
+    case MarioState::FIRE_SMALL: {
+      namespace F = SpriteFrames::shared::FireSmallMario;
+      addFireAnimations(
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
+          F::JUMP, F::SKID,
+          std::vector<sf::IntRect>{
+              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT1,
+              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT2,
+              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT3},
+          F::DEATH);
+      break;
+    }
+    case MarioState::FIRE_SUPER: {
+      namespace F = SpriteFrames::shared::FireBigMario;
+      addFireAnimations(
+          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(),
+          F::JUMP, F::SKID,
+          std::vector<sf::IntRect>{
+              SpriteFrames::shared::FireShooting::Mario::BIG_SHOOT},
+          SpriteFrames::shared::SmallMario::DEATH);
       break;
     }
     }
@@ -272,7 +269,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
 
 Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL), m_fireIsSuper(false),
+      m_marioState(MarioState::SMALL),
       m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
@@ -281,15 +278,14 @@ Mario::Mario()
       m_isRunning(false), m_isSkidding(false), m_isTransforming(false),
       m_transformTimer(0.f), m_pendingPowerDown(false),
       m_respawnPosition(DEFAULT_MARIO_POSITION) {
-  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType,
-                          m_fireIsSuper);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
   setSprite(MARIO_TEXTURE_PATH);
 }
 
 Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
-      m_marioState(MarioState::SMALL), m_fireIsSuper(false),
+      m_marioState(MarioState::SMALL),
       m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
       m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
@@ -298,8 +294,7 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
       m_isRunning(false), m_isSkidding(false), m_isTransforming(false),
       m_transformTimer(0.f), m_pendingPowerDown(false),
       m_respawnPosition(position) {
-  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType,
-                          m_fireIsSuper);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
   setSprite(MARIO_TEXTURE_PATH);
 }
@@ -666,7 +661,7 @@ void Mario::initPhysics(b2World *world, b2BodyType type,
 }
 
 void Mario::rebuildFixture() {
-  const sf::Vector2f targetSize = bodySizeForState(m_marioState, m_fireIsSuper);
+  const sf::Vector2f targetSize = bodySizeForState(m_marioState);
 
   if (!m_body) {
     m_size = targetSize;
@@ -838,11 +833,10 @@ void Mario::setFlagpoleSliding(bool sliding) {
 }
 
 void Mario::beginFlagpoleSlide(float poleCenterX, float targetTopY) {
+  (void)poleCenterX;
   m_flagpoleTargetTopY = targetTopY;
   setAutomaticWalkSpeed(0.0f);
   setFlagpoleSliding(true);
-  setPosition(
-      {poleCenterX - m_size.x / 2.0f + FLAGPOLE_MARIO_OFFSET_X, m_position.y});
 }
 
 void Mario::updateFlagpoleSlide(float /*dt*/) {
@@ -868,20 +862,18 @@ bool Mario::hasCeilingClearance() const { return hasGrowthClearance(); }
 
 bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
   const bool currentSuperBody = m_size.y > SMALL_MARIO_SIZE.y + 0.01f;
-  const bool targetSuperBody = usesSuperBody(state, m_fireIsSuper);
+  const bool targetSuperBody = usesSuperBody(state);
   if (m_marioState == state && currentSuperBody == targetSuperBody) {
     return false;
   }
 
   const bool isGrowth = !currentSuperBody && targetSuperBody;
   const bool isShrink = currentSuperBody && !targetSuperBody;
+  const bool usesFireTransition = usesFire(m_marioState) || usesFire(state);
   const bool worldLocked =
       m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked();
   if (isGrowth && (worldLocked || !hasGrowthClearance())) {
-    // Never let a lower-tier request replace a deferred FIRE transition.
-    if (m_pendingGrowthState != MarioState::FIRE) {
-      m_pendingGrowthState = state;
-    }
+    m_pendingGrowthState = state;
     m_pendingGrowthPresentation =
         m_pendingGrowthPresentation || withPresentation;
     return false;
@@ -898,13 +890,15 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
   case MarioState::SUPER:
     m_statePattern = std::make_unique<SuperMarioState>();
     break;
-  case MarioState::FIRE:
-    m_statePattern = std::make_unique<FireMarioState>();
+  case MarioState::FIRE_SMALL:
+    m_statePattern = std::make_unique<SmallFireMarioState>();
+    break;
+  case MarioState::FIRE_SUPER:
+    m_statePattern = std::make_unique<SuperFireMarioState>();
     break;
   }
 
-  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType,
-                          m_fireIsSuper);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
   rebuildFixture(); // Single foot-anchor authority.
   if (m_body && !worldLocked) {
@@ -918,14 +912,18 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
       m_animationSystem->addAnimation(
           "transform",
           AnimationSystem::createManualAnimation(
-              SpriteFrames::shared::GrowShrink::Mario::growSequence(),
+              usesFireTransition
+                  ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+                  : SpriteFrames::shared::GrowShrink::Mario::growSequence(),
               TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     } else if (isShrink) {
       m_animationSystem->addAnimation(
           "transform",
           AnimationSystem::createManualAnimation(
-              SpriteFrames::shared::GrowShrink::Mario::shrinkSequence(),
+              usesFireTransition
+                  ? SpriteFrames::shared::GrowShrink::FireMario::shrinkSequence()
+                  : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence(),
               TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     }
@@ -940,22 +938,14 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
 }
 
 void Mario::powerUp(MarioState state) {
-  // A power-up is monotonic; it must never act as a power-down.
-  if ((m_marioState == MarioState::FIRE && state != MarioState::FIRE) ||
-      (m_marioState == MarioState::SUPER && state == MarioState::SMALL)) {
-    return;
-  }
-
-  // Fire is a capability layered on the current body tier. A Small pickup
-  // therefore becomes Small Fire Mario, while a Super pickup becomes Super
-  // Fire Mario; neither path silently changes the body size.
-  if (state == MarioState::FIRE && m_marioState != MarioState::FIRE) {
-    m_fireIsSuper = m_size.y > SMALL_MARIO_SIZE.y + 0.01f;
-  } else if (state != MarioState::FIRE) {
-    m_fireIsSuper = false;
-  }
-
-  if (m_marioState == state && m_pendingGrowthState == MarioState::SMALL) {
+  // A power-up is monotonic; it must never act as a power-down or remove FIRE.
+  const bool validUpgrade =
+      (m_marioState == MarioState::SMALL &&
+       (state == MarioState::SUPER || state == MarioState::FIRE_SMALL)) ||
+      (m_marioState == MarioState::SUPER && state == MarioState::FIRE_SUPER) ||
+      (m_marioState == MarioState::FIRE_SMALL &&
+       state == MarioState::FIRE_SUPER);
+  if (!validUpgrade) {
     return;
   }
 
@@ -968,8 +958,7 @@ void Mario::setCharacterType(CharacterType type) {
   if (m_characterType == type)
     return;
   m_characterType = type;
-  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType,
-                          m_fireIsSuper);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("idle");
 }
 
@@ -982,11 +971,12 @@ void Mario::powerDown() {
     return;
   }
 
-  if (m_marioState == MarioState::FIRE) {
-    const bool wasSuperFire = m_fireIsSuper;
-    applyStateTransition(wasSuperFire ? MarioState::SUPER : MarioState::SMALL,
-                         true);
-    m_fireIsSuper = false;
+  if (m_marioState == MarioState::FIRE_SUPER) {
+    applyStateTransition(MarioState::SUPER, true);
+    activateDamageGrace(DAMAGE_INVINCIBILITY_DURATION);
+    EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
+  } else if (m_marioState == MarioState::FIRE_SMALL) {
+    applyStateTransition(MarioState::SMALL, true);
     activateDamageGrace(DAMAGE_INVINCIBILITY_DURATION);
     EventBus::getInstance().notify(EventType::PLAYER_POWER_DOWN);
   } else if (m_marioState == MarioState::SUPER) {
@@ -1034,7 +1024,6 @@ void Mario::loseLife() {
   // Reset to SMALL state and reload animations for character type immediately.
   // applyStateTransition also keeps the death sprite anchored to Mario's feet
   // when a Super/Fire body shrinks back to the death form.
-  m_fireIsSuper = false;
   applyStateTransition(MarioState::SMALL, false);
   playAnimation("death");
   // loseLife can be called after a collision callback, while Level will not
@@ -1069,7 +1058,6 @@ bool Mario::isDeathAnimationFinished() const {
 
 void Mario::respawn(const sf::Vector2f &spawnPosition) {
   m_marioState = MarioState::SMALL;
-  m_fireIsSuper = false;
   m_pendingGrowthState = MarioState::SMALL;
   m_pendingGrowthPresentation = false;
   m_pendingFixtureRebuild = false;
@@ -1111,8 +1099,7 @@ void Mario::respawn(const sf::Vector2f &spawnPosition) {
     m_body->SetAngularVelocity(0.f);
     m_body->SetAwake(true);
   }
-  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType,
-                          m_fireIsSuper);
+  setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
   playAnimation("spawn");
   rebuildFixture();
   setPosition(spawnPosition);
@@ -1165,17 +1152,7 @@ bool Mario::hasGrowthClearance() const {
   return !callback.blocked;
 }
 
-void Mario::setMarioState(MarioState state) {
-  const bool inferredFireBody = m_marioState == MarioState::FIRE
-                                    ? m_fireIsSuper
-                                    : m_size.y > SMALL_MARIO_SIZE.y + 0.01f;
-  setMarioState(state, state == MarioState::FIRE && inferredFireBody);
-}
-
-void Mario::setMarioState(MarioState state, bool fireIsSuper) {
-  m_fireIsSuper = state == MarioState::FIRE && fireIsSuper;
-  applyStateTransition(state, false);
-}
+void Mario::setMarioState(MarioState state) { applyStateTransition(state, false); }
 
 void Mario::addScore(int points) { m_score += points; }
 
@@ -1276,7 +1253,12 @@ bool Mario::isInvincible() const {
 }
 
 bool Mario::canShootFireBall() const {
-  return m_marioState == MarioState::FIRE && m_fireCooldown <= 0.0f;
+  return usesFire(m_marioState) && m_fireCooldown <= 0.0f;
+}
+
+bool Mario::canBreakBricks() const {
+  return (m_statePattern && m_statePattern->canBreakBricks()) ||
+         isStarInvincible();
 }
 
 int Mario::getLives() const { return m_lives; }

@@ -47,6 +47,7 @@ SoundManager::SoundManager()
     bus.subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
     bus.subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
     bus.subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
+    bus.subscribe(EventType::ENEMY_DEFEATED_BY_BLOCK, this);
     bus.subscribe(EventType::BLOCK_BUMPED, this);
     bus.subscribe(EventType::BRICK_BROKEN, this);
     bus.subscribe(EventType::ITEM_EMERGED, this);
@@ -102,6 +103,7 @@ SoundManager::~SoundManager() {
     bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
     bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
     bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
+    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_BLOCK, this);
     bus.unsubscribe(EventType::BLOCK_BUMPED, this);
     bus.unsubscribe(EventType::BRICK_BROKEN, this);
     bus.unsubscribe(EventType::ITEM_EMERGED, this);
@@ -127,6 +129,9 @@ void SoundManager::onNotify(EventType event) {
             break;
         case EventType::ENEMY_DEFEATED_BY_STAR:
             playSound("enemy_star");
+            break;
+        case EventType::ENEMY_DEFEATED_BY_BLOCK:
+            playSound("stomp");
             break;
         case EventType::PLAYER_DIED:
             playSound("death");

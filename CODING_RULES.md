@@ -98,7 +98,7 @@ private:
 const int TILE_SIZE = 32;
 const int MAX_LIVES = 3;
 
-enum class MarioState { SMALL, SUPER, FIRE };
+enum class MarioState { SMALL, SUPER, FIRE_SMALL, FIRE_SUPER };
 // use scoped enum (enum class), do not use plain enum
 
 // File → class name (1-1)

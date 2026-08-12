@@ -72,11 +72,17 @@ enum class DefeatCause {
     SHELL,
     FIREBALL,
     STAR,
+    BLOCK_BUMP,
     PIT
 };
 ```
 
 `CollisionManager::defeatEnemy(Enemy&, DefeatCause, Mario*)` is the single score/event commit transaction.
+
+`BLOCK_BUMP` awards 100 points and publishes `ENEMY_DEFEATED_BY_BLOCK`; the
+existing stomp sound is reused. Defeated enemies may remain briefly for their
+death animation, but their contacts are non-gameplay and projectiles pass
+through them.
 
 ## FireBall request
 
@@ -97,7 +103,11 @@ SMALL + FireFlower     -> SMALL FIRE
 SUPER + FireFlower     -> SUPER FIRE
 ```
 
-Normal `?` blocks remain adaptive (Small -> Mushroom, Super/Fire -> FireFlower). Explicit `f` blocks always spawn a FireFlower. `Mario::powerUp()` preserves the current body tier, and the atlas selects `FireSmallMario` or `FireBigMario` accordingly. `Mario::setMarioState()` remains the exact-state API used by restore/debug flows; the overload with `fireIsSuper` preserves the form across level transitions.
+Normal `?` blocks remain adaptive (Small -> Mushroom, powered states -> FireFlower). Explicit `f` blocks always spawn a FireFlower. The four-state enum is `SMALL`, `SUPER`, `FIRE_SMALL`, and `FIRE_SUPER`; `Mario::powerUp()` selects the explicit target state and the atlas selects `FireSmallMario` or `FireBigMario` accordingly. `Mario::setMarioState()` is the exact-state API used by restore/debug flows.
+
+`Mario::canBreakBricks()` combines the active Mario state capability with
+Star invincibility, so Small and Small Fire Mario can break bricks while Star
+power is active and lose that capability immediately on expiry.
 
 ## Ownership
 

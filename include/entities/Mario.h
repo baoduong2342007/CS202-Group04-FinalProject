@@ -11,11 +11,12 @@
 #include "entities/Character.h"
 #include "states/IMarioState.h"
 
-// Define Mario's power-up states strictly according to project specifications
+// Mario's power-up states encode both body tier and Fire capability.
 enum class MarioState {
-    SMALL,
-    SUPER,
-    FIRE
+    SMALL = 0,
+    SUPER = 1,
+    FIRE_SMALL = 2,
+    FIRE_SUPER = 3
 };
 
 // Selectable player character identity (Mario / Luigi)
@@ -54,8 +55,7 @@ public:
     bool isFlagpoleSliding() const { return m_isFlagpoleSliding; }
     static constexpr float FLAGPOLE_SLIDE_SPEED = 120.0f;
     void preparePhysics(float dt);
-    /// Apply a gameplay power-up while preserving the Small/Super body tier.
-    /// A FireFlower adds FIRE without forcing Small Mario to grow.
+    /// Apply a monotonic gameplay power-up.
     void powerUp(MarioState state);
     void powerDown();
     void queuePowerDown();
@@ -86,11 +86,9 @@ public:
 
     // 4. Getters / Setters
     MarioState getMarioState() const;
-    /// Select a state using the current body tier for FIRE when no explicit
-    /// fire-body flag is supplied.
     void setMarioState(MarioState state);
-    /// Restore/debug overload that preserves Small Fire vs Super Fire.
-    void setMarioState(MarioState state, bool fireIsSuper);
+    /// True when Mario can shatter brick blocks, including active Star power.
+    bool canBreakBricks() const;
     int getScore() const;
     int getCoinCount() const;
     /// Sprint 6 (S6-TV1-10): setter for restoring session progress on level load.
@@ -120,8 +118,6 @@ public:
     bool isCollisionLocked() const { return !m_active || m_isDying || m_pendingPowerDown; }
     bool isDeathAnimationFinished() const;
     bool isTransforming() const { return m_isTransforming; }
-    /// True when FIRE uses the Super/Big body; false means Small Fire Mario.
-    bool isSuperFireMario() const { return m_fireIsSuper; }
     bool hasPendingGrowth() const { return m_pendingGrowthState != MarioState::SMALL; }
     MarioState getPendingGrowthState() const { return m_pendingGrowthState; }
     float getFireCooldownRemaining() const { return m_fireCooldown; }
@@ -141,8 +137,6 @@ protected:
 
     // 6. Protected / Private members
     MarioState m_marioState;
-    // FIRE is a capability layered on the current Small/Super body tier.
-    bool m_fireIsSuper = false;
     CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;

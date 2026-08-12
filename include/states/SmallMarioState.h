@@ -1,7 +1,7 @@
 /**
  * @file SmallMarioState.h
  * @author TV3 (Bảo)
- * @brief Concrete Small Mario power-up state (32x32 hitbox, no fireball shooting)
+ * @brief Concrete Small Mario power-up state (small body, no fireball shooting)
  */
 
 #pragma once

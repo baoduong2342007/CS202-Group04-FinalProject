@@ -5,9 +5,7 @@
  *
  * This suite locks the Sprint 6 release contract that every other module builds
  * on top of:
- *   - `MarioState` is exactly { SMALL, SUPER, FIRE } — the abandoned small-fire
- *     variant must never return as a fourth enumerator. The static_asserts below
- *     make any re-introduction a compile-time failure.
+ *   - `MarioState` is exactly { SMALL, SUPER, FIRE_SMALL, FIRE_SUPER }.
  *   - Default character is Mario (`CharacterType::MARIO`); Luigi stays out of
  *     the release flow.
  *   - FireFlower preserves the body tier: SMALL -> Small Fire, SUPER -> Super Fire.
@@ -22,6 +20,7 @@
  */
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -81,8 +80,10 @@ static_assert(static_cast<int>(MarioState::SMALL) == 0,
               "Gate 0: MarioState must begin with SMALL == 0");
 static_assert(static_cast<int>(MarioState::SUPER) == 1,
               "Gate 0: MarioState::SUPER must be the 2nd enumerator");
-static_assert(static_cast<int>(MarioState::FIRE) == 2,
-              "Gate 0: MarioState::FIRE must be the 3rd and final enumerator");
+static_assert(static_cast<int>(MarioState::FIRE_SMALL) == 2,
+              "Gate 0: MarioState::FIRE_SMALL must be the 3rd enumerator");
+static_assert(static_cast<int>(MarioState::FIRE_SUPER) == 3,
+              "Gate 0: MarioState::FIRE_SUPER must be the 4th and final enumerator");
 
 // Returns true when the given release level passes the validator and tileset load.
 bool loadReleaseLevel(const std::string& filePath) {
@@ -110,20 +111,18 @@ void testFireFlowerPreservesBodyTier() {
     FireFlower flower;
     flower.onCollect(mario);
 
-    // Small Mario keeps the Small body while gaining the FIRE capability.
-    assert(mario.getMarioState() == MarioState::FIRE);
+    // Small Mario becomes the explicit Small Fire state.
+    assert(mario.getMarioState() == MarioState::FIRE_SMALL);
     assert(mario.getSize().y == 30.f);
-    assert(!mario.isSuperFireMario());
     assert(mario.canShootFireBall());
 
-    // Super Mario keeps the large body while gaining FIRE.
+    // Super Mario becomes the explicit Super Fire state.
     Mario superMario;
     superMario.setMarioState(MarioState::SUPER);
     FireFlower superFlower;
     superFlower.onCollect(superMario);
-    assert(superMario.getMarioState() == MarioState::FIRE);
+    assert(superMario.getMarioState() == MarioState::FIRE_SUPER);
     assert(superMario.getSize().y == 60.f);
-    assert(superMario.isSuperFireMario());
     assert(superMario.canShootFireBall());
 
     std::cout << "[PASSED] testFireFlowerPreservesBodyTier" << std::endl;
@@ -137,9 +136,8 @@ void testFireFlowerGrantsFireFromSuper() {
     FireFlower flower;
     flower.onCollect(mario);
 
-    assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getMarioState() == MarioState::FIRE_SUPER);
     assert(mario.getSize().y == 60.f);
-    assert(mario.isSuperFireMario());
     assert(mario.canShootFireBall());
 
     std::cout << "[PASSED] testFireFlowerGrantsFireFromSuper" << std::endl;
@@ -160,12 +158,21 @@ void testMushroomPromotesAndNeverDowngrades() {
     superMushroom.onCollect(super);
     assert(super.getMarioState() == MarioState::SUPER);
 
-    // FIRE + Super Mushroom -> stays FIRE (no downgrade)
+    // FIRE_SMALL + Super Mushroom -> FIRE_SUPER
     Mario fire;
-    fire.setMarioState(MarioState::FIRE);
+    fire.setMarioState(MarioState::FIRE_SMALL);
     Mushroom fireMushroom(MushroomType::SUPER);
     fireMushroom.onCollect(fire);
-    assert(fire.getMarioState() == MarioState::FIRE);
+    assert(fire.getMarioState() == MarioState::FIRE_SUPER);
+    assert(fire.getSize().y == 60.f);
+    assert(fire.canShootFireBall());
+
+    // FIRE_SUPER + Super Mushroom -> stays FIRE_SUPER
+    Mario superFire;
+    superFire.setMarioState(MarioState::FIRE_SUPER);
+    Mushroom superFireMushroom(MushroomType::SUPER);
+    superFireMushroom.onCollect(superFire);
+    assert(superFire.getMarioState() == MarioState::FIRE_SUPER);
 
     std::cout << "[PASSED] testMushroomPromotesAndNeverDowngrades" << std::endl;
 }
@@ -210,6 +217,50 @@ void testReleaseLevelMarkers() {
     assert(!castle.isSolid(60, 5));
 
     std::cout << "[PASSED] testReleaseLevelMarkers" << std::endl;
+}
+
+void testAllLevelFlagMarkers() {
+    std::cout << "[RUNNING] testAllLevelFlagMarkers..." << std::endl;
+
+    struct LevelCase {
+        const char* path;
+        LevelTheme theme;
+    };
+
+    const LevelCase cases[] = {
+        {"levels/level0.txt", LevelTheme::OVERWORLD},
+        {"levels/level1.txt", LevelTheme::OVERWORLD},
+        {"levels/level2.txt", LevelTheme::UNDERGROUND},
+        {"levels/level3.txt", LevelTheme::CASTLE},
+        {"levels/level4.txt", LevelTheme::CASTLE},
+    };
+
+    for (const LevelCase& testCase : cases) {
+        TileMap tileMap;
+        tileMap.setTheme(testCase.theme);
+        assert(tileMap.loadFromFile(testCase.path));
+
+        const auto tops = tileMap.findTiles('T');
+        const auto finishes = tileMap.findTiles('F');
+        assert(tops.size() == 1);
+        assert(finishes.size() == 1);
+        assert(tops.front().x == finishes.front().x);
+        assert(tops.front().y + 1 == finishes.front().y);
+
+        int poleRow = finishes.front().y + 1;
+        int poleTiles = 0;
+        while (poleRow < static_cast<int>(tileMap.getHeight()) &&
+               tileMap.getTileAt(finishes.front().x, poleRow) == '|') {
+            ++poleTiles;
+            ++poleRow;
+        }
+
+        assert(poleTiles > 0);
+        assert(poleRow < static_cast<int>(tileMap.getHeight()));
+        assert(tileMap.isSolid(finishes.front().x, poleRow));
+    }
+
+    std::cout << "[PASSED] testAllLevelFlagMarkers" << std::endl;
 }
 
 void testRandomQuestionBlocksAndItemRoutes() {
@@ -299,8 +350,8 @@ void testFireBallActiveLimitOfTwo() {
     assert(!mario->canShootFireBall());
     assert(!level.requestFireBallShot(*mario));
 
-    // Power up to FIRE state
-    mario->setMarioState(MarioState::FIRE);
+    // Power up to FIRE_SMALL state
+    mario->setMarioState(MarioState::FIRE_SMALL);
     assert(mario->canShootFireBall());
 
     // 1st shot -> succeeds
@@ -360,9 +411,11 @@ void testFlagAnimationChangesPixelsForEveryTheme() {
     };
 
     const ThemeCase cases[] = {
+        {"levels/level0.txt", LevelTheme::OVERWORLD},
         {"levels/level1.txt", LevelTheme::OVERWORLD},
         {"levels/level2.txt", LevelTheme::UNDERGROUND},
         {"levels/level3.txt", LevelTheme::CASTLE},
+        {"levels/level4.txt", LevelTheme::CASTLE},
     };
 
     for (const ThemeCase& testCase : cases) {
@@ -380,12 +433,14 @@ void testFlagAnimationChangesPixelsForEveryTheme() {
             {128.0f, 128.0f})));
 
         renderTexture.clear(sf::Color::Transparent);
+        tileMap.renderFlags(renderTexture);
         tileMap.renderForeground(renderTexture);
         renderTexture.display();
         const sf::Image firstFrame = renderTexture.getTexture().copyToImage();
 
         tileMap.update(0.25f);
         renderTexture.clear(sf::Color::Transparent);
+        tileMap.renderFlags(renderTexture);
         tileMap.renderForeground(renderTexture);
         renderTexture.display();
         const sf::Image secondFrame = renderTexture.getTexture().copyToImage();
@@ -400,6 +455,26 @@ void testFlagAnimationChangesPixelsForEveryTheme() {
             }
         }
         assert(changed);
+
+        // The visual drop is independent from collision geometry and is
+        // clamped to the validated pole body by TileMap.
+        tileMap.setFlagDropDistance(32.0f);
+        renderTexture.clear(sf::Color::Transparent);
+        tileMap.renderFlags(renderTexture);
+        tileMap.renderForeground(renderTexture);
+        renderTexture.display();
+        const sf::Image loweredFrame = renderTexture.getTexture().copyToImage();
+
+        bool lowered = false;
+        for (unsigned int y = 0; y < 128u && !lowered; ++y) {
+            for (unsigned int x = 0; x < 128u; ++x) {
+                if (secondFrame.getPixel({x, y}) != loweredFrame.getPixel({x, y})) {
+                    lowered = true;
+                    break;
+                }
+            }
+        }
+        assert(lowered);
     }
 
     std::cout << "[PASSED] testFlagAnimationChangesPixelsForEveryTheme" << std::endl;
@@ -414,13 +489,26 @@ void testLevel3FlagSequencePublishesOnce() {
 
     CompletionCounter counter;
     const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
-    level.getMario()->setPosition(TileMap::gridToWorldPosition(finish));
+    const sf::Vector2f startPosition =
+        TileMap::gridToWorldPosition(finish) + sf::Vector2f(7.0f, 8.0f);
+    level.getMario()->setPosition(startPosition);
 
     // Contact starts the sequence but must not complete the level immediately.
     level.update(0.0f);
     assert(level.getMario()->isFlagpoleSliding());
+    assert(level.getMario()->getPosition() == startPosition);
+    assert(level.getTileMap().getFlagDropDistance() == 0.0f);
     assert(!level.isLevelCompleted());
     assert(counter.count == 0);
+
+    const float previousMarioY = level.getMario()->getPosition().y;
+    const float previousFlagDrop = level.getTileMap().getFlagDropDistance();
+    level.update(0.25f);
+    const float marioDisplacement =
+        level.getMario()->getPosition().y - previousMarioY;
+    assert(marioDisplacement > 0.0f);
+    assert(std::abs(level.getTileMap().getFlagDropDistance() -
+                    (previousFlagDrop + marioDisplacement)) < 0.1f);
 
     // The Castle pole is traversed at the fixed slide speed.
     for (int step = 0; step < 6 && !level.isLevelCompleted(); ++step) {
@@ -444,6 +532,7 @@ int main() {
     testMushroomPromotesAndNeverDowngrades();
     testReleaseLevelsAreLoadable();
     testReleaseLevelMarkers();
+    testAllLevelFlagMarkers();
     testRandomQuestionBlocksAndItemRoutes();
     testFireBallActiveLimitOfTwo();
     testThemeWiringAndLevel3Spawns();

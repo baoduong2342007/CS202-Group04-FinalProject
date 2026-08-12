@@ -10,8 +10,8 @@
 # f/h = explicit FireFlower block; Small/Super body tier is preserved on pickup
 # O/o = question block containing Starman / Star
 # S = unbreakable stone block (solid)
-# F = finish pole top and finish marker (non-solid)
-# T = top of flag pole
+# F = triangular finish flag marker (non-solid)
+# T = round cap on top of the finish pole (non-solid)
 # | = finish pole body (non-solid)
 # [ = pipe top-left (solid)
 # ] = pipe top-right (solid)

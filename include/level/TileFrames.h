@@ -85,6 +85,10 @@ inline constexpr sf::IntRect PIPE_TOP_RIGHT{ {136, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT{ {119, 213}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT{ {136, 213}, {16, 16} };
 
+// The round cap is stored in the tileset. The triangular flag itself is
+// stored in items_objects.png and is catalogued by SpriteFrames::Items.
+// Keep FINISH_FLAG as a compatibility alias for callers that used the old
+// name before F was moved to the objects atlas.
 inline constexpr sf::IntRect FINISH_FLAG{ {136, 230}, {16, 16} };
 
 inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };

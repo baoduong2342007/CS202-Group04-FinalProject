@@ -50,7 +50,7 @@ std::filesystem::path writeLevelFile(const std::string& fileName, const std::vec
 
 std::vector<std::string> makeValidLevel() {
     return {
-        "........",
+        "......T.",
         ".M....F.",
         "......|.",
         "......|.",
@@ -182,6 +182,20 @@ bool testRejectsInvalidFlagPole() {
     return true;
 }
 
+bool testRejectsMissingFlagpoleTop() {
+    std::cout << "[RUNNING] testRejectsMissingFlagpoleTop..." << std::endl;
+
+    auto rows = makeValidLevel();
+
+    rows[0][6] = '.';
+
+    assert(rejectsLevel("missing_flagpole_top.txt", rows));
+
+    std::cout << "[PASSED] testRejectsMissingFlagpoleTop" << std::endl;
+
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -194,7 +208,8 @@ int main() {
                          testRejectsDuplicateMarioSpawn() &&
                          testRejectsMissingFinish() &&
                          testRejectsDuplicateFinish() &&
-                         testRejectsInvalidFlagPole();
+                         testRejectsInvalidFlagPole() &&
+                         testRejectsMissingFlagpoleTop();
 
     std::error_code errorCode;
 

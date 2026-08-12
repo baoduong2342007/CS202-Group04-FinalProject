@@ -24,7 +24,7 @@ This document describes the 5 main design patterns implemented in the SuperMario
 **Location:** `include/states/IGameState.h`, `MenuState`, `PlayState`, `GameOverState`, `WinState`, `PauseState` (and Mario power-up states)
 **Implementer:** TV1 (Dương), TV2 (Nhật)
 **Reasoning:** Encapsulates the behavior of different game modes into independent objects. `GameManager` switches seamlessly between them using a stack-based approach (push/pop).
-We also employ the State Pattern within `Mario.cpp` for powerups (`SmallMarioState`, `SuperMarioState`, `FireMarioState`) to delegate state-specific animation logic cleanly.
+We also employ the State Pattern within `Mario.cpp` for powerups (`SmallMarioState`, `SuperMarioState`, `SmallFireMarioState`, `SuperFireMarioState`) to delegate state-specific animation logic cleanly.
 
 ## 5. Command Pattern
 **Location:** `include/patterns/ICommand.h`, `include/patterns/InputHandler.h`

@@ -167,10 +167,12 @@ void testScoreCatalogAndCoinThreshold() {
     assert(ScoreRules::pointsFor(ScoreEvent::SHELL_DEFEATED) == 200);
     assert(ScoreRules::pointsFor(ScoreEvent::FIREBALL_DEFEATED) == 200);
     assert(ScoreRules::pointsFor(ScoreEvent::STAR_DEFEATED) == 200);
+    assert(ScoreRules::pointsFor(ScoreEvent::BLOCK_BUMP_DEFEATED) == 100);
     assert(ScoreRules::pointsFor(DefeatCause::STOMP) == 100);
     assert(ScoreRules::pointsFor(DefeatCause::SHELL) == 200);
     assert(ScoreRules::pointsFor(DefeatCause::FIREBALL) == 200);
     assert(ScoreRules::pointsFor(DefeatCause::STAR) == 200);
+    assert(ScoreRules::pointsFor(DefeatCause::BLOCK_BUMP) == 100);
     assert(ScoreRules::pointsFor(DefeatCause::PIT) == 0);
 
     EventCounter events;
@@ -295,21 +297,23 @@ void testDefeatScoreAndShellEventsThroughCollisionRuntime() {
 void testPowerUpAndOneUpEvents() {
     EventCounter events;
     Mario mario;
+    HUD hud(mario);
     const int initialLives = mario.getLives();
 
     FireFlower fireFlower;
     fireFlower.onCollect(mario);
-    assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getMarioState() == MarioState::FIRE_SMALL);
     assert(mario.getSize().y == 30.f);
-    assert(!mario.isSuperFireMario());
     assert(mario.canShootFireBall());
+    assert(hud.getPowerLabel() == "FIRE SMALL");
     assert(mario.getScore() == 1000);
     assert(events.powerUpEvents == 1);
 
     FireFlower secondFireFlower;
     secondFireFlower.onCollect(mario);
-    assert(mario.getMarioState() == MarioState::FIRE);
+    assert(mario.getMarioState() == MarioState::FIRE_SMALL);
     assert(mario.canShootFireBall());
+    assert(hud.getPowerLabel() == "FIRE SMALL");
     assert(mario.getScore() == 2000);
     assert(events.powerUpEvents == 2);
 
@@ -395,7 +399,7 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     Mario directMario;
     directMario.setMarioState(MarioState::SUPER);
     directFlower.onCollect(directMario);
-    assert(directMario.getMarioState() == MarioState::FIRE);
+    assert(directMario.getMarioState() == MarioState::FIRE_SUPER);
     assert(directMario.getScore() == 1000);
     directFlower.onCollect(directMario);
     assert(directMario.getScore() == 1000); // one item, one award

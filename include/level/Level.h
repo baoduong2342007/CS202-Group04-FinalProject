@@ -88,6 +88,8 @@ private:
     bool m_flagWalkActive = false;
     float m_flagSequenceTimer = 0.0f;
     float m_flagWalkTargetX = 0.0f;
+    float m_flagSlideStartMarioY = 0.0f;
+    float m_flagSlideStartDropDistance = 0.0f;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
     LevelTheme m_theme{LevelTheme::OVERWORLD};

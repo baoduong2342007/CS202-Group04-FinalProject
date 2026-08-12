@@ -19,6 +19,4 @@ struct GameProgress {
     int coins = 0;
     int lives = 3;
     MarioState power = MarioState::SMALL;
-    // FIRE retains the body tier: false = Small Fire, true = Super Fire.
-    bool fireIsSuper = false;
 };

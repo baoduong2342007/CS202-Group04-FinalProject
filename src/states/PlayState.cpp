@@ -269,7 +269,6 @@ void PlayState::snapshotProgress() {
     m_progress.coins = m_level->getMario()->getCoinCount();
     m_progress.lives = m_level->getMario()->getLives();
     m_progress.power = m_level->getMario()->getMarioState();
-    m_progress.fireIsSuper = m_level->getMario()->isSuperFireMario();
 }
 
 void PlayState::restoreProgress() {
@@ -282,8 +281,7 @@ void PlayState::restoreProgress() {
     m_level->getMario()->setCoinCount(m_progress.coins);
     m_level->getMario()->setLives(m_progress.lives);
     if (m_progress.power != MarioState::SMALL) {
-        m_level->getMario()->setMarioState(m_progress.power,
-                                           m_progress.fireIsSuper);
+        m_level->getMario()->setMarioState(m_progress.power);
     }
 
     if (m_hud) {

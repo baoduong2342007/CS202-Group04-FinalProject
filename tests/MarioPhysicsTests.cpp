@@ -11,6 +11,8 @@
 #include <box2d/box2d.h>
 
 #include "core/AnimationSystem.h"
+#include "core/SpriteFrames_shared.h"
+#include "core/TextureManager.h"
 #include "entities/Mario.h"
 #include "items/FireFlower.h"
 #include "items/Mushroom.h"
@@ -39,6 +41,11 @@ public:
 
     const std::string& currentAnimation() const {
         return m_animationSystem->getCurrentAnimationName();
+    }
+
+    sf::IntRect currentTextureRect() const {
+        return m_sprite ? m_sprite->getTextureRect()
+                        : sf::IntRect({-1, -1}, {0, 0});
     }
 };
 
@@ -284,6 +291,26 @@ bool testStarmanVsDamageGraceIndependence() {
 }
 
 bool testPowerDownKeepsDamageGraceLongEnough() {
+    Mario superFire({100.0f, 100.0f}, {28.0f, 30.0f});
+    superFire.setMarioState(MarioState::FIRE_SUPER);
+    superFire.powerDown();
+    if (!check(superFire.getMarioState() == MarioState::SUPER,
+               "FIRE_SUPER must downgrade to SUPER") ||
+        !check(superFire.getSize().y == 60.f,
+               "FIRE_SUPER downgrade must retain the Super body")) {
+        return false;
+    }
+
+    Mario smallFire({100.0f, 100.0f}, {28.0f, 30.0f});
+    smallFire.setMarioState(MarioState::FIRE_SMALL);
+    smallFire.powerDown();
+    if (!check(smallFire.getMarioState() == MarioState::SMALL,
+               "FIRE_SMALL must downgrade to SMALL") ||
+        !check(smallFire.getSize().y == 30.f,
+               "FIRE_SMALL downgrade must retain the Small body")) {
+        return false;
+    }
+
     Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
     mario.setMarioState(MarioState::SUPER);
     mario.powerDown();
@@ -419,23 +446,72 @@ bool testGrowthFootAnchorAndClearance() {
 
     FireFlower flower;
     flower.onCollect(flowerMario);
-    if (!check(flowerMario.getMarioState() == MarioState::FIRE,
+    if (!check(flowerMario.getMarioState() == MarioState::FIRE_SMALL,
                "Small Fire pickup must not force a large body") ||
         !check(flowerMario.getSize().y == 30.f,
                "Small Fire pickup must preserve Small Mario height") ||
-        !check(!flowerMario.isSuperFireMario(),
-               "Small Fire pickup must select the Small Fire form") ||
         !check(!flowerMario.hasPendingGrowth(),
                "Small Fire pickup must not defer a growth transition")) return false;
 
+    Mushroom fireGrowthMushroom;
+    fireGrowthMushroom.onCollect(flowerMario);
+    if (!check(flowerMario.getMarioState() == MarioState::FIRE_SMALL,
+               "Small Fire growth must remain deferred under a low ceiling") ||
+        !check(flowerMario.getPendingGrowthState() == MarioState::FIRE_SUPER,
+               "Small Fire pickup must retain FIRE_SUPER as pending")) return false;
+
     flowerWorld.DestroyBody(flowerCeiling);
     flowerMario.update(0.0f);
-    if (!check(flowerMario.getMarioState() == MarioState::FIRE,
-               "Small Fire state must remain FIRE after clearance changes") ||
+    if (!check(flowerMario.getMarioState() == MarioState::FIRE_SUPER,
+               "Small Fire growth must become Super Fire after clearance changes") ||
+        !check(flowerMario.getSize().y == 60.f,
+               "Super Fire growth must rebuild the large body") ||
         !check(flowerMario.canShootFireBall(),
-               "Small Fire Mario must be able to shoot")) return false;
+               "Super Fire Mario must be able to shoot")) return false;
 
     return true;
+}
+
+bool testTransformUsesFireAtlas() {
+    TextureManager& textureManager = TextureManager::getInstance();
+
+    MarioAnimationProbe fireMario;
+    fireMario.setTextureManager(textureManager);
+    fireMario.setMarioState(MarioState::FIRE_SMALL);
+
+    Mushroom fireMushroom;
+    fireMushroom.onCollect(fireMario);
+    if (!check(fireMario.getMarioState() == MarioState::FIRE_SUPER,
+               "Small Fire mushroom growth must reach FIRE_SUPER") ||
+        !check(fireMario.currentAnimation() == "transform",
+               "Small Fire mushroom growth must start the transform animation")) {
+        return false;
+    }
+
+    fireMario.update(0.14f);
+    const sf::IntRect fireFrame = fireMario.currentTextureRect();
+    if (!check(fireFrame.position.y ==
+                   SpriteFrames::shared::GrowShrink::FireMario::BIG.position.y,
+               "Super Fire transform must use the Fire Mario atlas row") ||
+        !check(fireFrame.position.y !=
+                   SpriteFrames::shared::GrowShrink::Mario::BIG.position.y,
+               "Super Fire transform must not use the regular Mario atlas row")) {
+        return false;
+    }
+
+    MarioAnimationProbe regularMario;
+    regularMario.setTextureManager(textureManager);
+    Mushroom regularMushroom;
+    regularMushroom.onCollect(regularMario);
+    regularMario.update(0.14f);
+    const sf::IntRect regularFrame = regularMario.currentTextureRect();
+    return check(regularMario.getMarioState() == MarioState::SUPER,
+                 "Regular mushroom growth must reach SUPER") &&
+           check(regularMario.currentAnimation() == "transform",
+                 "Regular mushroom growth must start the transform animation") &&
+           check(regularFrame.position.y ==
+                     SpriteFrames::shared::GrowShrink::Mario::BIG.position.y,
+                 "Regular Super transform must keep the regular Mario atlas row");
 }
 
 bool testDeathLifecycleAndDeterministicRespawn() {
@@ -444,7 +520,7 @@ bool testDeathLifecycleAndDeterministicRespawn() {
     mario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
 
     int initialLives = mario.getLives();
-    mario.setMarioState(MarioState::FIRE);
+    mario.setMarioState(MarioState::FIRE_SMALL);
     assert(mario.tryStartFireBallShot());
     mario.setVerticalIntent(-1.0f);
     mario.setClimbContext(true, 116.0f);
@@ -652,6 +728,7 @@ int main() {
                          testWalkingVsSprintingSeparatedByShift() &&
                          testIsolatedWorldAccumulators() &&
                          testGrowthFootAnchorAndClearance() &&
+                         testTransformUsesFireAtlas() &&
                          testDeathLifecycleAndDeterministicRespawn() &&
                          testCollisionManagerDefeatCausesAndSingleScore() &&
                          testUnderwaterSwimStrokeWorksInMidAir() &&

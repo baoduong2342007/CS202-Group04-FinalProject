@@ -102,7 +102,6 @@ private:
     bool m_flagSequenceActive = false;
     bool m_flagWalkActive = false;
     FlagPhase m_flagPhase = FlagPhase::NONE;
-    float m_flagSequenceTimer = 0.0f;
     float m_flagWalkTargetX = 0.0f;
     float m_flagSlideStartMarioY = 0.0f;
     float m_flagSlideStartDropDistance = 0.0f;

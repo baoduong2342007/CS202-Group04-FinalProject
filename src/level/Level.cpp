@@ -142,7 +142,6 @@ bool Level::loadFromFile(const std::string& path) {
     m_flagSequenceActive = false;
     m_flagWalkActive = false;
     m_flagPhase = FlagPhase::NONE;
-    m_flagSequenceTimer = 0.0f;
     m_flagWalkTargetX = 0.0f;
     m_flagSlideStartMarioY = 0.0f;
     m_flagSlideStartDropDistance = 0.0f;
@@ -277,9 +276,6 @@ void Level::update(float dt) {
                 m_mario->setRunIntent(false);
                 m_flagWalkActive = true;
                 m_flagPhase = FlagPhase::WALKING;
-                const float walkDistance = std::max(
-                    0.0f, m_flagWalkTargetX - m_mario->getPosition().x);
-                m_flagSequenceTimer = walkDistance / FLAGPOLE_WALK_SPEED;
             } else if (m_mario->isFlagpoleSlideComplete() &&
                        !m_tileMap.isFlagFullyDropped()) {
                 m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
@@ -289,10 +285,12 @@ void Level::update(float dt) {
         case FlagPhase::WALKING: {
             m_mario->setMoveIntent(1.0f);
             m_mario->setRunIntent(false);
-            m_flagSequenceTimer -= dt;
 
-            if (m_mario->getPosition().x >= m_flagWalkTargetX ||
-                m_flagSequenceTimer <= 0.0f) {
+            // The walk is driven by Mario's actual physics position.  A timer
+            // based on targetDistance / walkSpeed finishes too early because
+            // Mario accelerates from rest; snapping here would skip the last
+            // part of the walk into the castle.
+            if (m_mario->getPosition().x >= m_flagWalkTargetX) {
                 const sf::Vector2f stopPosition(m_flagWalkTargetX,
                                                 m_mario->getPosition().y);
                 m_mario->setPosition(stopPosition);

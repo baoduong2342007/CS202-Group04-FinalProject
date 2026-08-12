@@ -32,7 +32,7 @@ constexpr float MAX_FALL_SPEED = 600.f;
 constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
-constexpr float WALK_MAX_SPEED = 180.f;
+constexpr float WALK_MAX_SPEED = 175.f;
 constexpr float RUN_MAX_SPEED = 280.f;
 // Build speed progressively so Mario does not reach the movement cap almost
 // immediately after the direction key is pressed.
@@ -41,10 +41,10 @@ constexpr float RUN_ACCEL = 400.f;
 // Lower friction preserves more horizontal momentum when the input is
 // released or reversed, giving Mario a slightly longer, harder-to-control
 // slide.
-constexpr float GROUND_FRICTION = 400.f;
+constexpr float GROUND_FRICTION = 425.f;
 constexpr float SKID_FRICTION = 575.f;
 constexpr float AIR_ACCEL = 125.f;
-constexpr float AIR_FRICTION = 200.f;
+constexpr float AIR_FRICTION = 300.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
@@ -843,8 +843,7 @@ void Mario::beginFlagpoleSlide(float poleCenterX, float targetTopY) {
   // left with the sprite facing right and from the right facing left. The
   // +/-14.0f offset snugs his body beside the pole column while
   // updateSpriteLayout() flips the sprite horizontally (never vertically).
-  const bool marioIsRightOfPole =
-      m_position.x + m_size.x / 2.0f > poleCenterX;
+  const bool marioIsRightOfPole = m_position.x + m_size.x / 2.0f > poleCenterX;
   setFacingDirection(marioIsRightOfPole ? Direction::LEFT : Direction::RIGHT);
   const float offsetX = marioIsRightOfPole ? 14.0f : -14.0f;
   m_flagpoleTargetX = poleCenterX - m_size.x / 2.0f + offsetX;
@@ -867,8 +866,8 @@ void Mario::updateFlagpoleSlide(float dt) {
   }
 
   if (m_position.y < m_flagpoleTargetTopY) {
-    const float nextY = std::min(
-        m_position.y + FLAGPOLE_SLIDE_SPEED * dt, m_flagpoleTargetTopY);
+    const float nextY = std::min(m_position.y + FLAGPOLE_SLIDE_SPEED * dt,
+                                 m_flagpoleTargetTopY);
     setPosition({m_flagpoleTargetX, nextY});
   } else {
     setPosition({m_flagpoleTargetX, m_flagpoleTargetTopY});

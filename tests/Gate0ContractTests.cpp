@@ -519,7 +519,7 @@ void testLevel3FlagSequencePublishesOnce() {
     // The Castle pole is traversed at the fixed slide speed. With the fix the
     // sequence no longer uses an estimated timer for the slide, so the full
     // descent + flag drop + walk takes more seconds than the old shortcut.
-    for (int step = 0; step < 12 && !level.isLevelCompleted(); ++step) {
+    for (int step = 0; step < 20 && !level.isLevelCompleted(); ++step) {
         level.update(1.0f);
     }
 
@@ -529,6 +529,43 @@ void testLevel3FlagSequencePublishesOnce() {
     assert(counter.count == 1);
 
     std::cout << "[PASSED] testLevel3FlagSequencePublishesOnce" << std::endl;
+}
+
+void testFlagWalkReachesCastleWithoutTeleporting() {
+    std::cout << "[RUNNING] testFlagWalkReachesCastleWithoutTeleporting..." << std::endl;
+
+    Level level;
+    level.setTheme(LevelTheme::OVERWORLD);
+    assert(level.loadFromFile("levels/level1.txt"));
+
+    const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
+    const sf::Vector2f startPosition =
+        TileMap::gridToWorldPosition(finish) + sf::Vector2f(7.0f, 8.0f);
+    level.getMario()->setPosition(startPosition);
+    level.update(0.0f);
+
+    constexpr float FRAME_DT = 1.0f / 60.0f;
+    float largestWalkStep = 0.0f;
+
+    for (int step = 0; step < 600 && !level.isLevelCompleted(); ++step) {
+        const bool wasWalking = level.isFlagSequenceActive() &&
+                                !level.getMario()->isFlagpoleSliding();
+        const float previousX = level.getMario()->getPosition().x;
+
+        level.update(FRAME_DT);
+
+        if (wasWalking) {
+            const float currentX = level.getMario()->getPosition().x;
+            largestWalkStep = std::max(largestWalkStep, currentX - previousX);
+        }
+    }
+
+    assert(level.isLevelCompleted());
+    // At 60 FPS the automatic walk can advance only a few pixels per update.
+    // A larger jump means the old timeout fallback snapped Mario to the door.
+    assert(largestWalkStep < 10.0f);
+
+    std::cout << "[PASSED] testFlagWalkReachesCastleWithoutTeleporting" << std::endl;
 }
 
 void testFlagSequenceSnapsMarioToPoleSide() {
@@ -637,6 +674,7 @@ int main() {
     testThemeWiringAndLevel3Spawns();
     testFlagAnimationChangesPixelsForEveryTheme();
     testLevel3FlagSequencePublishesOnce();
+    testFlagWalkReachesCastleWithoutTeleporting();
     testFlagSequenceSnapsMarioToPoleSide();
     testFlagCompletionGatedOnFullFlagDrop();
 

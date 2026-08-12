@@ -42,8 +42,10 @@ public:
 
     /**
      * @brief Updates the camera's center position to follow a target.
-     * @details Tracks the X-axis continuously but utilizes a vertical deadzone for the Y-axis 
-     *          to prevent jittery camera movement when the target jumps.
+     * @details Tracks the X-axis continuously. In DEAD_ZONE mode, the camera
+     *          follows targets that rise within 32 logical pixels of the
+     *          original view's top edge and returns to that original view
+     *          when the target comes back down.
      * @param dt The time elapsed since the last update.
      * @param targetPosition The current X and Y coordinates of the entity to track (e.g., Mario).
      */
@@ -68,6 +70,7 @@ private:
     // 6. Private members
     sf::FloatRect m_levelBounds;
     sf::View m_view;
+    sf::Vector2f m_originalCenter{0.f, 0.f};
     sf::Vector2f m_stableCenter{0.f, 0.f};
     CameraVerticalMode m_verticalMode = CameraVerticalMode::LOCKED;
 

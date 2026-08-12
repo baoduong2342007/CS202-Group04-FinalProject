@@ -89,7 +89,7 @@ void testCameraPoliciesAndFourEdgeClamp() {
     tall.setVerticalMode(CameraVerticalMode::DEAD_ZONE);
     tall.init({640.f, 360.f}, tallBounds);
     tall.update(0.f, {500.f, 100.f});
-    assert(close(tall.getView().getCenter().y, 180.f));
+    assert(close(tall.getView().getCenter().y, 248.f));
     assertViewInside(tall, tallBounds);
     tall.update(0.f, {500.f, 1150.f});
     assert(close(tall.getView().getCenter().y, 1020.f));
@@ -101,23 +101,45 @@ void testCameraPoliciesAndFourEdgeClamp() {
     assert(small.getView().getCenter() == sf::Vector2f(350.f, 200.f));
 }
 
-void testCameraFollowsRisingMarioWithClamp() {
+void testCameraFollowsMarioAndReturnsToOriginalView() {
     const sf::FloatRect bounds({0.f, 0.f}, {2000.f, 1200.f});
     Camera cam;
     cam.setVerticalMode(CameraVerticalMode::DEAD_ZONE);
     cam.init({640.f, 360.f}, bounds);
 
-    // Rest near the bottom, then have Mario climb well above the vertical
-    // deadzone. The follow camera must pan up (center Y decreases) while the
-    // four-edge clamp still keeps it inside the level.
-    cam.update(0.f, {1000.f, 1100.f});
-    const float lowY = cam.getView().getCenter().y;
+    // The initial view rests against the bottom of the level. Mario is outside
+    // the 32-pixel trigger zone, so the original camera must hold.
+    cam.update(0.f, {1000.f, 900.f});
+    const float restingY = cam.getView().getCenter().y;
+    assert(close(restingY, 1020.f));
     assertViewInside(cam, bounds);
 
-    cam.update(0.f, {1000.f, 60.f});
-    const float highY = cam.getView().getCenter().y;
-    assert(highY < lowY);
-    assert(close(highY, 180.f)); // clamped to the top edge's min-Y center
+    // At exactly 32 pixels below the original top edge, the camera is still
+    // at its original position when Mario returns to this threshold.
+    cam.update(0.f, {1000.f, 872.f});
+    assert(close(cam.getView().getCenter().y, restingY));
+
+    // One pixel above the return threshold starts vertical following. Mario is
+    // kept 32 pixels below the current top edge.
+    cam.update(0.f, {1000.f, 871.f});
+    const float followedY = cam.getView().getCenter().y;
+    assert(close(followedY, 1019.f));
+    assert(followedY < restingY);
+    assertViewInside(cam, bounds);
+
+    // A higher jump continues to move the camera while preserving the 32px
+    // top buffer.
+    cam.update(0.f, {1000.f, 800.f});
+    assert(close(cam.getView().getCenter().y, 948.f));
+    assert(close(cam.getView().getCenter().y - 180.f, 768.f));
+    assertViewInside(cam, bounds);
+
+    // Once Mario returns to the original 32px threshold, the camera snaps back
+    // to the original view instead of remaining at the high-jump position.
+    cam.update(0.f, {1000.f, 872.f});
+    assert(close(cam.getView().getCenter().y, restingY));
+    cam.update(0.f, {1000.f, 900.f});
+    assert(close(cam.getView().getCenter().y, restingY));
     assertViewInside(cam, bounds);
 }
 
@@ -147,7 +169,7 @@ void testMenuWidgetLogicalMouseClick() {
 int main() {
     testIntegerViewportMatrix();
     testCameraPoliciesAndFourEdgeClamp();
-    testCameraFollowsRisingMarioWithClamp();
+    testCameraFollowsMarioAndReturnsToOriginalView();
     testMenuWidgetLogicalMouseClick();
     return 0;
 }

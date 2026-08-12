@@ -23,7 +23,13 @@ namespace {
      */
     constexpr float HORIZONTAL_DEADZONE_RATIO = 0.05f;
 
-    constexpr float VERTICAL_DEADZONE_RATIO = 0.15f;
+    /**
+     * @brief The minimum distance kept between the target and the view's top edge.
+     * @details The camera only pans vertically once the target is closer than
+     * 32 logical pixels to the top edge, preserving more of the ground view
+     * while Mario is jumping.
+     */
+    constexpr float TOP_FOLLOW_DISTANCE = 32.0f;
 } // namespace
 
 // ============================================================
@@ -40,10 +46,12 @@ void Camera::init(const sf::Vector2f &viewSize,
   m_levelBounds = levelBounds;
 
   // Release maps rest against their bottom edge. Small worlds are centered by
-  // clampCenter() on either axis.
-  m_stableCenter = clampCenter({
+  // clampCenter() on either axis. Keep this initial position as the vertical
+  // reference that the camera returns to after following a high jump.
+  m_originalCenter = clampCenter({
       levelBounds.position.x + viewSize.x / 2.0f,
       levelBounds.position.y + levelBounds.size.y - viewSize.y / 2.0f});
+  m_stableCenter = m_originalCenter;
   m_view.setCenter(m_stableCenter);
 }
 
@@ -67,11 +75,14 @@ void Camera::update(float dt, const sf::Vector2f &targetPosition) {
     newCenter.y = m_levelBounds.position.y + m_levelBounds.size.y -
                   m_view.getSize().y / 2.0f;
   } else {
-    const float deadzone = m_view.getSize().y * VERTICAL_DEADZONE_RATIO;
-    if (targetPosition.y < m_stableCenter.y - deadzone) {
-      newCenter.y = targetPosition.y + deadzone;
-    } else if (targetPosition.y > m_stableCenter.y + deadzone) {
-      newCenter.y = targetPosition.y - deadzone;
+    const float originalTop =
+        m_originalCenter.y - m_view.getSize().y / 2.0f;
+    const float followThreshold = originalTop + TOP_FOLLOW_DISTANCE;
+    if (targetPosition.y < followThreshold) {
+      newCenter.y = targetPosition.y + m_view.getSize().y / 2.0f -
+                    TOP_FOLLOW_DISTANCE;
+    } else {
+      newCenter.y = m_originalCenter.y;
     }
   }
 

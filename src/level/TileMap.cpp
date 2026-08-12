@@ -38,7 +38,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoelt[]{}prJTLHV";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoe[]{}prJTLHV";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -48,7 +48,6 @@ constexpr float TWO_PI = 6.28318530718f;
 
 bool isSolidTileSymbol(char tile) {
     return (tile == '0' || tile == '1') || tile == 'B' || tile == 'E' || tile == 'S' ||
-           tile == 'l' || tile == 't' ||
            tile == '[' || tile == ']' ||
            tile == 'p' || tile == 'r' ||
            tile == '{' || tile == '}';
@@ -57,7 +56,6 @@ bool isSolidTileSymbol(char tile) {
 bool isForegroundTile(char symbol) {
     return symbol == 'B' || symbol == '?' ||
            symbol == 'U' || symbol == 'O' ||
-           symbol == 'l' || symbol == 't' ||
            symbol == 'F' || symbol == 'T' ||
            symbol == '|' || symbol == 'H' ||
            symbol == '[' || symbol == ']' ||
@@ -245,7 +243,6 @@ bool isValidTileSymbol(char symbol) {
 
 bool isRenderableTile(char symbol) {
     return (symbol == '0' || symbol == '1') || symbol == 'B' ||
-           symbol == 'l' || symbol == 't' ||
            symbol == 'F' || symbol == 'T' ||
            symbol == 'L' || symbol == 'H' ||
            symbol == 'S' || symbol == '|' || symbol == 'E' ||
@@ -473,18 +470,6 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
-
-        case 'l':
-            if (theme == LevelTheme::UNDERWATER) return TileFrames::HARD_BLOCK_UNDERWATER;
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
-            if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
-            return TileFrames::STONE;
-
-        case 't':
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
-            if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
-            if (theme == LevelTheme::UNDERWATER) return TileFrames::BRICK_UNDERWATER;
-            return TileFrames::BRICK;
 
         case 'B':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::BRICK_UNDERWATER;

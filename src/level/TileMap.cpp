@@ -38,7 +38,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".1B?CGKMFS|UEOfhuo[]{}prJTLHV";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoelt[]{}prJTLHV";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -47,7 +47,8 @@ constexpr float FLAG_WAVE_PHASE_OFFSET = 0.75f;
 constexpr float TWO_PI = 6.28318530718f;
 
 bool isSolidTileSymbol(char tile) {
-    return tile == '1' || tile == 'B' || tile == 'E' || tile == 'S' ||
+    return (tile == '0' || tile == '1') || tile == 'B' || tile == 'E' || tile == 'S' ||
+           tile == 'l' || tile == 't' ||
            tile == '[' || tile == ']' ||
            tile == 'p' || tile == 'r' ||
            tile == '{' || tile == '}';
@@ -56,6 +57,7 @@ bool isSolidTileSymbol(char tile) {
 bool isForegroundTile(char symbol) {
     return symbol == 'B' || symbol == '?' ||
            symbol == 'U' || symbol == 'O' ||
+           symbol == 'l' || symbol == 't' ||
            symbol == 'F' || symbol == 'T' ||
            symbol == '|' || symbol == 'H' ||
            symbol == '[' || symbol == ']' ||
@@ -242,13 +244,150 @@ bool isValidTileSymbol(char symbol) {
 }
 
 bool isRenderableTile(char symbol) {
-    return symbol == '1' || symbol == 'B' ||
+    return (symbol == '0' || symbol == '1') || symbol == 'B' ||
+           symbol == 'l' || symbol == 't' ||
            symbol == 'F' || symbol == 'T' ||
            symbol == 'L' || symbol == 'H' ||
            symbol == 'S' || symbol == '|' || symbol == 'E' ||
            symbol == '[' || symbol == ']' ||
            symbol == 'p' || symbol == 'r' ||
            symbol == '{' || symbol == '}';
+}
+
+bool isWarpId(char symbol) {
+    return symbol >= '1' && symbol <= '9';
+}
+
+bool parseAndNormalizeWarps(std::vector<std::string>& grid,
+                            std::vector<TileMap::WarpEntry>& entries,
+                            std::vector<TileMap::WarpReturn>& returns,
+                            const std::string& path
+                            ) {
+    entries.clear();
+    returns.clear();
+
+    const auto hasEntry = [&entries](char id) {
+        return std::any_of(entries.begin(), entries.end(),
+                           [id](const TileMap::WarpEntry& entry) {
+                                return entry.id == id;
+                           }
+                           );
+    };
+
+    const auto hasReturn = [&returns](char id) {
+        return std::any_of(returns.begin(), returns.end(),
+                           [id](const TileMap::WarpReturn& destination) {
+                                return destination.id == id;
+                           }
+                           );
+    };
+
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            const char symbol = grid[row][column];
+
+            // --------------------------------------------
+            // R<id> = invisible return/spawn point
+            // --------------------------------------------
+            if (symbol == 'R') {
+                if (column + 1 >= grid[row].size() ||
+                    !isWarpId(grid[row][column + 1])) {
+                    std::cerr << "Warp return R must be followed by ID 1-9 in " << path << std::endl;
+                    return false;
+                }
+
+                const char id = grid[row][column + 1];
+
+                if (hasReturn(id)) {
+                    std::cerr << "Duplicate warp return R" << id << " in " << path << std::endl;
+                    return false;
+                }
+
+                returns.push_back( { id, {static_cast<int>(column), static_cast<int>(row)} } );
+
+                // Rn is metadata only.
+                grid[row][column] = '.';
+                grid[row][column + 1] = '.';
+
+                ++column;
+                continue;
+            }
+
+            // Only H, [ and p may act as warp entries.
+            if (symbol != 'H' && symbol != '[' && symbol != 'p') {
+                continue;
+            }
+
+            // H / [] / pr without index remain normal objects.
+            if (column + 1 >= grid[row].size() || !isWarpId(grid[row][column + 1])) {
+                continue;
+            }
+
+            const char id = grid[row][column + 1];
+
+            if (hasEntry(id)) {
+                std::cerr << "Duplicate warp entry " << id << " in " << path << std::endl;
+                return false;
+            }
+
+            TileMap::WarpEntryType type;
+
+            if (symbol == 'H') {
+                type = TileMap::WarpEntryType::HORIZONTAL;
+
+                // H already renders/collides as a composite 3x2 pipe.
+                grid[row][column + 1] = '.';
+            } else if (symbol == '[') {
+                type = TileMap::WarpEntryType::VERTICAL;
+
+                // [2 -> [] at runtime.
+                grid[row][column + 1] = ']';
+            } else {
+                type = TileMap::WarpEntryType::PIRANHA;
+
+                // p2 -> pr at runtime.
+                grid[row][column + 1] = 'r';
+            }
+
+            entries.push_back( { id, {static_cast<int>(column), static_cast<int>(row)}, type } );
+            ++column;
+        }
+    }
+
+    // After normalization no number or R may remain.
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            const char symbol = grid[row][column];
+
+            // `1` is also the legacy ground symbol used by TV5's existing
+            // levels, so only 2-9 are ambiguous orphan warp IDs.
+            if (symbol == 'R' || (isWarpId(symbol) && symbol != '1')) {
+                std::cerr << "Orphan warp metadata '" << symbol << "' at row " << row + 1 << ", column " << column + 1 << " in " << path << std::endl;
+
+                return false;
+            }
+        }
+    }
+
+    // Every entry needs one return.
+    for (const auto& entry : entries) {
+        if (!hasReturn(entry.id)) {
+            std::cerr << "Warp entry " << entry.id << " has no matching R" << entry.id << " in " << path << std::endl;
+
+            return false;
+        }
+    }
+
+    // Every return needs one entry.
+    for (const auto& destination : returns) {
+        if (!hasEntry(destination.id)) {
+            std::cerr << "Warp return R" << destination.id << " has no matching entry in " << path << std::endl;
+
+            return false;
+        }
+    }
+
+    return true;
 }
 
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
@@ -308,12 +447,21 @@ const DebrisFrames& debrisFramesForTheme(LevelTheme theme) {
 } // namespace
 
 void TileMap::setTheme(LevelTheme theme) {
+    if (m_theme == theme) {
+        return;
+    }
+
     m_theme = theme;
+
+    if (!m_grid.empty()) {
+        buildVertices();
+    }
 }
 
 namespace {
 sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
+        case '0':
         case '1':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::GROUND_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::GROUND_UNDERGROUND;
@@ -325,6 +473,18 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
+
+        case 'l':
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::HARD_BLOCK_UNDERWATER;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
+            return TileFrames::STONE;
+
+        case 't':
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::BRICK_UNDERGROUND;
+            if (theme == LevelTheme::CASTLE) return TileFrames::BRICK_CASTLE;
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::BRICK_UNDERWATER;
+            return TileFrames::BRICK;
 
         case 'B':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::BRICK_UNDERWATER;
@@ -562,6 +722,9 @@ bool TileMap::loadFromFile(const std::string& path) {
     }
 
     std::vector<std::string> loadedGrid;
+    std::vector<WarpEntry> loadedWarpEntries;
+    std::vector<WarpReturn> loadedWarpReturns;
+    
     LevelValidationState validationState;
     std::string line;
     std::size_t lineNumber = 0;
@@ -590,6 +753,13 @@ bool TileMap::loadFromFile(const std::string& path) {
     }
     
     if (!validateLevelMarkers(validationState, path)) {
+        return false;
+    }
+    
+    if (!parseAndNormalizeWarps(loadedGrid,
+                                loadedWarpEntries,
+                                loadedWarpReturns,
+                                path)) {
         return false;
     }
 
@@ -642,6 +812,9 @@ bool TileMap::loadFromFile(const std::string& path) {
     }
 
     m_pendingTileHits.clear();
+
+    m_warpEntries = std::move(loadedWarpEntries);
+    m_warpReturns = std::move(loadedWarpReturns);
 
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);
@@ -1068,6 +1241,16 @@ std::vector<sf::Vector2i> TileMap::findTiles(char symbol) const {
     }
 
     return positions;
+}
+
+std::optional<sf::Vector2i> TileMap::findWarpReturn(char id) const {
+    for (const auto& destination : m_warpReturns) {
+        if (destination.id == id) {
+            return destination.position;
+        }
+    }
+
+    return std::nullopt;
 }
 
 sf::Vector2f TileMap::gridToWorldPosition(const sf::Vector2i& gridPosition) {

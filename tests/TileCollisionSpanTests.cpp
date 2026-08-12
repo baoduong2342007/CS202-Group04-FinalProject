@@ -22,7 +22,7 @@ constexpr float TILE_SIZE_METERS = TILE_SIZE_PIXELS / PIXELS_PER_METER;
 constexpr float TIME_STEP = 1.0f / 60.0f;
 
 bool isSolid(char tile) {
-    return tile == '1' || tile == 'B';
+    return tile == '0' || tile == 'B';
 }
 
 bool check(bool condition, const char* message) {
@@ -84,8 +84,8 @@ float simulateRightSpam(const std::vector<TileCollisionSpan>& spans) {
 
 bool testSpanLayout() {
     const std::vector<std::string> grid{
-        "111.11",
-        ".1...."
+        "000.00",
+        ".0...."
     };
     const std::vector<TileCollisionSpan> spans = buildHorizontalTileCollisionSpans(grid, isSolid);
 
@@ -99,7 +99,7 @@ bool testSpanLayout() {
 }
 
 bool testDestroyedTileSplitsSpan() {
-    std::vector<std::string> grid{"11111"};
+    std::vector<std::string> grid{"00000"};
     grid[0][2] = '.';
     const std::vector<TileCollisionSpan> spans = buildHorizontalTileCollisionSpans(grid, isSolid);
 
@@ -111,7 +111,7 @@ bool testDestroyedTileSplitsSpan() {
 }
 
 bool testRightSpamCrossesTileBoundaries() {
-    const std::vector<std::string> grid{std::string(80, '1')};
+    const std::vector<std::string> grid{std::string(80, '0')};
     const std::vector<TileCollisionSpan> spans = buildHorizontalTileCollisionSpans(grid, isSolid);
     const float endPositionPixels = simulateRightSpam(spans);
 
@@ -136,8 +136,8 @@ bool testCeilingContactTargetsOwningTile() {
 
 bool testGroundAndBrickSemantics() {
     return check(
-               !TileSemantics::isBreakable('1'),
-               "ground tile '1' must not be breakable"
+               !TileSemantics::isBreakable('0'),
+               "ground tile '0' must not be breakable"
            ) &&
            check(
                TileSemantics::isBreakable('B'),

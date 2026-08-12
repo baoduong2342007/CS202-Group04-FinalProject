@@ -82,6 +82,12 @@ private:
     void checkItemCollisions();
     void checkFinishFlag();
     void processPendingFireballs();
+    
+    void checkPipeWarps();
+    void warpMarioToReturn(char warpId);
+
+    bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
+    void suppressPiranhaAt(const sf::Vector2i& pipePosition);
 
     // 6. Private members
     std::unique_ptr<b2World> m_world;
@@ -104,4 +110,5 @@ private:
     float m_physicsAccumulator = 0.0f;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
     CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
+    float m_pipeWarpCooldown = 0.0f;
 };

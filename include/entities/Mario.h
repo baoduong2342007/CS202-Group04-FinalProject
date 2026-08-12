@@ -106,6 +106,8 @@ public:
     bool canShootFireBall() const;
     int getLives() const;
     void setLives(int lives);
+    float getVerticalIntent() const { return m_verticalIntent; }
+    float getHorizontalIntent() const { return m_inputDirX;}
 
     CharacterType getCharacterType() const { return m_characterType; }
     void setCharacterType(CharacterType type);

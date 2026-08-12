@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include <SFML/Graphics.hpp>
 #include "core/LevelCatalog.h"
@@ -26,6 +27,29 @@ public:
     TileMap& operator=(const TileMap&) = delete;
     TileMap(TileMap&&) = delete;
     TileMap& operator=(TileMap&&) = delete;
+
+    enum class WarpEntryType {
+        HORIZONTAL,
+        VERTICAL,
+        PIRANHA
+    };
+
+    struct WarpEntry {
+        char id;
+        sf::Vector2i position;
+        WarpEntryType type;
+    };
+
+    struct WarpReturn {
+        char id;
+        sf::Vector2i position;
+    };
+
+    const std::vector<WarpEntry>& getWarpEntries() const {
+        return m_warpEntries;
+    }
+
+    std::optional<sf::Vector2i> findWarpReturn(char id) const;
 
     void setTheme(LevelTheme theme);
 
@@ -121,4 +145,7 @@ private:
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
+    
+    std::vector<WarpEntry> m_warpEntries;
+    std::vector<WarpReturn> m_warpReturns;
 };

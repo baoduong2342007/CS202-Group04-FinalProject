@@ -8,6 +8,7 @@
 #include "level/Level.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <cassert>
 
@@ -27,6 +28,7 @@
 #include "core/DisplayConfig.h"
 
 namespace {
+
 constexpr unsigned int TILE_SIZE = 32;
 constexpr float FLAGPOLE_WALK_SPEED = 150.0f;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
@@ -34,7 +36,6 @@ constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
 const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
 const sf::Color UNDERWATER_BACKGROUND_COLOR(0, 48, 112);
 const sf::Color CASTLE_BACKGROUND_COLOR(28, 8, 36);
-
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     const sf::Vector2f cameraCenter = cameraView.getCenter();
@@ -68,7 +69,7 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
 }
 
 // Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock, Springboard)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J'};
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -83,7 +84,8 @@ std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const auto isFloorRow = [&tileMap, width](std::size_t row) {
         std::size_t groundTiles = 0;
         for (std::size_t column = 0; column < width; ++column) {
-            if (tileMap.getTileAt(static_cast<int>(column), static_cast<int>(row)) == '1') {
+            const char tile = tileMap.getTileAt(static_cast<int>(column), static_cast<int>(row));
+            if (tile == '0' || tile == '1') {
                 ++groundTiles;
             }
         }
@@ -104,6 +106,7 @@ float calculateBackgroundTop(const TileMap& tileMap) {
     // background frame above world Y=0 while the camera is already inside it.
     return groundTop - backgroundHeight;
 }
+
 } // namespace
 
 
@@ -118,7 +121,6 @@ Level::~Level() {
     m_contactListener.reset();
     m_world.reset();
 }
-
 void Level::setTheme(LevelTheme theme) {
     m_theme = theme;
     m_tileMap.setTheme(theme);
@@ -146,17 +148,16 @@ bool Level::loadFromFile(const std::string& path) {
     m_flagSlideStartDropDistance = 0.0f;
     m_physicsAccumulator = 0.0f;
     m_levelPath = path;
+    
     if (!m_tileMap.loadFromFile(path)) {
-
         std::cerr << "Level: Failed to load TileMap from " << path << std::endl;
         return false;
     }
-
+    
     // Initialize camera with screen size and level pixel-bounds
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
-
+    
     m_camera.init(
         sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
                      static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
@@ -164,23 +165,24 @@ bool Level::loadFromFile(const std::string& path) {
                       sf::Vector2f(levelWidth, levelHeight))
     );
     m_camera.setVerticalMode(m_cameraVerticalMode);
-
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
     m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
     m_contactListener = std::make_unique<ContactListener>(m_tileMap);
     m_world->SetContactListener(m_contactListener.get());
-
+    
     if (m_world) {
         m_tileMap.createPhysicsBodies(m_world.get());
     }
-
+    
     // Spawn Mario and all entities from tile codes
     spawnEntitiesFromTileMap();
 
+    m_pipeWarpCooldown = 0.0f;
+    
     // Initialize camera and entity sprite frames before first render
     update(0.f);
-
+    
     return true;
 }
 
@@ -230,10 +232,8 @@ void Level::spawnEntitiesFromTileMap() {
                 }
                 m_entities.push_back(std::move(entity));
             }
-
         }
     }
-
 }
 
 void Level::update(float dt) {
@@ -311,6 +311,7 @@ void Level::update(float dt) {
             break;
         }
     }
+    
     if (m_mario) {
         const sf::Vector2f center = m_mario->getPosition() + m_mario->getSize() / 2.0f;
         const int column = static_cast<int>(center.x / static_cast<float>(TILE_SIZE));
@@ -323,10 +324,17 @@ void Level::update(float dt) {
 
     if (m_world) {
         const bool physicsStepped = PhysicsEngine::update(*m_world, dt, m_physicsAccumulator);
+
         if (physicsStepped && m_mario) {
             m_mario->refreshGroundedState();
         }
     }
+
+    if (m_pipeWarpCooldown > 0.0f) {
+        m_pipeWarpCooldown = std::max(0.0f, m_pipeWarpCooldown - dt);
+    }
+
+    checkPipeWarps();
 
     // Flush any pending fireball creation requests queued while Box2D world was locked
     processPendingFireballs();
@@ -418,8 +426,6 @@ void Level::update(float dt) {
         m_camera.update(dt, centerPos);
     }
 }
-
-
 
 void Level::spawnFireballExplosion(const sf::Vector2f& position) {
     auto explosion = std::make_unique<FireballExplosion>(position);
@@ -682,4 +688,167 @@ std::size_t Level::getActiveFireBallCount() const {
         [](const std::unique_ptr<Entity>& entity) {
             return entity && entity->isFireBall() && entity->isActive();
         }));
+}
+
+bool Level::isPiranhaAliveAt(const sf::Vector2i& pipePosition) const {
+    const sf::Vector2f pipeWorld = TileMap::gridToWorldPosition(pipePosition);
+
+    const float expectedX = pipeWorld.x + TILE_SIZE / 2.0f;
+
+    for (const auto& entity : m_entities) {
+        if (!entity || !entity->isPiranhaPlant() || entity->shouldRemove() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        const auto* plant = static_cast<const PiranhaPlant*>(entity.get());
+
+        // Dying Piranha already counts as defeated,
+        // no need to wait for death animation to disappear.
+        if (plant->isDying()) {
+            continue;
+        }
+
+        const sf::Vector2f position = plant->getPosition();
+
+        const bool samePipeX = std::abs(position.x - expectedX) <= static_cast<float>(TILE_SIZE);
+        const bool nearPipeY = std::abs(position.y - pipeWorld.y) <= 3.0f * TILE_SIZE;
+
+        if (samePipeX && nearPipeY) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Level::suppressPiranhaAt(const sf::Vector2i& pipePosition) {
+    const sf::Vector2f pipeWorld = TileMap::gridToWorldPosition(pipePosition);
+    const float expectedX = pipeWorld.x + TILE_SIZE / 2.0f;
+
+    for (auto& entity : m_entities) {
+        if (!entity || !entity->isPiranhaPlant() || entity->shouldRemove() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        const sf::Vector2f position = entity->getPosition();
+
+        const bool samePipeX = std::abs(position.x - expectedX) <= static_cast<float>(TILE_SIZE);
+        const bool nearPipeY = std::abs(position.y - pipeWorld.y) <= 3.0f * TILE_SIZE;
+
+        if (samePipeX && nearPipeY) {
+            entity->setActive(false);
+            entity->markForRemoval();
+            return;
+        }
+    }
+}
+
+void Level::warpMarioToReturn(char warpId) {
+    if (!m_mario) {
+        return;
+    }
+
+    const auto destination = m_tileMap.findWarpReturn(warpId);
+
+    if (!destination) {
+        return;
+    }
+
+    const sf::Vector2i returnPosition = *destination;
+
+    // Special rule:
+    //
+    // R3
+    // pr
+    //
+    // Mario return and Piranha cannot use
+    // the same pipe simultaneously.
+    const sf::Vector2i tileBelow{returnPosition.x, returnPosition.y + 1};
+
+    if (m_tileMap.getTileAt(tileBelow.x, tileBelow.y) == 'p') {
+        suppressPiranhaAt(tileBelow);
+    }
+
+    const sf::Vector2f marioSize = m_mario->getSize();
+
+    // RN marks the tile where Mario's feet should end.
+    // Works for both Small and Big Mario.
+    const sf::Vector2f target{static_cast<float>(returnPosition.x * TILE_SIZE),
+                              static_cast<float>((returnPosition.y + 1) * TILE_SIZE) - marioSize.y
+                              };
+
+    m_mario->setVelocity({0.0f, 0.0f});
+    m_mario->setPosition(target);
+
+    m_pipeWarpCooldown = 0.35f;
+}
+
+void Level::checkPipeWarps() {
+    if (!m_mario || m_pipeWarpCooldown > 0.0f ||
+        m_mario->isCollisionLocked() || m_flagSequenceActive ||
+        m_levelCompleted) {
+        return;
+    }
+
+    const sf::Vector2f marioPos = m_mario->getPosition();
+
+    const sf::Vector2f marioSize = m_mario->getSize();
+
+    for (const auto& entry : m_tileMap.getWarpEntries()) {
+        const sf::Vector2i pipe = entry.position;
+
+        // ==============================================
+        // Hn — horizontal pipe
+        // Walk RIGHT into it.
+        // ==============================================
+        if (entry.type == TileMap::WarpEntryType::HORIZONTAL) {
+            if (m_mario->getHorizontalIntent() <= 0.5f) {
+                continue;
+            }
+
+            const float pipeLeft = static_cast<float>(pipe.x * TILE_SIZE);
+            const float pipeTop = static_cast<float>((pipe.y - 1) * TILE_SIZE);
+            const float pipeBottom = static_cast<float>((pipe.y + 1) * TILE_SIZE);
+            const float marioRight = marioPos.x + marioSize.x;
+
+            const bool touchingPipe = std::abs(marioRight - pipeLeft) <= 12.0f;
+
+            const bool verticallyAligned = marioPos.y < pipeBottom && marioPos.y + marioSize.y > pipeTop;
+
+            if (touchingPipe && verticallyAligned) {
+                warpMarioToReturn(entry.id);
+                return;
+            }
+
+            continue;
+        }
+
+        // ==============================================
+        // [n / pn — vertical pipe
+        // Stand on it + press Down.
+        // ==============================================
+        if (m_mario->getVerticalIntent() <= 0.5f || !m_mario->isGrounded()) {
+            continue;
+        }
+
+        // pn is locked until its Piranha dies.
+        if (entry.type == TileMap::WarpEntryType::PIRANHA && isPiranhaAliveAt(pipe)) {
+            continue;
+        }
+
+        const float pipeLeft = static_cast<float>(pipe.x * TILE_SIZE);
+        const float pipeRight = pipeLeft + 2.0f * TILE_SIZE;
+        const float pipeTop = static_cast<float>(pipe.y * TILE_SIZE);
+
+        const float marioCenterX = marioPos.x + marioSize.x / 2.0f;
+        const float marioFeetY = marioPos.y + marioSize.y;
+
+        const bool centeredOnPipe = marioCenterX >= pipeLeft + 8.0f && marioCenterX <= pipeRight - 8.0f;
+        const bool standingOnPipe = std::abs(marioFeetY - pipeTop) <= 8.0f;
+
+        if (centeredOnPipe && standingOnPipe) {
+            warpMarioToReturn(entry.id);
+            return;
+        }
+    }
 }

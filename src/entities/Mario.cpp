@@ -836,25 +836,57 @@ void Mario::setFlagpoleSliding(bool sliding) {
 }
 
 void Mario::beginFlagpoleSlide(float poleCenterX, float targetTopY) {
-  (void)poleCenterX;
   m_flagpoleTargetTopY = targetTopY;
   setAutomaticWalkSpeed(0.0f);
+
+  // Stand flush against the correct side of the pole: Mario grabs from the
+  // left with the sprite facing right and from the right facing left. The
+  // +/-14.0f offset snugs his body beside the pole column while
+  // updateSpriteLayout() flips the sprite horizontally (never vertically).
+  const bool marioIsRightOfPole =
+      m_position.x + m_size.x / 2.0f > poleCenterX;
+  setFacingDirection(marioIsRightOfPole ? Direction::LEFT : Direction::RIGHT);
+  const float offsetX = marioIsRightOfPole ? 14.0f : -14.0f;
+  m_flagpoleTargetX = poleCenterX - m_size.x / 2.0f + offsetX;
+
+  setPosition({m_flagpoleTargetX, m_position.y});
+  updateSpriteLayout();
+
   setFlagpoleSliding(true);
 }
 
-void Mario::updateFlagpoleSlide(float /*dt*/) {
+void Mario::updateFlagpoleSlide(float dt) {
   if (!m_isFlagpoleSliding || !m_body) {
     return;
   }
 
-  const float currentTopY = m_position.y;
-  if (currentTopY < m_flagpoleTargetTopY) {
-    m_body->SetLinearVelocity(
-        b2Vec2(0.0f, PhysicsEngine::pixelsToMeters(FLAGPOLE_SLIDE_SPEED)));
-  } else {
-    setPosition({m_position.x, m_flagpoleTargetTopY});
-    m_body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+  // Lock Mario to the pole-adjacent column so physics drift cannot push him
+  // off the pole during the scripted descent (zero horizontal drift).
+  if (std::abs(m_position.x - m_flagpoleTargetX) > 0.01f) {
+    setPosition({m_flagpoleTargetX, m_position.y});
   }
+
+  if (m_position.y < m_flagpoleTargetTopY) {
+    const float nextY = std::min(
+        m_position.y + FLAGPOLE_SLIDE_SPEED * dt, m_flagpoleTargetTopY);
+    setPosition({m_flagpoleTargetX, nextY});
+  } else {
+    setPosition({m_flagpoleTargetX, m_flagpoleTargetTopY});
+  }
+
+  // The descent is fully deterministic (independent of the fixed-step clamp),
+  // so Box2D must not add its own motion on top of it.
+  m_body->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+}
+
+bool Mario::isFlagpoleSlideComplete() const {
+  // Allow for Box2D contact slop: when the pole base sits on the ground row,
+  // Mario comes to rest with his feet on the floor tile a fraction of a pixel
+  // above the exact target Y. A small tolerance lets the level treat the
+  // descent as finished; the flag-drop gate still guards LEVEL_COMPLETED.
+  constexpr float SLIDE_BASE_SLOP = 4.0f;
+  return m_isFlagpoleSliding &&
+         m_position.y >= m_flagpoleTargetTopY - SLIDE_BASE_SLOP;
 }
 
 void Mario::setAutomaticWalkSpeed(float speed) {

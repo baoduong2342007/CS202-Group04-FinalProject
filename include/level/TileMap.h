@@ -79,8 +79,13 @@ public:
     void triggerTileBump(int column, int row);
 
     /// Move the rendered flag down the validated pole without changing map
-    /// markers or collision geometry. The value is clamped by the renderer.
+    /// markers or collision geometry. The stored value is clamped to the
+    /// maximum validated drop for the pole.
     void setFlagDropDistance(float distancePixels);
+    /// Maximum downward travel (px) the flag can reach on the validated pole.
+    float getFlagMaxDropDistance() const;
+    /// True once the flag cloth has reached the bottom of the pole body.
+    bool isFlagFullyDropped() const;
 
 private:
     static constexpr unsigned int TILE_SIZE = 32;

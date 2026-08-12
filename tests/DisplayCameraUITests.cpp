@@ -101,6 +101,26 @@ void testCameraPoliciesAndFourEdgeClamp() {
     assert(small.getView().getCenter() == sf::Vector2f(350.f, 200.f));
 }
 
+void testCameraFollowsRisingMarioWithClamp() {
+    const sf::FloatRect bounds({0.f, 0.f}, {2000.f, 1200.f});
+    Camera cam;
+    cam.setVerticalMode(CameraVerticalMode::DEAD_ZONE);
+    cam.init({640.f, 360.f}, bounds);
+
+    // Rest near the bottom, then have Mario climb well above the vertical
+    // deadzone. The follow camera must pan up (center Y decreases) while the
+    // four-edge clamp still keeps it inside the level.
+    cam.update(0.f, {1000.f, 1100.f});
+    const float lowY = cam.getView().getCenter().y;
+    assertViewInside(cam, bounds);
+
+    cam.update(0.f, {1000.f, 60.f});
+    const float highY = cam.getView().getCenter().y;
+    assert(highY < lowY);
+    assert(close(highY, 180.f)); // clamped to the top edge's min-Y center
+    assertViewInside(cam, bounds);
+}
+
 void testMenuWidgetLogicalMouseClick() {
     sf::Font font;
     assert(font.openFromFile("assets/fonts/mario.ttf"));
@@ -127,6 +147,7 @@ void testMenuWidgetLogicalMouseClick() {
 int main() {
     testIntegerViewportMatrix();
     testCameraPoliciesAndFourEdgeClamp();
+    testCameraFollowsRisingMarioWithClamp();
     testMenuWidgetLogicalMouseClick();
     return 0;
 }

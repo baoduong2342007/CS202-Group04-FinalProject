@@ -732,13 +732,42 @@ void TileMap::triggerTileBump(int column, int row) {
 }
 
 void TileMap::setFlagDropDistance(float distancePixels) {
-    const float clampedDistance = std::max(0.0f, distancePixels);
+    const float clampedDistance =
+        std::clamp(distancePixels, 0.0f, getFlagMaxDropDistance());
     if (std::abs(clampedDistance - m_flagDropDistance) < 0.01f) {
         return;
     }
 
     m_flagDropDistance = clampedDistance;
     buildFlagVertices();
+}
+
+float TileMap::getFlagMaxDropDistance() const {
+    float maxDrop = 0.0f;
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
+            if (m_grid[row][col] != 'F') {
+                continue;
+            }
+
+            int bottomRow = static_cast<int>(row);
+            while (bottomRow + 1 < static_cast<int>(m_grid.size()) &&
+                   getTileAt(static_cast<int>(col), bottomRow + 1) == '|') {
+                ++bottomRow;
+            }
+
+            maxDrop = std::max(
+                maxDrop,
+                std::max(0.0f,
+                         static_cast<float>(bottomRow - static_cast<int>(row)) *
+                             TILE_SIZE_PIXELS));
+        }
+    }
+    return maxDrop;
+}
+
+bool TileMap::isFlagFullyDropped() const {
+    return m_flagDropDistance >= getFlagMaxDropDistance() - 0.01f;
 }
 
 void TileMap::update(float dt) {

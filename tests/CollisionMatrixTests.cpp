@@ -73,6 +73,69 @@ void stepTwice(b2World& world) {
     world.Step(1.f / 60.f, 8, 3);
 }
 
+// Exposes the sprite scale so the FireBall-defeat retraction can be checked to
+// stay upright (positive Y scale) and mirrored only horizontally (never the
+// vertical flip that used to render the plant upside down).
+class PiranhaSpriteProbe final : public PiranhaPlant {
+public:
+    using PiranhaPlant::PiranhaPlant;
+    float spriteScaleY() const {
+        return m_sprite ? m_sprite->getScale().y : 0.0f;
+    }
+    float spriteScaleX() const {
+        return m_sprite ? m_sprite->getScale().x : 0.0f;
+    }
+};
+
+void runPiranhaFireRetractOnlyUpright() {
+    SoundManager::getInstance().resetDiagnosticCounters();
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    Mario owner;
+    PiranhaSpriteProbe plant(sf::Vector2f(0.f, 0.f), &world);
+    plant.setTextureManager(TextureManager::getInstance());
+    CollisionEvents events;
+
+    auto fireBall = std::make_unique<FireBall>(
+        sf::Vector2f(0.f, 0.f), Direction::RIGHT, &world);
+    fireBall->setOwner(&owner);
+    fireBall->setVelocity({0.f, 0.f});
+    stepTwice(world);
+
+    assert(plant.isDying());
+    assert(plant.getBody()->IsEnabled()); // still enabled before the safe point
+    assert(events.fireKill == 1);
+
+    // Safe-point update disables the body and starts the retraction with an
+    // upright (positive Y) sprite — never upside down and never re-emerging.
+    const float baseY = plant.getPosition().y;
+    plant.update(0.25f);
+    assert(!plant.getBody()->IsEnabled());
+    assert(plant.spriteScaleY() > 0.0f);
+    assert(plant.spriteScaleX() != 0.0f);
+
+    // The plant must only move DOWN toward the pipe base. A decreasing Y would
+    // mean it started rising again (re-emergence), which is forbidden after a
+    // FireBall defeat.
+    float prevY = plant.getPosition().y;
+    bool everRose = false;
+    for (int i = 0; i < 8 && !plant.shouldRemove(); ++i) {
+        plant.update(0.5f);
+        const float currentY = plant.getPosition().y;
+        if (currentY < prevY - 0.01f) {
+            everRose = true;
+        }
+        prevY = currentY;
+    }
+    assert(!everRose);
+    assert(plant.getPosition().y >= baseY - 0.01f);
+    plant.update(1.f);
+    assert(plant.shouldRemove());
+    assert(owner.getScore() == ScoreRules::pointsFor(DefeatCause::FIREBALL));
+}
+
 void runStomp(bool marioFixtureFirst) {
     SoundManager::getInstance().resetDiagnosticCounters();
     b2World world({0.f, 0.f});
@@ -504,5 +567,6 @@ int main() {
     runKoopaPitFallsPastPitWall();
     runBlockBumpDefeatsEnemy();
     runStarBrickCapability();
+    runPiranhaFireRetractOnlyUpright();
     return 0;
 }

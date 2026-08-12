@@ -53,6 +53,8 @@ public:
     /// Pass a non-positive value to restore the normal movement cap.
     void setAutomaticWalkSpeed(float speed);
     bool isFlagpoleSliding() const { return m_isFlagpoleSliding; }
+    /// True once Mario has descended the full flagpole to the bottom (targetTopY).
+    bool isFlagpoleSlideComplete() const;
     static constexpr float FLAGPOLE_SLIDE_SPEED = 120.0f;
     void preparePhysics(float dt);
     /// Apply a monotonic gameplay power-up.
@@ -180,6 +182,8 @@ protected:
     bool m_isClimbing = false;
     bool m_isFlagpoleSliding = false;
     float m_flagpoleTargetTopY = 0.0f;
+    /// Pole-adjacent column Mario is locked to for the whole scripted descent.
+    float m_flagpoleTargetX = 0.0f;
     float m_automaticWalkSpeed = 0.0f;
     float m_verticalIntent = 0.0f;
 

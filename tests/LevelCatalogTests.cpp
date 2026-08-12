@@ -34,6 +34,10 @@ bool testCatalogHasExactlyThreeReleaseLevels() {
     assert(catalog[2].theme == LevelTheme::CASTLE);
     assert(catalog[2].music == MusicId::CASTLE);
     assert(LevelCatalog::find(4) == nullptr);
+    // All three release levels let the camera follow Mario vertically.
+    for (const LevelDefinition& def : catalog) {
+        assert(def.cameraMode == CameraVerticalMode::DEAD_ZONE);
+    }
     std::cout << "[PASSED] testCatalogHasExactlyThreeReleaseLevels" << std::endl;
     return true;
 }

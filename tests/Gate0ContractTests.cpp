@@ -91,6 +91,8 @@ bool loadReleaseLevel(const std::string& filePath) {
     return tileMap.loadFromFile(filePath);
 }
 
+constexpr float TILE_SIZE = 32.0f;
+
 // ===== Runtime contract guards =====
 
 void testDefaultCharacterAndState() {
@@ -496,7 +498,11 @@ void testLevel3FlagSequencePublishesOnce() {
     // Contact starts the sequence but must not complete the level immediately.
     level.update(0.0f);
     assert(level.getMario()->isFlagpoleSliding());
-    assert(level.getMario()->getPosition() == startPosition);
+    // Mario snaps beside the pole column: Y is unchanged, X is aligned against
+    // the pole (the previous exact-position assert no longer holds because the
+    // fix intentionally repositions Mario flush against the pole).
+    assert(level.getMario()->getPosition().y == startPosition.y);
+    assert(!level.getMario()->isFlagpoleSlideComplete());
     assert(level.getTileMap().getFlagDropDistance() == 0.0f);
     assert(!level.isLevelCompleted());
     assert(counter.count == 0);
@@ -510,8 +516,10 @@ void testLevel3FlagSequencePublishesOnce() {
     assert(std::abs(level.getTileMap().getFlagDropDistance() -
                     (previousFlagDrop + marioDisplacement)) < 0.1f);
 
-    // The Castle pole is traversed at the fixed slide speed.
-    for (int step = 0; step < 6 && !level.isLevelCompleted(); ++step) {
+    // The Castle pole is traversed at the fixed slide speed. With the fix the
+    // sequence no longer uses an estimated timer for the slide, so the full
+    // descent + flag drop + walk takes more seconds than the old shortcut.
+    for (int step = 0; step < 12 && !level.isLevelCompleted(); ++step) {
         level.update(1.0f);
     }
 
@@ -521,6 +529,97 @@ void testLevel3FlagSequencePublishesOnce() {
     assert(counter.count == 1);
 
     std::cout << "[PASSED] testLevel3FlagSequencePublishesOnce" << std::endl;
+}
+
+void testFlagSequenceSnapsMarioToPoleSide() {
+    std::cout << "[RUNNING] testFlagSequenceSnapsMarioToPoleSide..." << std::endl;
+
+    // Grab from the LEFT of the pole column.
+    Level leftLevel;
+    leftLevel.setTheme(LevelTheme::CASTLE);
+    assert(leftLevel.loadFromFile("levels/level3.txt"));
+    const sf::Vector2i finish = leftLevel.getTileMap().findTiles('F').front();
+    const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
+    const float poleCenterX = triggerTopLeft.x + TILE_SIZE / 2.0f;
+
+    const sf::Vector2f leftStart(triggerTopLeft.x - 10.0f,
+                                 triggerTopLeft.y + 8.0f);
+    leftLevel.getMario()->setPosition(leftStart);
+    leftLevel.update(0.0f);
+    assert(leftLevel.getMario()->isFlagpoleSliding());
+    // Left grab: sprite faces right, body offset -14.0f from the pole column.
+    assert(leftLevel.getMario()->getFacingDirection() == Direction::RIGHT);
+    const float expectedLeftX =
+        poleCenterX - leftLevel.getMario()->getSize().x / 2.0f - 14.0f;
+    assert(std::abs(leftLevel.getMario()->getPosition().x - expectedLeftX) < 0.01f);
+
+    // Grab from the RIGHT of the pole column.
+    Level rightLevel;
+    rightLevel.setTheme(LevelTheme::CASTLE);
+    assert(rightLevel.loadFromFile("levels/level3.txt"));
+    const sf::Vector2f rightStart(triggerTopLeft.x + 20.0f,
+                                  triggerTopLeft.y + 8.0f);
+    rightLevel.getMario()->setPosition(rightStart);
+    rightLevel.update(0.0f);
+    assert(rightLevel.getMario()->isFlagpoleSliding());
+    // Right grab: sprite flips to face left, body offset +14.0f.
+    assert(rightLevel.getMario()->getFacingDirection() == Direction::LEFT);
+    const float expectedRightX =
+        poleCenterX - rightLevel.getMario()->getSize().x / 2.0f + 14.0f;
+    assert(std::abs(rightLevel.getMario()->getPosition().x - expectedRightX) < 0.01f);
+    assert(rightLevel.getMario()->getPosition().x +
+               rightLevel.getMario()->getSize().x / 2.0f >
+           poleCenterX);
+
+    std::cout << "[PASSED] testFlagSequenceSnapsMarioToPoleSide" << std::endl;
+}
+
+void testFlagCompletionGatedOnFullFlagDrop() {
+    std::cout << "[RUNNING] testFlagCompletionGatedOnFullFlagDrop..." << std::endl;
+
+    Level level;
+    level.setTheme(LevelTheme::CASTLE);
+    assert(level.loadFromFile("levels/level3.txt"));
+
+    CompletionCounter counter;
+
+    const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
+    const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
+    assert(level.getTileMap().getFlagMaxDropDistance() > 0.0f);
+
+    // Grab the pole near its base: Mario only slides a short way, so the flag
+    // must still descend to its validated maximum before the level completes.
+    const float lowGrabY =
+        15.0f * TILE_SIZE - level.getMario()->getSize().y;
+    level.getMario()->setPosition(
+        sf::Vector2f(triggerTopLeft.x + 7.0f, lowGrabY));
+    level.update(0.0f);
+    assert(level.getMario()->isFlagpoleSliding());
+
+    // Large dt spikes must not let the rough time estimate skip the descent.
+    // After a few seconds the slide is complete but the flag is not yet fully
+    // dropped, so the level must still be running.
+    for (int step = 0; step < 3; ++step) {
+        level.update(1.0f);
+    }
+    assert(level.getMario()->isFlagpoleSlideComplete());
+    assert(level.getTileMap().getFlagDropDistance() <
+           level.getTileMap().getFlagMaxDropDistance());
+    assert(!level.isLevelCompleted());
+    assert(counter.count == 0);
+
+    // Finish the flag descent, then walk into the castle and publish
+    // LEVEL_COMPLETED exactly once.
+    for (int step = 0; step < 20 && !level.isLevelCompleted(); ++step) {
+        level.update(1.0f);
+    }
+    assert(level.isLevelCompleted());
+    assert(level.getTileMap().isFlagFullyDropped());
+    assert(counter.count == 1);
+    level.update(1.0f);
+    assert(counter.count == 1);
+
+    std::cout << "[PASSED] testFlagCompletionGatedOnFullFlagDrop" << std::endl;
 }
 
 } // namespace
@@ -538,6 +637,8 @@ int main() {
     testThemeWiringAndLevel3Spawns();
     testFlagAnimationChangesPixelsForEveryTheme();
     testLevel3FlagSequencePublishesOnce();
+    testFlagSequenceSnapsMarioToPoleSide();
+    testFlagCompletionGatedOnFullFlagDrop();
 
     std::cout << "All Gate0 contract tests passed successfully!" << std::endl;
     return 0;

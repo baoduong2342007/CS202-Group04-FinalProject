@@ -48,11 +48,11 @@ namespace LevelCatalog {
     inline const std::vector<LevelDefinition>& getAll() {
         static const std::vector<LevelDefinition> catalog = {
             {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,
-                MusicId::OVERWORLD, CameraVerticalMode::LOCKED},
+                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
             {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND,
-                MusicId::UNDERGROUND, CameraVerticalMode::LOCKED},
+                MusicId::UNDERGROUND, CameraVerticalMode::DEAD_ZONE},
             {3, "levels/level3.txt", "1-3", LevelTheme::CASTLE,
-                MusicId::CASTLE, CameraVerticalMode::LOCKED},
+                MusicId::CASTLE, CameraVerticalMode::DEAD_ZONE},
         };
         return catalog;
     }

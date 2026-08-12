@@ -62,7 +62,7 @@ void PiranhaPlant::initAnimations(LevelTheme theme) {
 void PiranhaPlant::update(float dt) {
     if (!isActive()) return;
 
-    if (m_isFlippedDead) {
+    if (m_isRetractingAfterFireHit) {
         // Box2D is stepped before entity updates in Level. Defer disabling the
         // body until this safe point instead of mutating the world from the
         // BeginContact callback that calls onFireHit().
@@ -74,12 +74,13 @@ void PiranhaPlant::update(float dt) {
 
         m_flipTimer += dt;
         // Retract to the pipe base and never re-enter the normal emergence
-        // state machine after defeat.
+        // state machine after defeat. The sprite stays upright (positive Y
+        // scale): Piranha is never rendered upside down.
         m_position.y = std::min(m_basePosition.y,
                                 m_position.y + MOVE_SPEED * dt);
         if (m_sprite) {
             m_sprite->setPosition(m_position);
-            m_sprite->setScale({2.f, -2.f}); // Flipped upside down
+            m_sprite->setScale({2.f, 2.f});
         }
         if (m_flipTimer >= 1.0f) {
             markForRemoval();
@@ -162,9 +163,9 @@ void PiranhaPlant::onWallCollision() {
 
 void PiranhaPlant::onFireHit() {
     // CollisionManager owns the shared defeat transaction/latch. This hook is
-    // only responsible for the enemy's flipped-and-launched presentation.
-    if (m_isFlippedDead) return;
-    m_isFlippedDead = true;
+    // only responsible for the enemy's retract-and-cleanup presentation.
+    if (m_isRetractingAfterFireHit) return;
+    m_isRetractingAfterFireHit = true;
     setHealth(0);
     m_flipTimer = 0.f;
     m_pendingDisablePhysics = m_body != nullptr;

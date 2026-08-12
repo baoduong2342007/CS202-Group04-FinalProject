@@ -35,7 +35,7 @@ public:
 
     bool isPiranhaPlant() const override { return true; }
     bool isDying() const override {
-        return m_isFlippedDead || isDead() || !isActive();
+        return m_isRetractingAfterFireHit || isDead() || !isActive();
     }
 
     State getState() const { return m_state; }
@@ -51,7 +51,9 @@ private:
     State m_state{State::WAITING_BOTTOM};
     sf::Vector2f m_basePosition;
     float m_stateTimer{0.f};
-    bool m_isFlippedDead{false};
+    /// True after a FireBall defeat: the plant only retracts into the pipe and
+    /// is cleaned up, never re-emerging or flipping upside down.
+    bool m_isRetractingAfterFireHit{false};
     float m_flipTimer{0.f};
     bool m_pendingDisablePhysics{false};
     bool m_isMarioNear{false};

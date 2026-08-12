@@ -139,6 +139,7 @@ bool Level::loadFromFile(const std::string& path) {
     m_levelCompleted = false;
     m_flagSequenceActive = false;
     m_flagWalkActive = false;
+    m_flagPhase = FlagPhase::NONE;
     m_flagSequenceTimer = 0.0f;
     m_flagWalkTargetX = 0.0f;
     m_flagSlideStartMarioY = 0.0f;
@@ -237,25 +238,55 @@ void Level::spawnEntitiesFromTileMap() {
 
 void Level::update(float dt) {
     if (m_flagSequenceActive && m_mario) {
-        if (!m_flagWalkActive) {
+        switch (m_flagPhase) {
+        case FlagPhase::SLIDING:
+        case FlagPhase::WAITING_FLAG_DROP: {
             m_mario->setMoveIntent(0.0f);
             m_mario->setRunIntent(false);
-            m_mario->updateFlagpoleSlide(dt);
 
-            m_flagSequenceTimer -= dt;
-            if (m_flagSequenceTimer <= 0.0f) {
+            if (m_flagPhase == FlagPhase::SLIDING) {
+                // Scripted descent: Mario slides down the pole while the flag
+                // follows his displacement exactly.
+                m_mario->updateFlagpoleSlide(dt);
+                const float marioDisplacement =
+                    m_mario->getPosition().y - m_flagSlideStartMarioY;
+                m_tileMap.setFlagDropDistance(
+                    std::max(0.0f,
+                             m_flagSlideStartDropDistance + marioDisplacement));
+            } else {
+                // Mario already reached the pole base but the flag still needs
+                // to descend to its validated maximum. Hold Mario still and
+                // finish the flag drop independently (no rough time estimate).
+                if (m_mario->getBody()) {
+                    m_mario->getBody()->SetLinearVelocity(b2Vec2(0.f, 0.f));
+                }
+                m_tileMap.setFlagDropDistance(
+                    m_tileMap.getFlagDropDistance() +
+                    std::min(Mario::FLAGPOLE_SLIDE_SPEED * dt,
+                             m_tileMap.getFlagMaxDropDistance() -
+                                 m_tileMap.getFlagDropDistance()));
+            }
+
+            if (m_mario->isFlagpoleSlideComplete() &&
+                m_tileMap.isFlagFullyDropped()) {
                 // The original game gives Mario a short pause at the bottom,
                 // then takes control and walks him right into the castle.
                 m_mario->setFlagpoleSliding(false);
                 m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
-                m_flagWalkActive = true;
                 m_mario->setMoveIntent(1.0f);
                 m_mario->setRunIntent(false);
+                m_flagWalkActive = true;
+                m_flagPhase = FlagPhase::WALKING;
                 const float walkDistance = std::max(
                     0.0f, m_flagWalkTargetX - m_mario->getPosition().x);
                 m_flagSequenceTimer = walkDistance / FLAGPOLE_WALK_SPEED;
+            } else if (m_mario->isFlagpoleSlideComplete() &&
+                       !m_tileMap.isFlagFullyDropped()) {
+                m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
             }
-        } else {
+            break;
+        }
+        case FlagPhase::WALKING: {
             m_mario->setMoveIntent(1.0f);
             m_mario->setRunIntent(false);
             m_flagSequenceTimer -= dt;
@@ -270,9 +301,14 @@ void Level::update(float dt) {
                 m_mario->setAutomaticWalkSpeed(0.0f);
                 m_flagSequenceActive = false;
                 m_flagWalkActive = false;
+                m_flagPhase = FlagPhase::NONE;
                 m_levelCompleted = true;
                 EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
             }
+            break;
+        }
+        case FlagPhase::NONE:
+            break;
         }
     }
     if (m_mario) {
@@ -304,19 +340,10 @@ void Level::update(float dt) {
     m_tileMap.processPendingHits(m_entities, m_textureManager,
                                  canBreakBlocks, m_mario.get());
 
-    // Update Mario
+    // Update Mario (the flag follows his displacement inside the flag sequence
+    // handler above, driven by actual slide state rather than a timer).
     if (m_mario) {
         m_mario->update(dt);
-
-        if (m_flagSequenceActive) {
-            // Use the displacement since attachment, not Mario's absolute
-            // position. This preserves both starting positions and keeps the
-            // flag's downward speed exactly matched to Mario's slide speed.
-            const float marioDisplacement =
-                m_mario->getPosition().y - m_flagSlideStartMarioY;
-            m_tileMap.setFlagDropDistance(
-                std::max(0.0f, m_flagSlideStartDropDistance + marioDisplacement));
-        }
     }
 
     // Update all entities (enemies, items)
@@ -538,6 +565,7 @@ void Level::checkFinishFlag() {
         // until Mario has finished the climb and walked into the exit.
         m_flagSequenceActive = true;
         m_flagWalkActive = false;
+        m_flagPhase = FlagPhase::SLIDING;
         m_flagSlideStartMarioY = m_mario->getPosition().y;
         m_flagSlideStartDropDistance = 0.0f;
         const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
@@ -545,8 +573,6 @@ void Level::checkFinishFlag() {
                                  m_mario->getSize().y;
         m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);
         m_tileMap.setFlagDropDistance(m_flagSlideStartDropDistance);
-        const float slideDistance = std::max(0.0f, targetTopY - m_mario->getPosition().y);
-        m_flagSequenceTimer = slideDistance / Mario::FLAGPOLE_SLIDE_SPEED + 0.25f;
 
         // `L` is the bottom-left anchor of the five-tile-wide castle. Aim for
         // its center door. Levels without a castle still get a short,

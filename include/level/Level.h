@@ -61,6 +61,15 @@ public:
 
 
 private:
+    /// Flagpole outcome sequence driven by actual Mario/flag state instead of
+    /// a rough time estimate (so a large dt spike cannot skip the slide).
+    enum class FlagPhase {
+        NONE,
+        SLIDING,
+        WAITING_FLAG_DROP,
+        WALKING
+    };
+
     struct FireBallSpawnRequest {
         sf::Vector2f position;
         Direction direction;
@@ -86,6 +95,7 @@ private:
     bool m_levelCompleted = false;
     bool m_flagSequenceActive = false;
     bool m_flagWalkActive = false;
+    FlagPhase m_flagPhase = FlagPhase::NONE;
     float m_flagSequenceTimer = 0.0f;
     float m_flagWalkTargetX = 0.0f;
     float m_flagSlideStartMarioY = 0.0f;

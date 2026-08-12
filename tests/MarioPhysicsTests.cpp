@@ -331,6 +331,60 @@ bool testPowerDownKeepsDamageGraceLongEnough() {
                  "Damage grace must expire after the extended duration");
 }
 
+bool testFlagpoleSlideAlignsAndLocksX() {
+    b2World world({0.0f, 0.0f});
+    const float poleCenterX = 200.0f;
+    const float targetTopY = 480.0f;
+
+    // Grab from the LEFT: sprite faces right, body offset -14.0f.
+    MarioAnimationProbe leftMario({150.0f, 100.0f}, {32.0f, 32.0f});
+    leftMario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+    leftMario.beginFlagpoleSlide(poleCenterX, targetTopY);
+    if (!check(leftMario.isFlagpoleSliding(), "beginFlagpoleSlide must enable sliding") ||
+        !check(leftMario.getFacingDirection() == Direction::RIGHT,
+               "left-side grab must face right") ||
+        !check(std::abs(leftMario.getPosition().x -
+                        (poleCenterX - leftMario.getSize().x / 2.0f - 14.0f)) < 0.01f,
+               "left-side grab must offset the body -14.0f")) {
+        return false;
+    }
+
+    // Sliding keeps the X frozen and descends to the base deterministically.
+    leftMario.update(0.0f);
+    if (!check(leftMario.currentAnimation() == "climb",
+               "flagpole sliding must always use the climb animation")) {
+        return false;
+    }
+    const float lockedX = leftMario.getPosition().x;
+    for (int i = 0; i < 8; ++i) {
+        leftMario.updateFlagpoleSlide(0.5f);
+    }
+    if (!check(std::abs(leftMario.getPosition().x - lockedX) < 0.01f,
+               "flagpole slide must not drift horizontally") ||
+        !check(std::abs(leftMario.getPosition().y - targetTopY) < 0.01f,
+               "flagpole slide must reach the pole base") ||
+        !check(leftMario.isFlagpoleSlideComplete(),
+               "isFlagpoleSlideComplete must be true at the base")) {
+        return false;
+    }
+
+    // Grab from the RIGHT: sprite flips to face left, body offset +14.0f.
+    MarioAnimationProbe rightMario({260.0f, 100.0f}, {32.0f, 32.0f});
+    rightMario.initPhysics(&world, b2_dynamicBody, {32.0f, 32.0f});
+    rightMario.beginFlagpoleSlide(poleCenterX, targetTopY);
+    if (!check(rightMario.getFacingDirection() == Direction::LEFT,
+               "right-side grab must face left") ||
+        !check(std::abs(rightMario.getPosition().x -
+                        (poleCenterX - rightMario.getSize().x / 2.0f + 14.0f)) < 0.01f,
+               "right-side grab must offset the body +14.0f") ||
+        !check(rightMario.getPosition().x + rightMario.getSize().x / 2.0f > poleCenterX,
+               "right-side grab body must remain right of the pole")) {
+        return false;
+    }
+
+    return true;
+}
+
 bool testWalkingVsSprintingSeparatedByShift() {
     b2World world({0.0f, 25.0f});
     createPlatform(world);
@@ -723,6 +777,7 @@ int main() {
                          testSmallMarioTraversesOneBlockPassage() &&
                          testSuperMarioTraversesTwoBlockPassage() &&
                          testTimestepSubstepClamp() &&
+                         testFlagpoleSlideAlignsAndLocksX() &&
                          testStarmanVsDamageGraceIndependence() &&
                          testPowerDownKeepsDamageGraceLongEnough() &&
                          testWalkingVsSprintingSeparatedByShift() &&

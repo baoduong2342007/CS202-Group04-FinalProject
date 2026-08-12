@@ -135,9 +135,28 @@ bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
         return false;
     }
 
-    const bool blockedAbove = tileMap.isEnemySupport(frontColumn, supportRow - 1);
+    int requiredClearanceRows = 1;
 
-    return !blockedAbove;
+    // Walking Koopa is 48px tall, so it needs
+    // two tile rows of vertical clearance.
+    if (enemy->isKoopa()) {
+        const auto* koopa = static_cast<const Koopa*>(enemy);
+
+        if (!koopa->isInShell()) {
+            requiredClearanceRows = 2;
+        }
+    }
+
+    for (int offset = 1;
+         offset <= requiredClearanceRows;
+         ++offset) {
+
+        if (tileMap.isEnemySupport(frontColumn, supportRow - offset)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 Entity* entityFromBody(b2Body* body) {

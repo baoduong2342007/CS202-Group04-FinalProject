@@ -42,7 +42,9 @@ constexpr float AIR_FRICTION = 150.f;
 constexpr float SHORT_HOP_CUTOFF = 0.5f;
 constexpr float SKID_SPEED_THRESHOLD = 15.0f;
 constexpr float ASCENDING_VEL_THRESHOLD = -0.5f;
-constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.0f;
+// Give Mario a little more room to recover after shrinking. During this
+// window damaging enemies are intangible to him in CollisionManager.
+constexpr float DAMAGE_INVINCIBILITY_DURATION = 1.5f;
 constexpr float DEATH_ANIMATION_DURATION = 0.5f;
 constexpr float DEATH_POST_ANIMATION_FALL_DELAY = 0.4f;
 constexpr float DEATH_JUMP_SPEED = 320.f;

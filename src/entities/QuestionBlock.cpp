@@ -7,6 +7,7 @@
 
 #include "entities/QuestionBlock.h"
 #include <cmath>
+#include <random>
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/SpriteFrames_udg.h"
@@ -25,12 +26,36 @@ namespace {
 constexpr float BLOCK_SIZE = 32.f;
 constexpr const char* QUESTION_BLOCK_TEXTURE = "assets/textures/items/items_blocks.png";
 constexpr float ANIM_FRAME_DURATION = 0.2f;
+constexpr unsigned int COIN_ROLL_LIMIT =
+    QuestionBlock::CONTENT_ROLL_RANGE * QuestionBlock::COIN_DROP_RATE_PERCENT / 100;
+constexpr unsigned int MUSHROOM_ROLL_LIMIT =
+    COIN_ROLL_LIMIT + (QuestionBlock::CONTENT_ROLL_RANGE - COIN_ROLL_LIMIT) / 2;
+
+std::mt19937& questionBlockRandomEngine() {
+    static std::mt19937 engine(std::random_device{}());
+    return engine;
+}
+
+unsigned int rollQuestionBlockContent() {
+    static std::uniform_int_distribution<unsigned int> distribution(
+        0, QuestionBlock::CONTENT_ROLL_RANGE - 1);
+    return distribution(questionBlockRandomEngine());
+}
 } // namespace
 
-QuestionBlockContent QuestionBlock::chooseAdaptiveContent(MarioState marioState) {
-    return marioState == MarioState::SMALL
-               ? QuestionBlockContent::SUPER_MUSHROOM
-               : QuestionBlockContent::FIRE_FLOWER;
+QuestionBlockContent QuestionBlock::chooseRandomContent(unsigned int roll) {
+    const unsigned int normalizedRoll = roll % CONTENT_ROLL_RANGE;
+    if (normalizedRoll < COIN_ROLL_LIMIT) {
+        return QuestionBlockContent::COIN;
+    }
+    if (normalizedRoll < MUSHROOM_ROLL_LIMIT) {
+        return QuestionBlockContent::SUPER_MUSHROOM;
+    }
+    return QuestionBlockContent::FIRE_FLOWER;
+}
+
+QuestionBlockContent QuestionBlock::chooseRandomContent() {
+    return chooseRandomContent(rollQuestionBlockContent());
 }
 
 QuestionBlock::QuestionBlock(const sf::Vector2f& position, b2World* world, QuestionBlockContent content, BlockTheme theme)
@@ -102,11 +127,11 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
     playAnimation("empty");
     EventBus::getInstance().notify(EventType::BLOCK_BUMPED);
 
-    // Normal '?' blocks resolve exactly once from Mario's current state.
-    // Explicit flower tiles remain flowers for both body tiers; Mario keeps
-    // the Small/Super body while entering the matching Fire form.
+    // Normal '?' blocks resolve exactly once. Their result is independent of
+    // Result distribution: 70% Coin, 15% Mushroom, or 15% FireFlower.
+    // Explicit item routes remain deterministic.
     if (!m_contentResolved && m_content == QuestionBlockContent::ADAPTIVE) {
-        m_content = chooseAdaptiveContent(mario.getMarioState());
+        m_content = chooseRandomContent();
         m_contentResolved = true;
     }
 

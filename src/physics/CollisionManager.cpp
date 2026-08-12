@@ -61,6 +61,40 @@ bool isEnemySupportObstacle(
     return false;
 }
 
+// Post-hit invulnerability in the original game is also a collision phase:
+// harmful enemies are allowed to pass through Mario instead of remaining
+// solid and pushing him while the sprite is blinking. An idle Koopa shell is
+// intentionally kept interactive so Mario can still kick it. Star power is
+// kept separate because its contact must still defeat the enemy.
+bool isDamageDealingEnemy(Entity* entity) {
+    if (!entity || !entity->isEnemy()) {
+        return false;
+    }
+
+    if (!entity->isKoopa()) {
+        return true;
+    }
+
+    const Koopa* koopa = static_cast<const Koopa*>(entity);
+    return !koopa->isInShell() || koopa->isShellSliding();
+}
+
+bool isDamageGraceEnemyContact(Entity* entityA, Entity* entityB) {
+    Mario* mario = nullptr;
+    Entity* other = nullptr;
+
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
+        other = entityB;
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
+        other = entityA;
+    }
+
+    return mario && isDamageDealingEnemy(other) && mario->isDamageImmune() &&
+           !mario->isStarInvincible();
+}
+
 bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
                            b2Body* enemyBody, b2Body* obstacleBody,
                            const b2Vec2& enemyNormal,
@@ -342,6 +376,14 @@ void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
         return;
     }
 
+    if (isDamageGraceEnemyContact(entityA, entityB)) {
+        // SetEnabled() is reset by Box2D for the next step, so this keeps the
+        // enemy intangible for the entire grace window without changing the
+        // normal collision filters after the timer expires.
+        contact->SetEnabled(false);
+        return;
+    }
+
     if (entityA && entityB &&
         entityA->isEnemy() && entityB->isEnemy()) {
         contact->SetEnabled(false);
@@ -399,6 +441,13 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     // Safely extract raw pointer from Box2D user data
     Entity* entityA = entityFromBody(bodyA);
     Entity* entityB = entityFromBody(bodyB);
+
+    // BeginContact runs before PreSolve. Guard the gameplay dispatch here as
+    // well so a newly entered enemy contact cannot stomp, kick, or queue a
+    // second damage event during the post-hit grace window.
+    if (isDamageGraceEnemyContact(entityA, entityB)) {
+        return;
+    }
 
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);

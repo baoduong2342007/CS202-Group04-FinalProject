@@ -5,7 +5,7 @@
 # . = empty (air)
 # 1 = ground tile (solid)
 # B = breakable brick block (solid)
-# ? = adaptive power-up: SMALL -> Mushroom, SUPER/FIRE -> Fire Flower (solid)
+# ? = random question block: Coin (70%), Super Mushroom (15%), or FireFlower (15%) (solid)
 # U/u = question block containing 1-Up Mushroom
 # f/h = explicit FireFlower block; Small/Super body tier is preserved on pickup
 # O/o = question block containing Starman / Star

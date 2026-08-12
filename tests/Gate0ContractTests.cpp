@@ -212,22 +212,26 @@ void testReleaseLevelMarkers() {
     std::cout << "[PASSED] testReleaseLevelMarkers" << std::endl;
 }
 
-void testDeterministicAdaptiveBlocksAndItemRoutes() {
-    for (int sample = 0; sample < 100; ++sample) {
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL) ==
-               QuestionBlockContent::SUPER_MUSHROOM);
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER) ==
-               QuestionBlockContent::FIRE_FLOWER);
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE) ==
-               QuestionBlockContent::FIRE_FLOWER);
-    }
+void testRandomQuestionBlocksAndItemRoutes() {
+    assert(QuestionBlock::chooseRandomContent(0) == QuestionBlockContent::COIN);
+    assert(QuestionBlock::chooseRandomContent(139) == QuestionBlockContent::COIN);
+    assert(QuestionBlock::chooseRandomContent(140) ==
+           QuestionBlockContent::SUPER_MUSHROOM);
+    assert(QuestionBlock::chooseRandomContent(169) ==
+           QuestionBlockContent::SUPER_MUSHROOM);
+    assert(QuestionBlock::chooseRandomContent(170) ==
+           QuestionBlockContent::FIRE_FLOWER);
+    assert(QuestionBlock::chooseRandomContent(199) ==
+           QuestionBlockContent::FIRE_FLOWER);
 
     BlockBumpCounter events;
     Mario mario;
     QuestionBlock block({0.f, 0.f}, nullptr);
     block.onHit(mario);
     block.onHit(mario);
-    assert(block.getContent() == QuestionBlockContent::SUPER_MUSHROOM);
+    assert(block.getContent() == QuestionBlockContent::COIN ||
+           block.getContent() == QuestionBlockContent::SUPER_MUSHROOM ||
+           block.getContent() == QuestionBlockContent::FIRE_FLOWER);
     assert(events.count == 1);
 
     // An explicit 'f' block always exposes a Fire Flower. The collected item
@@ -440,7 +444,7 @@ int main() {
     testMushroomPromotesAndNeverDowngrades();
     testReleaseLevelsAreLoadable();
     testReleaseLevelMarkers();
-    testDeterministicAdaptiveBlocksAndItemRoutes();
+    testRandomQuestionBlocksAndItemRoutes();
     testFireBallActiveLimitOfTwo();
     testThemeWiringAndLevel3Spawns();
     testFlagAnimationChangesPixelsForEveryTheme();

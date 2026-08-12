@@ -283,6 +283,27 @@ bool testStarmanVsDamageGraceIndependence() {
                  "Damage grace must expire on its independent clock");
 }
 
+bool testPowerDownKeepsDamageGraceLongEnough() {
+    Mario mario({100.0f, 100.0f}, {28.0f, 30.0f});
+    mario.setMarioState(MarioState::SUPER);
+    mario.powerDown();
+
+    if (!check(mario.isDamageImmune(),
+               "Power-down must start the damage grace window")) {
+        return false;
+    }
+
+    mario.update(1.49f);
+    if (!check(mario.isDamageImmune(),
+               "Damage grace must last at least 1.5 seconds after power-down")) {
+        return false;
+    }
+
+    mario.update(0.02f);
+    return check(!mario.isDamageImmune(),
+                 "Damage grace must expire after the extended duration");
+}
+
 bool testWalkingVsSprintingSeparatedByShift() {
     b2World world({0.0f, 25.0f});
     createPlatform(world);
@@ -627,6 +648,7 @@ int main() {
                          testSuperMarioTraversesTwoBlockPassage() &&
                          testTimestepSubstepClamp() &&
                          testStarmanVsDamageGraceIndependence() &&
+                         testPowerDownKeepsDamageGraceLongEnough() &&
                          testWalkingVsSprintingSeparatedByShift() &&
                          testIsolatedWorldAccumulators() &&
                          testGrowthFootAnchorAndClearance() &&

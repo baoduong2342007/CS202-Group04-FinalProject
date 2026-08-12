@@ -73,7 +73,7 @@ Important Sprint 6 ownership rules:
 | `levels/level3.txt` | Runtime | Castle finale, world 1-3, then Win |
 | `levels/level4.txt` | Future/reference | Mechanics fixture excluded from the release catalog |
 
-Release levels use deterministic normal `?` blocks and explicit `f`, `U`, and `O` placements. Normal `?` blocks give Small Mario a Mushroom; explicit `f` blocks give a FireFlower while preserving Small Fire versus Super Fire body size.
+Release levels use normal random `?` blocks and explicit `f`, `U`, and `O` placements. A normal `?` resolves once to a Coin (70%), Super Mushroom (15%), or FireFlower (15%); explicit `f` blocks always give a FireFlower while preserving Small Fire versus Super Fire body size.
 
 ## Automated tests
 

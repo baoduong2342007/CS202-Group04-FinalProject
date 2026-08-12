@@ -125,6 +125,60 @@ void runSideHit(bool marioFixtureFirst) {
     assert(SoundManager::getInstance().getSoundPlayRequestCount("death") == 1);
 }
 
+void runDamageGracePassThrough(bool marioFixtureFirst) {
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    std::unique_ptr<Mario> mario;
+    std::unique_ptr<Goomba> goomba;
+    if (marioFixtureFirst) {
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->setMarioState(MarioState::SUPER);
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 60.f});
+        goomba = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+    } else {
+        goomba = std::make_unique<Goomba>(sf::Vector2f(24.f, 0.f), &world);
+        mario = std::make_unique<Mario>(sf::Vector2f(0.f, 0.f),
+                                        sf::Vector2f(28.f, 30.f));
+        mario->setMarioState(MarioState::SUPER);
+        mario->initPhysics(&world, b2_dynamicBody, {28.f, 60.f});
+    }
+
+    const int lives = mario->getLives();
+
+    // First contact downgrades Super Mario and starts the post-hit grace
+    // window. The next contact must be non-solid, not merely damage-free.
+    world.Step(1.f / 60.f, 8, 3);
+    mario->update(0.f);
+    assert(mario->getMarioState() == MarioState::SMALL);
+    assert(mario->isDamageImmune());
+
+    // Re-enter from the side while grace is active. The enemy moving into
+    // Mario must not change Mario's position through the contact solver.
+    mario->setPosition({0.f, 0.f});
+    mario->setVelocity({0.f, 0.f});
+    goomba->setPosition({24.f, 0.f});
+    goomba->setVelocity({-120.f, 0.f});
+    const b2Vec2 beforePassThrough = mario->getBody()->GetPosition();
+    world.Step(1.f / 60.f, 8, 3);
+    const b2Vec2 afterPassThrough = mario->getBody()->GetPosition();
+
+    assert(std::abs(afterPassThrough.x - beforePassThrough.x) < 0.0001f);
+    assert(std::abs(afterPassThrough.y - beforePassThrough.y) < 0.0001f);
+    assert(mario->getLives() == lives);
+
+    // A newly entered top contact is also ignored during grace; otherwise
+    // BeginContact could still stomp the enemy before PreSolve disables it.
+    mario->setPosition({0.f, 0.f});
+    goomba->setPosition({0.f, 25.f});
+    goomba->setVelocity({0.f, 0.f});
+    world.Step(1.f / 60.f, 8, 3);
+    assert(!goomba->isDead());
+}
+
 void runShell(bool shellFixtureFirst) {
     SoundManager::getInstance().resetDiagnosticCounters();
     b2World world({0.f, 0.f});
@@ -268,6 +322,7 @@ int main() {
     for (bool orderA : {true, false}) {
         runStomp(orderA);
         runSideHit(orderA);
+        runDamageGracePassThrough(orderA);
         runIdleShellStaysStationary();
         runShell(orderA);
         runFireBall(orderA);

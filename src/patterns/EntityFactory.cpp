@@ -90,7 +90,8 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
         case 'C':
             return createItem(ItemType::COIN, position, world);
         case '?':
-            // Normal '?' blocks resolve once to a tier-appropriate power-up.
+            // Normal '?' blocks resolve once on hit: mostly Coin, otherwise a
+            // random Mushroom or FireFlower.
             return std::make_unique<QuestionBlock>(position,
                                                    world,
                                                    QuestionBlockContent::ADAPTIVE,

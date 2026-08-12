@@ -328,19 +328,23 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     assert(adaptiveBlock != nullptr);
     assert(adaptiveBlock->getContent() == QuestionBlockContent::ADAPTIVE);
 
-    for (unsigned int sample = 0; sample < 100; ++sample) {
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SMALL) ==
-               QuestionBlockContent::SUPER_MUSHROOM);
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::SUPER) ==
-               QuestionBlockContent::FIRE_FLOWER);
-        assert(QuestionBlock::chooseAdaptiveContent(MarioState::FIRE) ==
-               QuestionBlockContent::FIRE_FLOWER);
-    }
+    assert(QuestionBlock::chooseRandomContent(0) == QuestionBlockContent::COIN);
+    assert(QuestionBlock::chooseRandomContent(139) == QuestionBlockContent::COIN);
+    assert(QuestionBlock::chooseRandomContent(140) ==
+           QuestionBlockContent::SUPER_MUSHROOM);
+    assert(QuestionBlock::chooseRandomContent(169) ==
+           QuestionBlockContent::SUPER_MUSHROOM);
+    assert(QuestionBlock::chooseRandomContent(170) ==
+           QuestionBlockContent::FIRE_FLOWER);
+    assert(QuestionBlock::chooseRandomContent(199) ==
+           QuestionBlockContent::FIRE_FLOWER);
 
     Mario smallMario;
     adaptiveBlock->onHit(smallMario);
     const QuestionBlockContent smallMarioContent = adaptiveBlock->getContent();
-    assert(smallMarioContent == QuestionBlockContent::SUPER_MUSHROOM);
+    assert(smallMarioContent == QuestionBlockContent::COIN ||
+           smallMarioContent == QuestionBlockContent::SUPER_MUSHROOM ||
+           smallMarioContent == QuestionBlockContent::FIRE_FLOWER);
     const int coinsAfterFirstHit = smallMario.getCoinCount();
     adaptiveBlock->onHit(smallMario);
     assert(adaptiveBlock->getContent() == smallMarioContent);
@@ -349,9 +353,10 @@ void testAdaptiveQuestionBlockAndFireFlowerContract() {
     QuestionBlock poweredBlock(
         {0.f, 0.f}, nullptr, QuestionBlockContent::ADAPTIVE);
     Mario superMario;
-    superMario.setMarioState(MarioState::SUPER);
     poweredBlock.onHit(superMario);
-    assert(poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
+    assert(poweredBlock.getContent() == QuestionBlockContent::COIN ||
+           poweredBlock.getContent() == QuestionBlockContent::SUPER_MUSHROOM ||
+           poweredBlock.getContent() == QuestionBlockContent::FIRE_FLOWER);
 
     // An explicit 'f' tile spawns a FireFlower for Small Mario; collection
     // keeps the small body and selects the Small Fire sprite set.

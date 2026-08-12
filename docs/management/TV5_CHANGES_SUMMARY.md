@@ -18,13 +18,13 @@ Evidence: [InputStateTests.cpp](../../tests/InputStateTests.cpp), [TV5Integratio
 
 ## Items and score
 
-Normal adaptive QuestionBlocks are deterministic and resolve once:
+Normal QuestionBlocks resolve once using a state-independent random result:
 
-| Mario state on first hit | Result |
+| Result roll | Result |
 |---|---|
-| Small | Super Mushroom |
-| Super | FireFlower |
-| Fire | FireFlower |
+| 0-139 (70%) | Coin |
+| 140-169 (15%) | Super Mushroom |
+| 170-199 (15%) | FireFlower |
 
 Explicit Coin blocks remain supported through their own content type. An explicit `f` route always spawns a FireFlower: Small Mario becomes Small Fire Mario and Super Mario becomes Super Fire Mario. The body tier is retained across pickup, damage, level transitions, and the matching FireSmall/FireBig animation rows are selected.
 

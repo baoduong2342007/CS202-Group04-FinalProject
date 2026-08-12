@@ -11,10 +11,9 @@
 
 class Mario;
 class TextureManager;
-enum class MarioState;
 
 enum class QuestionBlockContent {
-    ADAPTIVE,
+    ADAPTIVE,       // Normal '?' block; resolved randomly when hit.
     COIN,
     SUPER_MUSHROOM,
     FIRE_FLOWER,
@@ -43,11 +42,17 @@ public:
     // 3. Public methods
     /// Triggers block hit reaction: 12px bump animation, spawns item & changes sprite to empty block
     void onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities = nullptr, TextureManager* textureManager = nullptr);
-    /// Resolve a tier-aware power-up deterministically from Mario's state.
-    static QuestionBlockContent chooseAdaptiveContent(MarioState marioState);
+    /// Resolve a normal '?' result from a deterministic 0-199 test roll.
+    /// 0-139 = Coin, 140-169 = Mushroom, 170-199 = FireFlower.
+    static QuestionBlockContent chooseRandomContent(unsigned int roll);
+    /// Resolve a normal '?' result using the gameplay random source.
+    static QuestionBlockContent chooseRandomContent();
     bool isHit() const { return m_isHit; }
     QuestionBlockContent getContent() const { return m_content; }
     BlockTheme getTheme() const { return m_theme; }
+
+    static constexpr unsigned int CONTENT_ROLL_RANGE = 200;
+    static constexpr unsigned int COIN_DROP_RATE_PERCENT = 70;
 
 private:
     QuestionBlockContent m_content = QuestionBlockContent::ADAPTIVE;

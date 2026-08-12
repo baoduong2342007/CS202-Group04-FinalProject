@@ -2,7 +2,7 @@
 # Width: 96 tiles
 # Height: 16 tiles
 # Sprint 6 release finale; completing this level transitions directly to Win.
-# ? = adaptive power-up: SMALL -> Mushroom, SUPER/FIRE -> Fire Flower
+# ? = random question block: Coin (70%), Super Mushroom (15%), or FireFlower (15%)
 # U = 1-Up, f = explicit FireFlower, O = Star, J = Springboard
 ................................................................................................
 ................................................................................................

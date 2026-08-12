@@ -142,9 +142,8 @@ void SoundManager::onNotify(EventType event) {
             playStarMusic();
             break;
         case EventType::PLAYER_INVINCIBILITY_EXPIRED:
-            // Damage-grace expiry also uses this event. Only a Star override
-            // may restore the level track; otherwise an unrelated grace timer
-            // would interrupt death/GameOver music.
+            // This event is the Star lifecycle edge; damage grace has its own
+            // independent timer and does not publish a music event.
             if (isStarMusicActive()) {
                 restoreLevelMusic();
             }
@@ -223,6 +222,8 @@ void SoundManager::playSound(const std::string& id) {
         return;
     }
 
+    ++m_soundPlayRequests[id];
+
     auto& voices = it->second;
     std::size_t& cursor = m_voiceCursors[id];
     const std::size_t start = cursor % voices.size();
@@ -239,6 +240,12 @@ void SoundManager::playSound(const std::string& id) {
     }
     // All voices are busy. Drop this request instead of restarting one and
     // cutting off an already audible sound.
+}
+
+std::size_t SoundManager::getSoundPlayRequestCount(
+    const std::string& id) const {
+    const auto request = m_soundPlayRequests.find(id);
+    return request == m_soundPlayRequests.end() ? 0u : request->second;
 }
 
 bool SoundManager::loadMusic(const std::string& filepath) {

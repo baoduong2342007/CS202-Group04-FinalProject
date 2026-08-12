@@ -7,7 +7,8 @@
 #include "entities/Springboard.h"
 #include "entities/Mario.h"
 #include "core/SpriteFrames_shared.h"
-#include "core/SoundManager.h"
+#include "patterns/EventBus.h"
+#include "patterns/EventType.h"
 #include "physics/PhysicsEngine.h"
 #include <box2d/box2d.h>
 
@@ -81,7 +82,7 @@ void Springboard::triggerSpring(Mario& mario, bool isHoldingJump) {
         mario.clearGroundedState();
     }
 
-    SoundManager::getInstance().playSound("jump.wav");
+    EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
 }
 
 void Springboard::update(float dt) {

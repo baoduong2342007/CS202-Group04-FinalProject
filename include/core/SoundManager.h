@@ -106,6 +106,8 @@ public:
     bool isSoundLoaded(const std::string& id) const;
     bool isMusicLoaded() const { return m_musicLoaded; }
     std::optional<MusicId> getCurrentMusicId() const { return m_currentMusicId; }
+    std::size_t getSoundPlayRequestCount(const std::string& id) const;
+    void resetDiagnosticCounters() { m_soundPlayRequests.clear(); }
 
 private:
     // ── 4. Private constructor (Singleton) ───────────────────
@@ -124,6 +126,7 @@ private:
     /// one another off. A fifth simultaneous request is safely dropped.
     std::unordered_map<std::string, std::vector<std::unique_ptr<sf::Sound>>> m_soundVoices;
     std::unordered_map<std::string, std::size_t> m_voiceCursors;
+    std::unordered_map<std::string, std::size_t> m_soundPlayRequests;
 
     /// Background music stream (only one track at a time)
     sf::Music m_music;

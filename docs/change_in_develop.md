@@ -526,3 +526,16 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   8. Updated catalog, progression, audio-track, Level 4 marker/V checks and flag-sequence integration tests for all four release levels. Verified `cmake --build build-tests --parallel 4` and `ctest --test-dir build-tests --output-on-failure` with 14/14 tests passing.
   9. Added direct Mario physics regression coverage for mid-air swim strokes and vine climbing (vertical velocity, gravity lock and horizontal detach), prevented simultaneous horizontal input from reattaching Mario to a vine, and verified Level theme wiring plus Level 4 enemy/item spawning.
   10. Added a procedural wave phase to every themed `F` flag quad, kept the pole-side edge anchored, and added `climb_up`, `climb_down`, and `climb_idle` clips for all Mario/Luigi power states. Off-screen rendering now verifies flag motion across Overworld, Underground, Underwater, and Castle.
+
+### 42. Removed Background Color Pixels (108, 106, 255)
+- **Date:** 2026-08-12
+- **Author:** Antigravity
+- **Status:** Completed; verified background transparency.
+- **Modified Files:**
+  - `assets/textures/items/items_blocks.png`
+  - `assets/textures/items/items_objects.png`
+  - `assets/textures/mario/MarioLuigi.png`
+- **Logic Changes:**
+  1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
+  2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
+

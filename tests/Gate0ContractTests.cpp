@@ -531,6 +531,41 @@ void testLevel3FlagSequencePublishesOnce() {
     std::cout << "[PASSED] testLevel3FlagSequencePublishesOnce" << std::endl;
 }
 
+void testLevel2FlagSequenceMatchesLevel1() {
+    std::cout << "[RUNNING] testLevel2FlagSequenceMatchesLevel1..." << std::endl;
+
+    Level level;
+    level.setTheme(LevelTheme::UNDERGROUND);
+    assert(level.loadFromFile("levels/level2.txt"));
+
+    const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
+    const sf::Vector2f startPosition =
+        TileMap::gridToWorldPosition(finish) + sf::Vector2f(7.0f, 8.0f);
+    level.getMario()->setPosition(startPosition);
+    level.update(0.0f);
+
+    assert(level.getMario()->isFlagpoleSliding());
+    assert(!level.isLevelCompleted());
+
+    const float previousFlagDrop = level.getTileMap().getFlagDropDistance();
+    level.update(0.25f);
+    assert(level.getTileMap().getFlagDropDistance() > previousFlagDrop);
+
+    for (int step = 0; step < 40 && !level.isLevelCompleted(); ++step) {
+        level.update(1.0f);
+    }
+
+    assert(level.isLevelCompleted());
+    assert(level.getTileMap().isFlagFullyDropped());
+    const auto castles = level.getTileMap().findTiles('L');
+    assert(castles.size() >= 2);
+    // Level 2 has a decorative castle at the spawn and the exit castle after
+    // the flag. Mario must walk to the latter, as in Level 1.
+    assert(level.getMario()->getPosition().x >=
+           static_cast<float>(castles.back().x * 32));
+    std::cout << "[PASSED] testLevel2FlagSequenceMatchesLevel1" << std::endl;
+}
+
 void testFlagWalkReachesCastleWithoutTeleporting() {
     std::cout << "[RUNNING] testFlagWalkReachesCastleWithoutTeleporting..." << std::endl;
 
@@ -674,6 +709,7 @@ int main() {
     testThemeWiringAndLevel3Spawns();
     testFlagAnimationChangesPixelsForEveryTheme();
     testLevel3FlagSequencePublishesOnce();
+    testLevel2FlagSequenceMatchesLevel1();
     testFlagWalkReachesCastleWithoutTeleporting();
     testFlagSequenceSnapsMarioToPoleSide();
     testFlagCompletionGatedOnFullFlagDrop();

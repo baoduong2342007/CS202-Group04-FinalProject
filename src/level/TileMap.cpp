@@ -524,6 +524,8 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
         case 'T':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_TOP_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_TOP_UNDERGROUND;
+            // The Castle palette supplies the stone/gray cap used by the
+            // finale, matching the Castle body and the rest of Level 3.
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
             return TileFrames::FINISH_POLE_TOP;
 
@@ -969,7 +971,9 @@ void TileMap::buildVertices() {
 
             // L = bottom-left anchor of a 5x5 castle.
             if (symbol == 'L') {
-                const sf::IntRect rect = TileFrames::CASTLE;
+                const sf::IntRect rect = (m_theme == LevelTheme::UNDERGROUND)
+                                            ? TileFrames::CASTLE_UNDERGROUND
+                                            : TileFrames::CASTLE;
 
                 const float left = static_cast<float>(column * TILE_SIZE);
                 const float top = static_cast<float>((static_cast<int>(row) - 4) * TILE_SIZE);
@@ -1062,6 +1066,28 @@ void TileMap::buildVertices() {
 
             // F rendered as flag in m_flagVertices — skip from tile grid.
             if (symbol == 'F') {
+                // Keep the map representation vertical (T/F/|), but render
+                // the first shaft segment in the F cell as well.  The flag
+                // cloth is anchored to the pole center, so this closes the
+                // small visual gap at the top without changing the validated
+                // trigger column or Mario's climb position.
+                const sf::IntRect poleRect = getTilesetRect('|', m_theme);
+                const float x = static_cast<float>(column * TILE_SIZE);
+                const float y = static_cast<float>(row * TILE_SIZE);
+                const float right = x + static_cast<float>(TILE_SIZE);
+                const float bottom = y + static_cast<float>(TILE_SIZE);
+                const float texEpsilon = 0.02f;
+                const float textureLeft = static_cast<float>(poleRect.position.x) + texEpsilon;
+                const float textureTop = static_cast<float>(poleRect.position.y) + texEpsilon;
+                const float textureRight = static_cast<float>(poleRect.position.x + poleRect.size.x) - texEpsilon;
+                const float textureBottom = static_cast<float>(poleRect.position.y + poleRect.size.y) - texEpsilon;
+
+                appendTexturedVertex(m_foregroundVertices, x, y, textureLeft, textureTop);
+                appendTexturedVertex(m_foregroundVertices, x, bottom, textureLeft, textureBottom);
+                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_foregroundVertices, x, y, textureLeft, textureTop);
+                appendTexturedVertex(m_foregroundVertices, right, bottom, textureRight, textureBottom);
+                appendTexturedVertex(m_foregroundVertices, right, y, textureRight, textureTop);
                 continue;
             }
 

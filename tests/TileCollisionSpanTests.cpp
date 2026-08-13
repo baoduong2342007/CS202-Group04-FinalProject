@@ -4,6 +4,7 @@
  * @brief Regression tests for merged tile collision spans.
  */
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -14,6 +15,9 @@
 #include "level/TileCollisionSpans.h"
 #include "level/TileSemantics.h"
 #include "physics/TileContactResolver.h"
+#include "entities/Mario.h"
+#include "entities/QuestionBlock.h"
+#include "physics/PhysicsEngine.h"
 
 namespace {
 constexpr float PIXELS_PER_METER = 30.0f;
@@ -120,6 +124,39 @@ bool testRightSpamCrossesTileBoundaries() {
                  "right spam must cross many former tile boundaries without becoming stuck");
 }
 
+bool testMarioLeavesQuestionBlockToTheLeft() {
+    b2World world({0.0f, 25.0f});
+    // Exact level0 row: B ? B. B tiles are TileMap span bodies and '?' is a
+    // separate QuestionBlock entity body.
+    createSpanBodies(world, {{3, 6, 1}, {5, 6, 1}});
+    QuestionBlock questionBlock({128.0f, 192.0f}, &world);
+
+    Mario mario({130.0f, 162.0f}, {28.0f, 30.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
+
+    float minimumVerticalVelocity = 0.0f;
+    for (int frame = 0; frame < 120; ++frame) {
+        mario.moveLeft();
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+
+        if (frame > 5 && frame < 55) {
+            minimumVerticalVelocity = std::min(
+                minimumVerticalVelocity,
+                PhysicsEngine::metersToPixels(
+                    mario.getBody()->GetLinearVelocity().y));
+        }
+    }
+
+    const float endX = PhysicsEngine::metersToPixels(mario.getBody()->GetPosition().x);
+    return check(endX < 90.0f,
+                 "Mario must leave the B-question-B row toward the left") &&
+           check(minimumVerticalVelocity > -1.0f,
+                 "The left block seam must not create an upward ghost impulse");
+}
+
 bool testCeilingContactTargetsOwningTile() {
     constexpr float tileSize = 32.0f;
 
@@ -152,6 +189,7 @@ int main() {
                             testSpanLayout() &&
                             testDestroyedTileSplitsSpan() &&
                             testRightSpamCrossesTileBoundaries() &&
+                            testMarioLeavesQuestionBlockToTheLeft() &&
                             testCeilingContactTargetsOwningTile();
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

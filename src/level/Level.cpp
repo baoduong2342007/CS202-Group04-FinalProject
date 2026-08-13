@@ -582,8 +582,16 @@ void Level::checkFinishFlag() {
         // its center door. Levels without a castle still get a short,
         // authentic-looking walk toward the right edge before transitioning.
         const auto castleAnchors = m_tileMap.findTiles('L');
-        if (!castleAnchors.empty()) {
-            const float castleLeft = static_cast<float>(castleAnchors.front().x) * TILE_SIZE;
+        const auto destinationCastle = std::find_if(
+            castleAnchors.begin(), castleAnchors.end(),
+            [&finishPosition](const sf::Vector2i& anchor) {
+                return anchor.x > finishPosition.x;
+            });
+        if (destinationCastle != castleAnchors.end()) {
+            // Some levels, notably Level 2, contain a decorative castle at
+            // the spawn and the real exit castle after the flag.  The first
+            // anchor is not necessarily the destination.
+            const float castleLeft = static_cast<float>(destinationCastle->x) * TILE_SIZE;
             const float castleCenter = castleLeft + 2.5f * TILE_SIZE;
             m_flagWalkTargetX = castleCenter - m_mario->getSize().x / 2.0f;
         } else {

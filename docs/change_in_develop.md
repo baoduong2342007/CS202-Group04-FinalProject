@@ -10,6 +10,9 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-12 | Sprint 6 remediation based on `3047252` | Clean Debug/Release/Tests PASS; CTest 17/17 | no-op asset build PASS; final commit/manual evidence pending |
 | 2026-08-12 | BUG-042 body-tier FireFlower/transform fix | Debug/Release PASS; CTest 17/17 | Small/Super Fire forms retain body size; transformation frames update continuously |
 | 2026-08-13 | Merge `feature/sound-input` into `develop` | Fast-forward merge `b9622fb` | Updated local `feature/sound-input` from `origin` and merged into `develop` |
+| 2026-08-13 | Underground Castle sprite support for Level 2 | CTest 17/17 PASS | Added `TileFrames::CASTLE_UNDERGROUND` (419,196,80,80) for `LevelTheme::UNDERGROUND` in Level 2 |
+| 2026-08-13 | Remove all blue background shades from tileset | Image processed | Converted all 112,463 background pixels matching blue shades `(r<=5, 35<=g<=45, 135<=b<=145)` in `assets/textures/tiles/tileset.png` to transparent (0, 0, 0, 0) |
+| 2026-08-13 | Update HARD_BLOCK_UNDERGROUND texture rect | CTest 17/17 PASS | Changed `HARD_BLOCK_UNDERGROUND` sprite rect to `(147, 33)` {16, 16} in `TileFrames.h` and test suite |
 
 ## 2026-08-12 remediation scope
 
@@ -68,6 +71,14 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #39: [Feature & Asset Tuning] - Bổ Sung Sprite Lâu Đài Underground (`CASTLE_UNDERGROUND`) Cho Level 2
+- **Trạng thái:** Đã hoàn thành 100%, 17/17 CTest passed.
+- **File ảnh hưởng:** `include/level/TileFrames.h`, `src/level/TileMap.cpp`
+- **Mô tả:**
+  1. Thêm định nghĩa `TileFrames::CASTLE_UNDERGROUND` với sub-rect `(419, 196, 80, 80)` trong `TileFrames.h`.
+  2. Cập nhật logic vẽ ký tự `'L'` trong `TileMap.cpp`: kiểm tra nếu `m_theme == LevelTheme::UNDERGROUND` (như Level 2) thì sử dụng sprite lâu đài màu xanh xám `CASTLE_UNDERGROUND`, các level khác vẫn giữ nguyên lâu đài `CASTLE` màu cam đỏ truyền thống.
+  3. Biên dịch thành công và vượt qua 100% bộ kiểm thử tự động 17/17 CTest.
 
 ### Entry #38: [Branch Merge] - Merge Branch `feature/sound-input` Vào `develop`
 - **Trạng thái:** Đã hoàn thành 100%.

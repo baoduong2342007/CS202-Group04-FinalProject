@@ -29,7 +29,7 @@ inline constexpr sf::IntRect GROUND_UNDERGROUND{ {147, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERGROUND{ {164, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_VARIANT_UNDERGROUND{ {181, 16}, {16, 16} };
 inline constexpr sf::IntRect STONE_UNDERGROUND{ {147, 33}, {16, 16} };
-inline constexpr sf::IntRect HARD_BLOCK_UNDERGROUND{ {198, 16}, {16, 16} };
+inline constexpr sf::IntRect HARD_BLOCK_UNDERGROUND{ {147, 33}, {16, 16} };
 
 inline constexpr sf::IntRect GROUND_CASTLE{ {0, 100}, {16, 16} };
 inline constexpr sf::IntRect BRICK_CASTLE{ {17, 100}, {16, 16} };
@@ -96,6 +96,7 @@ inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_TOP{ {136, 230}, {16, 16} };
 
 inline constexpr sf::IntRect CASTLE{ {328, 196}, {80, 80} };
+inline constexpr sf::IntRect CASTLE_UNDERGROUND{ {419, 196}, {80, 80} };
 
 inline constexpr sf::IntRect HORIZONTAL_PIPE { {328, 298}, {48, 32} };
 

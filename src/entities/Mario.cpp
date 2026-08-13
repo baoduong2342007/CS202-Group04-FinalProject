@@ -700,7 +700,9 @@ void Mario::rebuildFixture() {
   b2PolygonShape dynamicBox;
   float w = PhysicsEngine::pixelsToMeters(targetSize.x / 2.0f);
   float h = PhysicsEngine::pixelsToMeters(targetSize.y / 2.0f);
-  float bevel = PhysicsEngine::pixelsToMeters(4.0f); // 4-pixel corner bevel
+  // A wider chamfer prevents a polygon-vs-box corner contact from generating
+  // an upward impulse when Mario walks across a mixed B/?/B row backwards.
+  const float bevel = PhysicsEngine::pixelsToMeters(8.0f);
 
   b2Vec2 vertices[8];
   vertices[0].Set(-w + bevel, -h); // Top edge, left

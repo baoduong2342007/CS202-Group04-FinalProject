@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,8 @@
 #include "physics/TileContactResolver.h"
 #include "entities/Mario.h"
 #include "entities/QuestionBlock.h"
+#include "level/TileMap.h"
+#include "physics/ContactListener.h"
 #include "physics/PhysicsEngine.h"
 
 namespace {
@@ -47,6 +50,9 @@ void createSpanBodies(b2World& world, const std::vector<TileCollisionSpan>& span
             static_cast<float>(span.column) * TILE_SIZE_METERS + widthMeters / 2.0f,
             static_cast<float>(span.row) * TILE_SIZE_METERS + TILE_SIZE_METERS / 2.0f
         );
+        bodyDef.userData.pointer = TileMap::TILE_USERDATA_FLAG |
+                                   (static_cast<uintptr_t>(span.row) << 16) |
+                                   static_cast<uintptr_t>(span.column);
         b2Body* body = world.CreateBody(&bodyDef);
 
         b2PolygonShape shape;
@@ -84,6 +90,88 @@ float simulateRightSpam(const std::vector<TileCollisionSpan>& spans) {
     }
 
     return mario->GetPosition().x * PIXELS_PER_METER;
+}
+
+void settleMario(b2World& world, Mario& mario, int frames = 10) {
+    for (int frame = 0; frame < frames; ++frame) {
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+    }
+}
+
+float tapMoveMario(b2World& world, Mario& mario, float direction, int frames) {
+    const float startX = mario.getPosition().x;
+    for (int frame = 0; frame < frames; ++frame) {
+        if ((frame % 2) == 0) {
+            mario.setMoveIntent(direction);
+        } else {
+            mario.stopMoving();
+        }
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+    }
+    return mario.getPosition().x - startX;
+}
+
+void createAlternatingBlockCourse(
+    b2World& world,
+    std::vector<std::unique_ptr<QuestionBlock>>& questionBlocks,
+    int startColumn,
+    int length,
+    int row
+) {
+    std::vector<TileCollisionSpan> brickSpans;
+    for (int offset = 0; offset < length; ++offset) {
+        const int column = startColumn + offset;
+        if ((offset % 2) == 0) {
+            brickSpans.push_back({column, row, 1});
+        } else {
+            questionBlocks.push_back(std::make_unique<QuestionBlock>(
+                sf::Vector2f(static_cast<float>(column) * TILE_SIZE_PIXELS,
+                             static_cast<float>(row) * TILE_SIZE_PIXELS),
+                &world));
+        }
+    }
+    createSpanBodies(world, brickSpans);
+}
+
+struct MarioTapRun {
+    float displacement = 0.f;
+    bool grounded = false;
+    float jumpVelocity = 0.f;
+};
+
+MarioTapRun runMixedBlockTapCourse(float direction) {
+    b2World world({0.f, 25.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    std::vector<std::unique_ptr<QuestionBlock>> questionBlocks;
+    constexpr int row = 6;
+    constexpr int courseStart = 0;
+    constexpr int courseLength = 100;
+    createAlternatingBlockCourse(world, questionBlocks, courseStart, courseLength, row);
+
+    const int startColumn = direction > 0.f ? 10 : 70;
+    Mario mario(
+        {static_cast<float>(startColumn) * TILE_SIZE_PIXELS + 2.f,
+         static_cast<float>(row) * TILE_SIZE_PIXELS - 30.f},
+        {28.f, 30.f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    settleMario(world, mario);
+
+    MarioTapRun result;
+    result.displacement = tapMoveMario(world, mario, direction, 12'000);
+    result.grounded = mario.isGrounded();
+    mario.jump();
+    mario.preparePhysics(TIME_STEP);
+    result.jumpVelocity = PhysicsEngine::metersToPixels(
+        mario.getBody()->GetLinearVelocity().y);
+    return result;
 }
 
 bool testSpanLayout() {
@@ -157,6 +245,85 @@ bool testMarioLeavesQuestionBlockToTheLeft() {
                  "The left block seam must not create an upward ghost impulse");
 }
 
+bool testMarioTapSpamCrossesMixedBlockSeamsInBothDirections() {
+    const MarioTapRun right = runMixedBlockTapCourse(1.f);
+    const MarioTapRun left = runMixedBlockTapCourse(-1.f);
+
+    return check(right.displacement > 250.f,
+                 "Mario tap-spam must cross B/question seams to the right") &&
+           check(left.displacement < -250.f,
+                 "Mario tap-spam must cross B/question seams to the left") &&
+           check(right.grounded && left.grounded,
+                 "Mario must remain grounded while traversing a mixed block row") &&
+           check(right.jumpVelocity < -100.f && left.jumpVelocity < -100.f,
+                 "Mario must retain jump ability after crossing mixed block seams");
+}
+
+bool testMarioSeamFilterKeepsHigherWallSolid() {
+    b2World world({0.f, 25.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    // Ground top is y=192. The block at column 4 starts one row higher, so
+    // it is a genuine wall/step and must not be treated as a walkable seam.
+    createSpanBodies(world, {{0, 6, 16}, {4, 5, 1}});
+    Mario mario({2.f, 162.f}, {28.f, 30.f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    settleMario(world, mario);
+
+    const float displacement = tapMoveMario(world, mario, 1.f, 12'000);
+    return check(displacement < 110.f,
+                 "a one-tile-higher wall must remain solid to Mario");
+}
+
+bool testMarioSeamFilterPreservesQuestionBlockCeiling() {
+    b2World world({0.f, 0.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    QuestionBlock questionBlock({96.f, 128.f}, &world);
+    Mario mario({98.f, 180.f}, {28.f, 30.f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    mario.setVelocity({0.f, -300.f});
+
+    float minimumTopY = mario.getPosition().y;
+    for (int frame = 0; frame < 90; ++frame) {
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+        minimumTopY = std::min(minimumTopY, mario.getPosition().y);
+    }
+
+    return check(minimumTopY > 120.f,
+                 "Mario jumping from below must remain blocked by a question block");
+}
+
+bool testMarioSeamFilterDoesNotBridgeAPlatformEdge() {
+    b2World world({0.f, 25.f});
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+
+    createSpanBodies(world, {{0, 6, 2}});
+    Mario mario({2.f, 162.f}, {28.f, 30.f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    settleMario(world, mario);
+
+    for (int frame = 0; frame < 90; ++frame) {
+        mario.moveRight();
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.refreshGroundedState();
+        mario.update(TIME_STEP);
+    }
+
+    return check(!mario.isGrounded() && mario.getPosition().y > 220.f,
+                 "Mario must fall after walking beyond a platform edge");
+}
+
 bool testCeilingContactTargetsOwningTile() {
     constexpr float tileSize = 32.0f;
 
@@ -190,6 +357,10 @@ int main() {
                             testDestroyedTileSplitsSpan() &&
                             testRightSpamCrossesTileBoundaries() &&
                             testMarioLeavesQuestionBlockToTheLeft() &&
+                            testMarioTapSpamCrossesMixedBlockSeamsInBothDirections() &&
+                            testMarioSeamFilterKeepsHigherWallSolid() &&
+                            testMarioSeamFilterPreservesQuestionBlockCeiling() &&
+                            testMarioSeamFilterDoesNotBridgeAPlatformEdge() &&
                             testCeilingContactTargetsOwningTile();
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

@@ -38,8 +38,12 @@ constexpr float ENEMY_SUPPORT_PROBE_OFFSET = 2.f;
 constexpr float ENEMY_WALL_NORMAL_THRESHOLD = 0.5f;
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float ENEMY_FALLING_VELOCITY_THRESHOLD = 0.01f;
+constexpr float MARIO_SEAM_MIN_HORIZONTAL_NORMAL = 0.2f;
+constexpr float MARIO_SEAM_MIN_UPWARD_NORMAL = 0.2f;
+constexpr float MARIO_SEAM_TOP_TOLERANCE_PIXELS = 3.f;
+constexpr float MARIO_SEAM_FALLING_VELOCITY_THRESHOLD = 0.01f;
 
-bool isEnemySupportObstacle(
+bool isTerrainOrQuestionBlock(
     Entity* obstacle,
     b2Body* obstacleBody
 ) {
@@ -100,7 +104,7 @@ bool isWalkableSupportSeam(Enemy* enemy, Entity* obstacle,
                            const b2Vec2& enemyNormal,
                            const TileMap& tileMap
                         ) {
-    if (!enemy || !enemyBody || !isEnemySupportObstacle(obstacle, obstacleBody)) {
+    if (!enemy || !enemyBody || !isTerrainOrQuestionBlock(obstacle, obstacleBody)) {
         return false;
     }
 
@@ -170,6 +174,114 @@ Entity* entityFromBody(b2Body* body) {
     }
 
     return reinterpret_cast<Entity*>(ptr);
+}
+
+b2Vec2 normalFromMarioTowardsObstacle(const b2Contact& contact,
+                                       const b2Body* marioBody,
+                                       const b2WorldManifold& manifold) {
+    b2Vec2 normal = manifold.normal;
+    if (contact.GetFixtureB()->GetBody() == marioBody) {
+        normal = -normal;
+    }
+    return normal;
+}
+
+float fixtureTopPixels(const b2Fixture& fixture) {
+    return PhysicsEngine::metersToPixels(fixture.GetAABB(0).lowerBound.y);
+}
+
+float fixtureBottomPixels(const b2Fixture& fixture) {
+    return PhysicsEngine::metersToPixels(fixture.GetAABB(0).upperBound.y);
+}
+
+bool hasSameHeightMarioSupport(Mario* mario,
+                               b2Body* marioBody,
+                               b2Body* seamObstacleBody,
+                               float seamTopPixels) {
+    if (!mario || !marioBody) {
+        return false;
+    }
+
+    for (b2ContactEdge* edge = marioBody->GetContactList(); edge;
+         edge = edge->next) {
+        b2Contact* supportContact = edge->contact;
+        if (!supportContact || !supportContact->IsTouching() ||
+            edge->other == seamObstacleBody) {
+            continue;
+        }
+
+        b2Fixture* fixtureA = supportContact->GetFixtureA();
+        b2Fixture* fixtureB = supportContact->GetFixtureB();
+        if (!fixtureA || !fixtureB) {
+            continue;
+        }
+
+        b2Fixture* supportFixture =
+            fixtureA->GetBody() == marioBody ? fixtureB : fixtureA;
+        if (!supportFixture ||
+            !isTerrainOrQuestionBlock(entityFromBody(edge->other), edge->other)) {
+            continue;
+        }
+
+        b2WorldManifold supportManifold;
+        supportContact->GetWorldManifold(&supportManifold);
+        const b2Vec2 supportNormal = normalFromMarioTowardsObstacle(
+            *supportContact, marioBody, supportManifold);
+        if (supportNormal.y < TOP_STOMP_NORMAL_THRESHOLD ||
+            std::abs(supportNormal.x) >= MAX_WALL_NORMAL_X) {
+            continue;
+        }
+
+        if (std::abs(fixtureTopPixels(*supportFixture) - seamTopPixels) <=
+            MARIO_SEAM_TOP_TOLERANCE_PIXELS) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool isMarioWalkableSupportSeam(Mario* mario,
+                                Entity* obstacle,
+                                b2Body* marioBody,
+                                b2Body* obstacleBody,
+                                b2Contact* contact,
+                                const b2WorldManifold& manifold) {
+    if (!mario || !marioBody || !obstacleBody || !contact ||
+        !isTerrainOrQuestionBlock(obstacle, obstacleBody)) {
+        return false;
+    }
+
+    const b2Vec2 normal =
+        normalFromMarioTowardsObstacle(*contact, marioBody, manifold);
+    if (std::abs(normal.x) < MARIO_SEAM_MIN_HORIZONTAL_NORMAL ||
+        normal.y < MARIO_SEAM_MIN_UPWARD_NORMAL ||
+        marioBody->GetLinearVelocity().y > MARIO_SEAM_FALLING_VELOCITY_THRESHOLD) {
+        return false;
+    }
+
+    b2Fixture* fixtureA = contact->GetFixtureA();
+    b2Fixture* fixtureB = contact->GetFixtureB();
+    if (!fixtureA || !fixtureB) {
+        return false;
+    }
+
+    b2Fixture* marioFixture =
+        fixtureA->GetBody() == marioBody ? fixtureA : fixtureB;
+    b2Fixture* obstacleFixture =
+        fixtureA->GetBody() == marioBody ? fixtureB : fixtureA;
+    if (!marioFixture || !obstacleFixture) {
+        return false;
+    }
+
+    const float obstacleTopPixels = fixtureTopPixels(*obstacleFixture);
+    if (std::abs(fixtureBottomPixels(*marioFixture) - obstacleTopPixels) >
+        MARIO_SEAM_TOP_TOLERANCE_PIXELS) {
+        return false;
+    }
+
+    return hasSameHeightMarioSupport(mario, marioBody, obstacleBody,
+                                     obstacleTopPixels);
 }
 
 float calculateMarioBlockOverlap(const Mario* mario,
@@ -428,6 +540,34 @@ void CollisionManager::preSolve(b2Contact* contact, TileMap& tileMap) {
 
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
+
+    Mario* mario = nullptr;
+    Entity* marioObstacle = nullptr;
+    b2Body* marioBody = nullptr;
+    b2Body* marioObstacleBody = nullptr;
+    if (entityA && entityA->isMario()) {
+        mario = static_cast<Mario*>(entityA);
+        marioObstacle = entityB;
+        marioBody = fixtureA->GetBody();
+        marioObstacleBody = fixtureB->GetBody();
+    } else if (entityB && entityB->isMario()) {
+        mario = static_cast<Mario*>(entityB);
+        marioObstacle = entityA;
+        marioBody = fixtureB->GetBody();
+        marioObstacleBody = fixtureA->GetBody();
+    }
+
+    // A pair of independently-created, same-height blocks has a shared
+    // corner. Mario's chamfer can touch that corner diagonally while another
+    // contact already supports his feet, so Box2D treats the seam as a wall.
+    // Disable only that diagonal contact; the top support contact remains
+    // active and real walls, ledges, ceilings, and block bumps are preserved.
+    if (mario && isMarioWalkableSupportSeam(mario, marioObstacle, marioBody,
+                                            marioObstacleBody, contact,
+                                            worldManifold)) {
+        contact->SetEnabled(false);
+        return;
+    }
 
     if (entityA && entityA->isEnemy() &&
         isWalkableSupportSeam(static_cast<Enemy*>(entityA), entityB,

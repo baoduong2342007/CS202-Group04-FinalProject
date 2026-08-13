@@ -11,6 +11,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <string_view>
 #include <utility>
 
@@ -38,7 +39,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoe[]{}prJTLHV";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoe[]{}prJTLHV^~";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -382,6 +383,108 @@ bool parseAndNormalizeWarps(std::vector<std::string>& grid,
 
             return false;
         }
+    }
+
+    return true;
+}
+
+// Parses '^' (start) and '~' (end) elevator markers from the grid.
+// A route is VERTICAL when the end marker shares the start's column,
+// HORIZONTAL when it shares the start's row.  When both apply, the
+// vertical route wins.  When several end markers are visible along the
+// route axis, the nearest one is paired with the start.
+bool parseAndNormalizeElevators(std::vector<std::string>& grid,
+                                std::vector<TileMap::ElevatorRoute>& routes,
+                                const std::string& path) {
+    routes.clear();
+
+    std::vector<sf::Vector2i> starts;
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            if (grid[row][column] == '^') {
+                starts.push_back({static_cast<int>(column), static_cast<int>(row)});
+            }
+        }
+    }
+
+    std::vector<sf::Vector2i> consumedEnds;
+
+    const auto isConsumedEnd = [&consumedEnds](int column, int row) {
+        return std::any_of(consumedEnds.begin(), consumedEnds.end(),
+                           [column, row](const sf::Vector2i& end) {
+                               return end.x == column && end.y == row;
+                           });
+    };
+
+    for (const sf::Vector2i& start : starts) {
+        int endColumn = -1;
+        int endRow = -1;
+
+        // Vertical candidates: unconsumed '~' markers in the start column.
+        {
+            int bestDistance = std::numeric_limits<int>::max();
+            for (std::size_t row = 0; row < grid.size(); ++row) {
+                if (grid[row][start.x] != '~' || isConsumedEnd(start.x, static_cast<int>(row))) {
+                    continue;
+                }
+                const int distance = std::abs(static_cast<int>(row) - start.y);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    endColumn = start.x;
+                    endRow = static_cast<int>(row);
+                }
+            }
+        }
+
+        // Horizontal candidates: unconsumed '~' markers in the start row.
+        if (endColumn < 0) {
+            int bestDistance = std::numeric_limits<int>::max();
+            for (std::size_t column = 0; column < grid[start.y].size(); ++column) {
+                if (grid[start.y][column] != '~' || isConsumedEnd(static_cast<int>(column), start.y)) {
+                    continue;
+                }
+                const int distance = std::abs(static_cast<int>(column) - start.x);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    endColumn = static_cast<int>(column);
+                    endRow = start.y;
+                }
+            }
+        }
+
+        if (endColumn < 0) {
+            std::cerr << "Elevator start '^' at row " << start.y + 1
+                      << ", column " << start.x + 1
+                      << " has no matching '~' end marker in " << path << std::endl;
+            return false;
+        }
+
+        if (endColumn == start.x && endRow == start.y) {
+            std::cerr << "Elevator route must span at least one tile in " << path << std::endl;
+            return false;
+        }
+
+        consumedEnds.push_back({endColumn, endRow});
+        routes.push_back({start, {endColumn, endRow}, endColumn == start.x});
+    }
+
+    // Every '~' must belong to a start.
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            if (grid[row][column] == '~' && !isConsumedEnd(static_cast<int>(column), static_cast<int>(row))) {
+                std::cerr << "Orphan elevator end marker '~' at row " << row + 1
+                          << ", column " << column + 1 << " in " << path << std::endl;
+                return false;
+            }
+        }
+    }
+
+    // Markers are metadata only; strip them from the renderable grid.
+    for (const sf::Vector2i& start : starts) {
+        grid[start.y][start.x] = '.';
+    }
+    for (const sf::Vector2i& end : consumedEnds) {
+        grid[end.y][end.x] = '.';
     }
 
     return true;
@@ -750,6 +853,11 @@ bool TileMap::loadFromFile(const std::string& path) {
         return false;
     }
 
+    std::vector<ElevatorRoute> loadedElevatorRoutes;
+    if (!parseAndNormalizeElevators(loadedGrid, loadedElevatorRoutes, path)) {
+        return false;
+    }
+
     if (!validateFlagPole(loadedGrid, path)) {
         return false;
     }
@@ -802,6 +910,7 @@ bool TileMap::loadFromFile(const std::string& path) {
 
     m_warpEntries = std::move(loadedWarpEntries);
     m_warpReturns = std::move(loadedWarpReturns);
+    m_elevatorRoutes = std::move(loadedElevatorRoutes);
 
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);

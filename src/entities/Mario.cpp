@@ -9,7 +9,6 @@
 
 #include "entities/Mario.h"
 #include "core/AnimationSystem.h"
-#include "core/DisplayConfig.h"
 #include "core/ScoreRules.h"
 #include "core/SpriteFrames_shared.h"
 #include "level/TileMap.h"
@@ -29,7 +28,6 @@ constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr int DEFAULT_MARIO_LIVES = 3;
 constexpr float DEFAULT_JUMP_FORCE = 460.f;
 constexpr float MAX_FALL_SPEED = 600.f;
-constexpr int FATAL_DAMAGE = 100;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
 constexpr float WALK_MAX_SPEED = 175.f;

@@ -15,13 +15,21 @@
 
 #pragma once
 
-#include "core/SpriteFrames_shared.h"
-#include "core/SpriteFrames_ovw.h"
-#include "core/SpriteFrames_udg.h"
-#include "core/SpriteFrames_castle.h"
-#include "core/SpriteFrames_udw.h"
+#include "core/SpriteFrames_shared.h" // IWYU pragma: export
+#include "core/SpriteFrames_ovw.h"    // IWYU pragma: export
+#include "core/SpriteFrames_udg.h"    // IWYU pragma: export
+#include "core/SpriteFrames_castle.h" // IWYU pragma: export
+#include "core/SpriteFrames_udw.h"    // IWYU pragma: export
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#pragma clang diagnostic ignored "-Wunused"
+#endif
 
 namespace SpriteFrames {
+
+constexpr bool IS_FACADE_ACTIVE = true;
 
 // Shared frame aliases retained for existing callers.
 namespace SmallMario = shared::SmallMario;
@@ -42,3 +50,7 @@ namespace Backgrounds = legacy::Backgrounds;
 namespace LevelEntities = legacy::LevelEntities;
 
 } // namespace SpriteFrames
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif

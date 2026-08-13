@@ -1,0 +1,59 @@
+# ============================================================
+# Elevator routes (moving platforms) — EXTERNAL CONFIG.
+#
+# Declaring routes here spawns elevators WITHOUT modifying any
+# level map file (levels/level1.txt ... stay untouched).
+#
+# Format (whitespace separated, one route per line):
+#   <level file> <startCol> <startRow> <endCol> <endRow> [speed] [pause]
+#   - level file   basename of the level (e.g. level2.txt)
+#   - start/end    grid column/row of the platform endpoints
+#   - speed        platform speed in px/s  (default 60)
+#   - pause        seconds to pause at each end (default 1.0)
+#
+# Axis is inferred from the endpoints:
+#   same column (startCol == endCol) -> VERTICAL route
+#   same row    (startRow == endRow) -> HORIZONTAL route
+#
+# Endpoints must be on non-solid tiles and at least one tile apart.
+# Lines starting with '#' and blank lines are ignored.
+# ============================================================
+# MAP SYMBOL NOTE
+# You can declare a route directly inside level1.txt, level2.txt, or
+# level3.txt by placing '^' at the start and '~' at the end.
+#
+#   Vertical:   '^' and '~' in the same column.
+#   Horizontal: '^' and '~' in the same row.
+#
+# The markers must replace empty '.' cells, remain inside the map, and must
+# not replace solid/climbable tiles. The level theme automatically selects
+# the platform palette: Overworld, Underground, Castle, or Underwater.
+# Use either map markers OR an entry below for the same elevator, otherwise
+# both routes will spawn.
+# ============================================================
+
+# --- Level 1 (Overworld) ---
+# Vertical lift beside the BUB?B blocks (jump-assist), 1 tile tall.
+# level1.txt 21 11 21 10 60 1.0
+# Vertical lift in the mid-level open area, 3 tiles tall.
+# level1.txt 107 11 107 8 60 1.0
+# Horizontal ferry over pit #1 (cols 63-64).
+# level1.txt 59 10 70 10 60 1.0
+# Horizontal ferry over pit #2 (cols 93-95).
+# level1.txt 88 10 101 10 60 1.0
+
+# --- Level 2 (Underground) ---
+# Vertical lift beside the SSSSS staircase (coins + flag access).
+# level2.txt 241 12 241 7 60 1.0
+# Vertical lift right of the staircase, near the flag.
+# level2.txt 258 12 258 7 60 1.0
+
+# --- Level 3 (Castle) ---
+# Horizontal ferry across the main chamber.
+# level3.txt 55 10 75 10 60 1.0
+# Vertical lift in the right chamber near the flag.
+# level3.txt 80 12 80 7 60 1.0
+
+# --- Level 4 (Underwater fixture) ---
+# level4.txt 55 10 75 10 60 1.0
+# level4.txt 80 12 80 7 60 1.0

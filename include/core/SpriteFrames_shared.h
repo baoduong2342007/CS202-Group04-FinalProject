@@ -843,6 +843,18 @@ inline const sf::IntRect FIREBAR_BASE({80, 64}, {32, 8});
 inline const sf::IntRect PLATFORM_SHORT({52, 64}, {24, 8});
 inline const sf::IntRect PLATFORM_LONG({116, 64}, {48, 8});
 
+// Underground Palette (Y offset + 108)
+inline const sf::IntRect UG_PLATFORM_SHORT({52, 172}, {24, 8});
+inline const sf::IntRect UG_PLATFORM_LONG({116, 172}, {48, 8});
+
+// Castle Palette (Y offset + 216)
+inline const sf::IntRect CASTLE_PLATFORM_SHORT({52, 280}, {24, 8});
+inline const sf::IntRect CASTLE_PLATFORM_LONG({116, 280}, {48, 8});
+
+// Underwater Palette (Y offset + 324)
+inline const sf::IntRect UW_PLATFORM_SHORT({52, 388}, {24, 8});
+inline const sf::IntRect UW_PLATFORM_LONG({116, 388}, {48, 8});
+
 // Flags and Vines
 // The flag and castle-flag cells are adjacent to the springboard and vine
 // cells, so keep the atlas coordinates explicit instead of relying on a
@@ -1672,6 +1684,12 @@ inline const sf::IntRect &UW_SPRING_EXTENDED = legacy::Items::UW_SPRING_EXTENDED
 inline const sf::IntRect &FIREBAR_BASE = legacy::Items::FIREBAR_BASE;
 inline const sf::IntRect &PLATFORM_SHORT = legacy::Items::PLATFORM_SHORT;
 inline const sf::IntRect &PLATFORM_LONG = legacy::Items::PLATFORM_LONG;
+inline const sf::IntRect &UG_PLATFORM_SHORT = legacy::Items::UG_PLATFORM_SHORT;
+inline const sf::IntRect &UG_PLATFORM_LONG = legacy::Items::UG_PLATFORM_LONG;
+inline const sf::IntRect &CASTLE_PLATFORM_SHORT = legacy::Items::CASTLE_PLATFORM_SHORT;
+inline const sf::IntRect &CASTLE_PLATFORM_LONG = legacy::Items::CASTLE_PLATFORM_LONG;
+inline const sf::IntRect &UW_PLATFORM_SHORT = legacy::Items::UW_PLATFORM_SHORT;
+inline const sf::IntRect &UW_PLATFORM_LONG = legacy::Items::UW_PLATFORM_LONG;
 inline const sf::IntRect &FLAGPOLE_FLAG = legacy::Items::FLAGPOLE_FLAG;
 inline const sf::IntRect &CASTLE_FLAG = legacy::Items::CASTLE_FLAG;
 inline const sf::IntRect &VINE_TOP = legacy::Items::VINE_TOP;

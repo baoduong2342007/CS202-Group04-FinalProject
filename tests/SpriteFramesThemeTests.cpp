@@ -48,6 +48,7 @@ void testNamespacesAndFacade() {
     assert(SpriteFrames::shared::Items::coinFrames().size() == 4);
 
     // The old facade remains source-compatible.
+    assert(SpriteFrames::IS_FACADE_ACTIVE);
     assert(SpriteFrames::SmallMario::IDLE.size.x == 16);
     assert(SpriteFrames::Enemies::GreenEnemiesBlock::UG_KOOPA_WALK1.size.x == 16);
     assert(SpriteFrames::ovw::Enemies::Koopa::WALK1.size.x == 16);

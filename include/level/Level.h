@@ -67,6 +67,7 @@ private:
         NONE,
         SLIDING,
         WAITING_FLAG_DROP,
+        TURNING_RIGHT,
         WALKING
     };
 
@@ -78,6 +79,7 @@ private:
 
     // 5. Private methods
     void spawnEntitiesFromTileMap();
+    void spawnElevatorsFromTileMap();
     void removeDeadEntities();
     void checkItemCollisions();
     void checkFinishFlag();
@@ -103,6 +105,8 @@ private:
     bool m_flagWalkActive = false;
     FlagPhase m_flagPhase = FlagPhase::NONE;
     float m_flagWalkTargetX = 0.0f;
+    float m_flagPoleCenterX = 0.0f;
+    float m_flagTurnTargetX = 0.0f;
     float m_flagSlideStartMarioY = 0.0f;
     float m_flagSlideStartDropDistance = 0.0f;
     std::string m_levelPath;

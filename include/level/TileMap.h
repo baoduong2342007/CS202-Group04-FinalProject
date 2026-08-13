@@ -45,8 +45,25 @@ public:
         sf::Vector2i position;
     };
 
+    /// One moving elevator declared directly in a level map.
+    /// Use '^' for the start marker and '~' for the end marker.
+    /// Markers must share a column for vertical movement or a row for
+    /// horizontal movement; both markers are converted to empty tiles after
+    /// loading. The active level theme supplies the platform appearance.
+    /// Do not duplicate the same route in levels/elevators.txt.
+    /// vertical == true when both markers share the same column.
+    struct ElevatorRoute {
+        sf::Vector2i start;
+        sf::Vector2i end;
+        bool vertical;
+    };
+
     const std::vector<WarpEntry>& getWarpEntries() const {
         return m_warpEntries;
+    }
+
+    const std::vector<ElevatorRoute>& getElevatorRoutes() const {
+        return m_elevatorRoutes;
     }
 
     std::optional<sf::Vector2i> findWarpReturn(char id) const;
@@ -148,4 +165,5 @@ private:
     
     std::vector<WarpEntry> m_warpEntries;
     std::vector<WarpReturn> m_warpReturns;
+    std::vector<ElevatorRoute> m_elevatorRoutes;
 };

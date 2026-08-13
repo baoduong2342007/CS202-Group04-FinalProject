@@ -220,6 +220,15 @@ if(BUILD_TESTING)
     target_link_libraries(springboard_tests PRIVATE game_lib)
     add_test(NAME springboard_tests COMMAND springboard_tests)
 
+    add_executable(elevator_tests
+        tests/ElevatorTests.cpp
+    )
+    target_link_libraries(elevator_tests PRIVATE game_lib)
+    add_test(NAME elevator_tests COMMAND elevator_tests)
+    set_tests_properties(elevator_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     set_tests_properties(level_validator_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )

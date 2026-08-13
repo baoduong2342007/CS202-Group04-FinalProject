@@ -20,8 +20,6 @@
 #include "entities/Goomba.h"
 #include "entities/Koopa.h"
 #include "physics/CollisionManager.h"
-#include "patterns/EventBus.h"
-#include "patterns/EventType.h"
 #include "core/ScoreRules.h"
 
 namespace {

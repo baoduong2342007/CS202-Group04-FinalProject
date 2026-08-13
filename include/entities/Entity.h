@@ -70,6 +70,7 @@ public:
         ITEM,
         PROJECTILE,
         SPRINGBOARD,
+        ELEVATOR,
         TERRAIN,
         UNKNOWN
     };
@@ -87,6 +88,7 @@ public:
     virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
     virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
     virtual bool isSpringboard() const { return getType() == EntityType::SPRINGBOARD; }
+    virtual bool isElevator() const { return getType() == EntityType::ELEVATOR; }
     virtual bool isKoopa() const { return false; }
     virtual bool isPiranhaPlant() const { return false; }
     virtual bool isMushroom() const { return false; }

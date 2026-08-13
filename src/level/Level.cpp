@@ -19,6 +19,8 @@
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
 #include "entities/Enemy.h"
+#include "entities/Elevator.h"
+#include "level/ElevatorConfig.h"
 #include "entities/PiranhaPlant.h"
 #include "entities/FireBall.h"
 #include "entities/FireballExplosion.h"
@@ -30,6 +32,11 @@
 namespace {
 
 constexpr unsigned int TILE_SIZE = 32;
+// Elevator markers occupy one 32 px map cell, while the platform is 64 px
+// wide. Treat the marker as the platform's center anchor instead of its left
+// edge so a lift sits centered in the opening shown by the level layout.
+constexpr float ELEVATOR_MARKER_X_OFFSET =
+    -static_cast<float>(TILE_SIZE) / 2.0f;
 constexpr float FLAGPOLE_WALK_SPEED = 150.0f;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
@@ -233,6 +240,77 @@ void Level::spawnEntitiesFromTileMap() {
             }
         }
     }
+
+    // --- Spawn elevators from '^' / '~' route markers ---
+    spawnElevatorsFromTileMap();
+}
+
+void Level::spawnElevatorsFromTileMap() {
+    const auto elevatorPositionFromMarker = [](const sf::Vector2i& marker) {
+        const sf::Vector2f position = TileMap::gridToWorldPosition(marker);
+        return sf::Vector2f(position.x + ELEVATOR_MARKER_X_OFFSET, position.y);
+    };
+
+    for (const auto& route : m_tileMap.getElevatorRoutes()) {
+        const sf::Vector2f start = elevatorPositionFromMarker(route.start);
+        const sf::Vector2f end = elevatorPositionFromMarker(route.end);
+
+        auto elevator = std::make_unique<Elevator>(
+            start,
+            sf::Vector2f(end.x, end.y),
+            Elevator::DEFAULT_SPEED,
+            route.vertical ? Elevator::Axis::VERTICAL : Elevator::Axis::HORIZONTAL,
+            Elevator::DEFAULT_PAUSE,
+            m_theme);
+
+        // Wire TextureManager so the elevator sprite can load
+        elevator->setTextureManager(m_textureManager);
+        elevator->initPhysics(m_world.get(), b2_kinematicBody, elevator->getSize());
+        m_entities.push_back(std::move(elevator));
+    }
+
+    // External registry (levels/elevators.txt) — the primary way to add
+    // elevators without modifying the level map file.
+    for (const auto& route : ElevatorConfig::routesFor(m_levelPath)) {
+        const auto inBounds = [this](const sf::Vector2i& point) {
+            return point.x >= 0 && point.y >= 0 &&
+                   point.x < static_cast<int>(m_tileMap.getWidth()) &&
+                   point.y < static_cast<int>(m_tileMap.getHeight());
+        };
+        const bool validAxis = (route.start.x == route.end.x) !=
+                               (route.start.y == route.end.y);
+        const bool validNumbers = std::isfinite(route.speedPixelsPerSecond) &&
+                                  std::isfinite(route.pauseSeconds) &&
+                                  route.speedPixelsPerSecond > 0.0f &&
+                                  route.pauseSeconds >= 0.0f;
+        const bool validEndpoints = inBounds(route.start) && inBounds(route.end) &&
+                                    !m_tileMap.isSolid(route.start.x, route.start.y) &&
+                                    !m_tileMap.isSolid(route.end.x, route.end.y) &&
+                                    !m_tileMap.isClimbable(route.start.x, route.start.y) &&
+                                    !m_tileMap.isClimbable(route.end.x, route.end.y);
+        if (!validAxis || !validNumbers || !validEndpoints) {
+            std::cerr << "Level: skipping invalid elevator route in " << m_levelPath
+                      << " from (" << route.start.x << ',' << route.start.y << ") to ("
+                      << route.end.x << ',' << route.end.y << ")" << std::endl;
+            continue;
+        }
+
+        const sf::Vector2f start = elevatorPositionFromMarker(route.start);
+        const sf::Vector2f end = elevatorPositionFromMarker(route.end);
+        const bool vertical = (route.start.x == route.end.x);
+
+        auto elevator = std::make_unique<Elevator>(
+            start,
+            sf::Vector2f(end.x, end.y),
+            route.speedPixelsPerSecond,
+            vertical ? Elevator::Axis::VERTICAL : Elevator::Axis::HORIZONTAL,
+            route.pauseSeconds,
+            m_theme);
+
+        elevator->setTextureManager(m_textureManager);
+        elevator->initPhysics(m_world.get(), b2_kinematicBody, elevator->getSize());
+        m_entities.push_back(std::move(elevator));
+    }
 }
 
 void Level::update(float dt) {
@@ -268,6 +346,24 @@ void Level::update(float dt) {
 
             if (m_mario->isFlagpoleSlideComplete() &&
                 m_tileMap.isFlagFullyDropped()) {
+                // Once the flag reaches the bottom, Mario must leave the pole
+                // toward the castle.  If he is still on the pole's left side,
+                // first move him around to the right side of the pole.  This
+                // is a real short transition, rather than only changing the
+                // sprite direction, so the two starting sides behave visibly
+                // differently.
+                const float marioCenterX =
+                    m_mario->getPosition().x + m_mario->getSize().x / 2.0f;
+                if (marioCenterX < m_flagPoleCenterX) {
+                    m_flagTurnTargetX =
+                        m_flagPoleCenterX - m_mario->getSize().x / 2.0f + 14.0f;
+                    m_mario->setFlagpoleSliding(false);
+                    m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
+                    m_mario->setMoveIntent(1.0f);
+                    m_flagPhase = FlagPhase::TURNING_RIGHT;
+                    break;
+                }
+
                 // The original game gives Mario a short pause at the bottom,
                 // then takes control and walks him right into the castle.
                 m_mario->setFlagpoleSliding(false);
@@ -279,6 +375,21 @@ void Level::update(float dt) {
             } else if (m_mario->isFlagpoleSlideComplete() &&
                        !m_tileMap.isFlagFullyDropped()) {
                 m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
+            }
+            break;
+        }
+        case FlagPhase::TURNING_RIGHT: {
+            m_mario->setMoveIntent(1.0f);
+            m_mario->setRunIntent(false);
+
+            if (m_mario->getPosition().x >= m_flagTurnTargetX) {
+                m_mario->setPosition({m_flagTurnTargetX,
+                                      m_mario->getPosition().y});
+                m_mario->stopMoving();
+                m_mario->setVelocity({0.0f, 0.0f});
+                m_mario->setMoveIntent(1.0f);
+                m_flagWalkActive = true;
+                m_flagPhase = FlagPhase::WALKING;
             }
             break;
         }
@@ -573,6 +684,7 @@ void Level::checkFinishFlag() {
         m_flagSlideStartMarioY = m_mario->getPosition().y;
         m_flagSlideStartDropDistance = 0.0f;
         const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
+        m_flagPoleCenterX = poleCenterX;
         const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
                                  m_mario->getSize().y;
         m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);

@@ -13,6 +13,8 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-13 | Underground Castle sprite support for Level 2 | CTest 17/17 PASS | Added `TileFrames::CASTLE_UNDERGROUND` (419,196,80,80) for `LevelTheme::UNDERGROUND` in Level 2 |
 | 2026-08-13 | Remove all blue background shades from tileset | Image processed | Converted all 112,463 background pixels matching blue shades `(r<=5, 35<=g<=45, 135<=b<=145)` in `assets/textures/tiles/tileset.png` to transparent (0, 0, 0, 0) |
 | 2026-08-13 | Update HARD_BLOCK_UNDERGROUND texture rect | CTest 17/17 PASS | Changed `HARD_BLOCK_UNDERGROUND` sprite rect to `(147, 33)` {16, 16} in `TileFrames.h` and test suite |
+| 2026-08-13 | Fix IDE warnings & directly reference facade symbol | Clean compile | Added `SpriteFrames::IS_FACADE_ACTIVE`, annotated headers with `IWYU pragma: export` and suppressed unused diagnostics inside `SpriteFrames.h` so IDE linter recognizes it cleanly |
+| 2026-08-13 | Elevator (moving platform) feature | CTest 18/18 PASS | New `Elevator` kinematic entity riding on `^`/`~` tile markers (vertical/horizontal, end-pause) + external `levels/elevators.txt` routes + theme-specific platform sprite frames + `ElevatorTests`. Map markers must use empty cells and should not duplicate a config route; the active level theme selects the platform palette. |
 
 ## 2026-08-12 remediation scope
 
@@ -553,4 +555,3 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Logic Changes:**
   1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
   2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
-

@@ -9,6 +9,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-11 | `origin/develop` at `3047252` | 14/14 CTest | Review v4 reopened 40 tasks |
 | 2026-08-12 | Sprint 6 remediation based on `3047252` | Clean Debug/Release/Tests PASS; CTest 17/17 | no-op asset build PASS; final commit/manual evidence pending |
 | 2026-08-12 | BUG-042 body-tier FireFlower/transform fix | Debug/Release PASS; CTest 17/17 | Small/Super Fire forms retain body size; transformation frames update continuously |
+| 2026-08-13 | Merge `feature/sound-input` into `develop` | Fast-forward merge `b9622fb` | Updated local `feature/sound-input` from `origin` and merged into `develop` |
 
 ## 2026-08-12 remediation scope
 
@@ -67,6 +68,14 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #38: [Branch Merge] - Merge Branch `feature/sound-input` Vào `develop`
+- **Trạng thái:** Đã hoàn thành 100%.
+- **Commit hash:** `b9622fb`
+- **Mô tả:**
+  1. Cập nhật nhánh địa phương `feature/sound-input` bằng cách kéo (pull) 19 commits mới nhất từ `origin/feature/sound-input`.
+  2. Thực hiện fast-forward merge thành công branch `feature/sound-input` vào branch `develop`.
+  3. Cập nhật toàn bộ các thay đổi về camera, tilemaps, level design, physics và audio integration từ `feature/sound-input` vào `develop`.
 
 ### Entry #37: [Branch Merge & Test Sync] - Merge Branch `feature/sound-input` Vào `develop`
 - **Trạng thái:** Đã hoàn thành 100%, 14/14 CTest passed.

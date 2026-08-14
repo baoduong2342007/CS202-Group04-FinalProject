@@ -16,6 +16,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-13 | Fix IDE warnings & directly reference facade symbol | Clean compile | Added `SpriteFrames::IS_FACADE_ACTIVE`, annotated headers with `IWYU pragma: export` and suppressed unused diagnostics inside `SpriteFrames.h` so IDE linter recognizes it cleanly |
 | 2026-08-13 | Elevator (moving platform) feature | CTest 18/18 PASS | New `Elevator` kinematic entity riding on `^`/`~` tile markers (vertical/horizontal, end-pause) + external `levels/elevators.txt` routes + theme-specific platform sprite frames + `ElevatorTests`. Map markers must use empty cells and should not duplicate a config route; the active level theme selects the platform palette. |
 | 2026-08-14 | Cheep Cheep enemy & external spawn feature | CTest 19/19 PASS | Added `CheepCheep` enemy class with swimming and jumping mechanics adhering to SMB1 NES canon; added external spawn registry `levels/cheep_cheep.txt` & camera leap generator without modifying any existing map files (`level*.txt`); added `CheepCheepTests` with 100% pass rate. |
+| 2026-08-14 | Merge `feature/sound-input` (Mario/Luigi Character Select) | CTest 20/20 PASS | Integrated character selection flow (`CharacterSelectState`), Mario vs. Luigi physics profiles, Luigi Grow/Shrink/Fire animation atlases, session persistence in `GameProgress`, GameOver retry retention, and `character_flow_tests`. |
 
 ## 2026-08-12 remediation scope
 
@@ -74,6 +75,19 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #41: [Feature & State Flow] - Tích Hợp Luồng Chọn Nhân Vật Mario / Luigi & Đặc Tính Vật Lý Riêng Biệt
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `include/states/CharacterSelectState.h`, `src/states/CharacterSelectState.cpp`, `include/core/GameProgress.h`, `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `include/states/GameOverState.h`, `src/states/GameOverState.cpp`, `include/states/MenuState.h`, `src/states/MenuState.cpp`, `include/states/PlayState.h`, `src/states/PlayState.cpp`, `CMakeLists.txt`, `tests/CharacterFlowTests.cpp`, `tests/Gate0ContractTests.cpp`, `tests/LevelCatalogTests.cpp`, `tests/MarioPhysicsTests.cpp`.
+- **Mô tả:**
+  1. Thêm màn hình `CharacterSelectState` cho phép người chơi chọn Mario hoặc Luigi từ Main Menu trước khi vào `PlayState`.
+  2. Bổ sung profile vật lý riêng biệt `CharacterProfile` cho Mario và Luigi:
+     - **Mario:** Chạy nhanh hơn (walk: 175 px/s, run: 280 px/s), lực nhảy tiêu chuẩn (460).
+     - **Luigi:** Nhảy cao hơn (+10.8% lực nhảy: 510), chạy chậm hơn (~ -10% tốc độ: walk 160 px/s, run 250 px/s), tốc độ dưới nước cũng được scale tương ứng.
+  3. Cập nhật Sprite atlas cho Luigi: nạp đúng chuỗi biến hình Grow/Shrink từ `SpriteFrames::shared::GrowShrink::Luigi`, các animation Lửa (`FIRE_SMALL`, `FIRE_SUPER`) giữ thân Luigi và nạp động tác bắn lửa `SpriteFrames::shared::FireShooting::Luigi`.
+  4. Lưu trữ danh tính `CharacterType` trong `GameProgress`, tự động duy trì qua các màn (Level 1..4), khi respawn và khi nhấn **RETRY** ở màn `GameOverState`.
+  5. Thêm cờ chống double-transition (`m_transitioning`) trong các UI States để tránh lỗi duplicate state khi spam phím/chuột.
+  6. Bổ sung bộ test `character_flow_tests` và mở rộng các test contract, kiểm thử đạt 100% (20/20 CTest suites).
 
 ### Entry #40: [Feature] - Triển Khai Quái Cheep Cheep (Swimming & Jumping) & Cơ Chế Spawn Ngoài Không Đổi Map
 - **Trạng thái:** Đã hoàn thành 100%, 19/19 CTest passed.

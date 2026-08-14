@@ -1,5 +1,6 @@
 /**
  * @file CharacterSelectState.cpp
+ * @author TV5 (Truyền)
  * @brief Character selection state implementation.
  */
 #include "states/CharacterSelectState.h"

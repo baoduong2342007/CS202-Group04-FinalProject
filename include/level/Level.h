@@ -17,6 +17,7 @@
 #include "entities/Mario.h"
 #include "level/Camera.h"
 #include "level/TileMap.h"
+#include "level/CheepCheepConfig.h"
 
 #include <box2d/box2d.h>
 class ContactListener;
@@ -80,6 +81,9 @@ private:
     // 5. Private methods
     void spawnEntitiesFromTileMap();
     void spawnElevatorsFromTileMap();
+    void spawnCheepCheepRoutesFromTileMap();
+    void spawnCheepCheepsFromConfig();
+    void updateCheepCheepGenerators(float dt);
     void removeDeadEntities();
     void checkItemCollisions();
     void checkFinishFlag();
@@ -114,4 +118,6 @@ private:
     LevelTheme m_theme{LevelTheme::OVERWORLD};
     CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
     float m_pipeWarpCooldown = 0.0f;
+    std::vector<CheepCheepGeneratorConfig> m_activeGenerators;
+    std::vector<float> m_generatorTimers;
 };

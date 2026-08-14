@@ -39,7 +39,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoe[]{}prJTLHV^~";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -490,6 +490,95 @@ bool parseAndNormalizeElevators(std::vector<std::string>& grid,
     return true;
 }
 
+// Parses pairs of 'c' (start) and 'x' (end) route markers for flying/swimming Cheep Cheeps.
+// If 'c' has a matching 'x' in the same column (vertical) or same row (horizontal),
+// a route is created and both markers are converted to '.'. If 'c' has no matching 'x',
+// it stays as 'c' for single-point spawning.
+bool parseAndNormalizeCheepCheeps(std::vector<std::string>& grid,
+                                  std::vector<TileMap::CheepCheepRoute>& routes,
+                                  const std::string& path) {
+    routes.clear();
+
+    std::vector<sf::Vector2i> starts;
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            if (grid[row][column] == 'c') {
+                starts.push_back({static_cast<int>(column), static_cast<int>(row)});
+            }
+        }
+    }
+
+    std::vector<sf::Vector2i> consumedEnds;
+
+    const auto isConsumedEnd = [&consumedEnds](int column, int row) {
+        return std::any_of(consumedEnds.begin(), consumedEnds.end(),
+                           [column, row](const sf::Vector2i& end) {
+                               return end.x == column && end.y == row;
+                           });
+    };
+
+    for (const sf::Vector2i& start : starts) {
+        int endColumn = -1;
+        int endRow = -1;
+
+        // Vertical candidates: unconsumed 'x' markers in the start column.
+        {
+            int bestDistance = std::numeric_limits<int>::max();
+            for (std::size_t row = 0; row < grid.size(); ++row) {
+                if (grid[row][start.x] != 'x' || isConsumedEnd(start.x, static_cast<int>(row))) {
+                    continue;
+                }
+                const int distance = std::abs(static_cast<int>(row) - start.y);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    endColumn = start.x;
+                    endRow = static_cast<int>(row);
+                }
+            }
+        }
+
+        // Horizontal candidates: unconsumed 'x' markers in the start row.
+        if (endColumn < 0) {
+            int bestDistance = std::numeric_limits<int>::max();
+            for (std::size_t column = 0; column < grid[start.y].size(); ++column) {
+                if (grid[start.y][column] != 'x' || isConsumedEnd(static_cast<int>(column), start.y)) {
+                    continue;
+                }
+                const int distance = std::abs(static_cast<int>(column) - start.x);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    endColumn = static_cast<int>(column);
+                    endRow = start.y;
+                }
+            }
+        }
+
+        // If a matching 'x' was found, this 'c' is the start of a route!
+        if (endColumn >= 0) {
+            consumedEnds.push_back({endColumn, endRow});
+            routes.push_back({start, {endColumn, endRow}, endColumn == start.x});
+
+            // Erase both markers from grid so they don't block physics or render as solid
+            grid[start.y][start.x] = '.';
+            grid[endRow][endColumn] = '.';
+        }
+        // Otherwise, if no 'x' was found, 'c' remains in the grid as a standalone swimming fish.
+    }
+
+    // Every 'x' must have belonged to a 'c'. Check for orphan 'x' markers.
+    for (std::size_t row = 0; row < grid.size(); ++row) {
+        for (std::size_t column = 0; column < grid[row].size(); ++column) {
+            if (grid[row][column] == 'x' && !isConsumedEnd(static_cast<int>(column), static_cast<int>(row))) {
+                std::cerr << "Orphan Cheep Cheep route end marker 'x' at row " << row + 1
+                          << ", column " << column + 1 << " in " << path << std::endl;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 constexpr std::string_view TILESET_PATH = "assets/textures/tiles/tileset.png";
 constexpr std::string_view OBJECTS_TILESET_PATH = "assets/textures/items/items_objects.png";
 
@@ -858,6 +947,11 @@ bool TileMap::loadFromFile(const std::string& path) {
         return false;
     }
 
+    std::vector<CheepCheepRoute> loadedCheepCheepRoutes;
+    if (!parseAndNormalizeCheepCheeps(loadedGrid, loadedCheepCheepRoutes, path)) {
+        return false;
+    }
+
     if (!validateFlagPole(loadedGrid, path)) {
         return false;
     }
@@ -911,6 +1005,7 @@ bool TileMap::loadFromFile(const std::string& path) {
     m_warpEntries = std::move(loadedWarpEntries);
     m_warpReturns = std::move(loadedWarpReturns);
     m_elevatorRoutes = std::move(loadedElevatorRoutes);
+    m_cheepCheepRoutes = std::move(loadedCheepCheepRoutes);
 
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);

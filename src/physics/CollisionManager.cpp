@@ -12,6 +12,7 @@
 #include "entities/Mario.h"
 #include "entities/Enemy.h"
 #include "entities/Koopa.h"
+#include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
 #include "items/Item.h"
 #include "items/Mushroom.h"
@@ -856,6 +857,14 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         if (enemy->isPiranhaPlant()) {
             mario->queuePowerDown();
             return;
+        }
+
+        if (enemy->isCheepCheep()) {
+            const auto* cheep = static_cast<const CheepCheep*>(enemy);
+            if (!cheep->canBeStomped()) {
+                mario->queuePowerDown();
+                return;
+            }
         }
 
         if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {

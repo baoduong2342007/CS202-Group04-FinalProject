@@ -1,389 +1,182 @@
-# Sprint 7 — Design Patterns, Polish, AI và săn bug ẩn
-
-**Thời gian:** 09/08/2026–15/08/2026  
-**Nguồn đối chiếu:** `WEEKLY_PLAN.md`, `ROLES.md`, kết quả audit codebase và Definition of Done của `s6_plan.md`.  
-**Mục tiêu:** Xác minh đúng năm design patterns; kiểm thử sâu toàn bộ gameplay; cải thiện render, animation, audio và enemy AI; cân bằng ba level; đưa game đến trạng thái release candidate ổn định.
-
-> Sprint 7 không dùng để âm thầm hoàn tất backlog Sprint 6. Nếu một task đã biết từ Sprint 1–6 chưa xong, task đó vẫn giữ ID/trạng thái Sprint 6. Sprint 7 chỉ tạo task mới cho bug chưa biết được phát hiện qua review, stress test hoặc exploratory playtest.
-
-## 1. Điều kiện bắt đầu Sprint 7
-
-- Menu → Level 1 → Level 2 → Level 3 → Win đã chạy được.
-- GameOver, Retry, Pause và Return to Menu hoạt động.
-- Score, coin và lives giữ đúng qua level transition.
-- Save/high score load được sau restart.
-- FireBall, Mushroom, FireFlower, Star và shell có runtime path hoàn chỉnh.
-- Debug/Release build thành công.
-- Mọi task Sprint 6 có trạng thái rõ ràng; không có task “đã làm gần xong” nhưng không có owner.
-
-Nếu một điều kiện trên không đạt, TV1 phải ghi rõ Sprint 6 chưa hoàn thành trước khi tiếp tục Sprint 7.
-
-## 2. Quy tắc quản lý bug Sprint 7
-
-Mỗi bug mới tạo task theo mẫu:
-
-```text
-ID: S7-BUG-<OWNER>-<NUMBER>
-Severity: P0 | P1 | P2 | P3
-Environment:
-Level/state:
-Preconditions:
-Steps to reproduce:
-Expected behavior:
-Actual behavior:
-Reproduction rate:
-Root cause:
-Regression test:
-Fix commit/PR:
-Verification evidence:
-```
-
-Quy tắc severity:
-
-- **P0:** crash, corrupt save, không thể hoàn thành level, kẹt state, mất progress. Dừng polish và sửa ngay.
-- **P1:** gameplay sai rõ ràng, collision sai, audio/state hỏng, exploit làm bỏ qua level. Sửa trong ngày.
-- **P2:** visual/audio/UI lỗi không chặn hoàn thành game. Triage hằng ngày.
-- **P3:** góp ý nhỏ, refactor hoặc improvement không ảnh hưởng release. Chỉ làm khi P0–P2 đã đóng.
-
-Bug không được đóng nếu thiếu reproduction hoặc verification. “Không tái hiện được” không phải `DONE`; phải ghi môi trường, số lần thử và bằng chứng.
-
-## 3. Definition of Done Sprint 7
-
-- Năm design patterns được mô tả đúng code thực tế.
-- Không gọi Simple Factory hiện tại là canonical Factory Method.
-- Không còn bug P0/P1.
-- P2 còn lại phải có waiver và lý do rõ ràng từ TV1.
-- Ba level pass automated validator và manual playthrough matrix.
-- Mỗi level được chơi ít nhất 10 lần trong Sprint 7.
-- Physics, render và audio soak test 30 phút không crash hoặc tăng resource vô hạn.
-- Reload/respawn/state transition lặp 100 lần không tăng Box2D bodies/subscribers bất thường.
-- Frame rate ổn định ở cấu hình mặc định.
-- Pause/resume, Star music và level music transition đúng.
-- Clean clone/configure/build/test/run thành công với relative asset paths.
-- Tài liệu, class diagram và code reference nhất quán.
-
-## 4. Chính sách public API Sprint 7
-
-- Public API được freeze từ cuối Sprint 6.
-- Không thêm API mới chỉ để phục vụ một call site.
-- Mọi public API mới phải có ít nhất hai consumers hoặc lý do extension rõ ràng.
-- Refactor nội bộ phải giữ behavior và có regression tests trước khi thay đổi.
-- Thay đổi interface cross-module cần TV1 và owner của cả producer/consumer duyệt.
-
-## 5. TV1 — Dương — Architecture Review và Design Patterns
-
-### A. Design patterns documentation
-
-- [ ] **S7-TV1-01 — Lập inventory năm patterns** — Factory, Singleton, Observer, State, Command. **DoD:** Mỗi pattern có participants, intent, runtime path và owner. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-02 — Review Simple Factory** — Kiểm tra creation API, smart pointer ownership và supported spawn types. **DoD:** Tài liệu gọi đúng Simple Factory và nêu cách mở rộng. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-03 — Review Singleton GameManager** — Kiểm tra lifetime, responsibility và state ownership. **DoD:** Không để GameManager thành global container cho logic không liên quan. **Ước lượng:** 30 phút.
-- [ ] **S7-TV1-04 — Review Singleton SoundManager** — Kiểm tra initialization order, shutdown và resource lifetime. **DoD:** Không access sau destruction. **Ước lượng:** 30 phút.
-- [ ] **S7-TV1-05 — Review Observer/EventBus** — Vẽ flow subscribe/notify/unsubscribe và event ownership. **DoD:** Có lifetime/reentrancy rules và ví dụ thực tế. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-06 — Review State pattern** — Lập transition table Menu/Play/Pause/GameOver/Win. **DoD:** Mỗi transition có trigger, old-state callback và new-state callback. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-07 — Review Command pattern** — Kiểm tra input mapping tách khỏi Mario behavior. **DoD:** Không còn command chứa dead dependency hoặc giả undo behavior. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-08 — Viết phần Factory trong design patterns doc** — **DoD:** Có intent, class roles, sequence và extension example. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-09 — Viết phần Singleton** — **DoD:** Nêu lợi ích, test limitation và lifecycle. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-10 — Viết phần Observer** — **DoD:** Có event flow và safe unsubscribe policy. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-11 — Viết phần State** — **DoD:** Có transition table và lifecycle contract. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-12 — Viết phần Command** — **DoD:** Có key→command→receiver flow và giải thích Released/Held. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-13 — Cross-check code references trong tài liệu** — **DoD:** Tất cả file/symbol được nhắc tới tồn tại. **Ước lượng:** 30 phút.
-
-### B. Senior code review
-
-- [ ] **S7-TV1-14 — Review dependency cycles** — Level/entities/physics/items/patterns. **DoD:** Chỉ refactor cycle gây lifetime/test bug; còn lại được ghi risk. **Ước lượng:** 75 phút.
-- [ ] **S7-TV1-15 — Review ownership toàn codebase** — **DoD:** Mọi owning pointer dùng RAII; raw pointer được xác định non-owning. **Ước lượng:** 75 phút.
-- [ ] **S7-TV1-16 — Review EventBus subscriber growth** — **DoD:** Chuyển state 50 lần không tăng subscribers. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-17 — Review public API không có caller** — **DoD:** API thừa được xóa/private hóa hoặc có extension rationale. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-18 — Review const-correctness** — **DoD:** Query không mutate; không trả mutable collection không cần thiết. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-19 — Review error handling** — Level, asset, audio và save. **DoD:** Lỗi quan trọng không bị bỏ qua âm thầm. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-20 — Review magic numbers còn lại** — **DoD:** Gameplay/render constants có tên và owner rõ. **Ước lượng:** 45 phút.
-- [ ] **S7-TV1-21 — Review duplicate logic** — Item collection, block hit, state transition và score update. **DoD:** Mỗi behavior có một source of truth. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-22 — Review documentation consistency** — README, roles, weekly plan, class diagram, patterns và asset docs. **DoD:** Không có nội dung mâu thuẫn. **Ước lượng:** 60 phút.
-
-### C. Release governance
+# Sprint 7 — Kế hoạch Release Candidate trong 5 ngày làm việc
 
-- [ ] **S7-TV1-23 — Tạo release gate dashboard** — **DoD:** Build, test, P0/P1, playthrough, performance và docs có trạng thái hàng ngày. **Ước lượng:** 30 phút.
-- [ ] **S7-TV1-24 — Daily cross-module review** — Mỗi ngày review ít nhất một module ngoài TV1. **DoD:** Có comment và verification record. **Ước lượng:** 45 phút/ngày.
-- [ ] **S7-TV1-25 — Fresh-clone verification** — **DoD:** Configure/build/test/run không cần sửa path. **Ước lượng:** 60 phút.
-- [ ] **S7-TV1-26 — Sprint 7 architecture sign-off** — **DoD:** Không còn architecture issue có khả năng gây crash, data loss hoặc state corruption. **Ước lượng:** 60 phút.
+**Thời gian/capacity:** 11/08/2026–15/08/2026, đúng năm ngày làm việc (Day 1–Day 5).<br>
+**Phạm vi:** hoàn thiện release graph đã được phê duyệt: **Level 1 Overworld → Level 2 Underground → Level 3 Underwater → Level 4 Castle → Win**.<br>
+**Đầu ra:** một release candidate (RC) có thể tải, chơi và hoàn thành cả bốn level bằng input bình thường, với bằng chứng automated và manual cùng một commit.<br>
+**Trạng thái tài liệu:** đây là kế hoạch; không mục nào dưới đây tự tuyên bố implementation, test, playthrough hoặc audit đã `DONE/PASS`.
 
-## 6. TV2 — Nhật — Visual Polish và Render Stability
+Sprint 6 hiện là baseline kỹ thuật, không phải bằng chứng đóng Sprint 7. Catalog/test hiện tại vẫn mô tả ba entry và level4 là fixture tham chiếu; việc đổi contract sang bốn entry là **work mới của Sprint 7**, cần TV1 phê duyệt và test tương ứng. Underwater runtime hooks đã tồn tại trong `Level.cpp`/`Mario`, nhưng phải được kiểm chứng cùng map, input và collision mới. Không thêm symbol hoặc mechanic ngoài contract validator hiện có chỉ để làm đẹp kế hoạch.
 
-### A. Performance và resource lifetime
+## 1. Release contract, ưu tiên và nguyên tắc làm việc
 
-- [ ] **S7-TV2-01 — Profile frame time theo render layer** — **DoD:** Có min/average/max cho Level 1–3. **Ước lượng:** 60 phút.
-- [ ] **S7-TV2-02 — Xác minh 60 FPS ổn định** — **DoD:** Không spike lặp do asset load/entity render. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-03 — Preload runtime textures** — **DoD:** Không đọc disk trong gameplay frame bình thường. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-04 — Audit texture lifetime qua state reload** — **DoD:** Không có sprite tham chiếu texture đã hủy. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-05 — Render soak 30 phút** — **DoD:** Memory, sprite, animation và particle counts ổn định. **Ước lượng:** 45 phút chạy + 30 phút phân tích.
+### 1.1 Graph và boundary
 
-### B. Z-order và animation polish
+| Release number | World label dự kiến | Theme | Vai trò trong Sprint 7 |
+|---:|---|---|---|
+| 1 | `1-1` | Overworld | Regression baseline; không đổi theme nếu không có P0/P1 |
+| 2 | `1-2` | Underground | Regression baseline; giữ completion route |
+| 3 | `1-3` | Underwater | Map mới/được remap, swim/physics và balance là critical path |
+| 4 | `1-4` | Castle | Map mới/được remap, castle balance và final route là critical path |
+| — | — | Win | Level 4 completion phải đưa tới Win đúng một lần |
 
-- [ ] **S7-TV2-06 — Audit z-order từng entity type** — Coin/item/enemy/projectile/Mario/flag/HUD. **DoD:** Không bị che sai ở cả ba level. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-07 — Polish Mario direction flip** — **DoD:** Không pop position hoặc origin. **Ước lượng:** 30 phút.
-- [ ] **S7-TV2-08 — Polish Koopa/shell orientation** — **DoD:** Visual phản ánh đúng direction/state. **Phụ thuộc:** TV4. **Ước lượng:** 30 phút.
-- [ ] **S7-TV2-09 — Polish FireBall animation** — **DoD:** Rotation/frame timing ổn định ở hai hướng. **Ước lượng:** 30 phút.
-- [ ] **S7-TV2-10 — Polish death animation** — **DoD:** Animation, camera, audio và transition timing khớp. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-11 — Polish spawn animation** — **DoD:** Input chỉ mở sau sequence. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-12 — Polish grow/shrink animation** — **DoD:** Không flicker/lệch chân/sai power frame. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-13 — Polish flag sequence** — **DoD:** Camera, Mario, score và fade đúng thứ tự. **Ước lượng:** 60 phút.
+Graph trên là quyết định planning đã được duyệt. Public contract trong source, save format/bounds, progression state và test assertions chỉ được thay đổi sau review của TV1 cùng owner module liên quan. Kế hoạch không coi việc catalog hiện tại trả về ba entry hoặc test đang kỳ vọng `find(4) == nullptr` là lỗi đã sửa.
 
-### C. Effects và camera feel
+### 1.2 Priority rules
 
-- [ ] **S7-TV2-14 — Enemy defeat particles** — Dùng pool có giới hạn. **DoD:** Particle tự cleanup và không cấp phát vô hạn. **Ước lượng:** 75 phút.
-- [ ] **S7-TV2-15 — Brick break particles** — **DoD:** Chỉ spawn khi brick thực sự bị phá. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-16 — Tuning camera shake** — Hit/death/shell có intensity khác nhau. **DoD:** Không vượt bounds hoặc làm khó nhìn. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-17 — Tuning camera dead-zone** — **DoD:** Walk/run/flag sequence đều mượt, không lag khó chịu. **Ước lượng:** 30 phút.
+- **P0 — release blocker:** crash, corrupt/mất save, state kẹt, không load/complete được level, mất progress hoặc đường tắt làm hỏng graph. Dừng polish để xử lý và retest.
+- **P1 — release critical:** collision/swim sai làm route không công bằng, audio/state/HUD sai rõ ràng, map invalid, test/build fail, hoặc thiếu bằng chứng bắt buộc. Phải có owner và kế hoạch sửa trong cùng sprint.
+- **P2 — quality:** visual, audio, camera, balance hoặc tài liệu không chặn completion. Chỉ xử lý sau P0/P1 và phải có verification.
+- **P3 — defer:** polish không ảnh hưởng RC, refactor sở thích cá nhân và improvement không cần cho bốn-level route. Ghi rõ defer, không lẫn vào gate.
 
-### D. Window và UI stress
-
-- [ ] **S7-TV2-18 — Kiểm tra pause render freeze** — **DoD:** Animation world không chạy sau overlay. **Ước lượng:** 30 phút.
-- [ ] **S7-TV2-19 — Xử lý focus lost/gained** — **DoD:** Clear held input hoặc auto-pause; Mario không chạy kẹt. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-20 — Extended resolution matrix** — Window/fullscreen/DPI/4:3/ultrawide. **DoD:** Không stretch/cắt HUD/sai click mapping. **Ước lượng:** 75 phút.
-- [ ] **S7-TV2-21 — Transition input spam** — Spam Enter/Escape/click. **DoD:** Không tạo duplicate states/overlays. **Ước lượng:** 45 phút.
-- [ ] **S7-TV2-22 — Visual regression baseline** — Ảnh đầu/giữa/cuối mỗi level và bốn UI states. **DoD:** Có checklist so sánh trước RC. **Ước lượng:** 60 phút.
-- [ ] **S7-TV2-23 — Visual bug closure pass** — **DoD:** Mọi visual P1/P2 có evidence trước/sau. **Ước lượng:** 60 phút.
-
-## 7. TV3 — Bảo — Physics Edge Cases và Gameplay Feel
-
-### A. Corner, wall và platform edges
-
-- [ ] **S7-TV3-01 — Test Mario kẹt góc** — **DoD:** Chạy/nhảy vào mọi corner không kẹt vĩnh viễn. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-02 — Test thin-wall clipping** — Mario, shell, FireBall ở tốc độ tối đa. **DoD:** Không xuyên wall. **Ước lượng:** 60 phút.
-- [ ] **S7-TV3-03 — Test ceiling collision khi grow** — **DoD:** Không rung/lún/mất grounded state. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-04 — Test platform-edge grounding** — **DoD:** Không grounded khi chỉ còn overlap không hợp lệ. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-05 — Test landing đúng frame nhấn jump** — **DoD:** Không mất jump hoặc double jump. **Ước lượng:** 45 phút.
-
-### B. Simultaneous contacts
-
-- [ ] **S7-TV3-06 — Mario chạm hai enemies cùng frame** — **DoD:** Chỉ nhận damage theo grace policy một lần. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-07 — Enemy và item cùng frame** — **DoD:** Thứ tự xử lý deterministic và đúng product rule. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-08 — Stomp tại cạnh hitbox** — **DoD:** Không phụ thuộc fixture order; tolerance có test. **Ước lượng:** 60 phút.
-- [ ] **S7-TV3-09 — Shell chạm nhiều enemies cùng frame** — **DoD:** Mỗi enemy nhận một defeat; score không double. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-10 — Star hết hạn trong contact frame** — **DoD:** Kết quả deterministic, không vừa kill vừa damage. **Ước lượng:** 60 phút.
-- [ ] **S7-TV3-11 — Death đúng frame level completion** — **DoD:** Chỉ một terminal state được commit. **Ước lượng:** 45 phút.
-
-### C. High-speed và frame-time stress
-
-- [ ] **S7-TV3-12 — Rapid direction changes** — **DoD:** Không vượt max speed hoặc sai animation direction. **Ước lượng:** 30 phút.
-- [ ] **S7-TV3-13 — Frame-time spike test** — **DoD:** Không spiral, tunnel hoặc teleport. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-14 — FireBall tại screen edge** — **DoD:** Cleanup đúng, không access body đã hủy. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-15 — FireBall chạm nhiều targets** — **DoD:** Chỉ defeat target hợp lệ theo projectile policy. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-16 — Shell high-speed tunneling test** — **DoD:** Không xuyên enemy/wall. **Ước lượng:** 60 phút.
+Mọi task phải có owner, dependency, DoD và evidence path. Khi implementation làm thay đổi contract, TV1 là người quyết định tiếp tục, rollback hoặc ghi waiver; không dùng tài liệu Sprint 7 để tự phê duyệt API.
 
-### D. Leak, determinism và tuning
-
-- [ ] **S7-TV3-17 — Box2D body-count audit** — Reload/respawn 100 lần. **DoD:** Body count trở về baseline. **Ước lượng:** 60 phút.
-- [ ] **S7-TV3-18 — Contact callback-count audit** — **DoD:** Không tăng listener/contact handler theo reload. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-19 — Tuning walk/run acceleration** — **DoD:** Chuyển hướng có quán tính hợp lý, không trượt khó kiểm soát. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-20 — Tuning jump force** — **DoD:** Required gaps có safety margin, không frame-perfect. **Phụ thuộc:** TV4 gap metrics. **Ước lượng:** 45 phút.
-- [ ] **S7-TV3-21 — Tuning bounce forces** — Stomp và FireBall. **DoD:** Không tạo velocity vượt giới hạn. **Ước lượng:** 30 phút.
-- [ ] **S7-TV3-22 — Physics deterministic soak** — Cùng scripted inputs chạy nhiều lần. **DoD:** Kết quả nằm trong tolerance. **Ước lượng:** 75 phút.
-- [ ] **S7-TV3-23 — Debug hitbox audit** — Mario states, enemy, shell, item, FireBall. **DoD:** Hitbox khớp visual và documented. **Ước lượng:** 60 phút.
-- [ ] **S7-TV3-24 — Zero-known-collision-glitch gate** — **DoD:** Regression và exploratory checklist pass. **Ước lượng:** 60 phút.
+### 1.3 Design-pattern và release governance
 
-## 8. TV4 — Vy — Enemy AI, Level Balance và Save Stress
+TV1 vẫn duy trì inventory/reference của Factory, Singleton, Observer, State và Command ở mức đủ để tài liệu khớp code thực tế. Đây là P2 nếu không ảnh hưởng build, state, save hoặc completion; không được chiếm capacity của game-completion path. Daily gate, commit/hash, test total, manual evidence và waiver là release governance bắt buộc, không phải mục polish tùy chọn.
 
-### A. AI polish
+## 2. Sprint 6 carry-over audit (giữ nguyên ID và sự thật trạng thái)
 
-- [ ] **S7-TV4-01 — Goomba awareness range** — Tăng patrol speed khi Mario trong vùng hợp lý. **DoD:** Không activate toàn map. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-02 — Goomba wall/ledge soak** — **DoD:** Patrol 10 phút không kẹt/rơi sai. **Ước lượng:** 30 phút chạy + 30 phút phân tích.
-- [ ] **S7-TV4-03 — Koopa awareness behavior** — **DoD:** Không tạo difficulty spike unfair. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-04 — Shell bounce consistency** — **DoD:** Mọi wall type phản xạ cùng rule. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-05 — Shell multi-enemy interaction** — **DoD:** Score/event/death đúng qua chuỗi enemies. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-06 — Enemy activation reset** — Quay camera lại sau khi enemy đã active. **DoD:** Không duplicate/reset sai. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-07 — Enemy patrol bounds visualization** — **DoD:** Debug mode hiển thị activation/patrol ranges. **Phụ thuộc:** TV2 debug rendering. **Ước lượng:** 45 phút.
+Các dòng sau đều vẫn là `REVIEW` theo `docs/management/S6_AUDIT_TRACKER.md` và `docs/management/S6_BUG_REGISTER.md`. Sprint 7 chỉ tạo hành động đóng evidence hoặc disposition; không đổi ID, không gọi chúng là `DONE/PASS` trước khi evidence được tạo.
 
-### B. Level 1 balance
+| Original ID | Status hiện tại | Evidence gap phải đóng | Ngày / owner / action trong Sprint 7 |
+|---|---|---|---|
+| `S6-TV1-35` | `REVIEW` | Integration log mới nhất còn thiếu commit hash và manual Level 1/item-route trên final RC; các hàng lịch sử không đủ. | Day 1 TV1 lập evidence contract; Day 5 TV1 ghi hash, Debug/Release/test result và disposition. |
+| `S6-TV2-28` | `REVIEW` | Resolution matrix có automated coverage nhưng còn thiếu screenshots và interactive UI run trên candidate cần chốt. | Day 4 TV2 chạy matrix, chụp ảnh cùng hash; Day 5 TV1 kiểm tra tính nhất quán. |
+| `S6-TV4-18` | `REVIEW` | Fairness của **Castle khi còn mang identity Level 3 cũ** chưa có same-RC human evidence. Việc remap graph làm Castle thành Level 4 không tự thỏa task cũ. | Day 1 TV1 ghi disposition `REVIEW/superseded-pending-disposition`; Day 3–4 TV4 chạy acceptance riêng cho Level 4 Castle. |
+| `S6-TV4-40` | `REVIEW` | Năm playthrough cho mỗi level của S6 và 15 same-RC entries chưa được chạy/ghi. | Day 4 TV4 thu log theo final candidate; Day 5 TV1 kiểm tra hash và route. Bốn-level playthrough của S7 là evidence bổ sung. |
+| `S6-TV5-43` | `REVIEW` | TV5 commit report chưa được review/đưa đúng vào engineering docs; nội dung sai phải loại bỏ. | Day 1 TV5 audit tài liệu; Day 5 TV1/TV5 ghi source và disposition, không sửa lịch sử S6. |
+| `S6-TV5-44` | `REVIEW` | Audio/HUD/item integration cần checklist tái lập và audio-device result trên final RC. | Day 4 TV5 chạy device/audio/HUD/item checks; Day 5 đóng bằng log cùng hash hoặc giữ `REVIEW`. |
+| `BUG-026` | `REVIEW` | Tracker còn cần suite count và final build/hash row chính xác. | Day 1 TV1 dùng baseline **19 suite đang đăng ký**; Day 5 cập nhật theo CMake/CTest thực tế, không dùng count cũ. |
+| `BUG-038` | `REVIEW` | Các manual `PASS` lịch sử đã bị invalidated; cần rerun playthrough, screenshots và audio trên final RC. | Day 4 các owner tạo evidence; Day 5 TV1 chỉ accept khi tất cả artifact cùng candidate hash. |
 
-- [ ] **S7-TV4-08 — Beginner onboarding review** — **DoD:** Có safe introduction trước mechanic mới. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-09 — Coin path review** — **DoD:** Coin hướng dẫn movement/jump, không đặt ngẫu nhiên. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-10 — Goomba placement review** — **DoD:** Người chơi nhìn thấy và có thời gian phản ứng. **Ước lượng:** 30 phút.
-- [ ] **S7-TV4-11 — Level 1 timer budget** — **DoD:** Beginner route có buffer ít nhất 30% thời gian. **Ước lượng:** 30 phút.
+### Same-final-RC evidence rule
 
-### C. Level 2 balance
+Evidence đóng carry-over và release gate phải được tạo từ **cùng một final RC commit** chứa toàn bộ thay đổi bốn-level. Build Debug, build Release, test output, playthrough log, screenshots và audio-device result phải ghi candidate hash hoặc artifact manifest tương ứng. Evidence của commit cũ, worktree khác hash, hoặc ảnh/audio không truy được candidate chỉ là historical/context và không được dùng để tuyên bố `PASS`. Nếu code/map/assets đổi sau khi thu evidence, chạy lại phần bị ảnh hưởng.
 
-- [ ] **S7-TV4-12 — Koopa learning space** — **DoD:** Có vùng an toàn để học stomp/kick shell. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-13 — Gap/landing visibility review** — **DoD:** Enemy không che landing zone bắt buộc. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-14 — Pipe geometry review** — **DoD:** Pipe visuals/colliders không tạo invisible snag. **Ước lượng:** 30 phút.
-- [ ] **S7-TV4-15 — Level 2 timer budget** — **DoD:** Normal route có buffer, không bắt speedrun. **Ước lượng:** 30 phút.
+## 3. Work packages và Definition of Done theo owner
 
-### D. Level 3 balance
+### 3.1 TV1 — Dương: contract, progression, save bounds và release approval
 
-- [ ] **S7-TV4-16 — Mixed-enemy fairness** — **DoD:** Không có unavoidable damage. **Ước lượng:** 60 phút.
-- [ ] **S7-TV4-17 — Star placement review** — **DoD:** Star xuất hiện trước đoạn có giá trị và không bắt buộc để sống. **Ước lượng:** 30 phút.
-- [ ] **S7-TV4-18 — Final gauntlet review** — **DoD:** Khó hơn nhưng có readable enemy/platform pattern. **Ước lượng:** 60 phút.
-- [ ] **S7-TV4-19 — Level 3 timer pressure** — **DoD:** Average player còn buffer hợp lý. **Ước lượng:** 30 phút.
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV1-01` Baseline và contract review | P0; Day 1; không phụ thuộc | Ghi graph 1→2→3→4→Win, catalog hiện trạng, save/state assumptions, 19-suite baseline và carry-over disposition. TV1 phê duyệt interface trước implementation. |
+| `S7-TV1-02` Catalog 1..4 và metadata | P0; sau `S7-TV1-01`, phối hợp TV4/TV5 | Contract map đúng Overworld/Underground/Underwater/Castle, world labels, camera và music metadata; `Level 4` không còn là fixture ngoài catalog sau khi code được duyệt. Có diff/test evidence, không chỉ sửa comment. |
+| `S7-TV1-03` Progression, save-level bounds và Win | P0; sau catalog | Normal completion tăng 1→4, save/reload không lùi hoặc nhảy ngoài bounds, Level 4 phát Win đúng một lần, Retry/GameOver không làm mất progress. Có state/save regression evidence. |
+| `S7-TV1-04` LevelCatalog/state tests và integration gate | P0/P1; song song Day 2–5 | Cập nhật assertions từ contract cũ sang bốn entry; thêm test cần thiết cho `find`, metadata, transitions và bounds. Chạy tất cả suite hiện hành; cập nhật tracker chỉ bằng kết quả thật. |
+| `S7-TV1-05` RC governance và design-pattern consistency | P1/P2; sau integration | Daily gate có owner/status/hash; tài liệu pattern, README, roles, plan và API references không mâu thuẫn. Không broad rewrite. |
 
-### E. Cross-level và save validation
+### 3.2 TV2 — Nhật: Underwater/Castle visuals, camera và screenshots
 
-- [ ] **S7-TV4-20 — Power-up placement matrix** — **DoD:** Mushroom/Flower/Star xuất hiện có chủ đích, không quá dày. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-21 — Pit readability review** — **DoD:** Mép platform và landing surface rõ. **Ước lượng:** 45 phút.
-- [ ] **S7-TV4-22 — Flag approach review** — **DoD:** Không unfair death trong forced flag sequence. **Ước lượng:** 30 phút.
-- [ ] **S7-TV4-23 — Save data 100-cycle stress** — **DoD:** Không corrupt/giảm high score/mất volume. **Ước lượng:** 60 phút.
-- [ ] **S7-TV4-24 — Mười playthrough mỗi level** — Normal, no-damage, speed route, intentional death. **DoD:** Có log time/death/bug cho từng run. **Ước lượng:** 240 phút.
-- [ ] **S7-TV4-25 — Final level-data validation** — **DoD:** Ba level pass validator; không có unsupported spawn symbol. **Ước lượng:** 30 phút.
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV2-01` Theme render audit | P1; sau metadata của TV1 | Underwater và Castle có background/tiles/flag/entity presentation đúng theme từ asset hiện có hoặc asset được package hợp lệ; không thêm mechanic không có contract. |
+| `S7-TV2-02` Camera và viewport bốn level | P1; sau map bounds của TV4 | Camera theo đúng mode, không lộ ngoài world, không cắt flag/HUD ở các resolution mục tiêu; có focused check và manual notes. |
+| `S7-TV2-03` Visual regression matrix | P1/P2; sau map load | Ảnh đầu/giữa/cuối của bốn level và Menu/Pause/GameOver/Win; z-order Mario/entity/flag/HUD rõ; diff checklist chỉ ra issue hoặc accepted variance. |
+| `S7-TV2-04` Resolution/UI carry-over closure | P1; Day 4–5 | Chạy `S6-TV2-28` matrix, screenshots cùng final hash, kiểm tra input target/focus; lỗi P1 sửa hoặc giữ gate đỏ. |
+| `S7-TV2-05` Final visual sign-off | P1; sau TV1/TV4 route | Gói screenshot có world label, theme, camera và completion frame cho Level 1→4→Win; artifact manifest ghi candidate hash. |
 
-## 9. TV5 — Truyền — Audio, HUD, Items và Asset Packaging
+### 3.3 TV3 — Bảo: swim/physics/collision và gameplay audit
 
-### A. Audio coverage
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV3-01` Underwater swim physics audit | P0/P1; Day 1–2, sau map theme | Kiểm chứng `setUnderwater`, gravity/damping, vertical swim intent, movement cap và animation/input path bằng code/test/manual evidence; không giả định phím hoặc mechanic chưa có trong runtime. |
+| `S7-TV3-02` Underwater collision/contact audit | P0; sau dữ liệu `S7-TV4-UW-01` | Mario không kẹt/xuyên tile, collision với solid/pit/flag deterministic, completion không bị chặn bởi contact order; cập nhật focused regression nếu cần. |
+| `S7-TV3-03` Castle và cross-level physics audit | P1; sau `S7-TV4-CA-01` | Castle dùng collision/physics phù hợp theme, không phá behavior Level 1/2; kiểm tra edge, ceiling, enemy/projectile và flag route. |
+| `S7-TV3-04` Determinism/soak gate | P1; Day 3–4 | Scripted input lặp lại cho swim, death/respawn, transition và collision; body/contact counts về baseline, không crash hoặc Box2D locked-world violation. |
+| `S7-TV3-05` Final gameplay sign-off | P0/P1; Day 5 | TV3 ký checklist normal input cho bốn level, ghi fix commit/test output và các residual P2 (nếu có waiver). |
 
-- [ ] **S7-TV5-01 — Event-to-audio coverage matrix** — **DoD:** Mỗi event có SFX/music hoặc “no sound by design”. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-02 — Rapid coin audio test** — **DoD:** Không cắt hoặc vượt voice pool. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-03 — Rapid stomp/shell audio test** — **DoD:** Không phát lặp do contact kéo dài. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-04 — FireBall audio rate test** — **DoD:** Chỉ phát khi projectile được tạo. **Ước lượng:** 20 phút.
-- [ ] **S7-TV5-05 — Power-up duplication test** — **DoD:** Mỗi pickup đúng một SFX. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-06 — Music transition matrix** — Menu, Level 1–3, Star, death, Win, GameOver. **DoD:** Không overlap hoặc im lặng sai. **Ước lượng:** 60 phút.
-- [ ] **S7-TV5-07 — Star interruption test** — Pause/death/level complete khi Star active. **DoD:** Chuyển/khôi phục track đúng. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-08 — Audio device/load failure** — **DoD:** Thiếu audio không crash; log asset lỗi. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-09 — Volume boundary test** — **DoD:** Negative, >100 và save sai đều clamp. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-10 — Audio memory soak 30 phút** — **DoD:** Voice/music/buffer count không tăng vô hạn. **Ước lượng:** 60 phút.
+### 3.4 TV4 — Vy: map design/data/balance — hai nhóm bắt buộc
 
-### B. HUD và item edge cases
+TV4 là owner duy nhất của **cả Level 3 Underwater và Level 4 Castle**, bao gồm layout, data, balance, fairness, timer, item, enemy và playthrough. TV2/TV3/TV5 hỗ trợ render, physics và audio nhưng không thay quyền sở hữu map acceptance của TV4.
 
-- [ ] **S7-TV5-11 — HUD resolution audit** — **DoD:** Score/coin/world/time/lives/power không overlap. **Ước lượng:** 60 phút.
-- [ ] **S7-TV5-12 — HUD time-warning polish** — **DoD:** Rõ ràng, không flash hoặc phát event lặp sai. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-13 — Collect item khi Mario chết** — **DoD:** Không vừa power-up vừa GameOver/double score. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-14 — QuestionBlock rapid-hit test** — **DoD:** Chỉ spawn một content. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-15 — Simultaneous coin/power-up test** — **DoD:** Counters/events deterministic. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-16 — Multi-100-coin threshold test** — **DoD:** Lives và coin remainder chính xác. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-17 — Star re-collection policy test** — **DoD:** Timer extend/reset behavior nhất quán và documented. **Ước lượng:** 30 phút.
-- [ ] **S7-TV5-18 — Item out-of-bounds soak** — **DoD:** Không tăng active item count sau nhiều block hits. **Ước lượng:** 45 phút.
+#### Nhóm A — `S7-TV4-UW-*`: Level 3 Underwater
 
-### C. Assets và packaging readiness
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV4-UW-01` Underwater map data | P0; Day 1–2; sau `S7-TV1-01` | Map rectangular: mọi row dữ liệu cùng width; mọi symbol thuộc tập được `TileMap` validator hỗ trợ; **chính xác một `M`, một `F`, một `T`**; pole có `T` ngay trên `F`, chuỗi `|` liên tục bên dưới kết thúc trên solid, không có pole rời. `level_validator_tests`/loader pass. |
+| `S7-TV4-UW-02` Underwater route và balance | P0/P1; sau TV3 swim audit | Có load route từ catalog tới finish bằng input bình thường; swim space, gravity, enemy/item placement, timer và safety margin công bằng; theme visual/audio được xác nhận với TV2/TV5; không yêu cầu symbol/mechanic mới ngoài runtime. |
+| `S7-TV4-UW-03` Underwater playthrough evidence | P1; Day 4–5 | Log normal route, death/respawn và completion (kèm time/death/bug notes), screenshots và candidate hash; một route fail giữ gate đỏ. |
 
-- [ ] **S7-TV5-19 — Runtime package audit** — **DoD:** Chỉ chứa runtime assets cần thiết; mọi path tương đối. **Ước lượng:** 60 phút.
-- [ ] **S7-TV5-20 — Asset source/license audit** — **DoD:** Source/reference/license được ghi rõ, không trộn runtime manifest. **Ước lượng:** 60 phút.
-- [ ] **S7-TV5-21 — Missing-asset simulation** — **DoD:** Texture/font/audio thiếu có log và fallback/controlled failure. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-22 — Case-sensitive path audit** — **DoD:** Asset paths khớp đúng chữ hoa/thường để portable sang hệ thống khác. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-23 — Controls/HUD/audio documentation** — **DoD:** README và asset docs khớp runtime. **Ước lượng:** 45 phút.
-- [ ] **S7-TV5-24 — Final audio/HUD/item sign-off** — **DoD:** Không còn P0/P1, P2 có waiver hoặc fix. **Ước lượng:** 60 phút.
-
-## 10. Lịch Sprint 7
-
-### 09/08 — Pattern và regression baseline
+#### Nhóm B — `S7-TV4-CA-*`: Level 4 Castle
 
-- Chạy toàn bộ tests.
-- Chụp visual baseline.
-- Ghi frame time, memory, Box2D body count và subscriber count baseline.
-- TV1 khóa cấu trúc tài liệu design patterns.
-
-### 10/08 — Physics và render edge cases
-
-- Corner, wall, ceiling, simultaneous contact, frame spike.
-- Resolution, focus, input spam và resource lifetime.
-- P0/P1 phát hiện trong ngày phải được triage ngay.
-
-### 11/08 — AI và level balance
-
-- Enemy activation, patrol, ledge detection và shell interactions.
-- Review gap, coin, power-up, enemy placement và timer của cả ba level.
-
-### 12/08 — Audio, HUD và state stress
-
-- Music transition matrix.
-- Pause/state spam.
-- Item/death/transition simultaneous cases.
-- Save/high-score repeated cycles.
-
-### 13/08 — Soak và clean-build verification
-
-- Physics/render/audio soak 30 phút.
-- 100 reload/respawn/state/save cycles.
-- Clean configure/build/test/run.
-
-### 14/08 — Full regression
-
-- Mỗi thành viên chơi cả ba level.
-- TV4 hoàn tất 10 playthrough cho mỗi level.
-- Chỉ còn P2 có waiver bằng văn bản.
-
-### 15/08 — Release candidate
-
-- Debug/Release build sạch.
-- Automated tests pass.
-- Menu→Win và GameOver routes pass.
-- Năm patterns được tài liệu hóa đầy đủ.
-- Không còn P0/P1.
-- Chốt candidate cho Sprint 8 packaging/demo.
-
-## 11. Full regression matrix
-
-### State và progress
-
-- New Game → Level 1 → Level 2 → Level 3 → Win.
-- New Game → death → respawn → complete level.
-- Hết lives → GameOver → Retry.
-- GameOver → Menu → New Game.
-- Pause/resume tại từng level và khi Star đang active.
-- Spam Enter/Escape/click trong transition.
-- Chết đúng frame chạm flag.
-- Save/restart/high-score/volume verification.
-
-### Mario và physics
-
-- Walk, run, reverse direction.
-- Tap/hold jump.
-- Jump tại platform edge.
-- Growth dưới trần thấp.
-- FIRE→SUPER→SMALL→death.
-- Damage grace khi chạm nhiều enemies.
-- Star hết hạn đúng contact frame.
-- Frame-time spike và focus loss.
-
-### Enemy và projectiles
-
-- Goomba wall/ledge patrol.
-- Koopa walking/shell idle/shell moving.
-- Shell bounce và multi-kill.
-- FireBall cooldown, max count, bounce, kill và bounds cleanup.
-- Enemy activation khi camera đến gần.
-- Quay camera lại sau khi enemy đã active.
-
-### Items và tiles
-
-- Coin, Mushroom, FireFlower, Star và 1-Up.
-- Adaptive QuestionBlock.
-- Rapid multi-hit QuestionBlock.
-- Ground không break, brick break đúng power.
-- 100 coin và nhiều mốc 100 coin.
-- Item rơi xuống pit và cleanup.
-
-### UI, camera và audio
-
-- Camera đầu/giữa/cuối ba level.
-- Resize/fullscreen/4:3/DPI.
-- Menu/Pause/GameOver/Win keyboard và mouse.
-- HUD không overlap.
-- Music Level 1/2/3, Star, death, GameOver, Win.
-- Rapid SFX và volume limits.
-- Missing audio/texture/font simulation.
-
-## 12. Release gates
-
-Không chốt Sprint 7 release candidate nếu còn bất kỳ điều kiện nào:
-
-- Có P0 hoặc P1 mở.
-- Có automated test fail.
-- Debug hoặc Release build có error/warning production.
-- Có level không thể hoàn thành bằng input bình thường.
-- Có crash, Box2D locked-world violation, dangling observer hoặc corrupt save.
-- Camera nhìn ra ngoài world ở cửa sổ mặc định.
-- Pause làm mất music, timer hoặc input state.
-- Score/lives reset qua level.
-- Enemy chết để lại invisible collider.
-- Runtime package thiếu asset hoặc phụ thuộc absolute path.
-- Documentation nhắc tới file/symbol không tồn tại.
-- Soak test cho thấy memory, body, subscriber, voice hoặc particle count tăng không giới hạn.
-
-## 13. Ngoài phạm vi Sprint 7
-
-- Luigi/multiple players.
-- Level editor.
-- Bowser boss.
-- Underwater/swimming mechanics.
-- Multiplayer/networking.
-- 3D rendering.
-- Rewrite toàn bộ EventBus/state/physics architecture khi implementation hiện tại có thể ổn định bằng thay đổi nhỏ.
-
-Các hạng mục trên chỉ được xem xét ở Sprint 8 buffer nếu release candidate đã đạt toàn bộ gates.
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV4-CA-01` Castle map data | P0; Day 1–2; sau `S7-TV1-01` | Map rectangular, chỉ dùng symbol validator hỗ trợ, chính xác một `M/F/T`, pole `T`/`F`/`|` contiguous và kết thúc trên solid; map load qua catalog, không coi fixture cũ là release evidence. |
+| `S7-TV4-CA-02` Castle route và balance | P0/P1; sau TV3 collision audit | Castle gameplay/visual/audio theme rõ; gauntlet, enemy/item, timer, gaps và flag approach readable, không blind landing, frame-perfect jump hoặc unavoidable damage; normal route reaches Win trigger. |
+| `S7-TV4-CA-03` Castle playthrough evidence | P1; Day 4–5 | Log normal route, death/respawn, power/item route và final completion; screenshots/audio references cùng final hash. Đây là acceptance mới cho Level 4 và không tự đóng `S6-TV4-18`. |
+
+#### Nhóm C — `S7-TV4-X-01`: regression và balance matrix
+
+TV4 kiểm tra Level 1 Overworld và Level 2 Underground vẫn load/complete, enemy/item/timer không bị thay đổi ngoài ý muốn, save transition không tạo skip. DoD là một matrix bốn level với owner, route, time/death, lỗi và disposition; không dùng cụm “đã pass” nếu chưa có log.
+
+### 3.5 TV5 — Truyền: theme music, HUD, assets và package evidence
+
+| Task | Priority / dependency | DoD và evidence |
+|---|---|---|
+| `S7-TV5-01` Music mapping bốn level | P1; sau `S7-TV1-02` | Level 1→Overworld, Level 2→Underground, Level 3→Underwater, Level 4→Castle; Star/death/GameOver/Win interruption và resume đúng; asset thiếu phải controlled failure/log, không crash. |
+| `S7-TV5-02` HUD world labels và timer | P1; sau catalog metadata | HUD hiển thị đúng `WORLD 1-1` tới `WORLD 1-4`, score/coin/lives/time không overlap và không reset sai khi transition/reload. Có screenshot và focused integration evidence. |
+| `S7-TV5-03` Underwater/Castle asset package | P1; phối hợp TV2/TV4 | Runtime package có đúng texture/font/audio/map cần thiết, path tương đối/case đúng, source/license notes riêng; không lẫn asset thử nghiệm vào RC. |
+| `S7-TV5-04` Audio/HUD/item verification | P1; sau route và event wiring | Device-audio checklist, one-event/one-SFX, item pickup/death/flag/Win và volume persistence tái lập được; đóng hoặc giữ `S6-TV5-44` theo evidence thật. |
+| `S7-TV5-05` Final package/sign-off | P1; Day 5 | Package manifest, screenshots/audio references, `S6-TV5-43/44` disposition và no-P0/P1 report cùng candidate hash. |
+
+## 4. Dependency và integration order
+
+| Bước | Producer → consumer | Điều kiện mở gate |
+|---:|---|---|
+| 1 | TV1 contract → TV4 map data, TV5 metadata | Graph, numbering, theme/music/world-label mapping và validator rule được ghi; TV1 approval có owner/date. |
+| 2 | TV4 map data → TV3/TV2/TV5 | Cả hai map nhóm pass rectangular/symbol/marker/pole checks và loader có route tới finish. |
+| 3 | TV3 swim/collision → TV4 balance/playthrough | Underwater và Castle không có P0/P1 physics blocker; input route được kiểm chứng. |
+| 4 | TV2 visuals + TV5 audio/HUD/assets → manual RC | Four-level route có đúng theme, camera, world label, music và package paths; missing asset không crash. |
+| 5 | All owners → TV1 final gate | Debug/Release/tests/manual artifacts cùng final hash; carry-over chỉ đóng khi đủ evidence. |
+
+Không merge một map/data change sau khi đã chụp evidence mà không rerun phần bị ảnh hưởng. Contract conflict, save migration risk hoặc symbol/mechanic chưa được hỗ trợ phải dừng tại TV1 approval gate và báo parent; không tự mở rộng ownership.
+
+## 5. Lịch năm ngày (mỗi ngày TV1–TV5 đều có deliverable và gate)
+
+| Ngày | TV1 — Dương | TV2 — Nhật | TV3 — Bảo | TV4 — Vy | TV5 — Truyền | Daily gate |
+|---|---|---|---|---|---|---|
+| **Day 1 — 11/08** | `S7-TV1-01`: baseline 19 suite, graph, carry-over disposition và contract approval. | `S7-TV2-01`: inventory theme/camera assets, visual/screenshot acceptance spec cho Underwater/Castle. | `S7-TV3-01`: audit swim/physics hooks và baseline collision/soak checklist. | `S7-TV4-UW-01` + `S7-TV4-CA-01`: draft cả hai map theo validator/pole contract, xác định route và balance metrics. | `S7-TV5-01/03`: mapping music/HUD/assets và review `S6-TV5-43` source. | Không có graph/symbol assumption chưa owner; baseline và dependency sheet được TV1 ghi, mọi carry-over vẫn `REVIEW`. |
+| **Day 2 — 12/08** | `S7-TV1-02/03`: implement catalog/progression/save bounds sau approval; cập nhật focused tests. | `S7-TV2-01/02`: wire theme render/camera và asset paths cho hai map. | `S7-TV3-01/02`: implement/fix swim input, gravity/damping và collision regression. | **TV4** hoàn thiện data `S7-TV4-UW-01`/`S7-TV4-CA-01`, chạy validator/loader, sửa marker/pole/layout lỗi. | `S7-TV5-01/02/03`: wire four-theme music, HUD labels `1-1..1-4`, package assets. | Build và focused tests chạy; cả hai map parse/load; contract diff chưa có approval thì không tiến gate. |
+| **Day 3 — 13/08** | `S7-TV1-03/04`: state transition 1→4→Win, save/reload và LevelCatalog assertions. | `S7-TV2-02/03`: integrate camera, flag/HUD z-order, visual pass theo route. | `S7-TV3-02/03/04`: collision/contact, Castle regression, deterministic/soak checks. | `S7-TV4-UW-02` + `S7-TV4-CA-02`: balance swim/gauntlet, timer, enemy/item, fairness; review với TV2/TV3/TV5. | `S7-TV5-01/02/04`: music transitions, HUD timer/world labels, item/audio events trên integrated route. | Four-level route load/complete smoke path; P0/P1 triage có owner; chưa tạo manual PASS nếu chưa final hash. |
+| **Day 4 — 14/08** | `S7-TV1-04` + `BUG-026`: full registered-suite run, resolution/manual artifact review, prepare RC candidate. | `S7-TV2-03/04`: resolution matrix và screenshots đầu/giữa/cuối bốn level; đóng evidence `S6-TV2-28` nếu đủ. | `S7-TV3-04`: repeated input, respawn, body/contact, focus/pause và no-regression run. | `S7-TV4-UW-03` + `S7-TV4-CA-03` + `S6-TV4-40`: playthrough logs cho bốn level, fairness evidence và old Castle disposition input. | `S7-TV5-04`: audio-device, HUD/item checklist, package manifest và `S6-TV5-44` evidence. | Freeze candidate hash; mọi screenshot/audio/playthrough từ hash này; BUG-038 evidence packet bắt đầu, P0/P1 không được tồn tại khi rời ngày. |
+| **Day 5 — 15/08** | `S7-TV1-04/05`, `S6-TV1-35`, `BUG-026`: final hash, Debug/Release/tests, docs consistency và release decision. | `S7-TV2-05`: final screenshot/camera/theme sign-off; verify no stale world label. | `S7-TV3-05`: final physics/collision/swim sign-off và residual-risk list. | `S7-TV4-X-01`, `S6-TV4-18/40`, `BUG-038`: rerun changed routes, complete four-level evidence and fairness disposition. | `S7-TV5-05`, `S6-TV5-43/44`, `BUG-038`: final audio/HUD/assets/package sign-off cùng hash. | RC chỉ được sign-off khi toàn bộ release gates ở §7 đạt; nếu thiếu evidence thì ghi `REVIEW`, không đổi lịch sử thành `PASS`. |
+
+## 6. Verification và regression matrix
+
+| Area | Check bắt buộc | Primary owner / supporting owners | Artifact |
+|---|---|---|---|
+| Catalog/progression/save | `find/count` theo contract 1..4; Menu→1→2→3→4→Win; reload/Retry/GameOver không mất hoặc nhảy progress. | TV1 / TV5 | LevelCatalog/state/save test output, candidate hash. |
+| Map data/validator | Rectangular rows; supported symbols; đúng một `M`, `F`, `T`; `T` ngay trên `F`; pole `|` contiguous kết thúc trên solid; no disconnected pole; load và finish route. | TV4 / TV1, TV3 | Validator output, map path, loader log, route notes. |
+| Underwater movement | Swim input, gravity/damping, horizontal/vertical control, collision với surface/pit/enemy và flag theo runtime behavior thật. | TV3 / TV4 | Focused regression/manual notes; không invent control semantics. |
+| Castle gameplay | Standard movement/collision, enemy/item/gauntlet, timer, readable gaps, flag route và transition Win. | TV4 / TV3 | Playthrough time/death/bug log và screenshot. |
+| Visual/camera/UI | Theme assets, camera bounds, z-order, resolution/focus matrix, `WORLD 1-1..1-4`, Menu/Pause/GameOver/Win. | TV2 / TV5 | Screenshot set và visual checklist. |
+| Audio/assets | Four theme music mapping, Star/death/GameOver/Win, device output, volume persistence, relative/case-sensitive paths, missing-asset behavior. | TV5 / TV2 | Device log, audio matrix, package manifest. |
+| Automated/build | All **19 currently registered suites** pass as the current baseline; newly added suites may increase total and must also pass. Debug/Release configure-build clean, no production warnings/errors. | TV1 / all | CTest/CMake output, build directories/artifact manifest. |
+| Final manual | Normal-input completion of all four levels, progress preserved 1→4→Win, screenshots/playthrough/audio from one final hash. | TV1 / TV2–TV5 | Signed RC evidence index; unresolved item remains `REVIEW`. |
+
+## 7. Definition of Done và release gates
+
+Sprint 7 RC chỉ đạt DoD khi tất cả điều kiện sau được chứng minh; đây là gates, không phải checkbox để điền trước:
+
+- Level 1 Overworld, Level 2 Underground, Level 3 Underwater và Level 4 Castle đều load và complete bằng input bình thường; Level 4 completion chuyển tới Win đúng một lần.
+- Progress được giữ đúng qua 1→2→3→4→Win, save/reload, Retry và GameOver; không có corruption hoặc out-of-bounds level.
+- Tất cả **19 suite đang đăng ký hiện tại** pass; đây là current baseline, không phải maximum cố định. Nếu implementation thêm suite, tổng count tăng và toàn bộ suite mới cũng phải pass.
+- Debug và Release configure/build/test sạch, không có production error/warning; asset path tương đối và package chạy được từ cấu hình sạch.
+- Không còn P0/P1 mở. P2 chỉ được tồn tại nếu TV1 ghi waiver, impact, owner và kế hoạch; P3 được defer rõ ràng.
+- Automated evidence, playthrough log, screenshots, device-audio result và build/test output đều truy được cùng final RC commit/hash.
+- Có manual playthrough evidence cho route normal và death/respawn/fairness của cả hai map mới; `S6-TV4-18` vẫn có disposition riêng, không bị coi là tự đóng bởi remap.
+- HUD world labels/music/theme/camera nhất quán với graph; tài liệu, tracker references và package manifest không nhắc symbol/file/claim không tồn tại.
+- Không có crash, Box2D locked-world violation, dangling observer/resource, invisible collider sau death/transition, camera ra ngoài world hoặc memory/body/subscriber/voice/particle count tăng vô hạn trong check phù hợp.
+
+## 8. Explicit defer / out of scope
+
+Các mục sau không được lấy capacity của release graph và không làm thay đổi acceptance:
+
+- Multiplayer/networking và đồng bộ nhiều người chơi.
+- Level editor hoặc tool chỉnh map tương tác.
+- 3D rendering/gameplay.
+- Bowser boss hoặc boss encounter mới.
+- Broad architecture rewrite (EventBus/state/physics) khi local fix và regression đủ an toàn.
+- Noncritical P3 polish, refactor không phục vụ gate, và content ngoài bốn level đã nêu.
+
+Underwater/swimming **không** nằm trong out-of-scope; đó là critical path của Level 3 và phải đi qua map, physics, visual, audio, balance và evidence gates ở trên.

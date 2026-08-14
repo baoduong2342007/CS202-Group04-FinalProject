@@ -15,6 +15,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-13 | Update HARD_BLOCK_UNDERGROUND texture rect | CTest 17/17 PASS | Changed `HARD_BLOCK_UNDERGROUND` sprite rect to `(147, 33)` {16, 16} in `TileFrames.h` and test suite |
 | 2026-08-13 | Fix IDE warnings & directly reference facade symbol | Clean compile | Added `SpriteFrames::IS_FACADE_ACTIVE`, annotated headers with `IWYU pragma: export` and suppressed unused diagnostics inside `SpriteFrames.h` so IDE linter recognizes it cleanly |
 | 2026-08-13 | Elevator (moving platform) feature | CTest 18/18 PASS | New `Elevator` kinematic entity riding on `^`/`~` tile markers (vertical/horizontal, end-pause) + external `levels/elevators.txt` routes + theme-specific platform sprite frames + `ElevatorTests`. Map markers must use empty cells and should not duplicate a config route; the active level theme selects the platform palette. |
+| 2026-08-14 | Cheep Cheep enemy & external spawn feature | CTest 19/19 PASS | Added `CheepCheep` enemy class with swimming and jumping mechanics adhering to SMB1 NES canon; added external spawn registry `levels/cheep_cheep.txt` & camera leap generator without modifying any existing map files (`level*.txt`); added `CheepCheepTests` with 100% pass rate. |
 
 ## 2026-08-12 remediation scope
 
@@ -73,6 +74,19 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #40: [Feature] - Triển Khai Quái Cheep Cheep (Swimming & Jumping) & Cơ Chế Spawn Ngoài Không Đổi Map
+- **Trạng thái:** Đã hoàn thành 100%, 19/19 CTest passed.
+- **File ảnh hưởng:** `include/entities/CheepCheep.h`, `src/entities/CheepCheep.cpp`, `include/level/CheepCheepConfig.h`, `src/level/CheepCheepConfig.cpp`, `levels/cheep_cheep.txt`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_udw.h`, `include/entities/Entity.h`, `include/patterns/EntityFactory.h`, `src/patterns/EntityFactory.cpp`, `src/physics/CollisionManager.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/CheepCheepTests.cpp`, `CMakeLists.txt`.
+- **Mô tả:**
+  1. Thêm lớp `CheepCheep` kế thừa từ `Enemy` hỗ trợ 2 hành vi chuẩn NES canon:
+     - `SWIMMING`: Bơi ngang dưới nước (vận tốc đều cho cá xanh, vận tốc sóng sin $y(t) = y_0 + A\sin(\omega t)$ cho cá đỏ), không thể giẫm (chạm vào gây sát thương cho Mario), tiêu diệt được bằng FireBall và Starman.
+     - `JUMPING`: Nhảy vọt từ đáy viewport camera lên theo parabol trọng lực, Mario có thể giẫm (`onStomp`) để nảy lên và cộng 200 điểm, hoặc bắn FireBall.
+  2. Bổ sung hỗ trợ cặp ký hiệu tuyến đường bay trực tiếp trong bản đồ map `.txt` (như thang máy `^`/`~`): dùng `'c'` làm điểm bắt đầu (Start) và `'x'` làm điểm kết thúc (End). Nếu cùng cột sẽ tự động bay lên $\leftrightarrow$ xuống tuần hoàn; nếu cùng hàng sẽ bơi/bay ngang qua $\leftrightarrow$ lại tuần hoàn với tốc độ vừa phải ($40\text{ px/s}$). Nếu đứng đơn lẻ `'c'` sẽ là cá bơi tự do, `'H'` là cá nhảy từ đáy vực.
+  3. Cập nhật `TileMap.h`, `TileMap.cpp` (`VALID_TILE_SYMBOLS`, `parseAndNormalizeCheepCheeps`), `Level.h`, `Level.cpp` và các file tài liệu (`FILE_STRUCTURE.md`, `CODING_RULES.md`, `.agents/rules/filestructure.md`, `levels/cheep_cheep.txt`).
+  4. Chuẩn hóa bộ palette sprite theme cho Cheep Cheep: tự động lấy đúng màu xám xanh Underground `(146, 164)` khi ở màn 2/Underground, màu đỏ/xanh lá ở Overworld, và màu Underwater khi ở môi trường nước.
+  5. Sửa lỗi xung đột ký tự `'H'`: xóa `'H'` khỏi `SPAWN_CODES` để bảo toàn tuyệt đối các cửa cống chuyển cảnh ngang (`H1`, `H3`, `H4`) trong Level 2, tránh hiện tượng sinh quái nhầm ở đầu cống.
+  6. Mở rộng bộ unit test `cheep_cheep_tests` kiểm thử toàn diện cả tuyến đường (routes) từ file map & file config, vận tốc, va chạm và vượt qua 100% (19/19 tests).
 
 ### Entry #39: [Feature & Asset Tuning] - Bổ Sung Sprite Lâu Đài Underground (`CASTLE_UNDERGROUND`) Cho Level 2
 - **Trạng thái:** Đã hoàn thành 100%, 17/17 CTest passed.

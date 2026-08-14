@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <cassert>
 
 #include "items/Item.h"
@@ -21,7 +22,9 @@
 #include "entities/Enemy.h"
 #include "entities/Elevator.h"
 #include "level/ElevatorConfig.h"
+#include "level/CheepCheepConfig.h"
 #include "entities/PiranhaPlant.h"
+#include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
 #include "entities/FireballExplosion.h"
 #include "core/SpriteFrames_ovw.h"
@@ -75,8 +78,8 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
            top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, Coin, QuestionBlock, Springboard)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, CheepCheep, Coin, QuestionBlock, Springboard)
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'c', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -185,6 +188,8 @@ bool Level::loadFromFile(const std::string& path) {
     spawnEntitiesFromTileMap();
 
     m_pipeWarpCooldown = 0.0f;
+    m_activeGenerators = CheepCheepConfig::generatorsFor(m_levelPath);
+    m_generatorTimers.assign(m_activeGenerators.size(), 0.0f);
     
     // Initialize camera and entity sprite frames before first render
     update(0.f);
@@ -243,6 +248,12 @@ void Level::spawnEntitiesFromTileMap() {
 
     // --- Spawn elevators from '^' / '~' route markers ---
     spawnElevatorsFromTileMap();
+
+    // --- Spawn Cheep Cheep routes from 'c' / 'x' route markers ---
+    spawnCheepCheepRoutesFromTileMap();
+
+    // --- Spawn Cheep Cheeps from external config (levels/cheep_cheep.txt) ---
+    spawnCheepCheepsFromConfig();
 }
 
 void Level::spawnElevatorsFromTileMap() {
@@ -310,6 +321,111 @@ void Level::spawnElevatorsFromTileMap() {
         elevator->setTextureManager(m_textureManager);
         elevator->initPhysics(m_world.get(), b2_kinematicBody, elevator->getSize());
         m_entities.push_back(std::move(elevator));
+    }
+}
+
+void Level::spawnCheepCheepRoutesFromTileMap() {
+    for (const auto& route : m_tileMap.getCheepCheepRoutes()) {
+        const sf::Vector2f startPos = TileMap::gridToWorldPosition(route.start);
+        const sf::Vector2f endPos = TileMap::gridToWorldPosition(route.end);
+        auto cheep = std::make_unique<CheepCheep>(
+            startPos,
+            m_world.get(),
+            m_theme,
+            CheepCheepBehavior::SWIMMING,
+            CheepCheepColor::GREEN
+        );
+        cheep->setRoute(startPos, endPos, 40.0f);
+        cheep->setTextureManager(m_textureManager);
+        cheep->setTileMap(&m_tileMap);
+        m_entities.push_back(std::move(cheep));
+    }
+}
+
+void Level::spawnCheepCheepsFromConfig() {
+    for (const auto& spawn : CheepCheepConfig::spawnsFor(m_levelPath)) {
+        const sf::Vector2f worldPos = TileMap::gridToWorldPosition(spawn.gridPosition);
+        auto cheep = std::make_unique<CheepCheep>(
+            worldPos,
+            m_world.get(),
+            m_theme,
+            spawn.behavior,
+            spawn.color
+        );
+        cheep->setFacingDirection(spawn.direction);
+        cheep->setTextureManager(m_textureManager);
+        cheep->setTileMap(&m_tileMap);
+        m_entities.push_back(std::move(cheep));
+    }
+
+    for (const auto& route : CheepCheepConfig::routesFor(m_levelPath)) {
+        const sf::Vector2f startPos = TileMap::gridToWorldPosition(route.start);
+        const sf::Vector2f endPos = TileMap::gridToWorldPosition(route.end);
+        auto cheep = std::make_unique<CheepCheep>(
+            startPos,
+            m_world.get(),
+            m_theme,
+            CheepCheepBehavior::SWIMMING,
+            route.color
+        );
+        cheep->setRoute(startPos, endPos, route.speedPixelsPerSecond);
+        cheep->setTextureManager(m_textureManager);
+        cheep->setTileMap(&m_tileMap);
+        m_entities.push_back(std::move(cheep));
+    }
+}
+
+void Level::updateCheepCheepGenerators(float dt) {
+    if (!m_mario || m_activeGenerators.empty() || m_flagSequenceActive || m_levelCompleted || !m_world) {
+        return;
+    }
+
+    const float marioX = m_mario->getPosition().x;
+    static std::mt19937 rng(std::random_device{}());
+
+    for (std::size_t i = 0; i < m_activeGenerators.size(); ++i) {
+        const auto& gen = m_activeGenerators[i];
+        const float startX = static_cast<float>(gen.startColumn * TILE_SIZE);
+        const float endX = static_cast<float>(gen.endColumn * TILE_SIZE);
+
+        if (marioX < startX || marioX > endX) {
+            continue;
+        }
+
+        m_generatorTimers[i] += dt;
+        if (m_generatorTimers[i] >= gen.intervalSeconds) {
+            m_generatorTimers[i] = 0.0f;
+
+            const sf::View& view = m_camera.getView();
+            const sf::Vector2f center = view.getCenter();
+            const sf::Vector2f size = view.getSize();
+
+            const float left = center.x - size.x / 2.0f;
+            const float right = center.x + size.x / 2.0f;
+            const float bottom = center.y + size.y / 2.0f;
+
+            std::uniform_real_distribution<float> distX(left + 32.f, right - 32.f);
+            std::uniform_real_distribution<float> distVx(gen.minVx, gen.maxVx);
+            std::uniform_real_distribution<float> distVy(gen.minVy, gen.maxVy);
+
+            const float spawnX = distX(rng);
+            const float spawnY = bottom + 16.f;
+            const float vx = distVx(rng);
+            const float vy = distVy(rng);
+
+            auto cheep = std::make_unique<CheepCheep>(
+                sf::Vector2f(spawnX, spawnY),
+                m_world.get(),
+                m_theme,
+                CheepCheepBehavior::JUMPING,
+                gen.color,
+                sf::Vector2f(vx, vy)
+            );
+            cheep->setTextureManager(m_textureManager);
+            cheep->setTileMap(&m_tileMap);
+            cheep->activate();
+            m_entities.push_back(std::move(cheep));
+        }
     }
 }
 
@@ -462,6 +578,9 @@ void Level::update(float dt) {
     if (m_mario) {
         m_mario->update(dt);
     }
+
+    // Update dynamic leaping Cheep Cheep bridge generators
+    updateCheepCheepGenerators(dt);
 
     // Update all entities (enemies, items)
     for (auto& entity : m_entities) {

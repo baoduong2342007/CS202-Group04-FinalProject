@@ -58,12 +58,27 @@ public:
         bool vertical;
     };
 
+    /// One moving Cheep Cheep route declared directly in a level map.
+    /// Use 'c' for the start marker and 'x' for the end marker.
+    /// Markers must share a column for vertical movement (up & down) or a row
+    /// for horizontal movement (left & right); both markers are converted to
+    /// empty tiles after loading.
+    struct CheepCheepRoute {
+        sf::Vector2i start;
+        sf::Vector2i end;
+        bool vertical;
+    };
+
     const std::vector<WarpEntry>& getWarpEntries() const {
         return m_warpEntries;
     }
 
     const std::vector<ElevatorRoute>& getElevatorRoutes() const {
         return m_elevatorRoutes;
+    }
+
+    const std::vector<CheepCheepRoute>& getCheepCheepRoutes() const {
+        return m_cheepCheepRoutes;
     }
 
     std::optional<sf::Vector2i> findWarpReturn(char id) const;
@@ -166,4 +181,5 @@ private:
     std::vector<WarpEntry> m_warpEntries;
     std::vector<WarpReturn> m_warpReturns;
     std::vector<ElevatorRoute> m_elevatorRoutes;
+    std::vector<CheepCheepRoute> m_cheepCheepRoutes;
 };

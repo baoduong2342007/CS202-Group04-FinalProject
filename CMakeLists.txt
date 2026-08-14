@@ -229,6 +229,15 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    add_executable(cheep_cheep_tests
+        tests/CheepCheepTests.cpp
+    )
+    target_link_libraries(cheep_cheep_tests PRIVATE game_lib)
+    add_test(NAME cheep_cheep_tests COMMAND cheep_cheep_tests)
+    set_tests_properties(cheep_cheep_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     set_tests_properties(level_validator_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )

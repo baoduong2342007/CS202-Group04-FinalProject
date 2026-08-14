@@ -38,6 +38,22 @@ inline const std::vector<sf::IntRect>& walkFrames() {
 }
 } // namespace Koopa
 
+namespace CheepCheep {
+inline const sf::IntRect& SWIM_UP = udg::Enemies::CheepCheep::SWIM_UP;
+inline const sf::IntRect& SWIM_DOWN = udg::Enemies::CheepCheep::SWIM_DOWN;
+inline const sf::IntRect& RED_SWIM_UP = udg::Enemies::CheepCheep::RED_SWIM_UP;
+inline const sf::IntRect& RED_SWIM_DOWN = udg::Enemies::CheepCheep::RED_SWIM_DOWN;
+inline const std::vector<sf::IntRect>& greenSwimFrames() {
+    return udg::Enemies::CheepCheep::greenSwimFrames();
+}
+inline const std::vector<sf::IntRect>& redSwimFrames() {
+    return udg::Enemies::CheepCheep::redSwimFrames();
+}
+inline const std::vector<sf::IntRect>& swimFrames() {
+    return udg::Enemies::CheepCheep::swimFrames();
+}
+} // namespace CheepCheep
+
 // Compatibility namespace for callers that still organize frames by atlas block.
 namespace GreenEnemiesBlock {
 inline const sf::IntRect& WALK1 = Koopa::WALK1;

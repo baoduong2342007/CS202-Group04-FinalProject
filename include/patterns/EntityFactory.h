@@ -23,7 +23,8 @@
 enum class EnemyType {
     GOOMBA,
     KOOPA,
-    PIRANHA_PLANT
+    PIRANHA_PLANT,
+    CHEEP_CHEEP
 };
 
 enum class ItemType {

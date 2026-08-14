@@ -91,6 +91,7 @@ public:
     virtual bool isElevator() const { return getType() == EntityType::ELEVATOR; }
     virtual bool isKoopa() const { return false; }
     virtual bool isPiranhaPlant() const { return false; }
+    virtual bool isCheepCheep() const { return false; }
     virtual bool isMushroom() const { return false; }
     virtual bool isStar() const { return false; }
     virtual bool isQuestionBlock() const { return false; }

@@ -1,0 +1,57 @@
+# ============================================================
+# Cheep Cheep routes & spawns — EXTERNAL CONFIG.
+#
+# Declaring routes and spawns here spawns Cheep Cheeps WITHOUT
+# modifying any level map file (levels/level1.txt ... stay untouched).
+#
+# Format 1 — Route (Start -> End patrol/fly):
+#   <level file> ROUTE <startCol> <startRow> <endCol> <endRow> [speed] [GREEN|RED]
+#   - level file   basename of the level (e.g. level1.txt or levels/level1.txt)
+#   - start/end    grid column/row of the endpoints
+#   - speed        speed in px/s (default 40.0, moderate & smooth)
+#   - color        GREEN (straight patrol) or RED (wave patrol)
+#   Axis is inferred:
+#     same column (startCol == endCol) -> VERTICAL route (fly up & down)
+#     same row    (startRow == endRow) -> HORIZONTAL route (patrol left & right)
+#
+# Format 2 — Static Spawn (Single point):
+#   <level file> SWIM <gridCol> <gridRow> [GREEN|RED] [LEFT|RIGHT]
+#
+# Format 3 — Jumping Fish Camera Generator (Bridge / Ocean leaping zone):
+#   <level file> GENERATOR <startCol> <endCol> [interval] [min_vx] [max_vx] [min_vy] [max_vy] [GREEN|RED]
+#
+# Lines starting with '#' and blank lines are ignored.
+# ============================================================
+# MAP SYMBOL NOTE
+# You can also declare Cheep Cheeps directly inside level map files:
+#
+#   Route (Start & End):
+#     Place 'c' at the start marker and 'x' at the end marker.
+#     - Vertical:   'c' and 'x' in the same column (flies up & down).
+#     - Horizontal: 'c' and 'x' in the same row (swims/patrols left & right).
+#     Both 'c' and 'x' are converted to empty air '.' after route loading.
+#
+#   Single Spawn:
+#     - 'c': Standalone swimming/flying Cheep Cheep.
+#     - 'H': Jumping Cheep Cheep leaping from bottom abyss.
+# ============================================================
+
+# --- Level 1 (Overworld Examples) ---
+# Example: Vertical flying fish between rows 6 and 12 at column 50
+# level1.txt ROUTE 50 6 50 12 35.0 RED
+# Example: Horizontal swimming fish between columns 80 and 100 at row 10
+# level1.txt ROUTE 80 10 100 10 40.0 GREEN
+# Example: Camera leaping fish bridge zone across columns 60 to 120
+# level1.txt GENERATOR 60 120 1.5 -80 80 -650 -550 RED
+
+# --- Level 2 (Underground Examples) ---
+# Example: Vertical flying fish near elevators (Underground grey palette (146, 164)):
+# level2.txt ROUTE 188 5 188 11 35.0 GREEN
+# level2.txt ROUTE 203 4 203 11 35.0 GREEN
+
+# --- Level 3 (Castle Examples) ---
+# level3.txt ROUTE 60 8 80 8 40.0 RED
+
+# --- Level 4 (Underwater Examples) ---
+# level4.txt ROUTE 40 5 40 12 35.0 GREEN
+# level4.txt ROUTE 70 8 95 8 45.0 RED

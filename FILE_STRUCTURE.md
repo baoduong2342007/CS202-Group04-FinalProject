@@ -72,8 +72,23 @@ Important Sprint 6 ownership rules:
 | `levels/level2.txt` | Runtime | Underground, world 1-2 |
 | `levels/level3.txt` | Runtime | Castle finale, world 1-3, then Win |
 | `levels/level4.txt` | Future/reference | Mechanics fixture excluded from the release catalog |
+| `levels/elevators.txt` | Config | External elevator moving platform route registry |
+| `levels/cheep_cheep.txt` | Config | External Cheep Cheep route and spawn registry |
 
 Release levels use normal random `?` blocks and explicit `f`, `U`, and `O` placements. A normal `?` resolves once to a Coin (70%), Super Mushroom (15%), or FireFlower (15%); explicit `f` blocks always give a FireFlower while preserving Small Fire versus Super Fire body size.
+
+Map symbols:
+- `M`: Mario spawn point
+- `G`: Goomba spawn point
+- `K`: Koopa spawn point
+- `p` / `r`: Piranha Plant pipe & stem
+- `c`: Cheep Cheep (Swimming/Flying start marker or standalone spawn)
+- `x`: Cheep Cheep (Flying/Swimming route end marker paired with `c`)
+- `H`: Cheep Cheep (Jumping leap from bottom)
+- `^` & `~`: Elevator moving platform start and end markers
+- `J`: Springboard / Trampoline
+- `?` / `B` / `C`: Question Block, Brick Block, Coin
+- `F` / `|`: Finish Flagpole
 
 ## Automated tests
 
@@ -90,6 +105,8 @@ tests/
 |-- SaveManagerTests.cpp
 |-- LevelValidatorTests.cpp
 |-- SpringboardTests.cpp
+|-- ElevatorTests.cpp
+|-- CheepCheepTests.cpp
 |-- Gate0ContractTests.cpp
 |-- SaveSessionTests.cpp
 |-- SpriteFramesThemeTests.cpp

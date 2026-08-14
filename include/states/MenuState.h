@@ -76,5 +76,5 @@ private:
     int m_coinCurrentFrame = 0;                 ///< Current frame of coin animation
     float m_blinkTimer = 0.f;                   ///< Timer for text blinking
     bool m_showPressToPlay = true;              ///< Toggle for blinking text
-    bool m_transitioning = false;               ///< True if transitioning to play state
+    bool m_transitioning = false;               ///< True if leaving this menu
 };

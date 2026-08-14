@@ -6,8 +6,8 @@
  * This suite locks the Sprint 6 release contract that every other module builds
  * on top of:
  *   - `MarioState` is exactly { SMALL, SUPER, FIRE_SMALL, FIRE_SUPER }.
- *   - Default character is Mario (`CharacterType::MARIO`); Luigi stays out of
- *     the release flow.
+ *   - Default character is Mario (`CharacterType::MARIO`); the selection flow
+ *     also preserves an explicit Luigi (`CharacterType::LUIGI`) identity.
  *   - FireFlower preserves the body tier: SMALL -> Small Fire, SUPER -> Super Fire.
  *   - Mushroom never downgrades an already-powered-up Mario.
  *   - The three release levels (1, 2, 3) are loadable through the validator and
@@ -100,10 +100,20 @@ void testDefaultCharacterAndState() {
 
     Mario mario;
     assert(mario.getMarioState() == MarioState::SMALL);
-    // Gate 0: the default player character is Mario, not Luigi.
+    // Gate 0: a player constructed without a selection defaults to Mario.
     assert(mario.getCharacterType() == CharacterType::MARIO);
 
     std::cout << "[PASSED] testDefaultCharacterAndState" << std::endl;
+}
+
+void testExplicitLuigiIdentity() {
+    std::cout << "[RUNNING] testExplicitLuigiIdentity..." << std::endl;
+
+    Mario luigi;
+    luigi.setCharacterType(CharacterType::LUIGI);
+    assert(luigi.getCharacterType() == CharacterType::LUIGI);
+
+    std::cout << "[PASSED] testExplicitLuigiIdentity" << std::endl;
 }
 
 void testFireFlowerPreservesBodyTier() {
@@ -698,6 +708,7 @@ void testFlagCompletionGatedOnFullFlagDrop() {
 
 int main() {
     testDefaultCharacterAndState();
+    testExplicitLuigiIdentity();
     testFireFlowerPreservesBodyTier();
     testFireFlowerGrantsFireFromSuper();
     testMushroomPromotesAndNeverDowngrades();

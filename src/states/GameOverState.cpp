@@ -54,10 +54,16 @@ GameOverState::GameOverState(const GameProgress& progress)
                                     {0.f, HIGH_SCORE_OFFSET_Y});
 
         m_menu = std::make_unique<UIMenuWidget>(m_font);
-        m_menu->addItem("RETRY", []() {
-            GameManager::getInstance().changeState(std::make_unique<PlayState>());
+        const CharacterType retryCharacter = m_progress.character;
+        m_menu->addItem("RETRY", [this, retryCharacter]() {
+            if (m_transitioning) return;
+            m_transitioning = true;
+            GameManager::getInstance().changeState(
+                std::make_unique<PlayState>(retryCharacter));
         });
-        m_menu->addItem("QUIT TO MENU", []() {
+        m_menu->addItem("QUIT TO MENU", [this]() {
+            if (m_transitioning) return;
+            m_transitioning = true;
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         });
         m_menu->setPosition(UILayoutHelper::getAnchorPosition(UIAnchor::Center) + sf::Vector2f(0.f, MENU_OFFSET_Y), UIAnchor::TopCenter);
@@ -73,13 +79,13 @@ void GameOverState::onExit() {
 }
 
 void GameOverState::processEvents(const sf::Event& event) {
-    if (m_menu) {
+    if (!m_transitioning && m_menu) {
         m_menu->processEvents(event);
     }
 }
 
 void GameOverState::processInput(const InputState& inputState) {
-    if (m_menu) {
+    if (!m_transitioning && m_menu) {
         m_menu->processInput(inputState);
     }
 }

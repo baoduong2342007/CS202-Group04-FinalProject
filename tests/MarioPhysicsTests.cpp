@@ -45,6 +45,17 @@ public:
         return m_sprite ? m_sprite->getTextureRect()
                         : sf::IntRect({-1, -1}, {0, 0});
     }
+
+    void selectAnimationForTest(const std::string& animation) {
+        playAnimation(animation);
+        updateAnimation(0.0f);
+        updateSpriteLayout();
+    }
+
+    void refreshAnimationForTest() {
+        updateAnimation(0.0f);
+        updateSpriteLayout();
+    }
 };
 
 b2Body* createPlatform(b2World& world) {
@@ -419,6 +430,230 @@ bool testWalkingVsSprintingSeparatedByShift() {
            check(runVx > walkVx + 100.0f, "Sprinting with shift must achieve significantly higher velocity than walking");
 }
 
+bool testCharacterProfilesAndLuigiPhysics() {
+    const CharacterProfile marioProfile =
+        characterProfileFor(CharacterType::MARIO);
+    const CharacterProfile luigiProfile =
+        characterProfileFor(CharacterType::LUIGI);
+
+    if (!check(marioProfile.jumpForce == 460.0f &&
+                   marioProfile.walkMaxSpeed == 175.0f &&
+                   marioProfile.runMaxSpeed == 280.0f &&
+                   marioProfile.underwaterWalkMaxSpeed == 100.0f &&
+                   marioProfile.underwaterRunMaxSpeed == 160.0f,
+               "Mario profile must preserve the locked movement values") ||
+        !check(luigiProfile.jumpForce == 510.0f &&
+                   luigiProfile.walkMaxSpeed == 160.0f &&
+                   luigiProfile.runMaxSpeed == 250.0f &&
+                   luigiProfile.underwaterWalkMaxSpeed == 90.0f &&
+                   luigiProfile.underwaterRunMaxSpeed == 144.0f,
+               "Luigi profile must expose the exact five trade-off values")) {
+        return false;
+    }
+
+    b2World walkWorld({0.0f, 25.0f});
+    createPlatform(walkWorld);
+    Mario mario({134.0f, 0.0f}, {28.0f, 30.0f});
+    mario.initPhysics(&walkWorld, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(walkWorld, mario);
+    mario.setRunning(false);
+    mario.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        mario.preparePhysics(TIME_STEP);
+        walkWorld.Step(TIME_STEP, 8, 3);
+    }
+
+    b2World luigiWalkWorld({0.0f, 25.0f});
+    createPlatform(luigiWalkWorld);
+    Mario luigi({134.0f, 0.0f}, {28.0f, 30.0f});
+    luigi.setCharacterType(CharacterType::LUIGI);
+    luigi.initPhysics(&luigiWalkWorld, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(luigiWalkWorld, luigi);
+    luigi.setRunning(false);
+    luigi.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        luigi.preparePhysics(TIME_STEP);
+        luigiWalkWorld.Step(TIME_STEP, 8, 3);
+    }
+
+    const float marioWalkVelocity = std::abs(
+        PhysicsEngine::metersToPixels(mario.getBody()->GetLinearVelocity().x));
+    const float luigiWalkVelocity = std::abs(
+        PhysicsEngine::metersToPixels(luigi.getBody()->GetLinearVelocity().x));
+    if (!check(luigiWalkVelocity < marioWalkVelocity,
+               "Luigi must reach a lower walk cap than Mario")) {
+        return false;
+    }
+
+    b2World underwaterMarioWorld({0.0f, 25.0f});
+    Mario underwaterMario({134.0f, 0.0f}, {28.0f, 30.0f});
+    underwaterMario.initPhysics(&underwaterMarioWorld, b2_dynamicBody,
+                                {28.0f, 30.0f});
+    underwaterMario.setUnderwater(true);
+    underwaterMario.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        underwaterMario.preparePhysics(TIME_STEP);
+        underwaterMarioWorld.Step(TIME_STEP, 8, 3);
+    }
+
+    b2World underwaterLuigiWorld({0.0f, 25.0f});
+    Mario underwaterLuigi({134.0f, 0.0f}, {28.0f, 30.0f});
+    underwaterLuigi.setCharacterType(CharacterType::LUIGI);
+    underwaterLuigi.initPhysics(&underwaterLuigiWorld, b2_dynamicBody,
+                                {28.0f, 30.0f});
+    underwaterLuigi.setUnderwater(true);
+    underwaterLuigi.moveRight();
+    for (int step = 0; step < 60; ++step) {
+        underwaterLuigi.preparePhysics(TIME_STEP);
+        underwaterLuigiWorld.Step(TIME_STEP, 8, 3);
+    }
+
+    const float marioUnderwaterVelocity = std::abs(PhysicsEngine::metersToPixels(
+        underwaterMario.getBody()->GetLinearVelocity().x));
+    const float luigiUnderwaterVelocity = std::abs(PhysicsEngine::metersToPixels(
+        underwaterLuigi.getBody()->GetLinearVelocity().x));
+    if (!check(marioUnderwaterVelocity <=
+                   marioProfile.underwaterWalkMaxSpeed + 0.01f,
+               "Mario underwater walk speed must retain its baseline cap") ||
+        !check(luigiUnderwaterVelocity <=
+                   luigiProfile.underwaterWalkMaxSpeed + 0.01f,
+               "Luigi underwater walk speed must use its profile cap")) {
+        return false;
+    }
+
+    b2World jumpWorld({0.0f, 25.0f});
+    createPlatform(jumpWorld);
+    Mario marioJump({134.0f, 0.0f}, {28.0f, 30.0f});
+    marioJump.initPhysics(&jumpWorld, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(jumpWorld, marioJump);
+    marioJump.jump();
+    marioJump.preparePhysics(0.0f);
+    const float marioJumpVelocity = marioJump.getBody()->GetLinearVelocity().y;
+
+    b2World luigiJumpWorld({0.0f, 25.0f});
+    createPlatform(luigiJumpWorld);
+    Mario luigiJump({134.0f, 0.0f}, {28.0f, 30.0f});
+    luigiJump.setCharacterType(CharacterType::LUIGI);
+    luigiJump.initPhysics(&luigiJumpWorld, b2_dynamicBody, {28.0f, 30.0f});
+    settleMarioOnPlatform(luigiJumpWorld, luigiJump);
+    luigiJump.jump();
+    luigiJump.preparePhysics(0.0f);
+    const float luigiJumpVelocity = luigiJump.getBody()->GetLinearVelocity().y;
+
+    return check(luigiJumpVelocity < marioJumpVelocity,
+                 "Luigi must receive a stronger upward jump impulse") &&
+           check(luigi.getCharacterProfile().walkMaxSpeed == 160.0f,
+                 "Mario instance profile must refresh after selecting Luigi");
+}
+
+bool testLuigiTransformationUsesLuigiRows() {
+    TextureManager& textureManager = TextureManager::getInstance();
+    MarioAnimationProbe luigi;
+    luigi.setTextureManager(textureManager);
+    luigi.setCharacterType(CharacterType::LUIGI);
+
+    Mushroom mushroom;
+    mushroom.onCollect(luigi);
+    luigi.update(0.14f);
+    const sf::IntRect growFrame = luigi.currentTextureRect();
+    if (!check(luigi.getMarioState() == MarioState::SUPER,
+               "Luigi mushroom pickup must reach SUPER") ||
+        !check(growFrame.position ==
+                   SpriteFrames::shared::GrowShrink::Luigi::BIG.position,
+               "Luigi growth must use the Luigi transition row")) {
+        return false;
+    }
+
+    luigi.update(0.5f); // finish the growth presentation before shrinking
+    luigi.powerDown();
+    luigi.update(0.14f);
+    const sf::IntRect shrinkFrame = luigi.currentTextureRect();
+    return check(luigi.getMarioState() == MarioState::SMALL,
+                 "Luigi power-down must return to SMALL") &&
+           check(shrinkFrame.position ==
+                     SpriteFrames::shared::GrowShrink::Luigi::SMALL.position,
+                 "Luigi shrink must use the Luigi transition row");
+}
+
+bool testLuigiFireBodyUsesLuigiRows() {
+    TextureManager& textureManager = TextureManager::getInstance();
+    MarioAnimationProbe fireSmall;
+    fireSmall.setTextureManager(textureManager);
+    fireSmall.setCharacterType(CharacterType::LUIGI);
+    fireSmall.setMarioState(MarioState::FIRE_SMALL);
+
+    auto checkFrame = [](MarioAnimationProbe& mario,
+                         const char* animation,
+                         const sf::IntRect& expected,
+                         const char* message) {
+        mario.selectAnimationForTest(animation);
+        const sf::IntRect actual = mario.currentTextureRect();
+        return check(actual.position == expected.position &&
+                         actual.size == expected.size,
+                     message);
+    };
+
+    namespace Small = SpriteFrames::shared::SmallLuigi;
+    if (!checkFrame(fireSmall, "idle", Small::IDLE,
+                    "Luigi FIRE_SMALL idle must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "walk", Small::WALK1,
+                    "Luigi FIRE_SMALL walk must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "climb", Small::CLIMB1,
+                    "Luigi FIRE_SMALL climb must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "swim", Small::SWIM1,
+                    "Luigi FIRE_SMALL swim must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "jump", Small::JUMP,
+                    "Luigi FIRE_SMALL jump must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "skid", Small::SKID,
+                    "Luigi FIRE_SMALL skid must use SmallLuigi rows") ||
+        !checkFrame(fireSmall, "death", Small::DEATH,
+                    "Luigi FIRE_SMALL death must use SmallLuigi rows")) {
+        return false;
+    }
+
+    if (!check(fireSmall.tryStartFireBallShot(),
+               "Luigi FIRE_SMALL must retain its Fire shot capability")) {
+        return false;
+    }
+    fireSmall.refreshAnimationForTest();
+    if (!check(fireSmall.currentTextureRect().position ==
+                   SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1.position,
+               "Luigi FIRE_SMALL action must retain Luigi Fire shooting rows")) {
+        return false;
+    }
+
+    MarioAnimationProbe fireSuper;
+    fireSuper.setTextureManager(textureManager);
+    fireSuper.setCharacterType(CharacterType::LUIGI);
+    fireSuper.setMarioState(MarioState::FIRE_SUPER);
+    namespace Big = SpriteFrames::shared::BigLuigi;
+    if (!checkFrame(fireSuper, "idle", Big::IDLE,
+                    "Luigi FIRE_SUPER idle must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "walk", Big::WALK1,
+                    "Luigi FIRE_SUPER walk must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "climb", Big::CLIMB1,
+                    "Luigi FIRE_SUPER climb must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "swim", Big::SWIM1,
+                    "Luigi FIRE_SUPER swim must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "jump", Big::JUMP,
+                    "Luigi FIRE_SUPER jump must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "skid", Big::SKID,
+                    "Luigi FIRE_SUPER skid must use BigLuigi rows") ||
+        !checkFrame(fireSuper, "death", Small::DEATH,
+                    "Luigi FIRE_SUPER death must use SmallLuigi rows")) {
+        return false;
+    }
+
+    if (!check(fireSuper.tryStartFireBallShot(),
+               "Luigi FIRE_SUPER must retain its Fire shot capability")) {
+        return false;
+    }
+    fireSuper.refreshAnimationForTest();
+    return check(fireSuper.currentTextureRect().position ==
+                     SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT.position,
+                 "Luigi FIRE_SUPER action must retain Luigi Fire shooting rows");
+}
+
 
 
 bool testIsolatedWorldAccumulators() {
@@ -779,6 +1014,9 @@ int main() {
                          testStarmanVsDamageGraceIndependence() &&
                          testPowerDownKeepsDamageGraceLongEnough() &&
                          testWalkingVsSprintingSeparatedByShift() &&
+                         testCharacterProfilesAndLuigiPhysics() &&
+                         testLuigiTransformationUsesLuigiRows() &&
+                         testLuigiFireBodyUsesLuigiRows() &&
                          testIsolatedWorldAccumulators() &&
                          testGrowthFootAnchorAndClearance() &&
                          testTransformUsesFireAtlas() &&

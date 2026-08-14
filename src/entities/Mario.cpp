@@ -26,12 +26,9 @@
 namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr int DEFAULT_MARIO_LIVES = 3;
-constexpr float DEFAULT_JUMP_FORCE = 460.f;
 constexpr float MAX_FALL_SPEED = 600.f;
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
-constexpr float WALK_MAX_SPEED = 175.f;
-constexpr float RUN_MAX_SPEED = 280.f;
 // Build speed progressively so Mario does not reach the movement cap almost
 // immediately after the direction key is pressed.
 constexpr float GROUND_ACCEL = 220.f;
@@ -58,8 +55,6 @@ constexpr float TRANSFORM_FRAME_DURATION = 0.07f;
 constexpr float GROUND_NORMAL_Y_THRESHOLD = 0.8f;
 constexpr float MAX_GROUND_NORMAL_X = 0.5f;
 // Underwater swim physics constants
-constexpr float UNDERWATER_WALK_MAX_SPEED = 100.f;
-constexpr float UNDERWATER_RUN_MAX_SPEED = 160.f;
 constexpr float UNDERWATER_SWIM_IMPULSE =
     -5.5f; // upward impulse per swim stroke (in m/s)
 constexpr float UNDERWATER_MAX_SINK_SPEED =
@@ -179,7 +174,10 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
       break;
     }
     case MarioState::FIRE_SMALL: {
-      namespace F = SpriteFrames::shared::FireSmallMario;
+      // Luigi has no separate fire-palette locomotion rows in the atlas. Keep
+      // the body visibly Luigi by using the standard SmallLuigi body frames;
+      // only the Fire shooting action below uses the dedicated Fire rows.
+      namespace F = SpriteFrames::shared::SmallLuigi;
       addFireAnimations(
           F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
           F::SKID,
@@ -187,11 +185,13 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
               SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1,
               SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT2,
               SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT3},
-          F::DEATH);
+          SpriteFrames::shared::SmallLuigi::DEATH);
       break;
     }
     case MarioState::FIRE_SUPER: {
-      namespace F = SpriteFrames::shared::FireBigMario;
+      // See FIRE_SMALL: BigLuigi body rows preserve identity while the
+      // dedicated Luigi FireShooting action remains Fire-specific.
+      namespace F = SpriteFrames::shared::BigLuigi;
       addFireAnimations(
           F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
           F::SKID,
@@ -274,7 +274,8 @@ Mario::Mario()
     : Character(DEFAULT_MARIO_POSITION, SMALL_MARIO_SIZE, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
-      m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
+      m_jumpForce(characterProfileFor(CharacterType::MARIO).jumpForce),
+      m_score(0), m_coinCount(0),
       m_isInvincible(false), m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES), m_isDying(false), m_isSpawning(false),
       m_isRunning(false), m_isSkidding(false), m_isTransforming(false),
@@ -289,7 +290,8 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
     : Character(position, size, DEFAULT_MARIO_HEALTH),
       m_marioState(MarioState::SMALL), m_characterType(CharacterType::MARIO),
       m_statePattern(std::make_unique<SmallMarioState>()),
-      m_jumpForce(DEFAULT_JUMP_FORCE), m_score(0), m_coinCount(0),
+      m_jumpForce(characterProfileFor(CharacterType::MARIO).jumpForce),
+      m_score(0), m_coinCount(0),
       m_isInvincible(false), m_invincibilityTimer(0.f),
       m_lives(DEFAULT_MARIO_LIVES), m_isDying(false), m_isSpawning(false),
       m_isRunning(false), m_isSkidding(false), m_isTransforming(false),
@@ -602,11 +604,13 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
   float currentVy = currentVelMeters.y;
 
   m_isRunning = isRunningInput;
+  const CharacterProfile profile = characterProfileFor(m_characterType);
 
   // Underwater: override speeds and allow swim strokes mid-air
   if (m_isUnderwater) {
     float targetMaxSpeed =
-        isRunningInput ? UNDERWATER_RUN_MAX_SPEED : UNDERWATER_WALK_MAX_SPEED;
+        isRunningInput ? profile.underwaterRunMaxSpeed
+                       : profile.underwaterWalkMaxSpeed;
     float newVx = currentVx;
 
     // Horizontal movement (sluggish underwater feel)
@@ -640,7 +644,8 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
     return;
   }
 
-  float targetMaxSpeed = isRunningInput ? RUN_MAX_SPEED : WALK_MAX_SPEED;
+  float targetMaxSpeed =
+      isRunningInput ? profile.runMaxSpeed : profile.walkMaxSpeed;
   float newVx = currentVx;
 
   if (isGrounded()) {
@@ -943,23 +948,28 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
     m_isTransforming = true;
     m_transformTimer = TRANSFORM_PRESENTATION_DURATION;
     if (isGrowth) {
+      const auto &sequence =
+          m_characterType == CharacterType::LUIGI
+              ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
+              : (usesFireTransition
+                     ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+                     : SpriteFrames::shared::GrowShrink::Mario::growSequence());
       m_animationSystem->addAnimation(
           "transform",
-          AnimationSystem::createManualAnimation(
-              usesFireTransition
-                  ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
-                  : SpriteFrames::shared::GrowShrink::Mario::growSequence(),
-              TRANSFORM_FRAME_DURATION, false));
+          AnimationSystem::createManualAnimation(sequence,
+                                                 TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     } else if (isShrink) {
+      const auto &sequence =
+          m_characterType == CharacterType::LUIGI
+              ? SpriteFrames::shared::GrowShrink::Luigi::shrinkSequence()
+              : (usesFireTransition
+                     ? SpriteFrames::shared::GrowShrink::FireMario::shrinkSequence()
+                     : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence());
       m_animationSystem->addAnimation(
           "transform",
-          AnimationSystem::createManualAnimation(
-              usesFireTransition
-                  ? SpriteFrames::shared::GrowShrink::FireMario::
-                        shrinkSequence()
-                  : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence(),
-              TRANSFORM_FRAME_DURATION, false));
+          AnimationSystem::createManualAnimation(sequence,
+                                                 TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     }
   }
@@ -990,11 +1000,33 @@ void Mario::powerUp(MarioState state) {
 }
 
 void Mario::setCharacterType(CharacterType type) {
-  if (m_characterType == type)
-    return;
   m_characterType = type;
+  m_jumpForce = characterProfileFor(m_characterType).jumpForce;
   setupAnimationsForState(*m_animationSystem, m_marioState, m_characterType);
-  playAnimation("idle");
+  // Refresh presentation without mutating any gameplay/lifecycle state. Keep
+  // a compatible active clip where possible so changing identity during a
+  // movement, climb, or death phase does not reset that phase to idle.
+  const std::string currentAnimation =
+      m_animationSystem->getCurrentAnimationName();
+  if (m_isDying || currentAnimation == "death") {
+    playAnimation("death");
+  } else if (m_isFlagpoleSliding || currentAnimation == "climb") {
+    playAnimation("climb");
+  } else if (m_isClimbing && currentAnimation == "climb_up") {
+    playAnimation("climb_up");
+  } else if (m_isClimbing && currentAnimation == "climb_down") {
+    playAnimation("climb_down");
+  } else if (m_isClimbing && currentAnimation == "climb_idle") {
+    playAnimation("climb_idle");
+  } else if (currentAnimation == "walk" || currentAnimation == "jump" ||
+             currentAnimation == "skid" || currentAnimation == "swim" ||
+             currentAnimation == "action" || currentAnimation == "spawn") {
+    playAnimation(currentAnimation);
+  } else {
+    playAnimation("idle");
+  }
+  updateAnimation(0.0f);
+  updateSpriteLayout();
 }
 
 void Mario::powerDown() {

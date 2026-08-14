@@ -138,7 +138,8 @@ void Level::setCameraVerticalMode(CameraVerticalMode mode) {
     m_camera.setVerticalMode(mode);
 }
 
-bool Level::loadFromFile(const std::string& path) {
+bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
+    m_characterType = characterType;
     m_entities.clear();
     m_pendingFireBallRequests.clear();
     m_mario.reset();
@@ -201,11 +202,13 @@ void Level::spawnEntitiesFromTileMap() {
     if (!marioSpawns.empty()) {
         sf::Vector2f spawnPos = TileMap::gridToWorldPosition(marioSpawns.front());
         m_mario = std::make_unique<Mario>(spawnPos, sf::Vector2f(32.f, 32.f));
+        m_mario->setCharacterType(m_characterType);
         m_mario->setRespawnPosition(spawnPos);
         m_mario->setPitThreshold(levelHeight + 64.f);
     } else {
         std::cerr << "Level: No Mario spawn point ('M') found! " << "Defaulting to (100, 100)" << std::endl;
         m_mario = std::make_unique<Mario>();
+        m_mario->setCharacterType(m_characterType);
     }
 
     // Wire TextureManager to Mario so setSprite() works

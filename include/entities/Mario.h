@@ -8,6 +8,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "entities/Character.h"
 #include "states/IMarioState.h"
 
@@ -33,6 +34,13 @@ struct CharacterProfile {
     float runMaxSpeed;
     float underwaterWalkMaxSpeed;
     float underwaterRunMaxSpeed;
+};
+
+/// Deferred world-space feedback produced by an accepted stomp transaction.
+struct StompScoreAward {
+    int points = 0;
+    bool grantsLife = false;
+    sf::Vector2f position{0.f, 0.f};
 };
 
 /// Return the immutable movement profile for a character identity.
@@ -80,6 +88,12 @@ public:
     void powerDown();
     void queuePowerDown();
     void addScore(int points);
+    /// Award the next airborne stomp-chain value and queue its popup.
+    StompScoreAward awardStompScore(const sf::Vector2f& position);
+    /// Drain popups after the Box2D step and begin a new simultaneity window.
+    std::vector<StompScoreAward> consumePendingStompScoreAwards();
+    /// End the current airborne stomp chain (normally when touching ground).
+    void resetStompScoreChain();
     void addCoin();
     void collectCoin(int scoreValue = 100);
     /// Reserve an accepted shot by consuming Mario's authoritative cooldown.
@@ -173,6 +187,9 @@ protected:
     float m_jumpForce;
     int m_score;
     int m_coinCount;
+    std::size_t m_stompScoreChainIndex = 0;
+    std::size_t m_stompsInCurrentPhysicsStep = 0;
+    std::vector<StompScoreAward> m_pendingStompScoreAwards;
     bool m_isInvincible;
     float m_invincibilityTimer;
     bool m_isStarInvincible = false;

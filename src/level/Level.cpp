@@ -27,6 +27,7 @@
 #include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
 #include "entities/FireballExplosion.h"
+#include "entities/ScorePopup.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/LevelCatalog.h"
 #include "core/SoundManager.h"
@@ -569,6 +570,8 @@ void Level::update(float dt) {
         }
     }
 
+    processPendingStompScorePopups();
+
     if (m_pipeWarpCooldown > 0.0f) {
         m_pipeWarpCooldown = std::max(0.0f, m_pipeWarpCooldown - dt);
     }
@@ -676,6 +679,23 @@ void Level::spawnFireballExplosion(const sf::Vector2f& position) {
     // position/scale immediately for the frame in which it is spawned.
     explosion->update(0.f);
     m_entities.push_back(std::move(explosion));
+}
+
+void Level::processPendingStompScorePopups() {
+    if (!m_mario) return;
+
+    for (const StompScoreAward& award :
+         m_mario->consumePendingStompScoreAwards()) {
+        spawnScorePopup(award);
+    }
+}
+
+void Level::spawnScorePopup(const StompScoreAward& award) {
+    auto popup =
+        std::make_unique<ScorePopup>(award.position, award.points, award.grantsLife);
+    popup->setTextureManager(m_textureManager);
+    popup->update(0.f);
+    m_entities.push_back(std::move(popup));
 }
 
 void Level::render(sf::RenderTarget& target) {

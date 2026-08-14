@@ -20,6 +20,7 @@
 #include "states/SuperFireMarioState.h"
 #include "states/SuperMarioState.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 
@@ -27,6 +28,12 @@ namespace {
 constexpr int DEFAULT_MARIO_HEALTH = 100;
 constexpr int DEFAULT_MARIO_LIVES = 3;
 constexpr float MAX_FALL_SPEED = 600.f;
+
+// The shared atlas exposes this Mario-style progression. SMB1 also has a
+// 500-point step, but there is no SCORE_500 frame in SpriteFrames_shared.h.
+constexpr std::array<int, 9> STOMP_SCORE_CHAIN = {
+    100, 200, 400, 800, 1000, 2000, 4000, 5000, 8000
+};
 
 // Authentic Mario Movement Physics Constants (in pixels/sec)
 // Build speed progressively so Mario does not reach the movement cap almost
@@ -1078,6 +1085,8 @@ void Mario::loseLife() {
   m_jumpRequested = false;
   m_jumpReleased = false;
   m_isRunning = false;
+  resetStompScoreChain();
+  m_pendingStompScoreAwards.clear();
   m_isClimbing = false;
   m_isFlagpoleSliding = false;
   m_verticalIntent = 0.0f;
@@ -1159,6 +1168,8 @@ void Mario::respawn(const sf::Vector2f &spawnPosition) {
   m_markedForRemoval = false;
   m_pendingDestroy = false;
   m_velocity = {0.f, 0.f};
+  resetStompScoreChain();
+  m_pendingStompScoreAwards.clear();
   clearGroundedState();
   m_statePattern = std::make_unique<SmallMarioState>();
 
@@ -1227,6 +1238,45 @@ void Mario::setMarioState(MarioState state) {
 }
 
 void Mario::addScore(int points) { m_score += points; }
+
+StompScoreAward Mario::awardStompScore(const sf::Vector2f &position) {
+  std::size_t awardIndex = m_stompScoreChainIndex;
+
+  // SMB1 treats enemies stomped in the same bounce/contact batch specially:
+  // the second enemy skips one value (a fresh double stomp is 100 + 400).
+  if (m_stompsInCurrentPhysicsStep > 0) {
+    ++awardIndex;
+  }
+
+  StompScoreAward award;
+  award.position = position;
+  if (awardIndex >= STOMP_SCORE_CHAIN.size()) {
+    award.grantsLife = true;
+    addLife();
+    EventBus::getInstance().notify(EventType::ONE_UP_COLLECTED);
+  } else {
+    award.points = STOMP_SCORE_CHAIN[awardIndex];
+    addScore(award.points);
+  }
+
+  m_stompScoreChainIndex = awardIndex + 1;
+  ++m_stompsInCurrentPhysicsStep;
+  m_pendingStompScoreAwards.push_back(award);
+  return award;
+}
+
+std::vector<StompScoreAward> Mario::consumePendingStompScoreAwards() {
+  m_stompsInCurrentPhysicsStep = 0;
+  std::vector<StompScoreAward> pending =
+      std::move(m_pendingStompScoreAwards);
+  m_pendingStompScoreAwards.clear();
+  return pending;
+}
+
+void Mario::resetStompScoreChain() {
+  m_stompScoreChainIndex = 0;
+  m_stompsInCurrentPhysicsStep = 0;
+}
 
 void Mario::addCoin() { ++m_coinCount; }
 
@@ -1389,6 +1439,9 @@ void Mario::refreshGroundedState() {
   }
 
   setGrounded(grounded);
+  if (grounded) {
+    resetStompScoreChain();
+  }
 }
 
 void Mario::clearGroundedState() { setGrounded(false); }

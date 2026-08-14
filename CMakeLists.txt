@@ -303,6 +303,15 @@ if(BUILD_TESTING)
     set_tests_properties(character_flow_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+
+    add_executable(stomp_score_tests
+        tests/StompScoreTests.cpp
+    )
+    target_link_libraries(stomp_score_tests PRIVATE game_lib)
+    add_test(NAME stomp_score_tests COMMAND stomp_score_tests)
+    set_tests_properties(stomp_score_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 endif()
 
 # Platform-specific Release build settings

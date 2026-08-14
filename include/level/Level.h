@@ -45,6 +45,8 @@ public:
 
     /// Spawn a FireballExplosion particle effect at the specified position.
     void spawnFireballExplosion(const sf::Vector2f& position);
+    /// Spawn a deferred world-space stomp-score popup.
+    void spawnScorePopup(const StompScoreAward& award);
 
     // 4. Getters / Setters
     Mario* getMario();
@@ -98,6 +100,7 @@ private:
     void checkItemCollisions();
     void checkFinishFlag();
     void processPendingFireballs();
+    void processPendingStompScorePopups();
     
     void checkPipeWarps();
     void startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);

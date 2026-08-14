@@ -434,9 +434,11 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             return false;
         }
 
+        const sf::Vector2f popupPosition =
+            victim.getPosition() + sf::Vector2f(victim.getSize().x / 2.f, 0.f);
         victim.onStomp();
         if (owner) {
-            owner->addScore(ScoreRules::pointsFor(cause));
+            owner->awardStompScore(popupPosition);
         }
         EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
         return true;

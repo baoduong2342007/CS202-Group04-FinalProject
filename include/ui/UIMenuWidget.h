@@ -20,7 +20,7 @@ public:
     UIMenuWidget(const sf::Font& font);
 
     /// Adds a menu item to the list.
-    void addItem(const std::string& label, std::function<void()> onSelect);
+    void addItem(const std::string& label, std::function<void()> onSelect, unsigned int characterSize = 16);
 
     /// Positions all menu items vertically starting from the specified anchor point.
     void setPosition(const sf::Vector2f& position, UIAnchor alignAnchor);
@@ -41,6 +41,7 @@ public:
     void draw(sf::RenderTarget& target) const;
 
     std::optional<sf::FloatRect> getItemBounds(std::size_t index) const;
+    int getSelectedIndex() const { return m_selectedIndex; }
 
 private:
     void updateLayout();

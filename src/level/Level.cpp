@@ -29,6 +29,7 @@
 #include "entities/FireballExplosion.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/LevelCatalog.h"
+#include "core/SoundManager.h"
 
 #include "core/DisplayConfig.h"
 
@@ -338,7 +339,7 @@ void Level::spawnCheepCheepRoutesFromTileMap() {
             CheepCheepBehavior::SWIMMING,
             CheepCheepColor::GREEN
         );
-        cheep->setRoute(startPos, endPos, 40.0f);
+        cheep->setRoute(startPos, endPos, 75.0f);
         cheep->setTextureManager(m_textureManager);
         cheep->setTileMap(&m_tileMap);
         m_entities.push_back(std::move(cheep));
@@ -538,6 +539,16 @@ void Level::update(float dt) {
         case FlagPhase::NONE:
             break;
         }
+    }
+
+    if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
+        updatePipeWarp(dt);
+        if (m_mario) {
+            m_mario->updateVisuals(dt);
+            const sf::Vector2f centerPos = m_mario->getPosition() + (m_mario->getSize() / 2.0f);
+            m_camera.update(dt, centerPos);
+        }
+        return;
     }
     
     if (m_mario) {
@@ -983,6 +994,104 @@ void Level::suppressPiranhaAt(const sf::Vector2i& pipePosition) {
     }
 }
 
+void Level::startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile) {
+    if (!m_mario) {
+        return;
+    }
+
+    m_pendingWarpId = warpId;
+    m_pendingPipeTile = pipeTile;
+    m_pipeWarpPhase = phase;
+    m_pipeWarpTimer = 0.5f; // 0.5s smooth slide duration
+
+    SoundManager::getInstance().playSound("powerdown");
+
+    if (m_mario->getBody()) {
+        m_mario->getBody()->SetGravityScale(0.0f);
+        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+    }
+    m_mario->setVelocity({0.0f, 0.0f});
+
+    if (phase == PipeWarpPhase::ENTERING_VERTICAL) {
+        if (m_mario->getMarioState() == MarioState::SUPER ||
+            m_mario->getMarioState() == MarioState::FIRE_SUPER) {
+            m_mario->playAnimation("crouch");
+        } else {
+            m_mario->playAnimation("idle");
+        }
+    } else if (phase == PipeWarpPhase::ENTERING_HORIZONTAL) {
+        m_mario->playAnimation("walk");
+    }
+}
+
+void Level::updatePipeWarp(float dt) {
+    if (!m_mario || m_pipeWarpPhase == PipeWarpPhase::NONE) {
+        return;
+    }
+
+    if (m_mario->getBody()) {
+        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+        m_mario->getBody()->SetGravityScale(0.0f);
+    }
+    m_mario->setVelocity({0.0f, 0.0f});
+
+    constexpr float PIPE_SLIDE_SPEED = 48.0f; // px/sec
+
+    if (m_pipeWarpPhase == PipeWarpPhase::ENTERING_VERTICAL) {
+        m_pipeWarpTimer -= dt;
+        const sf::Vector2f pos = m_mario->getPosition();
+        const float pipeCenterX = static_cast<float>(m_pendingPipeTile.x * TILE_SIZE) + static_cast<float>(TILE_SIZE);
+        const float targetX = pipeCenterX - m_mario->getSize().x / 2.0f;
+        const float newX = pos.x + (targetX - pos.x) * std::min(1.0f, dt * 10.0f);
+        m_mario->setPosition({newX, pos.y + PIPE_SLIDE_SPEED * dt});
+
+        if (m_mario->getMarioState() == MarioState::SUPER ||
+            m_mario->getMarioState() == MarioState::FIRE_SUPER) {
+            m_mario->playAnimation("crouch");
+        } else {
+            m_mario->playAnimation("idle");
+        }
+
+        if (m_pipeWarpTimer <= 0.0f) {
+            m_pipeWarpPhase = PipeWarpPhase::WARPING_DELAY;
+            m_pipeWarpTimer = 0.35f; // 350ms transition delay
+            warpMarioToReturn(m_pendingWarpId);
+        }
+    } else if (m_pipeWarpPhase == PipeWarpPhase::ENTERING_HORIZONTAL) {
+        m_pipeWarpTimer -= dt;
+        const sf::Vector2f pos = m_mario->getPosition();
+        m_mario->setPosition({pos.x + 60.0f * dt, pos.y});
+        m_mario->playAnimation("walk");
+
+        if (m_pipeWarpTimer <= 0.0f) {
+            m_pipeWarpPhase = PipeWarpPhase::WARPING_DELAY;
+            m_pipeWarpTimer = 0.35f; // 350ms transition delay
+            warpMarioToReturn(m_pendingWarpId);
+        }
+    } else if (m_pipeWarpPhase == PipeWarpPhase::WARPING_DELAY) {
+        m_pipeWarpTimer -= dt;
+        if (m_pipeWarpTimer <= 0.0f) {
+            warpMarioToReturn(m_pendingWarpId);
+        }
+    } else if (m_pipeWarpPhase == PipeWarpPhase::EXITING_VERTICAL) {
+        m_pipeWarpTimer -= dt;
+        const sf::Vector2f pos = m_mario->getPosition();
+        const float newY = std::max(m_pipeWarpExitTargetY, pos.y - PIPE_SLIDE_SPEED * dt);
+        m_mario->setPosition({pos.x, newY});
+        m_mario->playAnimation("idle");
+
+        if (m_pipeWarpTimer <= 0.0f || pos.y <= m_pipeWarpExitTargetY) {
+            m_mario->setPosition({pos.x, m_pipeWarpExitTargetY});
+            m_pipeWarpPhase = PipeWarpPhase::NONE;
+            m_pipeWarpCooldown = 0.5f;
+            if (m_mario->getBody()) {
+                m_mario->getBody()->SetGravityScale(1.0f);
+            }
+            m_mario->playAnimation("idle");
+        }
+    }
+}
+
 void Level::warpMarioToReturn(char warpId) {
     if (!m_mario) {
         return;
@@ -1018,13 +1127,41 @@ void Level::warpMarioToReturn(char warpId) {
                               };
 
     m_mario->setVelocity({0.0f, 0.0f});
-    m_mario->setPosition(target);
+    if (m_mario->getBody()) {
+        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+    }
 
-    m_pipeWarpCooldown = 0.35f;
+    // Check if the tile below is a pipe (so Mario should emerge upwards out of the pipe)
+    const char symBelow = m_tileMap.getTileAt(tileBelow.x, tileBelow.y);
+    const bool isPipeReturn = (symBelow == '[' || symBelow == ']' || symBelow == 'p' ||
+                               symBelow == 'r' || symBelow == '{' || symBelow == '}');
+
+    if (isPipeReturn) {
+        // Start Mario positioned down inside the pipe, and slide upwards
+        const sf::Vector2f startPos{target.x, target.y + marioSize.y};
+        m_mario->setPosition(startPos);
+        m_pipeWarpExitTargetY = target.y;
+        m_pipeWarpPhase = PipeWarpPhase::EXITING_VERTICAL;
+        m_pipeWarpTimer = 0.45f;
+        SoundManager::getInstance().playSound("powerdown");
+    } else {
+        m_mario->setPosition(target);
+        m_pipeWarpPhase = PipeWarpPhase::NONE;
+        m_pipeWarpCooldown = 0.5f;
+        if (m_mario->getBody()) {
+            m_mario->getBody()->SetGravityScale(1.0f);
+        }
+        m_mario->playAnimation("idle");
+    }
+
+    // Immediately snap camera to destination
+    const sf::Vector2f centerPos = target + (marioSize / 2.0f);
+    m_camera.update(0.0f, centerPos);
 }
 
 void Level::checkPipeWarps() {
     if (!m_mario || m_pipeWarpCooldown > 0.0f ||
+        m_pipeWarpPhase != PipeWarpPhase::NONE ||
         m_mario->isCollisionLocked() || m_flagSequenceActive ||
         m_levelCompleted) {
         return;
@@ -1056,7 +1193,7 @@ void Level::checkPipeWarps() {
             const bool verticallyAligned = marioPos.y < pipeBottom && marioPos.y + marioSize.y > pipeTop;
 
             if (touchingPipe && verticallyAligned) {
-                warpMarioToReturn(entry.id);
+                startPipeWarp(entry.id, PipeWarpPhase::ENTERING_HORIZONTAL, entry.position);
                 return;
             }
 
@@ -1087,7 +1224,7 @@ void Level::checkPipeWarps() {
         const bool standingOnPipe = std::abs(marioFeetY - pipeTop) <= 8.0f;
 
         if (centeredOnPipe && standingOnPipe) {
-            warpMarioToReturn(entry.id);
+            startPipeWarp(entry.id, PipeWarpPhase::ENTERING_VERTICAL, entry.position);
             return;
         }
     }

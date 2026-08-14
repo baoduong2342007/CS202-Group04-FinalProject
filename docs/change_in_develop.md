@@ -17,6 +17,11 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-13 | Elevator (moving platform) feature | CTest 18/18 PASS | New `Elevator` kinematic entity riding on `^`/`~` tile markers (vertical/horizontal, end-pause) + external `levels/elevators.txt` routes + theme-specific platform sprite frames + `ElevatorTests`. Map markers must use empty cells and should not duplicate a config route; the active level theme selects the platform palette. |
 | 2026-08-14 | Cheep Cheep enemy & external spawn feature | CTest 19/19 PASS | Added `CheepCheep` enemy class with swimming and jumping mechanics adhering to SMB1 NES canon; added external spawn registry `levels/cheep_cheep.txt` & camera leap generator without modifying any existing map files (`level*.txt`); added `CheepCheepTests` with 100% pass rate. |
 | 2026-08-14 | Merge `feature/sound-input` (Mario/Luigi Character Select) | CTest 20/20 PASS | Integrated character selection flow (`CharacterSelectState`), Mario vs. Luigi physics profiles, Luigi Grow/Shrink/Fire animation atlases, session persistence in `GameProgress`, GameOver retry retention, and `character_flow_tests`. |
+| 2026-08-14 | Fix Mario & Luigi Animation & Invincibility Logic | CTest 20/20 PASS | Added transform presentation sequence for same-body-tier Fire transitions (`SMALL<->FIRE_SMALL`, `SUPER<->FIRE_SUPER`), preserved fireball shoot pose (`action`) during movement, resolved Starman rainbow timer underflow bug, and prevented transform completion from overriding active damage grace blinking. |
+| 2026-08-14 | Fix Luigi Fire Transformation & Shared Fire Form Sprites | CTest 20/20 PASS | Unified FIRE states (`FIRE_SMALL`, `FIRE_SUPER`) to use canonical Fire Mario sprite sheets for both Mario & Luigi; corrected Luigi FireFlower upgrade animation to use `FireMario::growSequence()` (fire flash palette) instead of mistakenly playing `Luigi::growSequence()` (small-to-big mushroom growth). |
+| 2026-08-14 | Pipe Warp Smooth Entry Animation & Transition Delay | CTest 20/20 PASS | Added smooth pipe descent/entry animation (0.5s slide at 48 px/s behind foreground tiles), authentic pipe travel audio cue (`powerdown`), and deliberate 0.35s warp transition delay before Mario emerges at destination. |
+| 2026-08-14 | Fix Fireball Shooting Poses & Natural Pipe Crouch/Walk Animations | CTest 20/20 PASS | Replaced fireball projectile frames with authentic NES character throw poses (`FireBigMario::ACTION`, `FireSmallMario::WALK3`); added dynamic `crouch` state for Super/Fire forms; enabled live animation advancing (`updateVisuals`) during pipe entry and smooth horizontal alignment during pipe descent. |
+| 2026-08-14 | Pipe Exit / Emerging Animation & Complete Luigi Warp Parity | CTest 20/20 PASS | Added smooth pipe emergence animation (`EXITING_VERTICAL`, rising UP out of destination pipe with `powerdown` audio cue); verified 100% full parity for Luigi (including Luigi crouch/walk/idle and sprite frames during pipe entrance/exit). |
 
 ## 2026-08-12 remediation scope
 
@@ -71,10 +76,88 @@ A working-tree result may support review, but release sign-off requires one immu
 - **[Mario.cpp](../src/entities/Mario.cpp)**:
   - Cập nhật `setupAnimationsForState` hỗ trợ nạp bộ clip animation của Luigi (`SmallLuigi`, `BigLuigi`) khi `charType == CharacterType::LUIGI`. Trạng thái Lửa `MarioState::FIRE` dùng chung bộ frame `SpriteFrames::FireBigMario`.
   - Cập nhật các constructors, `powerUp()`, `respawn()`, `setMarioState()`, và hàm `setCharacterType()`.
+  - Khắc phục chuỗi animation `transform` trong `applyStateTransition()` cho các biến đổi cùng thể lực (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`).
+  - Bảo lưu clip animation `"action"` trong `update()` khi vừa di chuyển vừa ném đạn lửa.
+  - Sửa chu kỳ màu Sao bất tử trong `updateInvincibility()` tránh tràn số âm và đồng bộ màu nhấp nháy với `m_isTransforming`.
 
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #47: [Feature & Visual Polish] - Hoạt Ảnh Chui Ra Khỏi Cống (Pipe Exit / Emerging) & Đồng Bộ Hoàn Hảo Cho Luigi
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Bổ sung pha diễn hoạt Chui Ra Khỏi Cống (`PipeWarpPhase::EXITING_VERTICAL`)**:
+     - Khi điểm đến (`R`) nằm trên miệng ống nước (tile phía dưới là `[` / `]` / `p` / `r` / `{` / `}`):
+       * Nhân vật khởi tạo ở vị trí ngập sâu bên trong ống nước (`target.y + marioSize.y`).
+       * Kích hoạt âm thanh chui cống (`pipepowerdown.wav`).
+       * Nhân vật trượt từ từ vươn lên (`rising UP`) với tốc độ $48\text{ px/s}$ trong $0.45\text{s}$ cho đến khi hai chân đặt vững chắc trên mép miệng cống.
+       * Khi hoàn tất, hệ thống tự động hoàn trả trọng lực và trao lại quyền điều khiển mượt mà cho người chơi.
+     - Khi điểm đến là phòng trống/trần nhà (như bonus underground room `R1`): Nhân vật xuất hiện tại vị trí và rơi tự do theo trọng lực bình thường.
+  2. **Đồng bộ toàn diện cho Luigi**:
+     - Luigi thừa hưởng trọn vẹn toàn bộ chuỗi animation chui cống / ra cống:
+       * Cúi khom người (`SpriteFrames::shared::BigLuigi::CROUCH` / `FireBigMario::CROUCH`) khi trượt vào cống đứng thể lớn.
+       * Bước đi (`SmallLuigi` / `BigLuigi` / `FireMario`) với nhịp chân cập nhật theo thời gian thực khi vào cống ngang.
+       * Trượt vươn lên mượt mà khi chui ra khỏi cống ở điểm đến.
+
+### Entry #46: [Bugfix & Visual Polish] - Sửa Động Tác Bắn Đạn Lửa (Throwing Pose) & Tinh Chỉnh Hoạt Ảnh Chui Cống (Crouch / Walk Animation)
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Khắc phục lỗi nhân vật biến thành đốm lửa khi ném đạn (`setupAnimationsForState`)**:
+     - Thay thế các frame nhầm lẫn tọa độ đạn lửa/đốm nổ `SMALL_SHOOT1..3` và `BIG_SHOOT` bằng các tư thế ném đạn chính thống của Mario/Luigi:
+       * `FIRE_SUPER`: Dùng `SpriteFrames::shared::FireBigMario::ACTION` (Frame 14, `{264, 139}, {16, 32}`) - tư thế vung tay ném cầu lửa chuẩn NES.
+       * `FIRE_SMALL`: Dùng `SpriteFrames::shared::FireSmallMario::WALK3` (Frame 3, `{56, 116}, {16, 16}`) - tư thế đưa tay ra trước ném đạn.
+     - Cập nhật kiểm thử `testLuigiFireBodyUsesLuigiRows` trong `tests/MarioPhysicsTests.cpp`.
+  2. **Bổ sung tư thế cúi ngồi (`crouch`) cho Mario & Luigi**:
+     - Nạp animation `"crouch"` với các frame `BigMario::CROUCH`, `BigLuigi::CROUCH` và `FireBigMario::CROUCH`.
+     - Kích hoạt `"crouch"` khi người chơi giữ phím Xuống trên mặt đất ở thể Lớn/Lửa trong `Mario::update`.
+  3. **Nâng cấp hoạt ảnh chui cống sống động, tự nhiên**:
+     - Khi chui vào cống ngang (`H`): Mario bước đi liên tục (`"walk"` với các frame chân chuyển động theo thời gian thực nhờ `updateVisuals(dt)`).
+     - Khi chui xuống cống đứng (`[` / `p`): Mario thể lớn tự động cúi người (`"crouch"`), Mario thể nhỏ bước/đứng tự nhiên, vị trí ngang được nội suy mượt mà vào tâm miệng cống thay vì dịch chuyển giật cục.
+     - Diễn hoạt liên tục cập nhật sprite frames trong suốt quá trình chui cống.
+
+### Entry #45: [Feature & Visual Polish] - Hoạt Ảnh Chui Cống Mượt Mà, Âm Thanh & Độ Trễ Chuyển Cảnh Khi Warp
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Bổ sung State Machine Chui Cống (`PipeWarpPhase`)**: Thiết kế các pha chuyển tiếp cống `ENTERING_VERTICAL`, `ENTERING_HORIZONTAL` và `WARPING_DELAY`.
+  2. **Hoạt ảnh thụt vào cống mượt mà (`startPipeWarp` & `updatePipeWarp`)**:
+     - Cống thẳng đứng (`[` / `p`): Khi đứng trên miệng cống và nhấn phím Xuống, Mario được căn giữa miệng cống, phát âm thanh chui cống kinh điển (`pipepowerdown.wav`), và trượt dần xuống miệng cống với tốc độ $48\text{ px/s}$ trong $0.5\text{s}$ (ẩn dần phía sau lớp foreground tile của cống).
+     - Cống nằm ngang (`H`): Khi đi sang phải chạm miệng cống ngang, Mario chơi hoạt ảnh bước đi và trượt dần vào trong lòng cống trong $0.5\text{s}$.
+  3. **Độ trễ chuyển cảnh tự nhiên (`WARPING_DELAY`)**: Sau khi chui vào cống, game tạo khoảng delay $0.35\text{s}$ để camera và vị trí dịch chuyển tới điểm đến (`R`), loại bỏ hoàn toàn cảm giác giật dịch chuyển tức thời. Tổng thời gian diễn hoạt chuyển cống là $\approx 0.85\text{s}$ chuẩn mực theo phong cách NES SMB1.
+  4. **Bảo toàn tương tác vật lý & va chạm**: Khóa di chuyển vật lý và miễn nhiễm sát thương trong suốt thời gian diễn hoạt chui cống, tự động phục hồi trọng lực và quyền điều khiển ngay khi kết thúc warp.
+
+### Entry #44: [Bugfix & Visual Polish] - Sửa Lỗi Hoạt Ảnh Biến Hình Hoa Lửa (Giữ Đúng Cỡ Thân) & Đồng Bộ Dạng Lửa (Fire Form) Cho Luigi
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `include/core/SpriteFrames_shared.h`, `src/entities/Mario.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Đồng bộ hóa bộ Sprite Dạng Lửa (`MarioState::FIRE_SMALL`, `MarioState::FIRE_SUPER`)**: Quy chuẩn Luigi và Mario dùng chung bộ sprite form Lửa (`SpriteFrames::FireSmallMario` và `SpriteFrames::FireBigMario`). Khắc phục lỗi Luigi khi ở trạng thái Lửa lại dùng frame `SmallLuigi`/`BigLuigi` màu xanh lá thông thường.
+  2. **Tách chuỗi biến hình Lửa theo cấp thân (`smallFireSequence` & `bigFireSequence`)**: Bổ sung các chuỗi chớp nháy màu lửa đồng cấp kích thước trong `SpriteFrames_shared.h` (dùng các frame màu thay thế `ALT1`, `ALT2`):
+     - `smallFireSequence()`: Chuỗi frame 16x16 `{SMALL, SMALL_ALT1, SMALL_ALT2, ...}` cho thể nhỏ.
+     - `bigFireSequence()`: Chuỗi frame 16x32 `{BIG, BIG_ALT1, BIG_ALT2, ...}` cho thể lớn.
+  3. **Khắc phục lỗi "Khổng Lồ Hóa" khi ăn Hoa Lửa (`Mario::applyStateTransition`)**: Tách biệt rõ ràng điều kiện Fire Transition (`isFireUpgrade` / `isFireDowngrade`) với Body Growth (`isGrowth` / `isShrink`). Khi Mario/Luigi ở thể nhỏ ăn Hoa Lửa, game kích hoạt đúng `smallFireSequence()` giữ nguyên chiều cao 16px và chỉ chớp màu lửa, triệt tiêu hoàn toàn hiện tượng bị phóng to lên Big/Medium rồi mới thu nhỏ về.
+  4. **Cập nhật Unit Test kiểm thử (`tests/MarioPhysicsTests.cpp`)**: Điều chỉnh `testLuigiFireBodyUsesLuigiRows` kiểm tra chính xác các frame Lửa (`FireSmallMario`, `FireBigMario`) và khả năng bắn đạn lửa cho Luigi. 100% test suite (20/20 CTest) vượt qua thành công.
+
+### Entry #43: [Bugfix & Visual Polish] - Khắc Phục Hoạt Ảnh Biến Hình Cùng Thể Thân, Động Tác Ném Lửa & Logic Bất Tử Cho Mario / Luigi
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `src/entities/Mario.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Hoạt ảnh biến hình khi ăn hoa lửa (`Mario::applyStateTransition`)**: Bổ sung xử lý `isFireUpgrade` và `isFireDowngrade` khi chuyển trạng thái giữa các dạng cùng thể lực (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`). Đảm bảo animation `transform` luôn được nạp chuỗi `growSequence()` / `shrinkSequence()` tương ứng thay vì bị bỏ qua làm nhân vật bị đơ cứng ở thế đứng `idle`.
+  2. **Bảo toàn động tác ném đạn lửa (`Mario::update`)**: Trong thang ưu tiên animation của `update()`, bảo lưu clip `"action"` (ném lửa) khi `!m_animationSystem->isFinished()`. Khắc phục lỗi khi Mario/Luigi vừa chạy/nhảy vừa bắn đạn thì clip ném lửa bị frame `walk`/`jump` ghi đè ngay ở frame kế tiếp.
+  3. **Sửa lỗi tính chu kỳ màu Sao Bất Tử (`Mario::updateInvincibility`)**: Thay thế phép tính hardcode `(10.f - m_starInvincibilityTimer)` bằng công thức modulo dương `(static_cast<int>(m_starInvincibilityTimer * 15.f) % 6 + 6) % 6`. Loại bỏ hoàn toàn lỗi tràn số âm khiến nhân vật bị kẹt cứng ở màu đỏ khi thời gian sao $>10$s.
+  4. **Đồng bộ nhấp nháy Biến hình và Bất tử do sát thương**: Bổ sung guard khi kết thúc biến hình (`m_transformTimer <= 0.f`), chỉ reset màu về `White` nếu nhân vật không còn trong thời gian bất tử `isInvincible` / `isStarInvincible`.
+  5. Cập nhật và đồng bộ tọa độ kiểm thử `ElevatorTests.cpp` và `CheepCheepTests.cpp`, đảm bảo toàn bộ 20/20 bài kiểm thử CTest đạt 100%.
+
+### Entry #42: [Feature & Map Layout] - Tinh Chỉnh Cụm Elevator, Bổ Sung Tuyến Cheep Cheep Thứ 2 & Tăng Tốc Độ Chim Bay
+- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
+- **File ảnh hưởng:** `levels/level2.txt`, `src/level/Level.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Lùi cụm thang máy trước sang phải:** Dịch chuyển Elevator 1 sang cột `191` (Start `(191, 13)`, End `(191, 7)`) và Cheep Cheep 1 sang cột `189` (Start `(189, 13)`, End `(189, 7)`), tạo khoảng cách nhảy cách đều và thẩm mỹ ở hố vực thứ nhất.
+  2. **Bổ sung cụm Cheep Cheep thứ 2 trước thang máy sau:** Đặt Cheep Cheep 2 tại cột `203` (Start `(203, 13)`, End `(203, 4)`) ngay trước Elevator 2 (cột `205`, Start `(205, 12)`, End `(205, 4)`), tạo nhịp thử thách đồng bộ và đối xứng cho người chơi khi vượt qua 2 cụm vực sâu liên tiếp trong Level 2.
+  3. **Tăng tốc độ bay cho Cheep Cheep:** Trong `Level::spawnCheepCheepRoutesFromTileMap()` (`src/level/Level.cpp`), tăng tốc độ route của Cheep Cheep từ $40\text{ px/s}$ lên $75\text{ px/s}$ (nhanh hơn tốc độ mặc định $60\text{ px/s}$ của Elevator), giúp cá bay lượn linh hoạt và tạo độ nhịp điệu cao hơn thang máy.
+  4. Cập nhật các bộ kiểm thử `tests/ElevatorTests.cpp` và `tests/CheepCheepTests.cpp`, đồng bộ file map và kiểm thử toàn diện đạt 100% (20/20 CTest passed).
 
 ### Entry #41: [Feature & State Flow] - Tích Hợp Luồng Chọn Nhân Vật Mario / Luigi & Đặc Tính Vật Lý Riêng Biệt
 - **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.

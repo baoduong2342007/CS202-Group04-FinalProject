@@ -74,6 +74,14 @@ private:
         WALKING
     };
 
+    enum class PipeWarpPhase {
+        NONE,
+        ENTERING_VERTICAL,
+        ENTERING_HORIZONTAL,
+        WARPING_DELAY,
+        EXITING_VERTICAL
+    };
+
     struct FireBallSpawnRequest {
         sf::Vector2f position;
         Direction direction;
@@ -92,6 +100,8 @@ private:
     void processPendingFireballs();
     
     void checkPipeWarps();
+    void startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);
+    void updatePipeWarp(float dt);
     void warpMarioToReturn(char warpId);
 
     bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
@@ -121,6 +131,11 @@ private:
     LevelTheme m_theme{LevelTheme::OVERWORLD};
     CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
     float m_pipeWarpCooldown = 0.0f;
+    PipeWarpPhase m_pipeWarpPhase = PipeWarpPhase::NONE;
+    float m_pipeWarpTimer = 0.0f;
+    float m_pipeWarpExitTargetY = 0.0f;
+    char m_pendingWarpId = '0';
+    sf::Vector2i m_pendingPipeTile{0, 0};
     std::vector<CheepCheepGeneratorConfig> m_activeGenerators;
     std::vector<float> m_generatorTimers;
 };

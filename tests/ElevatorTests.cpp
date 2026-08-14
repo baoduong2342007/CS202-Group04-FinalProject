@@ -233,11 +233,11 @@ void testElevatorConfig() {
     assert(markerMap.loadFromFile("levels/level2.txt"));
     const auto& markerRoutes = markerMap.getElevatorRoutes();
     assert(markerRoutes.size() == 2u);
-    assert(markerRoutes[0].start == sf::Vector2i(205, 12));
-    assert(markerRoutes[0].end == sf::Vector2i(205, 4));
+    assert(markerRoutes[0].start == sf::Vector2i(206, 12));
+    assert(markerRoutes[0].end == sf::Vector2i(206, 4));
     assert(markerRoutes[0].vertical);
-    assert(markerRoutes[1].start == sf::Vector2i(190, 13));
-    assert(markerRoutes[1].end == sf::Vector2i(190, 7));
+    assert(markerRoutes[1].start == sf::Vector2i(191, 13));
+    assert(markerRoutes[1].end == sf::Vector2i(191, 7));
     assert(markerRoutes[1].vertical);
 
     std::cout << "[PASSED] testElevatorConfig" << std::endl;

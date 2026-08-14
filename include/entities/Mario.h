@@ -152,11 +152,16 @@ public:
     void setUnderwater(bool underwater) { m_isUnderwater = underwater; }
     bool isUnderwater() const { return m_isUnderwater; }
 
+    void updateSpriteLayout();
+    void updateVisuals(float dt) {
+        updateAnimation(dt);
+        updateSpriteLayout();
+    }
+
 protected:
     // 5. Protected methods
     bool applyStateTransition(MarioState state, bool withPresentation);
     void rebuildFixture();
-    void updateSpriteLayout();
     void applyMovementPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, bool jumpKeyReleased);
     void applyGroundPhysics(float dt, float inputDirX, bool isRunningInput, bool jumpKeyPressed, float& currentVy, float& newVx, float targetMaxSpeed);
     void applyAirPhysics(float dt, float inputDirX, bool jumpKeyReleased, float& currentVy, float& newVx, float targetMaxSpeed);

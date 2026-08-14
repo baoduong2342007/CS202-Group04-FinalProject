@@ -39,6 +39,9 @@ private:
     sf::Font m_font;
     bool m_fontLoaded = false;
 
+    std::optional<sf::Texture> m_characterTexture;
+    bool m_characterTextureLoaded = false;
+
     std::optional<sf::Text> m_titleText;
     std::optional<sf::Text> m_subtitleText;
     std::optional<sf::Text> m_marioDetailsText;
@@ -48,7 +51,18 @@ private:
     sf::RectangleShape m_panel;
     sf::RectangleShape m_marioCard;
     sf::RectangleShape m_luigiCard;
+    sf::RectangleShape m_marioLeftBox;
+    sf::RectangleShape m_marioRightBox;
+    sf::RectangleShape m_luigiLeftBox;
+    sf::RectangleShape m_luigiRightBox;
+
+    std::optional<sf::Sprite> m_marioLeftSprite;
+    std::optional<sf::Sprite> m_marioRightSprite;
+    std::optional<sf::Sprite> m_luigiLeftSprite;
+    std::optional<sf::Sprite> m_luigiRightSprite;
+
     std::unique_ptr<UIMenuWidget> m_menu;
 
+    float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

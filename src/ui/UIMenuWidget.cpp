@@ -4,8 +4,8 @@
 UIMenuWidget::UIMenuWidget(const sf::Font& font)
     : m_font(font) {}
 
-void UIMenuWidget::addItem(const std::string& label, std::function<void()> onSelect) {
-    MenuItem item{sf::Text(m_font, label, 16), std::move(onSelect)};
+void UIMenuWidget::addItem(const std::string& label, std::function<void()> onSelect, unsigned int characterSize) {
+    MenuItem item{sf::Text(m_font, label, characterSize), std::move(onSelect)};
     
     m_items.push_back(std::move(item));
     updateLayout();

@@ -593,21 +593,21 @@ bool testLuigiFireBodyUsesLuigiRows() {
                      message);
     };
 
-    namespace Small = SpriteFrames::shared::SmallLuigi;
-    if (!checkFrame(fireSmall, "idle", Small::IDLE,
-                    "Luigi FIRE_SMALL idle must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "walk", Small::WALK1,
-                    "Luigi FIRE_SMALL walk must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "climb", Small::CLIMB1,
-                    "Luigi FIRE_SMALL climb must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "swim", Small::SWIM1,
-                    "Luigi FIRE_SMALL swim must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "jump", Small::JUMP,
-                    "Luigi FIRE_SMALL jump must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "skid", Small::SKID,
-                    "Luigi FIRE_SMALL skid must use SmallLuigi rows") ||
-        !checkFrame(fireSmall, "death", Small::DEATH,
-                    "Luigi FIRE_SMALL death must use SmallLuigi rows")) {
+    namespace FireSmall = SpriteFrames::shared::FireSmallMario;
+    if (!checkFrame(fireSmall, "idle", FireSmall::IDLE,
+                    "Luigi FIRE_SMALL idle must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "walk", FireSmall::WALK1,
+                    "Luigi FIRE_SMALL walk must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "climb", FireSmall::CLIMB1,
+                    "Luigi FIRE_SMALL climb must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "swim", FireSmall::SWIM1,
+                    "Luigi FIRE_SMALL swim must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "jump", FireSmall::JUMP,
+                    "Luigi FIRE_SMALL jump must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "skid", FireSmall::SKID,
+                    "Luigi FIRE_SMALL skid must use FireSmallMario rows") ||
+        !checkFrame(fireSmall, "death", FireSmall::DEATH,
+                    "Luigi FIRE_SMALL death must use FireSmallMario rows")) {
         return false;
     }
 
@@ -617,8 +617,8 @@ bool testLuigiFireBodyUsesLuigiRows() {
     }
     fireSmall.refreshAnimationForTest();
     if (!check(fireSmall.currentTextureRect().position ==
-                   SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1.position,
-               "Luigi FIRE_SMALL action must retain Luigi Fire shooting rows")) {
+                   SpriteFrames::shared::FireSmallMario::WALK3.position,
+               "Luigi FIRE_SMALL action must use FireSmallMario throw pose")) {
         return false;
     }
 
@@ -626,21 +626,23 @@ bool testLuigiFireBodyUsesLuigiRows() {
     fireSuper.setTextureManager(textureManager);
     fireSuper.setCharacterType(CharacterType::LUIGI);
     fireSuper.setMarioState(MarioState::FIRE_SUPER);
-    namespace Big = SpriteFrames::shared::BigLuigi;
-    if (!checkFrame(fireSuper, "idle", Big::IDLE,
-                    "Luigi FIRE_SUPER idle must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "walk", Big::WALK1,
-                    "Luigi FIRE_SUPER walk must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "climb", Big::CLIMB1,
-                    "Luigi FIRE_SUPER climb must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "swim", Big::SWIM1,
-                    "Luigi FIRE_SUPER swim must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "jump", Big::JUMP,
-                    "Luigi FIRE_SUPER jump must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "skid", Big::SKID,
-                    "Luigi FIRE_SUPER skid must use BigLuigi rows") ||
-        !checkFrame(fireSuper, "death", Small::DEATH,
-                    "Luigi FIRE_SUPER death must use SmallLuigi rows")) {
+    namespace FireBig = SpriteFrames::shared::FireBigMario;
+    if (!checkFrame(fireSuper, "idle", FireBig::IDLE,
+                    "Luigi FIRE_SUPER idle must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "walk", FireBig::WALK1,
+                    "Luigi FIRE_SUPER walk must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "climb", FireBig::CLIMB1,
+                    "Luigi FIRE_SUPER climb must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "swim", FireBig::SWIM1,
+                    "Luigi FIRE_SUPER swim must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "jump", FireBig::JUMP,
+                    "Luigi FIRE_SUPER jump must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "crouch", FireBig::CROUCH,
+                    "Luigi FIRE_SUPER crouch must use FireBigMario crouch frame") ||
+        !checkFrame(fireSuper, "skid", FireBig::SKID,
+                    "Luigi FIRE_SUPER skid must use FireBigMario rows") ||
+        !checkFrame(fireSuper, "death", SpriteFrames::shared::SmallLuigi::DEATH,
+                    "Luigi FIRE_SUPER death must use SmallLuigi death row")) {
         return false;
     }
 
@@ -650,8 +652,8 @@ bool testLuigiFireBodyUsesLuigiRows() {
     }
     fireSuper.refreshAnimationForTest();
     return check(fireSuper.currentTextureRect().position ==
-                     SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT.position,
-                 "Luigi FIRE_SUPER action must retain Luigi Fire shooting rows");
+                     SpriteFrames::shared::FireBigMario::ACTION.position,
+                 "Luigi FIRE_SUPER action must use FireBigMario ACTION pose");
 }
 
 

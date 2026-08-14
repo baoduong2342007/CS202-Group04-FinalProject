@@ -131,9 +131,9 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
                                       std::vector<sf::IntRect>{idle},
                                       SPAWN_ANIMATION_DURATION, false));
   };
-  if (charType == CharacterType::LUIGI) {
-    switch (state) {
-    case MarioState::SMALL: {
+  switch (state) {
+  case MarioState::SMALL: {
+    if (charType == CharacterType::LUIGI) {
       namespace F = SpriteFrames::shared::SmallLuigi;
       animSys.addAnimation("idle", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
@@ -150,60 +150,7 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
       animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(
                                         std::vector<sf::IntRect>{F::IDLE},
                                         SPAWN_ANIMATION_DURATION, false));
-      break;
-    }
-    case MarioState::SUPER: {
-      namespace F = SpriteFrames::shared::BigLuigi;
-      animSys.addAnimation("idle", AnimationSystem::createManualAnimation(
-                                       std::vector<sf::IntRect>{F::IDLE}, 1.f));
-      animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
-                                       F::walkFrames(), 0.1f));
-      addSwimAndClimb(F::climbFrames(), F::swimFrames());
-      animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
-                                       std::vector<sf::IntRect>{F::JUMP}, 1.f));
-      animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
-                                       std::vector<sf::IntRect>{F::SKID}, 1.f));
-      animSys.addAnimation(
-          "death",
-          AnimationSystem::createManualAnimation(
-              std::vector<sf::IntRect>{SpriteFrames::shared::SmallLuigi::DEATH},
-              DEATH_ANIMATION_DURATION, false));
-      animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(
-                                        std::vector<sf::IntRect>{F::IDLE},
-                                        SPAWN_ANIMATION_DURATION, false));
-      break;
-    }
-    case MarioState::FIRE_SMALL: {
-      // Luigi has no separate fire-palette locomotion rows in the atlas. Keep
-      // the body visibly Luigi by using the standard SmallLuigi body frames;
-      // only the Fire shooting action below uses the dedicated Fire rows.
-      namespace F = SpriteFrames::shared::SmallLuigi;
-      addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
-          F::SKID,
-          std::vector<sf::IntRect>{
-              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT1,
-              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT2,
-              SpriteFrames::shared::FireShooting::Luigi::SMALL_SHOOT3},
-          SpriteFrames::shared::SmallLuigi::DEATH);
-      break;
-    }
-    case MarioState::FIRE_SUPER: {
-      // See FIRE_SMALL: BigLuigi body rows preserve identity while the
-      // dedicated Luigi FireShooting action remains Fire-specific.
-      namespace F = SpriteFrames::shared::BigLuigi;
-      addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
-          F::SKID,
-          std::vector<sf::IntRect>{
-              SpriteFrames::shared::FireShooting::Luigi::BIG_SHOOT},
-          SpriteFrames::shared::SmallLuigi::DEATH);
-      break;
-    }
-    }
-  } else {
-    switch (state) {
-    case MarioState::SMALL: {
+    } else {
       namespace F = SpriteFrames::shared::SmallMario;
       animSys.addAnimation("idle", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
@@ -220,9 +167,32 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
       animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(
                                         std::vector<sf::IntRect>{F::IDLE},
                                         SPAWN_ANIMATION_DURATION, false));
-      break;
     }
-    case MarioState::SUPER: {
+    break;
+  }
+  case MarioState::SUPER: {
+    if (charType == CharacterType::LUIGI) {
+      namespace F = SpriteFrames::shared::BigLuigi;
+      animSys.addAnimation("idle", AnimationSystem::createManualAnimation(
+                                       std::vector<sf::IntRect>{F::IDLE}, 1.f));
+      animSys.addAnimation("walk", AnimationSystem::createManualAnimation(
+                                       F::walkFrames(), 0.1f));
+      addSwimAndClimb(F::climbFrames(), F::swimFrames());
+      animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
+                                       std::vector<sf::IntRect>{F::JUMP}, 1.f));
+      animSys.addAnimation("crouch", AnimationSystem::createManualAnimation(
+                                         std::vector<sf::IntRect>{F::CROUCH}, 1.f));
+      animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
+                                       std::vector<sf::IntRect>{F::SKID}, 1.f));
+      animSys.addAnimation(
+          "death",
+          AnimationSystem::createManualAnimation(
+              std::vector<sf::IntRect>{SpriteFrames::shared::SmallLuigi::DEATH},
+              DEATH_ANIMATION_DURATION, false));
+      animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(
+                                        std::vector<sf::IntRect>{F::IDLE},
+                                        SPAWN_ANIMATION_DURATION, false));
+    } else {
       namespace F = SpriteFrames::shared::BigMario;
       animSys.addAnimation("idle", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::IDLE}, 1.f));
@@ -231,6 +201,8 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
       addSwimAndClimb(F::climbFrames(), F::swimFrames());
       animSys.addAnimation("jump", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::JUMP}, 1.f));
+      animSys.addAnimation("crouch", AnimationSystem::createManualAnimation(
+                                         std::vector<sf::IntRect>{F::CROUCH}, 1.f));
       animSys.addAnimation("skid", AnimationSystem::createManualAnimation(
                                        std::vector<sf::IntRect>{F::SKID}, 1.f));
       animSys.addAnimation(
@@ -241,31 +213,31 @@ void setupAnimationsForState(AnimationSystem &animSys, MarioState state,
       animSys.addAnimation("spawn", AnimationSystem::createManualAnimation(
                                         std::vector<sf::IntRect>{F::IDLE},
                                         SPAWN_ANIMATION_DURATION, false));
-      break;
     }
-    case MarioState::FIRE_SMALL: {
-      namespace F = SpriteFrames::shared::FireSmallMario;
-      addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
-          F::SKID,
-          std::vector<sf::IntRect>{
-              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT1,
-              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT2,
-              SpriteFrames::shared::FireShooting::Mario::SMALL_SHOOT3},
-          F::DEATH);
-      break;
-    }
-    case MarioState::FIRE_SUPER: {
-      namespace F = SpriteFrames::shared::FireBigMario;
-      addFireAnimations(
-          F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
-          F::SKID,
-          std::vector<sf::IntRect>{
-              SpriteFrames::shared::FireShooting::Mario::BIG_SHOOT},
-          SpriteFrames::shared::SmallMario::DEATH);
-      break;
-    }
-    }
+    break;
+  }
+  case MarioState::FIRE_SMALL: {
+    namespace F = SpriteFrames::shared::FireSmallMario;
+    addFireAnimations(
+        F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+        F::SKID,
+        std::vector<sf::IntRect>{F::WALK3},
+        F::DEATH);
+    break;
+  }
+  case MarioState::FIRE_SUPER: {
+    namespace F = SpriteFrames::shared::FireBigMario;
+    addFireAnimations(
+        F::IDLE, F::walkFrames(), F::climbFrames(), F::swimFrames(), F::JUMP,
+        F::SKID,
+        std::vector<sf::IntRect>{F::ACTION},
+        charType == CharacterType::LUIGI
+            ? SpriteFrames::shared::SmallLuigi::DEATH
+            : SpriteFrames::shared::SmallMario::DEATH);
+    animSys.addAnimation("crouch", AnimationSystem::createManualAnimation(
+                                       std::vector<sf::IntRect>{F::CROUCH}, 1.f));
+    break;
+  }
   }
 }
 } // namespace
@@ -390,7 +362,7 @@ void Mario::update(float dt) {
       playAnimation("idle");
       updateAnimation(0.f);
       updateSpriteLayout();
-      if (m_sprite) {
+      if (m_sprite && !m_isInvincible && !m_isStarInvincible) {
         // Fire Mario already uses the palette-authentic FireMario atlas rows;
         // applying a tint here would wash the whole sprite orange/red.
         m_sprite->setColor(sf::Color::White);
@@ -428,7 +400,10 @@ void Mario::update(float dt) {
   }
 
   // Animation state machine (develop)
-  if (m_isFlagpoleSliding) {
+  if (m_animationSystem->getCurrentAnimationName() == "action" &&
+      !m_animationSystem->isFinished()) {
+    // Keep playing action animation until it finishes so fireball throw is visible
+  } else if (m_isFlagpoleSliding) {
     playAnimation("climb");
   } else if (m_isClimbing) {
     if (m_verticalIntent < 0.0f) {
@@ -442,6 +417,8 @@ void Mario::update(float dt) {
     playAnimation("swim");
   } else if (!isGrounded()) {
     playAnimation("jump");
+  } else if (m_verticalIntent > 0.5f && (m_marioState == MarioState::SUPER || m_marioState == MarioState::FIRE_SUPER)) {
+    playAnimation("crouch");
   } else if (m_isSkidding) {
     playAnimation("skid");
   } else if (std::abs(getVelocity().x) > 5.f) {
@@ -908,6 +885,8 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
 
   const bool isGrowth = !currentSuperBody && targetSuperBody;
   const bool isShrink = currentSuperBody && !targetSuperBody;
+  const bool isFireUpgrade = !usesFire(m_marioState) && usesFire(state);
+  const bool isFireDowngrade = usesFire(m_marioState) && !usesFire(state);
   const bool usesFireTransition = usesFire(m_marioState) || usesFire(state);
   const bool worldLocked =
       m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked();
@@ -947,7 +926,19 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
   if (withPresentation) {
     m_isTransforming = true;
     m_transformTimer = TRANSFORM_PRESENTATION_DURATION;
-    if (isGrowth) {
+    if (isFireUpgrade || isFireDowngrade ||
+        (usesFireTransition && !isGrowth && !isShrink)) {
+      const bool isSuper = usesSuperBody(state) || usesSuperBody(m_marioState);
+      const auto &sequence =
+          isSuper
+              ? SpriteFrames::shared::GrowShrink::FireMario::bigFireSequence()
+              : SpriteFrames::shared::GrowShrink::FireMario::smallFireSequence();
+      m_animationSystem->addAnimation(
+          "transform",
+          AnimationSystem::createManualAnimation(
+              sequence, TRANSFORM_FRAME_DURATION, false));
+      playAnimation("transform");
+    } else if (isGrowth) {
       const auto &sequence =
           m_characterType == CharacterType::LUIGI
               ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
@@ -956,8 +947,8 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
                      : SpriteFrames::shared::GrowShrink::Mario::growSequence());
       m_animationSystem->addAnimation(
           "transform",
-          AnimationSystem::createManualAnimation(sequence,
-                                                 TRANSFORM_FRAME_DURATION, false));
+          AnimationSystem::createManualAnimation(
+              sequence, TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     } else if (isShrink) {
       const auto &sequence =
@@ -968,8 +959,20 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
                      : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence());
       m_animationSystem->addAnimation(
           "transform",
-          AnimationSystem::createManualAnimation(sequence,
-                                                 TRANSFORM_FRAME_DURATION, false));
+          AnimationSystem::createManualAnimation(
+              sequence, TRANSFORM_FRAME_DURATION, false));
+      playAnimation("transform");
+    } else {
+      const auto &sequence =
+          m_characterType == CharacterType::LUIGI
+              ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
+              : (usesFireTransition
+                     ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+                     : SpriteFrames::shared::GrowShrink::Mario::growSequence());
+      m_animationSystem->addAnimation(
+          "transform",
+          AnimationSystem::createManualAnimation(
+              sequence, TRANSFORM_FRAME_DURATION, false));
       playAnimation("transform");
     }
   }
@@ -1291,7 +1294,7 @@ void Mario::updateInvincibility(float dt) {
   }
   m_isInvincible = m_invincibilityTimer > 0.0f;
 
-  if (m_sprite) {
+  if (m_sprite && !m_isTransforming) {
     // Do not recolor Fire Mario: the selected Fire atlas already supplies the
     // correct palette. This color is only the neutral base for blink effects.
     const sf::Color baseColor = sf::Color::White;
@@ -1301,8 +1304,8 @@ void Mario::updateInvincibility(float dt) {
           sf::Color(60, 255, 60),   sf::Color(60, 220, 255),
           sf::Color(255, 100, 255), sf::Color::White};
       int colorIndex =
-          static_cast<int>((10.f - m_starInvincibilityTimer) * 15.f) % 6;
-      m_sprite->setColor(rainbow[std::max(0, colorIndex)]);
+          (static_cast<int>(m_starInvincibilityTimer * 15.f) % 6 + 6) % 6;
+      m_sprite->setColor(rainbow[colorIndex]);
     } else if (m_isInvincible) {
       const int milliseconds = static_cast<int>(m_invincibilityTimer * 1000.f);
       m_sprite->setColor((milliseconds / 100) % 2 == 0 ? sf::Color::Transparent

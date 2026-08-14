@@ -17,6 +17,7 @@
 #include "physics/CollisionManager.h"
 #include "level/CheepCheepConfig.h"
 #include "level/TileMap.h"
+#include <fstream>
 
 void testCheepCheepCreation() {
     std::cout << "[RUNNING] testCheepCheepCreation..." << std::endl;
@@ -195,14 +196,19 @@ void testCheepCheepRoutes() {
 void testTileMapCheepCheepRouteParsing() {
     std::cout << "[RUNNING] testTileMapCheepCheepRouteParsing..." << std::endl;
 
-    TileMap map;
-    // Loading level1 should succeed and parse without any errors
-    const bool loaded = map.loadFromFile("levels/level1.txt");
-    assert(loaded);
+    TileMap map1;
+    assert(map1.loadFromFile("levels/level1.txt"));
 
-    // Initial level1 has no c-x pairs by default, so routes should be empty or valid
-    const auto& routes = map.getCheepCheepRoutes();
-    (void)routes;
+    TileMap map2;
+    assert(map2.loadFromFile("levels/level2.txt"));
+    const auto& routes2 = map2.getCheepCheepRoutes();
+    assert(routes2.size() == 2u);
+    assert(routes2[0].start == sf::Vector2i(204, 12));
+    assert(routes2[0].end == sf::Vector2i(204, 4));
+    assert(routes2[0].vertical);
+    assert(routes2[1].start == sf::Vector2i(189, 13));
+    assert(routes2[1].end == sf::Vector2i(189, 7));
+    assert(routes2[1].vertical);
 
     std::cout << "[PASSED] testTileMapCheepCheepRouteParsing" << std::endl;
 }

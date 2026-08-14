@@ -1491,6 +1491,18 @@ inline const std::vector<sf::IntRect> &shrinkSequence() {
       BIG, MEDIUM, SMALL, MEDIUM, SMALL, MEDIUM, SMALL};
   return sequence;
 }
+
+inline const std::vector<sf::IntRect> &smallFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      SMALL, SMALL_ALT1, SMALL_ALT2, SMALL, SMALL_ALT1, SMALL_ALT2};
+  return sequence;
+}
+
+inline const std::vector<sf::IntRect> &bigFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      BIG, BIG_ALT1, BIG_ALT2, BIG, BIG_ALT1, BIG_ALT2};
+  return sequence;
+}
 } // namespace Mario
 
 namespace FireMario {
@@ -1515,6 +1527,18 @@ inline const std::vector<sf::IntRect> &shrinkSequence() {
       BIG, MEDIUM, SMALL, MEDIUM, SMALL, MEDIUM, SMALL};
   return sequence;
 }
+
+inline const std::vector<sf::IntRect> &smallFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      SMALL, SMALL_ALT1, SMALL_ALT2, SMALL, SMALL_ALT1, SMALL_ALT2};
+  return sequence;
+}
+
+inline const std::vector<sf::IntRect> &bigFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      BIG, BIG_ALT1, BIG_ALT2, BIG, BIG_ALT1, BIG_ALT2};
+  return sequence;
+}
 } // namespace FireMario
 
 namespace Luigi {
@@ -1535,6 +1559,18 @@ inline const std::vector<sf::IntRect> &growSequence() {
 inline const std::vector<sf::IntRect> &shrinkSequence() {
   static const std::vector<sf::IntRect> sequence = {
       BIG, MEDIUM, SMALL, MEDIUM, SMALL, MEDIUM, SMALL};
+  return sequence;
+}
+
+inline const std::vector<sf::IntRect> &smallFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      SMALL, SMALL_ALT1, SMALL_ALT2, SMALL, SMALL_ALT1, SMALL_ALT2};
+  return sequence;
+}
+
+inline const std::vector<sf::IntRect> &bigFireSequence() {
+  static const std::vector<sf::IntRect> sequence = {
+      BIG, BIG_ALT1, BIG_ALT2, BIG, BIG_ALT1, BIG_ALT2};
   return sequence;
 }
 } // namespace Luigi

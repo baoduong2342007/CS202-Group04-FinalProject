@@ -37,9 +37,10 @@ namespace {
     constexpr float DEATH_ANIMATION_FALLBACK_TIMEOUT = 1.0f;
 }
 
-PlayState::PlayState() {
+PlayState::PlayState(CharacterType characterType) {
     // S6-TV1-06/07: New Game always starts at Level 1 (one-based), never Level 0.
     m_progress.currentLevel = 1;
+    m_progress.character = characterType;
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
 
     // S6-TV1-11: the level is NOT loaded here (in the constructor). Loading is
@@ -269,6 +270,7 @@ void PlayState::snapshotProgress() {
     m_progress.coins = m_level->getMario()->getCoinCount();
     m_progress.lives = m_level->getMario()->getLives();
     m_progress.power = m_level->getMario()->getMarioState();
+    m_progress.character = m_level->getMario()->getCharacterType();
 }
 
 void PlayState::restoreProgress() {
@@ -277,6 +279,7 @@ void PlayState::restoreProgress() {
     }
 
     // S6-TV1-10: apply session progress to the fresh Mario/HUD.
+    m_level->getMario()->setCharacterType(m_progress.character);
     m_level->getMario()->setScore(m_progress.score);
     m_level->getMario()->setCoinCount(m_progress.coins);
     m_level->getMario()->setLives(m_progress.lives);
@@ -305,7 +308,7 @@ bool PlayState::loadLevel(int levelNumber) {
     m_level = std::make_unique<Level>();
     m_level->setTheme(def->theme);
     m_level->setCameraVerticalMode(def->cameraMode);
-    if (!m_level->loadFromFile(def->filePath)) {
+    if (!m_level->loadFromFile(def->filePath, m_progress.character)) {
         m_level.reset();
         return false;
     }

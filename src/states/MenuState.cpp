@@ -6,7 +6,7 @@
  */
 
 #include "states/MenuState.h"
-#include "states/PlayState.h"
+#include "states/CharacterSelectState.h"
 #include "core/GameManager.h"
 #include "patterns/InputState.h"
 #include "core/DisplayConfig.h"
@@ -153,7 +153,8 @@ void MenuState::onEnter() {
         m_menu->addItem("START GAME", [this]() {
             if (m_transitioning) return;
             m_transitioning = true;
-            GameManager::getInstance().changeState(std::make_unique<PlayState>());
+            GameManager::getInstance().changeState(
+                std::make_unique<CharacterSelectState>());
         });
         m_menu->setPosition(
             UILayoutHelper::getAnchorPosition(UIAnchor::BottomCenter) +

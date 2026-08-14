@@ -25,6 +25,24 @@ enum class CharacterType {
     LUIGI
 };
 
+/// Intentional gameplay differences for each selectable character.
+/// All values use the units consumed by Mario's movement implementation.
+struct CharacterProfile {
+    float jumpForce;
+    float walkMaxSpeed;
+    float runMaxSpeed;
+    float underwaterWalkMaxSpeed;
+    float underwaterRunMaxSpeed;
+};
+
+/// Return the immutable movement profile for a character identity.
+constexpr CharacterProfile characterProfileFor(CharacterType type) noexcept {
+    if (type == CharacterType::LUIGI) {
+        return {510.0f, 160.0f, 250.0f, 90.0f, 144.0f};
+    }
+    return {460.0f, 175.0f, 280.0f, 100.0f, 160.0f};
+}
+
 class Mario : public Character {
 public:
     // 1. Constructor / Destructor
@@ -111,6 +129,10 @@ public:
 
     CharacterType getCharacterType() const { return m_characterType; }
     void setCharacterType(CharacterType type);
+    CharacterProfile getCharacterProfile() const noexcept {
+        return characterProfileFor(m_characterType);
+    }
+    float getJumpForce() const noexcept { return m_jumpForce; }
 
     bool isRunning() const;
     /// Set the per-frame run intent consumed by preparePhysics().

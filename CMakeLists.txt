@@ -294,6 +294,15 @@ if(BUILD_TESTING)
     set_tests_properties(display_camera_ui_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+
+    add_executable(character_flow_tests
+        tests/CharacterFlowTests.cpp
+    )
+    target_link_libraries(character_flow_tests PRIVATE game_lib)
+    add_test(NAME character_flow_tests COMMAND character_flow_tests)
+    set_tests_properties(character_flow_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 endif()
 
 # Platform-specific Release build settings

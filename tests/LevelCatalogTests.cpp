@@ -10,11 +10,13 @@
  */
 
 #include <cassert>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
 #include "core/LevelCatalog.h"
 #include "core/GameProgress.h"
+#include "level/Level.h"
 
 namespace {
 
@@ -51,6 +53,7 @@ bool testCatalogDoesNotExposeLevelZero() {
     // New Game starts at Level 1.
     GameProgress fresh;
     assert(fresh.currentLevel == 1);
+    assert(fresh.character == CharacterType::MARIO);
 
     std::cout << "[PASSED] testCatalogDoesNotExposeLevelZero" << std::endl;
     return true;
@@ -78,6 +81,7 @@ bool testGameProgressDefaultsAndMembership() {
     assert(p.coins == 0);
     assert(p.lives == 3);
     assert(p.power == MarioState::SMALL);
+    assert(p.character == CharacterType::MARIO);
     assert(p.currentLevel == 1);
 
     // It is a value type: modifying one instance must not affect another,
@@ -85,10 +89,47 @@ bool testGameProgressDefaultsAndMembership() {
     GameProgress q = p;
     q.score = 500;
     q.lives = 1;
+    q.character = CharacterType::LUIGI;
     assert(q.score == 500 && q.lives == 1);
+    assert(q.character == CharacterType::LUIGI);
     assert(p.score == 0 && p.lives == 3);
+    assert(p.character == CharacterType::MARIO);
 
     std::cout << "[PASSED] testGameProgressDefaultsAndMembership" << std::endl;
+    return true;
+}
+
+bool testLevelSpawnHonorsCharacterIdentity() {
+    std::cout << "[RUNNING] testLevelSpawnHonorsCharacterIdentity..." << std::endl;
+
+    // CTest normally runs from a build directory, while direct invocations
+    // often run from the project root. Resolve the root so this remains a
+    // deterministic behavior test rather than a working-directory assertion.
+    std::filesystem::path projectRoot = std::filesystem::current_path();
+    while (!std::filesystem::exists(projectRoot / "levels" / "level1.txt") &&
+           projectRoot != projectRoot.root_path()) {
+        projectRoot = projectRoot.parent_path();
+    }
+    assert(std::filesystem::exists(projectRoot / "levels" / "level1.txt"));
+
+    const std::filesystem::path originalDirectory =
+        std::filesystem::current_path();
+    std::filesystem::current_path(projectRoot);
+
+    Level luigiLevel;
+    assert(luigiLevel.loadFromFile("levels/level1.txt", CharacterType::LUIGI));
+    assert(luigiLevel.getCharacterType() == CharacterType::LUIGI);
+    assert(luigiLevel.getMario() != nullptr);
+    assert(luigiLevel.getMario()->getCharacterType() == CharacterType::LUIGI);
+
+    Level defaultLevel;
+    assert(defaultLevel.loadFromFile("levels/level1.txt"));
+    assert(defaultLevel.getCharacterType() == CharacterType::MARIO);
+    assert(defaultLevel.getMario() != nullptr);
+    assert(defaultLevel.getMario()->getCharacterType() == CharacterType::MARIO);
+
+    std::filesystem::current_path(originalDirectory);
+    std::cout << "[PASSED] testLevelSpawnHonorsCharacterIdentity" << std::endl;
     return true;
 }
 
@@ -98,7 +139,8 @@ int main() {
     const bool ok = testCatalogHasExactlyThreeReleaseLevels()
                  && testCatalogDoesNotExposeLevelZero()
                  && testFinalLevelBoundary()
-                 && testGameProgressDefaultsAndMembership();
+                 && testGameProgressDefaultsAndMembership()
+                 && testLevelSpawnHonorsCharacterIdentity();
 
     if (ok) {
         std::cout << "All LevelCatalogTests passed successfully!" << std::endl;

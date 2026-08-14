@@ -34,7 +34,8 @@ public:
     // 3. Public methods
     void setTheme(LevelTheme theme);
     void setCameraVerticalMode(CameraVerticalMode mode);
-    bool loadFromFile(const std::string& path);
+    bool loadFromFile(const std::string& path,
+                      CharacterType characterType = CharacterType::MARIO);
     void update(float dt);
     void render(sf::RenderTarget& target);
     /// Consolidated production entry point for FireBall shooting.
@@ -48,6 +49,7 @@ public:
     // 4. Getters / Setters
     Mario* getMario();
     const Mario* getMario() const;
+    CharacterType getCharacterType() const { return m_characterType; }
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();
@@ -115,6 +117,7 @@ private:
     float m_flagSlideStartDropDistance = 0.0f;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
+    CharacterType m_characterType = CharacterType::MARIO;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
     CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
     float m_pipeWarpCooldown = 0.0f;

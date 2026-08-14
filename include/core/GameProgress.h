@@ -19,4 +19,5 @@ struct GameProgress {
     int coins = 0;
     int lives = 3;
     MarioState power = MarioState::SMALL;
+    CharacterType character = CharacterType::MARIO;
 };

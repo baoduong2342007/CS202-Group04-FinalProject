@@ -434,113 +434,174 @@ void Level::updateCheepCheepGenerators(float dt) {
     }
 }
 
-void Level::update(float dt) {
-    if (m_flagSequenceActive && m_mario) {
-        switch (m_flagPhase) {
-        case FlagPhase::SLIDING:
-        case FlagPhase::WAITING_FLAG_DROP: {
-            m_mario->setMoveIntent(0.0f);
-            m_mario->setRunIntent(false);
+void Level::updateFlagSequence(float dt) {
+    if (!m_flagSequenceActive || !m_mario) {
+        return;
+    }
 
-            if (m_flagPhase == FlagPhase::SLIDING) {
-                // Scripted descent: Mario slides down the pole while the flag
-                // follows his displacement exactly.
-                m_mario->updateFlagpoleSlide(dt);
-                const float marioDisplacement =
-                    m_mario->getPosition().y - m_flagSlideStartMarioY;
-                m_tileMap.setFlagDropDistance(
-                    std::max(0.0f,
-                             m_flagSlideStartDropDistance + marioDisplacement));
-            } else {
-                // Mario already reached the pole base but the flag still needs
-                // to descend to its validated maximum. Hold Mario still and
-                // finish the flag drop independently (no rough time estimate).
-                if (m_mario->getBody()) {
-                    m_mario->getBody()->SetLinearVelocity(b2Vec2(0.f, 0.f));
-                }
-                m_tileMap.setFlagDropDistance(
-                    m_tileMap.getFlagDropDistance() +
-                    std::min(Mario::FLAGPOLE_SLIDE_SPEED * dt,
-                             m_tileMap.getFlagMaxDropDistance() -
-                                 m_tileMap.getFlagDropDistance()));
+    switch (m_flagPhase) {
+    case FlagPhase::SLIDING:
+    case FlagPhase::WAITING_FLAG_DROP: {
+        m_mario->setMoveIntent(0.0f);
+        m_mario->setRunIntent(false);
+
+        if (m_flagPhase == FlagPhase::SLIDING) {
+            // Scripted descent: Mario slides down the pole while the flag
+            // follows his displacement exactly.
+            m_mario->updateFlagpoleSlide(dt);
+            const float marioDisplacement =
+                m_mario->getPosition().y - m_flagSlideStartMarioY;
+            m_tileMap.setFlagDropDistance(
+                std::max(0.0f,
+                         m_flagSlideStartDropDistance + marioDisplacement));
+        } else {
+            // Mario already reached the pole base but the flag still needs
+            // to descend to its validated maximum. Hold Mario still and
+            // finish the flag drop independently (no rough time estimate).
+            if (m_mario->getBody()) {
+                m_mario->getBody()->SetLinearVelocity(b2Vec2(0.f, 0.f));
             }
+            m_tileMap.setFlagDropDistance(
+                m_tileMap.getFlagDropDistance() +
+                std::min(Mario::FLAGPOLE_SLIDE_SPEED * dt,
+                         m_tileMap.getFlagMaxDropDistance() -
+                             m_tileMap.getFlagDropDistance()));
+        }
 
-            if (m_mario->isFlagpoleSlideComplete() &&
-                m_tileMap.isFlagFullyDropped()) {
-                // Once the flag reaches the bottom, Mario must leave the pole
-                // toward the castle.  If he is still on the pole's left side,
-                // first move him around to the right side of the pole.  This
-                // is a real short transition, rather than only changing the
-                // sprite direction, so the two starting sides behave visibly
-                // differently.
-                const float marioCenterX =
-                    m_mario->getPosition().x + m_mario->getSize().x / 2.0f;
-                if (marioCenterX < m_flagPoleCenterX) {
-                    m_flagTurnTargetX =
-                        m_flagPoleCenterX - m_mario->getSize().x / 2.0f + 14.0f;
-                    m_mario->setFlagpoleSliding(false);
-                    m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
-                    m_mario->setMoveIntent(1.0f);
-                    m_flagPhase = FlagPhase::TURNING_RIGHT;
-                    break;
-                }
-
-                // The original game gives Mario a short pause at the bottom,
-                // then takes control and walks him right into the castle.
+        if (m_mario->isFlagpoleSlideComplete() &&
+            m_tileMap.isFlagFullyDropped()) {
+            // Once the flag reaches the bottom, Mario must leave the pole
+            // toward the castle. If he is still on the pole's left side,
+            // first move him around to the right side of the pole.
+            const float marioCenterX =
+                m_mario->getPosition().x + m_mario->getSize().x / 2.0f;
+            if (marioCenterX < m_flagPoleCenterX) {
+                m_flagTurnTargetX =
+                    m_flagPoleCenterX - m_mario->getSize().x / 2.0f + 14.0f;
                 m_mario->setFlagpoleSliding(false);
                 m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
                 m_mario->setMoveIntent(1.0f);
-                m_mario->setRunIntent(false);
-                m_flagWalkActive = true;
-                m_flagPhase = FlagPhase::WALKING;
-            } else if (m_mario->isFlagpoleSlideComplete() &&
-                       !m_tileMap.isFlagFullyDropped()) {
-                m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
+                m_flagPhase = FlagPhase::TURNING_RIGHT;
+                break;
             }
-            break;
-        }
-        case FlagPhase::TURNING_RIGHT: {
+
+            // The original game gives Mario a short pause at the bottom,
+            // then takes control and walks him right into the castle.
+            m_mario->setFlagpoleSliding(false);
+            m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
             m_mario->setMoveIntent(1.0f);
             m_mario->setRunIntent(false);
-
-            if (m_mario->getPosition().x >= m_flagTurnTargetX) {
-                m_mario->setPosition({m_flagTurnTargetX,
-                                      m_mario->getPosition().y});
-                m_mario->stopMoving();
-                m_mario->setVelocity({0.0f, 0.0f});
-                m_mario->setMoveIntent(1.0f);
-                m_flagWalkActive = true;
-                m_flagPhase = FlagPhase::WALKING;
-            }
-            break;
+            m_flagWalkActive = true;
+            m_flagPhase = FlagPhase::WALKING;
+        } else if (m_mario->isFlagpoleSlideComplete() &&
+                   !m_tileMap.isFlagFullyDropped()) {
+            m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
         }
-        case FlagPhase::WALKING: {
+        break;
+    }
+    case FlagPhase::TURNING_RIGHT: {
+        m_mario->setMoveIntent(1.0f);
+        m_mario->setRunIntent(false);
+
+        if (m_mario->getPosition().x >= m_flagTurnTargetX) {
+            m_mario->setPosition({m_flagTurnTargetX,
+                                  m_mario->getPosition().y});
+            m_mario->stopMoving();
+            m_mario->setVelocity({0.0f, 0.0f});
             m_mario->setMoveIntent(1.0f);
-            m_mario->setRunIntent(false);
-
-            // The walk is driven by Mario's actual physics position.  A timer
-            // based on targetDistance / walkSpeed finishes too early because
-            // Mario accelerates from rest; snapping here would skip the last
-            // part of the walk into the castle.
-            if (m_mario->getPosition().x >= m_flagWalkTargetX) {
-                const sf::Vector2f stopPosition(m_flagWalkTargetX,
-                                                m_mario->getPosition().y);
-                m_mario->setPosition(stopPosition);
-                m_mario->stopMoving();
-                m_mario->setVelocity({0.0f, 0.0f});
-                m_mario->setAutomaticWalkSpeed(0.0f);
-                m_flagSequenceActive = false;
-                m_flagWalkActive = false;
-                m_flagPhase = FlagPhase::NONE;
-                m_levelCompleted = true;
-                EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
-            }
-            break;
+            m_flagWalkActive = true;
+            m_flagPhase = FlagPhase::WALKING;
         }
-        case FlagPhase::NONE:
-            break;
+        break;
+    }
+    case FlagPhase::WALKING: {
+        m_mario->setMoveIntent(1.0f);
+        m_mario->setRunIntent(false);
+
+        // The walk is driven by Mario's actual physics position.
+        if (m_mario->getPosition().x >= m_flagWalkTargetX) {
+            const sf::Vector2f stopPosition(m_flagWalkTargetX,
+                                            m_mario->getPosition().y);
+            m_mario->setPosition(stopPosition);
+            m_mario->stopMoving();
+            m_mario->setVelocity({0.0f, 0.0f});
+            m_mario->setAutomaticWalkSpeed(0.0f);
+            m_flagSequenceActive = false;
+            m_flagWalkActive = false;
+            m_flagPhase = FlagPhase::NONE;
+            m_levelCompleted = true;
+            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        }
+        break;
+    }
+    case FlagPhase::NONE:
+        break;
+    }
+}
+
+void Level::updateEntities(float dt) {
+    const sf::View& cameraView = m_camera.getView();
+
+    // Update all entities (enemies, items)
+    for (auto& entity : m_entities) {
+        if (!entity) {
+            continue;
+        }
+
+        if (!entity->isEnemy()) {
+            entity->update(dt);
+            continue;
+        }
+
+        Enemy* enemy = static_cast<Enemy*>(entity.get());
+
+        if (!enemy->isActivated()) {
+            if (!shouldActivateEnemy(*enemy, cameraView)) {
+                continue;
+            }
+
+            enemy->activate();
+        }
+
+        if (enemy->isPiranhaPlant() && m_mario) {
+            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
+        }
+
+        enemy->update(dt);
+    }
+
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    for (auto& entity : m_entities) {
+        if (!entity || entity->shouldRemove() || entity->isPendingDestroy()) {
+            continue;
+        }
+
+        if (isEntityOutsideLevelBounds(*entity, levelWidth, levelHeight)) {
+            entity->markForRemoval();
         }
     }
+}
+
+void Level::updateExplosions() {
+    std::vector<sf::Vector2f> explosionPositions;
+    for (auto& entity : m_entities) {
+        if (entity && entity->isFireBall()) {
+            auto* fb = static_cast<FireBall*>(entity.get());
+            if (fb->shouldSpawnExplosion() && (fb->shouldRemove() || fb->isPendingDestroy() || !fb->isActive())) {
+                explosionPositions.push_back(fb->getPosition());
+                fb->clearExplosionFlag();
+            }
+        }
+    }
+    for (const auto& pos : explosionPositions) {
+        spawnFireballExplosion(pos);
+    }
+}
+
+void Level::update(float dt) {
+    updateFlagSequence(dt);
 
     if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
         updatePipeWarp(dt);
@@ -585,84 +646,20 @@ void Level::update(float dt) {
     m_tileMap.update(dt);
 
     // Process queued tile hits (bumping Question blocks & shattering Brick blocks).
-    // Mario owns the capability rule so Star power applies to every body tier.
     const bool canBreakBlocks = m_mario && m_mario->canBreakBricks();
     m_tileMap.processPendingHits(m_entities, m_textureManager,
                                  canBreakBlocks, m_mario.get());
 
-    // Update Mario (the flag follows his displacement inside the flag sequence
-    // handler above, driven by actual slide state rather than a timer).
     if (m_mario) {
         m_mario->update(dt);
     }
 
-    // Update dynamic leaping Cheep Cheep bridge generators
     updateCheepCheepGenerators(dt);
+    updateEntities(dt);
 
-    // Update all entities (enemies, items)
-    for (auto& entity : m_entities) {
-        if (!entity) {
-            continue;
-        }
-
-        if (!entity->isEnemy()) {
-            entity->update(dt);
-            continue;
-        }
-
-        Enemy* enemy = static_cast<Enemy*>(entity.get());
-
-        const sf::View& cameraView = m_camera.getView();
-
-        if (!enemy->isActivated()) {
-            if (!shouldActivateEnemy(*enemy, cameraView)) {
-                continue;
-            }
-
-            enemy->activate();
-        }
-
-        if (enemy->isPiranhaPlant() && m_mario) {
-            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
-        }
-
-        enemy->update(dt);
-    }
-
-    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-
-    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
-
-    for (auto& entity : m_entities) {
-        if (!entity || entity->shouldRemove() || entity->isPendingDestroy()) {
-            continue;
-        }
-
-        if (isEntityOutsideLevelBounds(*entity, levelWidth, levelHeight)) {
-            entity->markForRemoval();
-        }
-    }
-
-    // Check item-Mario collisions
     checkItemCollisions();
     checkFinishFlag();
-
-    // Spawn explosion particle for any deactivated fireball requesting explosion
-    std::vector<sf::Vector2f> explosionPositions;
-    for (auto& entity : m_entities) {
-        if (entity && entity->isFireBall()) {
-            auto* fb = static_cast<FireBall*>(entity.get());
-            if (fb->shouldSpawnExplosion() && (fb->shouldRemove() || fb->isPendingDestroy() || !fb->isActive())) {
-                explosionPositions.push_back(fb->getPosition());
-                fb->clearExplosionFlag();
-            }
-        }
-    }
-    for (const auto& pos : explosionPositions) {
-        spawnFireballExplosion(pos);
-    }
-
-    // Remove dead entities
+    updateExplosions();
     removeDeadEntities();
 
     // Update camera to follow Mario's center
@@ -775,10 +772,12 @@ void Level::checkItemCollisions() {
 
         Item* item = static_cast<Item*>(entity.get());
         if (item->isCollected()) {
-            if (const auto* coin = dynamic_cast<const Coin*>(item);
-                coin && coin->getCoinType() == CoinType::QUESTION_POPUP &&
-                !item->shouldRemove()) {
-                continue;
+            if (item->isCoin()) {
+                const auto* coin = static_cast<const Coin*>(item);
+                if (coin->getCoinType() == CoinType::QUESTION_POPUP &&
+                    !item->shouldRemove()) {
+                    continue;
+                }
             }
             if (!item->shouldRemove()) {
                 item->markForRemoval();

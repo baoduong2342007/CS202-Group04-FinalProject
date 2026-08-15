@@ -23,7 +23,7 @@
  */
 class CharacterSelectState final : public IGameState {
 public:
-    CharacterSelectState() = default;
+    explicit CharacterSelectState(int selectedLevel = 1);
     ~CharacterSelectState() override = default;
 
     void onEnter() override;
@@ -34,6 +34,11 @@ public:
     void render(sf::RenderTarget& target) override;
 
 private:
+    void initBackdropPanel();
+    void initCards();
+    void initAvatars();
+    void initTextLabels();
+    void initMenu();
     void queuePlay(CharacterType characterType);
 
     sf::Font m_font;
@@ -63,6 +68,7 @@ private:
 
     std::unique_ptr<UIMenuWidget> m_menu;
 
+    int m_selectedLevel = 1;
     float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

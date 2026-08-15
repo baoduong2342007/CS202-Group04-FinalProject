@@ -20,27 +20,39 @@
 
 namespace {
 
-bool testCatalogHasExactlyThreeReleaseLevels() {
-    std::cout << "[RUNNING] testCatalogHasExactlyThreeReleaseLevels..." << std::endl;
+bool testCatalogHasExactlyFourReleaseLevels() {
+    std::cout << "[RUNNING] testCatalogHasExactlyFourReleaseLevels..." << std::endl;
 
     const auto& catalog = LevelCatalog::getAll();
-    assert(catalog.size() == 3);
+    assert(catalog.size() == 4);
     assert(catalog[0].number == 1);
     assert(catalog[1].number == 2);
     assert(catalog[2].number == 3);
+    assert(catalog[3].number == 4);
 
-    // World labels per locked Sprint 6 plan: 1-1, 1-2, 1-3.
+    // World labels per locked Sprint 7 plan: 1-1, 1-2, 1-3, 1-4.
     assert(catalog[0].worldLabel == "1-1");
+    assert(catalog[0].theme == LevelTheme::OVERWORLD);
+    assert(catalog[0].music == MusicId::OVERWORLD);
+
     assert(catalog[1].worldLabel == "1-2");
+    assert(catalog[1].theme == LevelTheme::UNDERGROUND);
+    assert(catalog[1].music == MusicId::UNDERGROUND);
+
     assert(catalog[2].worldLabel == "1-3");
-    assert(catalog[2].theme == LevelTheme::CASTLE);
-    assert(catalog[2].music == MusicId::CASTLE);
-    assert(LevelCatalog::find(4) == nullptr);
-    // All three release levels let the camera follow Mario vertically.
+    assert(catalog[2].theme == LevelTheme::UNDERWATER);
+    assert(catalog[2].music == MusicId::UNDERWATER);
+
+    assert(catalog[3].worldLabel == "1-4");
+    assert(catalog[3].theme == LevelTheme::CASTLE);
+    assert(catalog[3].music == MusicId::CASTLE);
+
+    assert(LevelCatalog::find(5) == nullptr);
+    // All four release levels let the camera follow Mario vertically.
     for (const LevelDefinition& def : catalog) {
         assert(def.cameraMode == CameraVerticalMode::DEAD_ZONE);
     }
-    std::cout << "[PASSED] testCatalogHasExactlyThreeReleaseLevels" << std::endl;
+    std::cout << "[PASSED] testCatalogHasExactlyFourReleaseLevels" << std::endl;
     return true;
 }
 
@@ -62,11 +74,12 @@ bool testCatalogDoesNotExposeLevelZero() {
 bool testFinalLevelBoundary() {
     std::cout << "[RUNNING] testFinalLevelBoundary..." << std::endl;
 
-    // Completing Level 3 increments to 4, which is the Win boundary.
+    // Completing Level 4 increments to 5, which is the Win boundary.
     assert(!LevelCatalog::isPastFinalLevel(1));
     assert(!LevelCatalog::isPastFinalLevel(2));
     assert(!LevelCatalog::isPastFinalLevel(3));
-    assert(LevelCatalog::isPastFinalLevel(4));
+    assert(!LevelCatalog::isPastFinalLevel(4));
+    assert(LevelCatalog::isPastFinalLevel(5));
 
     std::cout << "[PASSED] testFinalLevelBoundary" << std::endl;
     return true;
@@ -136,7 +149,7 @@ bool testLevelSpawnHonorsCharacterIdentity() {
 } // namespace
 
 int main() {
-    const bool ok = testCatalogHasExactlyThreeReleaseLevels()
+    const bool ok = testCatalogHasExactlyFourReleaseLevels()
                  && testCatalogDoesNotExposeLevelZero()
                  && testFinalLevelBoundary()
                  && testGameProgressDefaultsAndMembership()

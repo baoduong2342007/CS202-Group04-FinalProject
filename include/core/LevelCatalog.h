@@ -1,8 +1,8 @@
 /**
  * @file LevelCatalog.h
  * @author TV1 (Dương)
- * @brief Centralized level catalog — Sprint 6 (S6-TV1-05)
- * @note Sprint 6 locked contract — do not change without TV1 approval
+ * @brief Centralized level catalog — Sprint 7 (S7-TV1-02)
+ * @note Sprint 7 locked contract — Level 1 -> 2 -> 3 -> 4 -> Win
  */
 
 #pragma once
@@ -33,7 +33,7 @@ enum class CameraVerticalMode {
     DEAD_ZONE
 };
 
-// Sprint 6 locked contract (S6-TV1-03)
+// Sprint 7 locked contract (S7-TV1-02)
 struct LevelDefinition {
     int number;                 // one-based release level number
     std::string filePath;       // e.g. "levels/level1.txt"
@@ -44,14 +44,16 @@ struct LevelDefinition {
 };
 
 namespace LevelCatalog {
-    /// Returns the locked Sprint 6 release graph: Level 1 -> 2 -> 3 -> Win.
+    /// Returns the locked Sprint 7 release graph: Level 1 -> 2 -> 3 -> 4 -> Win.
     inline const std::vector<LevelDefinition>& getAll() {
         static const std::vector<LevelDefinition> catalog = {
             {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,
                 MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
             {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND,
                 MusicId::UNDERGROUND, CameraVerticalMode::DEAD_ZONE},
-            {3, "levels/level3.txt", "1-3", LevelTheme::CASTLE,
+            {3, "levels/level3.txt", "1-3", LevelTheme::UNDERWATER,
+                MusicId::UNDERWATER, CameraVerticalMode::DEAD_ZONE},
+            {4, "levels/level4.txt", "1-4", LevelTheme::CASTLE,
                 MusicId::CASTLE, CameraVerticalMode::DEAD_ZONE},
         };
         return catalog;

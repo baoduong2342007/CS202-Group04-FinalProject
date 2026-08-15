@@ -7,8 +7,10 @@
 
 #include "core/DisplayConfig.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "core/SpriteFrames.h"
 #include "patterns/InputState.h"
+#include "states/LevelSelectState.h"
 #include "states/PlayState.h"
 #include "ui/UILayoutHelper.h"
 
@@ -57,27 +59,18 @@ const sf::Color AVATAR_BOX_OUTLINE(65, 95, 155);
 const sf::Color AVATAR_BOX_OUTLINE_ACTIVE(255, 215, 0);
 } // namespace
 
-void CharacterSelectState::onEnter() {
-    m_transitioning = false;
-    m_animTimer = 0.f;
-    m_menu.reset();
-    m_titleText.reset();
-    m_subtitleText.reset();
-    m_marioDetailsText.reset();
-    m_luigiDetailsText.reset();
-    m_hintText.reset();
+CharacterSelectState::CharacterSelectState(int selectedLevel)
+    : m_selectedLevel(selectedLevel) {}
 
-    m_marioLeftSprite.reset();
-    m_marioRightSprite.reset();
-    m_luigiLeftSprite.reset();
-    m_luigiRightSprite.reset();
-
+void CharacterSelectState::initBackdropPanel() {
     m_panel.setSize({540.f, 324.f});
     m_panel.setPosition({50.f, 18.f});
     m_panel.setFillColor(PANEL_COLOR);
     m_panel.setOutlineColor(GOLD_COLOR);
     m_panel.setOutlineThickness(3.f);
+}
 
+void CharacterSelectState::initCards() {
     m_marioCard.setSize({CARD_WIDTH, CARD_HEIGHT});
     m_marioCard.setPosition({CARD_X, 112.f});
     m_marioCard.setFillColor(CARD_COLOR);
@@ -113,7 +106,9 @@ void CharacterSelectState::onEnter() {
     m_luigiRightBox.setFillColor(AVATAR_BOX_BG);
     m_luigiRightBox.setOutlineColor(AVATAR_BOX_OUTLINE);
     m_luigiRightBox.setOutlineThickness(1.f);
+}
 
+void CharacterSelectState::initAvatars() {
     m_characterTextureLoaded = false;
     try {
         m_characterTexture.emplace(CHARACTER_TEXTURE_PATH);
@@ -160,8 +155,9 @@ void CharacterSelectState::onEnter() {
             LUIGI_BOX_Y + (AVATAR_BOX_SIZE - 16.f * SMALL_HERO_SCALE) / 2.f
         });
     }
+}
 
-    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+void CharacterSelectState::initTextLabels() {
     if (!m_fontLoaded) {
         return;
     }
@@ -198,6 +194,12 @@ void CharacterSelectState::onEnter() {
     m_hintText->setFillColor(BODY_COLOR);
     UILayoutHelper::setPosition(*m_hintText, UIAnchor::TopCenter,
                                 {0.f, HINT_Y});
+}
+
+void CharacterSelectState::initMenu() {
+    if (!m_fontLoaded) {
+        return;
+    }
 
     m_menu = std::make_unique<UIMenuWidget>(m_font);
     m_menu->addItem("MARIO - FASTER RUNNER", [this]() {
@@ -211,6 +213,30 @@ void CharacterSelectState::onEnter() {
                         UIAnchor::Center);
 }
 
+void CharacterSelectState::onEnter() {
+    m_transitioning = false;
+    m_animTimer = 0.f;
+    m_menu.reset();
+    m_titleText.reset();
+    m_subtitleText.reset();
+    m_marioDetailsText.reset();
+    m_luigiDetailsText.reset();
+    m_hintText.reset();
+
+    m_marioLeftSprite.reset();
+    m_marioRightSprite.reset();
+    m_luigiLeftSprite.reset();
+    m_luigiRightSprite.reset();
+
+    initBackdropPanel();
+    initCards();
+    initAvatars();
+
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    initTextLabels();
+    initMenu();
+}
+
 void CharacterSelectState::onExit() {}
 
 void CharacterSelectState::queuePlay(CharacterType characterType) {
@@ -220,7 +246,7 @@ void CharacterSelectState::queuePlay(CharacterType characterType) {
 
     m_transitioning = true;
     GameManager::getInstance().changeState(
-        std::make_unique<PlayState>(characterType));
+        std::make_unique<PlayState>(m_selectedLevel, characterType));
 }
 
 void CharacterSelectState::processEvents(const sf::Event& event) {
@@ -230,8 +256,17 @@ void CharacterSelectState::processEvents(const sf::Event& event) {
 }
 
 void CharacterSelectState::processInput(const InputState& inputState) {
-    if (!m_transitioning && m_menu) {
-        m_menu->processInput(inputState);
+    if (!m_transitioning) {
+        if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
+            m_transitioning = true;
+            SoundManager::getInstance().playSound("powerdown");
+            GameManager::getInstance().changeState(
+                std::make_unique<LevelSelectState>());
+            return;
+        }
+        if (m_menu) {
+            m_menu->processInput(inputState);
+        }
     }
 }
 

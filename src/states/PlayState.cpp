@@ -37,18 +37,14 @@ namespace {
     constexpr float DEATH_ANIMATION_FALLBACK_TIMEOUT = 1.0f;
 }
 
-PlayState::PlayState(CharacterType characterType) {
-    // S6-TV1-06/07: New Game always starts at Level 1 (one-based), never Level 0.
-    m_progress.currentLevel = 1;
+PlayState::PlayState(int startLevel, CharacterType characterType) {
+    m_progress.currentLevel = std::clamp(startLevel, 1, std::max(1, LevelCatalog::count()));
     m_progress.character = characterType;
     m_fadeOverlay.setFillColor(FADE_START_COLOR);
-
-    // S6-TV1-11: the level is NOT loaded here (in the constructor). Loading is
-    // performed in onEnter() so a load failure can be propagated as a Menu
-    // transition in the correct FIFO order — if we queued the Menu transition here
-    // it would be processed before the caller's queued PlayState and the final state
-    // would be an empty PlayState.
 }
+
+PlayState::PlayState(CharacterType characterType)
+    : PlayState(1, characterType) {}
 
 PlayState::~PlayState() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);

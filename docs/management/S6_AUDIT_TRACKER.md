@@ -100,5 +100,6 @@ BUG-042 automated evidence: `gate0_contract_tests`, `mario_physics_tests`, and `
 | 2026-08-11 | `3047252` | PASS | PASS | 14/14 | 0 project warnings | Invalidated by remediation |
 | 2026-08-12 | `3047252` + remediation worktree | PASS, clean `build-s6-rc-debug` | PASS, clean `build-s6-rc-release` | PASS, 17/17 in 9.36 s from clean `build-s6-rc-tests` | 0 project warnings; Box2D configure deprecation only | NOT RUN |
 | 2026-08-12 | remediation worktree + BUG-042 body-tier transform fix | PASS, `build-s6-rc-debug` | PASS, `build-s6-rc-release` | PASS, 17/17 in 12.17 s from `build-s6-rc-tests` | 0 project warnings; Box2D configure deprecation only | Level 1 item-route replay NOT RUN |
+| 2026-08-15 | Sprint 7 TV1 Contract Promotion | PASS, `build` | PASS, clean Release | PASS, 20/20 in 5.03 s | 0 project warnings | Manual 4-level playthrough pending Day 5 final RC |
 
-The second Debug/Release/Tests build was a no-op for runtime assets. The final row must still be amended with a commit hash and same-commit manual evidence before Sprint 6 is marked closed.
+The final row must still be amended with a commit hash and same-commit manual evidence before Sprint 7 is marked closed.

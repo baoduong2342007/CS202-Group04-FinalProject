@@ -96,6 +96,9 @@ private:
     void spawnCheepCheepRoutesFromTileMap();
     void spawnCheepCheepsFromConfig();
     void updateCheepCheepGenerators(float dt);
+    void updateFlagSequence(float dt);
+    void updateEntities(float dt);
+    void updateExplosions();
     void removeDeadEntities();
     void checkItemCollisions();
     void checkFinishFlag();

@@ -20,6 +20,7 @@
 class PlayState : public IGameState, public IObserver {
 public:
     // 1. Constructor / Destructor
+    explicit PlayState(int startLevel, CharacterType characterType = CharacterType::MARIO);
     explicit PlayState(CharacterType characterType = CharacterType::MARIO);
     ~PlayState() override;
 

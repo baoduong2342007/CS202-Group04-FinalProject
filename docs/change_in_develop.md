@@ -22,6 +22,8 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-14 | Pipe Warp Smooth Entry Animation & Transition Delay | CTest 20/20 PASS | Added smooth pipe descent/entry animation (0.5s slide at 48 px/s behind foreground tiles), authentic pipe travel audio cue (`powerdown`), and deliberate 0.35s warp transition delay before Mario emerges at destination. |
 | 2026-08-14 | Fix Fireball Shooting Poses & Natural Pipe Crouch/Walk Animations | CTest 20/20 PASS | Replaced fireball projectile frames with authentic NES character throw poses (`FireBigMario::ACTION`, `FireSmallMario::WALK3`); added dynamic `crouch` state for Super/Fire forms; enabled live animation advancing (`updateVisuals`) during pipe entry and smooth horizontal alignment during pipe descent. |
 | 2026-08-14 | Pipe Exit / Emerging Animation & Complete Luigi Warp Parity | CTest 20/20 PASS | Added smooth pipe emergence animation (`EXITING_VERTICAL`, rising UP out of destination pipe with `powerdown` audio cue); verified 100% full parity for Luigi (including Luigi crouch/walk/idle and sprite frames during pipe entrance/exit). |
+| 2026-08-15 | Sprint 7 TV1 4-Level Release Contract (`S7-TV1-01`..`04`) | CTest 20/20 PASS | Formalized 4-level release graph: `1-1 Overworld` -> `1-2 Underground` -> `1-3 Underwater` -> `1-4 Castle` -> `Win`. Updated `LevelCatalog.h`, `level4.txt`, `LevelCatalogTests.cpp`, `PlayStateTests.cpp`, `Gate0ContractTests.cpp`, and `TV5IntegrationTests.cpp`. |
+| 2026-08-15 | Stage Select UI & Flow Integration (`LevelSelectState`) | CTest 20/20 PASS | Created `LevelSelectState` presenting 4 themed cards (Overworld, Underground, Underwater, Castle) with keyboard and mouse interaction. Wired Title Menu `START GAME` -> `LevelSelectState` -> `CharacterSelectState(selectedLevel)` -> `PlayState(selectedLevel, characterType)`. |
 
 ## 2026-08-12 remediation scope
 
@@ -666,3 +668,55 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Logic Changes:**
   1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
   2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
+
+### 43. Sprint 7 TV1 4-Level Release Contract & Test Synchronization (`S7-TV1-01`..`04`)
+- **Date:** 2026-08-15
+- **Author:** TV1 (Dương)
+- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Modified Files:**
+  - `include/core/LevelCatalog.h`
+  - `levels/level4.txt`
+  - `tests/LevelCatalogTests.cpp`
+  - `tests/PlayStateTests.cpp`
+  - `tests/TV5IntegrationTests.cpp`
+  - `tests/Gate0ContractTests.cpp`
+- **Logic Changes:**
+  1. Formalized Sprint 7 4-level release contract in `LevelCatalog.h`: `1 (1-1 Overworld, OVERWORLD)` -> `2 (1-2 Underground, UNDERGROUND)` -> `3 (1-3 Underwater, UNDERWATER)` -> `4 (1-4 Castle, CASTLE)` -> `Win boundary at 5`.
+  2. Synchronized `LevelCatalogTests.cpp` to verify 4 release levels, world labels `1-1` to `1-4`, music IDs, and boundary `isPastFinalLevel(5) == true`.
+  3. Synchronized `PlayStateTests.cpp` progression simulation to test `1 -> 2 -> 3 -> 4 -> Win`.
+  4. Synchronized `TV5IntegrationTests.cpp` audio progression assertions across all 4 levels (`OVERWORLD`, `UNDERGROUND`, `UNDERWATER`, `CASTLE`) to `WIN`.
+  5. Updated `levels/level4.txt` with valid Castle finale layout meeting all block route and validator constraints; updated `Gate0ContractTests.cpp` release level loading to include `level4.txt`.
+  6. Verified full 20/20 test suites pass with 0 failures under CTest.
+
+### 44. Level / Stage Select UI & Navigation Integration (`LevelSelectState`)
+- **Date:** 2026-08-15
+- **Author:** TV1 (Dương)
+- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Modified Files:**
+  - `include/states/LevelSelectState.h`
+  - `src/states/LevelSelectState.cpp`
+  - `include/states/CharacterSelectState.h`
+  - `src/states/CharacterSelectState.cpp`
+### 45. Stage Select UI Polish: Clean Snapshot Previews & Streamlined Layout
+- **Date:** 2026-08-15
+- **Author:** TV1 (Dương)
+- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Modified Files:**
+  - `include/states/LevelSelectState.h`
+  - `src/states/LevelSelectState.cpp`
+  - `tests/DisplayCameraUITests.cpp`
+  - `assets/textures/ui/stage_1.png`
+  - `assets/textures/ui/stage_2.png`
+  - `assets/textures/ui/stage_3.png`
+  - `assets/textures/ui/stage_4.png`
+- **Logic Changes:**
+  1. Streamlined `LevelSelectState` layout according to "Less, but better" design aesthetics, removing redundant metadata lines (`DIFF`, `STYLE`, `ENEMY`, `STATUS`).
+  2. Downloaded and integrated authentic retro NES gameplay screenshots for all 4 release stages (1-1 Overworld, 1-2 Underground, 1-3 Underwater, 1-4 Castle).
+  3. Added smart top-HUD cropping (`topCrop = 32px`) to eliminate squished score/time numbers, presenting pristine in-game scenery.
+  4. Aligned screen header (`SELECT WORLD & STAGE`, `Choose a stage to begin your adventure`) and footer navigation hints (`[A / D] SELECT STAGE    [ENTER / CLICK] START GAME    [ESC] BACK`) with balanced margins and zero clipping.
+  5. Added dynamic action tags (`> PLAY <` in gold on active card, `STAGE N` on inactive cards) with animated golden pulsing borders.
+  6. Verified via offscreen rendered snapshot inspection and 20/20 passing CTest suites.
+
+
+
+

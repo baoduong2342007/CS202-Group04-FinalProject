@@ -23,7 +23,7 @@
  */
 class CharacterSelectState final : public IGameState {
 public:
-    CharacterSelectState() = default;
+    explicit CharacterSelectState(int selectedLevel = 1);
     ~CharacterSelectState() override = default;
 
     void onEnter() override;
@@ -63,6 +63,7 @@ private:
 
     std::unique_ptr<UIMenuWidget> m_menu;
 
+    int m_selectedLevel = 1;
     float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

@@ -8,8 +8,16 @@
 #include <cmath>
 
 #include "core/DisplayConfig.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_udw.h"
+#include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_shared.h"
+#include "level/TileFrames.h"
 #include "level/Camera.h"
+#include "level/TileMap.h"
 #include "ui/UIMenuWidget.h"
+#include "states/LevelSelectState.h"
 
 namespace {
 bool close(float left, float right) {
@@ -164,6 +172,18 @@ void testMenuWidgetLogicalMouseClick() {
     assert(first == 0);
     assert(second == 1);
 }
+
+void testLevelSelectStateRenderSnapshot() {
+    LevelSelectState state;
+    state.onEnter();
+
+    sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
+    state.render(rt);
+    rt.display();
+
+    const bool saved = rt.getTexture().copyToImage().saveToFile("level_select_preview.png");
+    assert(saved);
+}
 } // namespace
 
 int main() {
@@ -171,5 +191,6 @@ int main() {
     testCameraPoliciesAndFourEdgeClamp();
     testCameraFollowsMarioAndReturnsToOriginalView();
     testMenuWidgetLogicalMouseClick();
+    testLevelSelectStateRenderSnapshot();
     return 0;
 }

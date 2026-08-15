@@ -6,6 +6,7 @@
  */
 
 #include "states/MenuState.h"
+#include "states/LevelSelectState.h"
 #include "states/CharacterSelectState.h"
 #include "core/GameManager.h"
 #include "patterns/InputState.h"
@@ -154,7 +155,7 @@ void MenuState::onEnter() {
             if (m_transitioning) return;
             m_transitioning = true;
             GameManager::getInstance().changeState(
-                std::make_unique<CharacterSelectState>());
+                std::make_unique<LevelSelectState>());
         });
         m_menu->setPosition(
             UILayoutHelper::getAnchorPosition(UIAnchor::BottomCenter) +

@@ -192,11 +192,12 @@ void testMushroomPromotesAndNeverDowngrades() {
 void testReleaseLevelsAreLoadable() {
     std::cout << "[RUNNING] testReleaseLevelsAreLoadable..." << std::endl;
 
-    // S6-TV1-14 dependency evidence: the three release levels must pass the
+    // S7-TV1-02 dependency evidence: all four release levels must pass the
     // validator and load their tileset before PlayState can ever reach Win.
     assert(loadReleaseLevel("levels/level1.txt"));
     assert(loadReleaseLevel("levels/level2.txt"));
     assert(loadReleaseLevel("levels/level3.txt"));
+    assert(loadReleaseLevel("levels/level4.txt"));
 
     std::cout << "[PASSED] testReleaseLevelsAreLoadable" << std::endl;
 }
@@ -208,6 +209,7 @@ void testReleaseLevelMarkers() {
         "levels/level1.txt",
         "levels/level2.txt",
         "levels/level3.txt",
+        "levels/level4.txt",
     };
 
     for (const std::string& filePath : levelFiles) {

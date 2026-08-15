@@ -7,8 +7,10 @@
 
 #include "core/DisplayConfig.h"
 #include "core/GameManager.h"
+#include "core/SoundManager.h"
 #include "core/SpriteFrames.h"
 #include "patterns/InputState.h"
+#include "states/LevelSelectState.h"
 #include "states/PlayState.h"
 #include "ui/UILayoutHelper.h"
 
@@ -56,6 +58,9 @@ const sf::Color AVATAR_BOX_BG(14, 20, 44);
 const sf::Color AVATAR_BOX_OUTLINE(65, 95, 155);
 const sf::Color AVATAR_BOX_OUTLINE_ACTIVE(255, 215, 0);
 } // namespace
+
+CharacterSelectState::CharacterSelectState(int selectedLevel)
+    : m_selectedLevel(selectedLevel) {}
 
 void CharacterSelectState::onEnter() {
     m_transitioning = false;
@@ -220,7 +225,7 @@ void CharacterSelectState::queuePlay(CharacterType characterType) {
 
     m_transitioning = true;
     GameManager::getInstance().changeState(
-        std::make_unique<PlayState>(characterType));
+        std::make_unique<PlayState>(m_selectedLevel, characterType));
 }
 
 void CharacterSelectState::processEvents(const sf::Event& event) {
@@ -230,8 +235,17 @@ void CharacterSelectState::processEvents(const sf::Event& event) {
 }
 
 void CharacterSelectState::processInput(const InputState& inputState) {
-    if (!m_transitioning && m_menu) {
-        m_menu->processInput(inputState);
+    if (!m_transitioning) {
+        if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
+            m_transitioning = true;
+            SoundManager::getInstance().playSound("powerdown");
+            GameManager::getInstance().changeState(
+                std::make_unique<LevelSelectState>());
+            return;
+        }
+        if (m_menu) {
+            m_menu->processInput(inputState);
+        }
     }
 }
 

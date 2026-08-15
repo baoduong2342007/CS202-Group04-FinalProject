@@ -25,6 +25,7 @@ bool testCatalogHasExactlyFourReleaseLevels() {
 
     const auto& catalog = LevelCatalog::getAll();
     assert(catalog.size() == 4);
+    assert(LevelCatalog::count() == 4);
     assert(catalog[0].number == 1);
     assert(catalog[1].number == 2);
     assert(catalog[2].number == 3);
@@ -32,21 +33,36 @@ bool testCatalogHasExactlyFourReleaseLevels() {
 
     // World labels per locked Sprint 7 plan: 1-1, 1-2, 1-3, 1-4.
     assert(catalog[0].worldLabel == "1-1");
+    assert(catalog[0].filePath == "levels/level1.txt");
     assert(catalog[0].theme == LevelTheme::OVERWORLD);
     assert(catalog[0].music == MusicId::OVERWORLD);
+    assert(catalog[0].cameraMode == CameraVerticalMode::DEAD_ZONE);
 
     assert(catalog[1].worldLabel == "1-2");
+    assert(catalog[1].filePath == "levels/level2.txt");
     assert(catalog[1].theme == LevelTheme::UNDERGROUND);
     assert(catalog[1].music == MusicId::UNDERGROUND);
+    assert(catalog[1].cameraMode == CameraVerticalMode::DEAD_ZONE);
 
     assert(catalog[2].worldLabel == "1-3");
+    assert(catalog[2].filePath == "levels/level3.txt");
     assert(catalog[2].theme == LevelTheme::UNDERWATER);
     assert(catalog[2].music == MusicId::UNDERWATER);
+    assert(catalog[2].cameraMode == CameraVerticalMode::DEAD_ZONE);
 
     assert(catalog[3].worldLabel == "1-4");
+    assert(catalog[3].filePath == "levels/level4.txt");
     assert(catalog[3].theme == LevelTheme::CASTLE);
     assert(catalog[3].music == MusicId::CASTLE);
+    assert(catalog[3].cameraMode == CameraVerticalMode::DEAD_ZONE);
 
+    // Every configured ID resolves to its corresponding catalog entry.
+    assert(LevelCatalog::find(1) == &catalog[0]);
+    assert(LevelCatalog::find(2) == &catalog[1]);
+    assert(LevelCatalog::find(3) == &catalog[2]);
+    assert(LevelCatalog::find(4) == &catalog[3]);
+    // IDs outside the one-based release range are not exposed.
+    assert(LevelCatalog::find(0) == nullptr);
     assert(LevelCatalog::find(5) == nullptr);
     // All four release levels let the camera follow Mario vertically.
     for (const LevelDefinition& def : catalog) {

@@ -14,6 +14,7 @@
 #include "states/MenuState.h"
 #include "ui/UILayoutHelper.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -219,6 +220,19 @@ void LevelSelectState::onEnter() {
     m_cards.clear();
     m_stageTextures.clear();
 
+    // SaveManager is the source of persistent progression.  Keep a bounded
+    // snapshot for this menu so malformed in-memory data cannot make a card
+    // outside the release catalog launchable.
+    const int levelCount = LevelCatalog::count();
+    if (levelCount > 0) {
+        m_highestUnlockedLevel = std::clamp(
+            GameManager::getInstance().getSaveManager().getData().highestUnlockedLevel,
+            1,
+            levelCount);
+    } else {
+        m_highestUnlockedLevel = 0;
+    }
+
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
 
     initStageTextures();
@@ -244,12 +258,23 @@ void LevelSelectState::selectCard(int index) {
 
         if (m_cards[i].actionText) {
             if (active) {
-                m_cards[i].actionText->setString("> PLAY <");
-                m_cards[i].actionText->setFillColor(GOLD_COLOR);
-                m_cards[i].actionText->setStyle(sf::Text::Bold);
+                if (isLevelUnlocked(m_cards[i].levelNumber)) {
+                    m_cards[i].actionText->setString("> PLAY <");
+                    m_cards[i].actionText->setFillColor(GOLD_COLOR);
+                    m_cards[i].actionText->setStyle(sf::Text::Bold);
+                } else {
+                    m_cards[i].actionText->setString("LOCKED");
+                    m_cards[i].actionText->setFillColor(sf::Color(220, 120, 120));
+                    m_cards[i].actionText->setStyle(sf::Text::Bold);
+                }
             } else {
-                m_cards[i].actionText->setString("STAGE " + std::to_string(m_cards[i].levelNumber));
-                m_cards[i].actionText->setFillColor(MUTED_GOLD_COLOR);
+                if (isLevelUnlocked(m_cards[i].levelNumber)) {
+                    m_cards[i].actionText->setString("STAGE " + std::to_string(m_cards[i].levelNumber));
+                    m_cards[i].actionText->setFillColor(MUTED_GOLD_COLOR);
+                } else {
+                    m_cards[i].actionText->setString("LOCKED");
+                    m_cards[i].actionText->setFillColor(sf::Color(180, 100, 100));
+                }
                 m_cards[i].actionText->setStyle(sf::Text::Regular);
             }
             sf::FloatRect actB = m_cards[i].actionText->getLocalBounds();
@@ -262,10 +287,24 @@ void LevelSelectState::selectCard(int index) {
 
 void LevelSelectState::confirmSelection(int levelNumber) {
     if (m_transitioning) return;
+
+    // Selection input can arrive from either keyboard or mouse.  Validate at
+    // this final action boundary as well as in the card presentation so a
+    // locked or out-of-catalog level can never queue CharacterSelect/Play.
+    if (!isLevelUnlocked(levelNumber)) {
+        SoundManager::getInstance().playSound("bump");
+        return;
+    }
+
     m_transitioning = true;
     SoundManager::getInstance().playSound("coin");
     GameManager::getInstance().changeState(
         std::make_unique<CharacterSelectState>(levelNumber));
+}
+
+bool LevelSelectState::isLevelUnlocked(int levelNumber) const {
+    return LevelCatalog::find(levelNumber) != nullptr &&
+           levelNumber >= 1 && levelNumber <= m_highestUnlockedLevel;
 }
 
 void LevelSelectState::processEvents(const sf::Event& event) {

@@ -22,12 +22,19 @@ This is the source of truth for asset paths and classifications. Runtime paths a
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet |
 | `assets/textures/tiles/tileset.png` | 680×356 | `Runtime` | Theme-specific tiles selected by `TileFrames` |
 | `assets/ui/bg_world.png` | 1857×847 | `Runtime` | Overworld-only bitmap background; scaled in the logical world view |
+| `assets/textures/ui/stage_1.png` | 1206 bytes | `Runtime` | Level Select preview for World 1-1 |
+| `assets/textures/ui/stage_2.png` | 978 bytes | `Runtime` | Level Select preview for World 1-2 |
+| `assets/textures/ui/stage_3.png` | 1039 bytes | `Runtime` | Level Select preview for World 1-3 |
+| `assets/textures/ui/stage_4.png` | 1427 bytes | `Runtime` | Level Select preview for World 1-4 |
 | `assets/textures/ui/bg_clouds.png` | 768×1129 | `Future` | No Sprint 6 runtime caller |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld reference |
 | `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | No Sprint 6 runtime caller |
 | `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu and HUD bitmap UI |
 
-Underground and Castle are distinct documented renderer branches with dark-blue and dark-purple clears respectively; they do not reuse `bg_world.png`. Underwater rendering and Level 4 are future/reference paths outside the release catalog.
+Underground, Underwater, and Castle are distinct renderer branches; they do not reuse
+`bg_world.png`. Underwater music and all four Level Select previews are included in the
+S7 runtime package. The S7 package manifest records the corresponding level/config files;
+`levels/level0.txt` remains a test fixture and is excluded.
 
 `.gitkeep` files only preserve intentionally empty directories and are not runtime assets.
 
@@ -66,14 +73,14 @@ SoundManager is the only SFX playback authority. Event and request-counter tests
 |---|---|---|
 | `assets/sounds/music/overworld.flac` | `OVERWORLD` | `Runtime` — Level 1 |
 | `assets/sounds/music/underground.flac` | `UNDERGROUND` | `Runtime` — Level 2 |
-| `assets/sounds/music/castle.flac` | `CASTLE` | `Runtime` — Level 3 |
+| `assets/sounds/music/castle.flac` | `CASTLE` | `Runtime` — Level 4 Castle |
 | `assets/sounds/music/invincible.flac` | `STAR` | `Runtime` — Star override |
 | `assets/sounds/music/death.flac` | `DEATH` | `Runtime` — player death |
 | `assets/sounds/music/gameover.flac` | `GAME_OVER` | `Runtime` — terminal GameOver state |
 | `assets/sounds/music/level_complete.flac` | `WIN` | `Runtime` — final Win state |
 | `assets/sounds/music/castle_complete.flac` | — | `Future` — optional variant |
 | `assets/sounds/music/pipe.flac` | — | `Future` — optional pipe transition |
-| `assets/sounds/music/underwater.flac` | `UNDERWATER` | `Future` — theme is not in the release catalog |
+| `assets/sounds/music/underwater.flac` | `UNDERWATER` | `Runtime` — Level 3 Underwater |
 
 ## Sprite crop contract
 

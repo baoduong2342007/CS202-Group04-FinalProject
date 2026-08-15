@@ -65,6 +65,10 @@ public:
     int getCoinCount() const;
     /// Return the label rendered by the power indicator.
     std::string getPowerLabel() const;
+    /// Return the formatted world label without requiring a renderer.
+    std::string getWorldLabel() const;
+    /// Return the formatted countdown label without requiring a renderer.
+    std::string getTimeLabel() const;
 
     /**
      * @brief Updates the world and level number displayed on the HUD.

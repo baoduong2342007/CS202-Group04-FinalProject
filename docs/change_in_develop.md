@@ -22,9 +22,9 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-14 | Pipe Warp Smooth Entry Animation & Transition Delay | CTest 20/20 PASS | Added smooth pipe descent/entry animation (0.5s slide at 48 px/s behind foreground tiles), authentic pipe travel audio cue (`powerdown`), and deliberate 0.35s warp transition delay before Mario emerges at destination. |
 | 2026-08-14 | Fix Fireball Shooting Poses & Natural Pipe Crouch/Walk Animations | CTest 20/20 PASS | Replaced fireball projectile frames with authentic NES character throw poses (`FireBigMario::ACTION`, `FireSmallMario::WALK3`); added dynamic `crouch` state for Super/Fire forms; enabled live animation advancing (`updateVisuals`) during pipe entry and smooth horizontal alignment during pipe descent. |
 | 2026-08-14 | Pipe Exit / Emerging Animation & Complete Luigi Warp Parity | CTest 20/20 PASS | Added smooth pipe emergence animation (`EXITING_VERTICAL`, rising UP out of destination pipe with `powerdown` audio cue); verified 100% full parity for Luigi (including Luigi crouch/walk/idle and sprite frames during pipe entrance/exit). |
-| 2026-08-15 | Sprint 7 TV1 4-Level Release Contract (`S7-TV1-01`..`04`) | CTest 20/20 PASS | Formalized 4-level release graph: `1-1 Overworld` -> `1-2 Underground` -> `1-3 Underwater` -> `1-4 Castle` -> `Win`. Updated `LevelCatalog.h`, `level4.txt`, `LevelCatalogTests.cpp`, `PlayStateTests.cpp`, `Gate0ContractTests.cpp`, and `TV5IntegrationTests.cpp`. |
-| 2026-08-15 | Stage Select UI & Flow Integration (`LevelSelectState`) | CTest 20/20 PASS | Created `LevelSelectState` presenting 4 themed cards (Overworld, Underground, Underwater, Castle) with keyboard and mouse interaction. Wired Title Menu `START GAME` -> `LevelSelectState` -> `CharacterSelectState(selectedLevel)` -> `PlayState(selectedLevel, characterType)`. |
-| 2026-08-15 | Code Review Remediation for `cc80466` (P0/P1/P2 fixes) | CTest 20/20 PASS | Eliminated hot-loop `dynamic_cast` via virtual `isCoin()`; decomposed `Mario::update()` (~40 lines) and `Level::update()` (~45 lines) into focused helpers; enforced Box2D physics sync at line 1 of update loop; decomposed `onEnter()` in `LevelSelectState` & `CharacterSelectState`; cleaned `level4.txt` trailing lines; added automated validation for all 4 release levels in `LevelValidatorTests.cpp`. |
+| 2026-08-15 | Sprint 7 TV1 4-Level Release Contract (`S7-TV1-01`..`04`) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Formalized 4-level release graph: `1-1 Overworld` -> `1-2 Underground` -> `1-3 Underwater` -> `1-4 Castle` -> `Win`. Updated `LevelCatalog.h`, `level4.txt`, `LevelCatalogTests.cpp`, `PlayStateTests.cpp`, `Gate0ContractTests.cpp`, and `TV5IntegrationTests.cpp`. |
+| 2026-08-15 | Stage Select UI & Flow Integration (`LevelSelectState`) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Created `LevelSelectState` presenting 4 themed cards (Overworld, Underground, Underwater, Castle) with keyboard and mouse interaction. Wired Title Menu `START GAME` -> `LevelSelectState` -> `CharacterSelectState(selectedLevel)` -> `PlayState(selectedLevel, characterType)`. |
+| 2026-08-15 | Code Review Remediation for `cc80466` (P0/P1/P2 fixes) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Eliminated hot-loop `dynamic_cast` via virtual `isCoin()`; decomposed `Mario::update()` (~40 lines) and `Level::update()` (~45 lines) into focused helpers; enforced Box2D physics sync at line 1 of update loop; decomposed `onEnter()` in `LevelSelectState` & `CharacterSelectState`; cleaned `level4.txt` trailing lines; added automated validation for all 4 release levels in `LevelValidatorTests.cpp`. |
 
 ## 2026-08-12 remediation scope
 
@@ -670,10 +670,15 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
   2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
 
+> Entries 43–46 below are dated implementation snapshots. Their 20/20 and
+> four-level-completion statements are historical and are not current RC
+> evidence; the current 21/21 Debug result and remaining gates are recorded in
+> Entry 47.
+
 ### 43. Sprint 7 TV1 4-Level Release Contract & Test Synchronization (`S7-TV1-01`..`04`)
 - **Date:** 2026-08-15
 - **Author:** TV1 (Dương)
-- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/core/LevelCatalog.h`
   - `levels/level4.txt`
@@ -687,12 +692,12 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   3. Synchronized `PlayStateTests.cpp` progression simulation to test `1 -> 2 -> 3 -> 4 -> Win`.
   4. Synchronized `TV5IntegrationTests.cpp` audio progression assertions across all 4 levels (`OVERWORLD`, `UNDERGROUND`, `UNDERWATER`, `CASTLE`) to `WIN`.
   5. Updated `levels/level4.txt` with valid Castle finale layout meeting all block route and validator constraints; updated `Gate0ContractTests.cpp` release level loading to include `level4.txt`.
-  6. Verified full 20/20 test suites pass with 0 failures under CTest.
+  6. Verified full 20/20 test suites pass with 0 failures under CTest at that snapshot; this is not the current registered-suite result.
 
 ### 44. Level / Stage Select UI & Navigation Integration (`LevelSelectState`)
 - **Date:** 2026-08-15
 - **Author:** TV1 (Dương)
-- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -701,7 +706,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 45. Stage Select UI Polish: Clean Snapshot Previews & Streamlined Layout
 - **Date:** 2026-08-15
 - **Author:** TV1 (Dương)
-- **Status:** Completed; clean build and 20/20 CTest suites passed.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -721,7 +726,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 46. Code Review Remediation for Commit `cc80466` (P0/P1/P2 Quality & Performance Fixes)
 - **Date:** 2026-08-15
 - **Author:** TV1 (Dương)
-- **Status:** Completed; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate).
+- **Status:** Historical snapshot — completed then; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate). Not current RC evidence.
 - **Modified Files:**
   - `include/items/Item.h`
   - `include/items/Coin.h`
@@ -757,4 +762,32 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   6. **P2 — Extended `LevelValidatorTests.cpp` Coverage**:
      - Added `testProductionLevelsLoad()` ensuring all 4 release levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) are validated for valid non-zero dimensions, single Mario spawn (`M`), single Flagpole (`F`/`T`), and valid parsing.
   7. **Release Gate Verification**:
-     - Ran full CTest suite: all 20/20 test suites passed in 8.79s with 0 failures.
+     - Ran full CTest suite: all 20/20 test suites passed in 8.79s with 0 failures at that historical snapshot; this is not current RC evidence.
+
+### 47. Sprint 7 verification correction and release-evidence status
+- **Date:** 2026-08-16
+- **Author:** Documentation update from independent tester evidence
+- **Status:** Current evidence is mixed; no final RC sign-off.
+- **Current facts:** The catalog metadata contract is four entries (`1-1`
+  Overworld, `1-2` Underground, `1-3` Underwater, `1-4` Castle). Retry,
+  `highestUnlockedLevel` Level Select bounds, and v1 monotonic save bounds are
+  covered by current state/save tests. Fresh writable isolated MinGW Debug and
+  Release `BUILD_TESTING=ON` CTest runs each passed `21/21`; a Release
+  `BUILD_TESTING=OFF` production build also passed. Test-target-only NDEBUG
+  restoration gives test targets `-DNDEBUG` then `-UNDEBUG`, while
+  `game_lib`/`SuperMario` retain only `-DNDEBUG`; no assert-disabled or
+  production compiler warnings were observed apart from external Box2D CMake
+  deprecation. MSVC was statically reviewed but not executed.
+- **TV5 facts:** Four music tracks and Star/death/GameOver/Win/volume/HUD and
+  controlled missing/invalid-track behavior pass automated integration tests.
+  The package allowlist is 37 assets plus 6 levels/configs (43 entries), with
+  clean Debug/Release inventory and negative missing-file configure evidence.
+- **Limitations:** `levels/level3.txt` remains Castle-style and its semantic
+  Underwater acceptance/playthrough is a TV4-owned `BLOCKED` gate. Manual
+  four-level playthrough, screenshots, device-audio, source/license
+  attribution, `S6-TV5-43/44` dispositions, `BUG-038`, a same-final-RC hash,
+  and final TV1/TV5 sign-off remain `REVIEW`/`PENDING`.
+- **References:** [S7_TV1_TV5_STATUS.md](management/S7_TV1_TV5_STATUS.md),
+  [S7_TV5_PACKAGE_MANIFEST.md](management/S7_TV5_PACKAGE_MANIFEST.md),
+  [TV1_CHANGES_SUMMARY.md](management/TV1_CHANGES_SUMMARY.md), and
+  [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md).

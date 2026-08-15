@@ -2,13 +2,34 @@
 
 A C++17 platform game built with SFML 3.0.0 and Box2D 2.4.1.
 
-## Sprint 6 release contract
+## Sprint 6 release contract (historical)
+
+The following graph was the Sprint 6 candidate contract and is retained for
+history. It is superseded by the Sprint 7 addendum below; it is not current RC
+evidence.
 
 The release flow is locked to:
 
 `Menu -> Level 1 (Overworld) -> Level 2 (Underground) -> Level 3 (Castle) -> Win`
 
-`levels/level0.txt` is a test fixture. `levels/level4.txt` and the underwater theme are future/reference content and are not reachable through the release catalog.
+`levels/level0.txt` is a test fixture. In this historical snapshot,
+`levels/level4.txt` and the underwater theme were future/reference content.
+
+## Sprint 7 current contract addendum (2026-08-16)
+
+The current catalog metadata contract has four public entries:
+
+`Menu -> 1 (1-1 Overworld) -> 2 (1-2 Underground) -> 3 (1-3 Underwater) -> 4 (1-4 Castle) -> Win`
+
+Exact file, world-label, theme, music, and camera metadata are covered by
+[`LevelCatalogTests.cpp`](tests/LevelCatalogTests.cpp) and
+[`Gate0ContractTests.cpp`](tests/Gate0ContractTests.cpp). Retry restarts a
+failed level (1–4), Level Select enforces `highestUnlockedLevel`, and the v1
+save schema keeps level bounds monotonic; see [`S7_TV1_TV5_STATUS.md`](docs/management/S7_TV1_TV5_STATUS.md).
+
+This documents catalog metadata and syntactic map validation separately from
+semantic Underwater acceptance. `levels/level3.txt` remains Castle-style and
+its Underwater semantic/playthrough gate is blocked under TV4 ownership.
 
 ## Team
 
@@ -69,7 +90,7 @@ cmake --build --preset mingw-tests --parallel 2
 ctest --preset mingw-tests --output-on-failure
 ```
 
-The Sprint 6 candidate contains 17 CTest suites:
+The Sprint 6 candidate contained 17 CTest suites (historical):
 
 - `input_state_tests`
 - `tile_collision_span_tests`
@@ -89,7 +110,18 @@ The Sprint 6 candidate contains 17 CTest suites:
 - `fireball_request_tests`
 - `display_camera_ui_tests`
 
-Automated tests cover the three-level graph, deterministic item blocks, save migration, power-state transitions, collision order/idempotence, FireBall queue/limit/SFX behavior, camera clamping, integer letterboxing, mouse remapping, HUD, audio events, and state transitions. Manual acceptance remains separately recorded in [the release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md).
+The current source registers 21 CTest suites. In the 2026-08-16 verification,
+fresh writable isolated MinGW Debug and Release `BUILD_TESTING=ON` runs each
+passed 21/21; a Release
+`BUILD_TESTING=OFF` production build also passed. These automated results do
+not replace manual four-level playthrough, screenshots, device-audio, or
+final-hash evidence. Manual acceptance remains separately recorded in [the
+release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md). MSVC was
+statically reviewed but not executed.
+
+The four additional current registrations are `elevator_tests`,
+`cheep_cheep_tests`, `character_flow_tests`, and `stomp_score_tests`; the
+complete registration source is [CMakeLists.txt](CMakeLists.txt).
 
 ## Controls
 
@@ -129,4 +161,6 @@ The detailed, current tree is in [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 - [Sprint 6 audit tracker](docs/management/S6_AUDIT_TRACKER.md)
 - [Sprint 6 bug register](docs/management/S6_BUG_REGISTER.md)
 - [Sprint 6 integration report](docs/management/TV1_CHANGES_SUMMARY.md)
-- [Sprint 6 remediation plan](s6_fix_plan_v4.md)
+- [Sprint 6 plan](docs/management/s6_plan.md)
+- [Sprint 7 TV1/TV5 status matrix](docs/management/S7_TV1_TV5_STATUS.md)
+- [Sprint 7 runtime package manifest](docs/management/S7_TV5_PACKAGE_MANIFEST.md)

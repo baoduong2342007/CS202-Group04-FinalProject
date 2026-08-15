@@ -5,6 +5,11 @@
 > Candidate: base `3047252` plus remediation working tree
 > Final RC commit: `PENDING`
 
+> **Historical scope note:** This Sprint 6 report retains its original
+> three-level/17-suite candidate evidence. The current Sprint 7 evidence and
+> limitations are recorded in the dated addendum below; the current worktree
+> has no same-final-RC commit/hash.
+
 ## Input contract
 
 - Left/Right and Run are held actions.
@@ -48,7 +53,9 @@ Automated diagnostic counters verify one SFX request for each accepted transitio
 
 Rejected FireBall requests and repeated contacts produce no extra event/SFX. Star expiry restores level music; damage grace is an independent clock and cannot stop/replace the music lifecycle.
 
-The release music sequence is Overworld for Level 1, Underground for Level 2, Castle for Level 3, and Win after Level 3. Underwater music is future content outside the release catalog.
+The Sprint 6 release music sequence above is historical. Sprint 7 maps
+Overworld, Underground, Underwater, and Castle music to Levels 1–4, then Win;
+see the addendum below.
 
 Evidence: [SoundManager](../../src/core/SoundManager.cpp), [FireBallRequestTests.cpp](../../tests/FireBallRequestTests.cpp), [CollisionMatrixTests.cpp](../../tests/CollisionMatrixTests.cpp), [TV5IntegrationTests.cpp](../../tests/TV5IntegrationTests.cpp).
 
@@ -64,9 +71,14 @@ Evidence: [HUD](../../src/ui/HUD.cpp), [GameOverState](../../src/states/GameOver
 
 ## Asset classification
 
-The authoritative manifest is [ASSETS_LIST.md](../../assets/ASSETS_LIST.md). Level 3/Castle assets are Runtime. Level 4 and underwater material are Future/reference. The overworld bitmap is not described as the background for every theme; Underground and Castle use their distinct renderer branches.
+The authoritative manifest is [ASSETS_LIST.md](../../assets/ASSETS_LIST.md).
+The Sprint 6 classification in this section is historical. The current S7
+allowlist and package evidence are in
+[S7_TV5_PACKAGE_MANIFEST.md](S7_TV5_PACKAGE_MANIFEST.md). The overworld
+bitmap is not described as the background for every theme; Underground and
+Castle use their distinct renderer branches.
 
-## Verification status
+## Verification status (Sprint 6 snapshot)
 
 | Check | Status |
 |---|---|
@@ -76,4 +88,43 @@ The authoritative manifest is [ASSETS_LIST.md](../../assets/ASSETS_LIST.md). Lev
 | Device-audio listening check | NOT RUN |
 | Final immutable RC hash | PENDING |
 
-The exact commands and manual device procedure are in [TV5_AUDIO_HUD_ITEM_CHECKLIST.md](TV5_AUDIO_HUD_ITEM_CHECKLIST.md). Automated counters establish event cardinality, but they do not prove that a speaker/headset produced audible output.
+The exact commands and manual device procedure are in
+[TV5_AUDIO_HUD_ITEM_CHECKLIST.md](TV5_AUDIO_HUD_ITEM_CHECKLIST.md). Automated
+counters establish event cardinality, but they do not prove that a
+speaker/headset produced audible output.
+
+## Sprint 7 verified addendum (2026-08-16)
+
+### Current automated contract
+
+- Runtime music maps Level 1 to Overworld, Level 2 to Underground, Level 3 to
+  Underwater, Level 4 to Castle, and completion to Win. Star, death, GameOver,
+  volume persistence, and controlled missing/invalid-track behavior are
+  covered by [TV5IntegrationTests.cpp](../../tests/TV5IntegrationTests.cpp): a
+  failed/missing/invalid track clears stale current-track state without a
+  crash.
+- HUD world labels `WORLD 1-1` through `WORLD 1-4`, timer behavior, and the
+  Star/death/GameOver/Win lifecycle pass the same automated integration
+  coverage. Device-audio output and screenshots remain separate manual gates.
+- The explicit package allowlist contains 37 assets plus 6 level/config files
+  (43 entries). Clean Debug and Release package inventory comparisons and the
+  negative missing-file configure check passed. Reference/future material and
+  `level0.txt` are excluded; see
+  [S7_TV5_PACKAGE_MANIFEST.md](S7_TV5_PACKAGE_MANIFEST.md),
+  [ASSETS_LIST.md](../../assets/ASSETS_LIST.md), and
+  [CMakeLists.txt](../../CMakeLists.txt).
+- Fresh current-source writable isolated MinGW Debug and Release
+  `BUILD_TESTING=ON` runs each passed `21/21`; a Release `BUILD_TESTING=OFF`
+  production build also passed. This is automated build/test evidence, not
+  manual device evidence or RC sign-off. The MSVC branch was statically
+  reviewed but not executed.
+
+### Remaining evidence
+
+Manual four-level playthrough, screenshots, device-audio, source/license
+attribution, `S6-TV5-43/44` dispositions, `BUG-038`, final candidate hash,
+and final TV1/TV5 release sign-off remain `REVIEW`/`PENDING`. The current
+`levels/level3.txt` is Castle-style despite Underwater catalog metadata; its
+semantic Underwater acceptance is a blocked TV4-owned map/asset gate.
+
+See [S7_TV1_TV5_STATUS.md](S7_TV1_TV5_STATUS.md) for the task matrix.

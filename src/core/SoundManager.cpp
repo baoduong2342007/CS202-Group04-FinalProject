@@ -8,11 +8,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include <utility>
-
-#ifdef DEBUG
+#include <exception>
 #include <iostream>
-#endif
+#include <utility>
 
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
@@ -20,6 +18,23 @@
 namespace {
 constexpr float DEFAULT_SOUND_VOLUME = 80.f;
 constexpr float DEFAULT_MUSIC_VOLUME = 70.f;
+
+bool isLevelMusicId(MusicId id) {
+    return id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND ||
+           id == MusicId::CASTLE || id == MusicId::UNDERWATER;
+}
+
+bool tryOpenMusic(sf::Music& candidate, const std::string& filepath) noexcept {
+    try {
+        return candidate.openFromFile(filepath);
+    } catch (const sf::Exception&) {
+        return false;
+    } catch (const std::exception&) {
+        return false;
+    } catch (...) {
+        return false;
+    }
+}
 } // namespace
 
 SoundManager& SoundManager::getInstance() {
@@ -254,15 +269,29 @@ std::size_t SoundManager::getSoundPlayRequestCount(
 }
 
 bool SoundManager::loadMusic(const std::string& filepath) {
-    if (!m_music.openFromFile(filepath)) {
-#ifdef DEBUG
+    // Open into a temporary first. SFML can leave an sf::Music instance's
+    // decoder unusable after a failed open; keeping the candidate isolated
+    // lets us stop/reset the active stream without poisoning future retries.
+    sf::Music candidate;
+    if (!tryOpenMusic(candidate, filepath)) {
         std::cerr << "[SoundManager] Failed to load music from "
                   << filepath << "\n";
-#endif
+        // An unsuccessful replacement must not leave the previous stream
+        // looking active to callers (or continue playing in the background).
+        if (m_musicLoaded) {
+            m_music.stop();
+        }
         m_musicLoaded = false;
+        m_currentMusicId.reset();
         return false;
     }
 
+    if (m_musicLoaded) {
+        // Stop before replacing a stream. SFML's streaming worker may still be
+        // reading the current decoder while the move assignment swaps it.
+        m_music.stop();
+    }
+    m_music = std::move(candidate);
     m_currentMusicId.reset();
     m_musicLoaded = true;
     m_music.setVolume(m_musicVolume);
@@ -272,10 +301,16 @@ bool SoundManager::loadMusic(const std::string& filepath) {
 
 bool SoundManager::loadMusic(MusicId id, const std::string& filepath) {
     m_musicPaths[id] = filepath;
-    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE || id == MusicId::UNDERWATER) {
+    if (isLevelMusicId(id)) {
         setLevelMusic(id);
     }
-    return openMusic(id);
+
+    const bool loaded = openMusic(id);
+    if (loaded && isLevelMusicId(id)) {
+        // Commit a level transition only after the stream is usable.
+        m_levelMusicId = id;
+    }
+    return loaded;
 }
 
 void SoundManager::playMusic() {
@@ -287,19 +322,29 @@ void SoundManager::playMusic() {
 }
 
 void SoundManager::playMusic(MusicId id) {
-    if (id == MusicId::OVERWORLD || id == MusicId::UNDERGROUND || id == MusicId::CASTLE || id == MusicId::UNDERWATER) {
-        setLevelMusic(id);
-    }
-
     if (!m_musicLoaded || !m_currentMusicId || *m_currentMusicId != id) {
         if (!openMusic(id)) {
             return;
         }
     }
+
+    if (isLevelMusicId(id)) {
+        // Do not overwrite a valid Star-resume context before openMusic()
+        // succeeds. This also handles PlayState's explicit setLevelMusic()
+        // call before playMusic().
+        m_levelMusicId = id;
+    }
     m_music.play();
 }
 
 void SoundManager::setLevelMusic(MusicId id) {
+    if (isStarMusicActive()) {
+        // A level transition can be requested while Star is playing. Keep the
+        // current level as the resumable context until the replacement track
+        // has opened successfully; a missing replacement must not erase it.
+        return;
+    }
+
     m_levelMusicId = id;
 }
 
@@ -373,16 +418,36 @@ void SoundManager::registerDefaultMusicPaths() {
 }
 
 bool SoundManager::openMusic(MusicId id) {
+    if (m_musicLoaded) {
+        // Stop before replacing a stream. SFML's streaming worker may still be
+        // reading the current decoder while openFromFile() swaps resources.
+        m_music.stop();
+    }
+
     const auto pathIt = m_musicPaths.find(id);
-    if (pathIt == m_musicPaths.end() || !m_music.openFromFile(pathIt->second)) {
-#ifdef DEBUG
+    if (pathIt == m_musicPaths.end()) {
         std::cerr << "[SoundManager] Failed to load music id "
-                  << static_cast<int>(id) << "\n";
-#endif
+                  << static_cast<int>(id)
+                  << ": no path is registered\n";
         m_musicLoaded = false;
+        m_currentMusicId.reset();
         return false;
     }
 
+    // Open into a temporary first. SFML can leave an sf::Music instance's
+    // decoder unusable after a failed open; keeping the candidate isolated
+    // lets us stop/reset the active stream without poisoning future retries.
+    sf::Music candidate;
+    if (!tryOpenMusic(candidate, pathIt->second)) {
+        std::cerr << "[SoundManager] Failed to load music id "
+                  << static_cast<int>(id) << " from " << pathIt->second
+                  << "\n";
+        m_musicLoaded = false;
+        m_currentMusicId.reset();
+        return false;
+    }
+
+    m_music = std::move(candidate);
     m_music.setVolume(m_musicVolume);
     m_music.setLooping(true);
     m_currentMusicId = id;

@@ -312,6 +312,48 @@ if(BUILD_TESTING)
     set_tests_properties(stomp_score_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
+
+    # Keep test assertions and assertion-contained setup active in optimized
+    # configurations.  CMake adds -DNDEBUG (/DNDEBUG) for Release-like builds;
+    # undefine it only on the registered test executables, leaving game_lib and
+    # SuperMario with their normal production NDEBUG semantics.
+    set(SUPERMARIO_TEST_TARGETS
+        input_state_tests
+        tile_collision_span_tests
+        mario_physics_tests
+        play_state_tests
+        game_manager_tests
+        event_bus_tests
+        tv5_integration_tests
+        level_catalog_tests
+        save_manager_tests
+        level_validator_tests
+        springboard_tests
+        elevator_tests
+        cheep_cheep_tests
+        gate0_contract_tests
+        save_session_tests
+        sprite_frames_theme_tests
+        collision_matrix_tests
+        fireball_request_tests
+        display_camera_ui_tests
+        character_flow_tests
+        stomp_score_tests
+    )
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        set(SUPERMARIO_TEST_UNDEFINE_NDEBUG "-UNDEBUG")
+    elseif(MSVC)
+        set(SUPERMARIO_TEST_UNDEFINE_NDEBUG "/UNDEBUG")
+    endif()
+
+    if(SUPERMARIO_TEST_UNDEFINE_NDEBUG)
+        foreach(SUPERMARIO_TEST_TARGET IN LISTS SUPERMARIO_TEST_TARGETS)
+            target_compile_options(${SUPERMARIO_TEST_TARGET} PRIVATE
+                "$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>:${SUPERMARIO_TEST_UNDEFINE_NDEBUG}>"
+            )
+        endforeach()
+    endif()
 endif()
 
 # Platform-specific Release build settings
@@ -327,30 +369,100 @@ endif()
 # 5. POST-BUILD ACTIONS
 # ==============================================================================
 
-# 5.1. Auto-sync assets and levels directories to the build folder.
-# S6-TV1-29: copy PER-FILE with `copy_if_different`, so an unchanged file is not
-# copied again on a no-op build (unlike `copy_directory`, which re-touches every
-# file each invocation). A GLOB with CONFIGURE_DEPENDS re-scans when files are
-# added/removed.
-file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
-foreach(ASSET_FILE IN LISTS ASSET_FILES)
-    file(RELATIVE_PATH ASSET_REL "${CMAKE_SOURCE_DIR}/assets" "${ASSET_FILE}")
-    get_filename_component(ASSET_DEST_DIR "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}" DIRECTORY)
+# 5.1. Package only the release runtime inputs next to the executable.
+#
+# Keep this list explicit and source-relative.  A recursive copy silently pulls
+# fixtures, future content, and documentation/reference files into an RC.  The
+# configure-time checks make a missing or accidentally renamed input fail with a
+# path-specific diagnostic before a package can be built.
+set(SUPERMARIO_RUNTIME_ASSETS
+    "fonts/mario.ttf"
+    "ui/bg_world.png"
+    "textures/ui/hud.png"
+    "textures/ui/stage_1.png"
+    "textures/ui/stage_2.png"
+    "textures/ui/stage_3.png"
+    "textures/ui/stage_4.png"
+    "textures/mario/MarioLuigi.png"
+    "textures/tiles/tileset.png"
+    "textures/items/items_blocks.png"
+    "textures/items/items_objects.png"
+    "textures/enemies/enemies.png"
+    "sounds/effects/1up.wav"
+    "sounds/effects/brick.wav"
+    "sounds/effects/bump.wav"
+    "sounds/effects/coin.wav"
+    "sounds/effects/death.wav"
+    "sounds/effects/fireball.wav"
+    "sounds/effects/flagpole.wav"
+    "sounds/effects/gameover.wav"
+    "sounds/effects/hurryup.wav"
+    "sounds/effects/item.wav"
+    "sounds/effects/jump.wav"
+    "sounds/effects/jumpsmall.wav"
+    "sounds/effects/kickkill.wav"
+    "sounds/effects/pause.wav"
+    "sounds/effects/pipepowerdown.wav"
+    "sounds/effects/powerup.wav"
+    "sounds/effects/stompswim.wav"
+    "sounds/music/overworld.flac"
+    "sounds/music/underground.flac"
+    "sounds/music/underwater.flac"
+    "sounds/music/castle.flac"
+    "sounds/music/invincible.flac"
+    "sounds/music/death.flac"
+    "sounds/music/gameover.flac"
+    "sounds/music/level_complete.flac"
+)
+
+set(SUPERMARIO_RUNTIME_LEVELS
+    "level1.txt"
+    "level2.txt"
+    "level3.txt"
+    "level4.txt"
+    # Runtime tolerates these registries when absent, but the RC includes them
+    # so configured Cheep Cheep/elevator routes remain reproducible.
+    "cheep_cheep.txt"
+    "elevators.txt"
+)
+
+# TARGET_FILE_DIR is the package root for both single- and multi-config
+# generators (e.g. the Debug subdirectory under Visual Studio/Xcode).
+set(SUPERMARIO_PACKAGE_ROOT "$<TARGET_FILE_DIR:SuperMario>")
+
+foreach(RUNTIME_ASSET_REL IN LISTS SUPERMARIO_RUNTIME_ASSETS)
+    set(RUNTIME_ASSET_SOURCE "${CMAKE_SOURCE_DIR}/assets/${RUNTIME_ASSET_REL}")
+    if(NOT EXISTS "${RUNTIME_ASSET_SOURCE}" OR IS_DIRECTORY "${RUNTIME_ASSET_SOURCE}")
+        message(FATAL_ERROR
+            "Required runtime asset is missing or is not a file: ${RUNTIME_ASSET_SOURCE}"
+        )
+    endif()
+    get_filename_component(RUNTIME_ASSET_DIR "${RUNTIME_ASSET_REL}" DIRECTORY)
     add_custom_command(TARGET SuperMario POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${ASSET_DEST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASSET_FILE}" "${CMAKE_BINARY_DIR}/assets/${ASSET_REL}"
-        COMMENT "Syncing asset ${ASSET_REL}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${SUPERMARIO_PACKAGE_ROOT}/assets/${RUNTIME_ASSET_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${RUNTIME_ASSET_SOURCE}"
+            "${SUPERMARIO_PACKAGE_ROOT}/assets/${RUNTIME_ASSET_REL}"
+        COMMENT "Packaging runtime asset ${RUNTIME_ASSET_REL}"
     )
 endforeach()
 
-file(GLOB_RECURSE LEVEL_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/levels/*")
-foreach(LEVEL_FILE IN LISTS LEVEL_FILES)
-    file(RELATIVE_PATH LEVEL_REL "${CMAKE_SOURCE_DIR}/levels" "${LEVEL_FILE}")
-    get_filename_component(LEVEL_DEST_DIR "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}" DIRECTORY)
+foreach(RUNTIME_LEVEL_REL IN LISTS SUPERMARIO_RUNTIME_LEVELS)
+    set(RUNTIME_LEVEL_SOURCE "${CMAKE_SOURCE_DIR}/levels/${RUNTIME_LEVEL_REL}")
+    if(NOT EXISTS "${RUNTIME_LEVEL_SOURCE}" OR IS_DIRECTORY "${RUNTIME_LEVEL_SOURCE}")
+        message(FATAL_ERROR
+            "Required runtime level/config is missing or is not a file: ${RUNTIME_LEVEL_SOURCE}"
+        )
+    endif()
+    get_filename_component(RUNTIME_LEVEL_DIR "${RUNTIME_LEVEL_REL}" DIRECTORY)
     add_custom_command(TARGET SuperMario POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${LEVEL_DEST_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LEVEL_FILE}" "${CMAKE_BINARY_DIR}/levels/${LEVEL_REL}"
-        COMMENT "Syncing level ${LEVEL_REL}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${SUPERMARIO_PACKAGE_ROOT}/levels/${RUNTIME_LEVEL_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${RUNTIME_LEVEL_SOURCE}"
+            "${SUPERMARIO_PACKAGE_ROOT}/levels/${RUNTIME_LEVEL_REL}"
+        COMMENT "Packaging runtime level/config ${RUNTIME_LEVEL_REL}"
     )
 endforeach()
 

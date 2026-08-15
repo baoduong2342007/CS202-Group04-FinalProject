@@ -225,6 +225,19 @@ std::string HUD::getPowerLabel() const {
     return "SMALL";
 }
 
+std::string HUD::getWorldLabel() const {
+    std::ostringstream worldStream;
+    worldStream << "WORLD " << m_worldNumber << "-" << m_levelNumber;
+    return worldStream.str();
+}
+
+std::string HUD::getTimeLabel() const {
+    std::ostringstream timeStream;
+    timeStream << "TIME " << std::setw(3) << std::setfill('0')
+               << m_timeRemaining;
+    return timeStream.str();
+}
+
 void HUD::setWorldLevel(int world, int level) {
   m_worldNumber = world;
   m_levelNumber = level;
@@ -297,15 +310,10 @@ void HUD::refreshText() {
              << m_mario.getCoinCount();
   m_coinText->setString(coinStream.str());
 
-    // Format world indicator as "WORLD W-L".
-    std::ostringstream worldStream;
-    worldStream << "WORLD " << m_worldNumber << "-" << m_levelNumber;
-    m_worldText->setString(worldStream.str());
-
-    std::ostringstream timeStream;
-    timeStream << "TIME " << std::setw(3) << std::setfill('0')
-               << m_timeRemaining;
-    m_timeText->setString(timeStream.str());
+    // Format world indicator as "WORLD W-L" and timer consistently with the
+    // renderer-independent accessors used by headless integration tests.
+    m_worldText->setString(getWorldLabel());
+    m_timeText->setString(getTimeLabel());
     m_timeText->setFillColor(isTimeWarningActive() ? sf::Color::Red : sf::Color::White);
 
     m_powerText->setString("POWER " + getPowerLabel());

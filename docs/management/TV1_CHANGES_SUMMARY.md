@@ -5,7 +5,12 @@
 > Candidate: base `3047252` plus remediation working tree
 > Final RC commit: `PENDING`
 
-## Release decision
+> **Historical scope note:** Sections describing the Sprint 6 candidate below
+> retain their original three-level/17-suite evidence. The current Sprint 7
+> facts and limitations are in the dated addendum at the end; no same-final-RC
+> commit/hash exists in the current uncommitted worktree.
+
+## Release decision (Sprint 6 snapshot)
 
 The code remediation is complete enough for final automated verification. Sprint 6 is not yet signed off because manual playthrough, visual-resolution, device-audio, and same-commit release evidence are still pending.
 
@@ -56,7 +61,7 @@ Relevant sources: [DisplayConfig](../../include/core/DisplayConfig.h), [Game](..
 - Replaced broken repository-root-relative links in this file with paths relative to `docs/management/`.
 - Reset old manual evidence rather than presenting earlier-commit runs as current-RC PASS.
 
-## Automated verification inventory
+## Automated verification inventory (Sprint 6 snapshot)
 
 The current candidate defines 17 CTest suites. The new remediation coverage is concentrated in:
 
@@ -79,4 +84,50 @@ Clean Debug, Release, and Tests builds succeeded in new `build-s6-rc-*` director
 | Device-audio lifecycle checklist | TV5 | NOT RUN | [audio checklist](TV5_AUDIO_HUD_ITEM_CHECKLIST.md) |
 | Commit identity | TV1 | PENDING | immutable RC hash shared by every evidence record |
 
-No P0/P1 implementation bug from the v4 review remains open, but this report deliberately does not declare Sprint 6 released until the table above is complete.
+The historical v4 review reported no remaining P0/P1 implementation bug, but
+this report deliberately did not declare Sprint 6 released until the table
+above was complete. This historical statement is not a current Sprint 7
+no-P0/P1 sign-off.
+
+## Sprint 7 verified addendum (2026-08-16)
+
+### Current contract and automated evidence
+
+- The public catalog metadata contract is exactly four entries: `1`/`1-1`
+  Overworld, `2`/`1-2` Underground, `3`/`1-3` Underwater, and `4`/`1-4`
+  Castle, with exact file, theme, music, and camera metadata. Evidence:
+  [LevelCatalogTests.cpp](../../tests/LevelCatalogTests.cpp),
+  [Gate0ContractTests.cpp](../../tests/Gate0ContractTests.cpp), and
+  [LevelCatalog.h](../../include/core/LevelCatalog.h).
+- Retry restarts failed levels 1–4; Level Select enforces
+  `highestUnlockedLevel`; and the v1 save schema preserves monotonic level
+  bounds. Evidence: [PlayStateTests.cpp](../../tests/PlayStateTests.cpp),
+  [SaveManagerTests.cpp](../../tests/SaveManagerTests.cpp),
+  [SaveSessionTests.cpp](../../tests/SaveSessionTests.cpp), and
+  [LevelSelectState.cpp](../../src/states/LevelSelectState.cpp).
+- In this contract, “progress preserved” means the failed current-level
+  selection and monotonic `highestUnlockedLevel` are retained. GameOver →
+  Retry starts a fresh run, so transient score, coins, lives, and power reset;
+  the save schema remains v1 with no migration.
+- Fresh current-source writable isolated MinGW Debug and Release
+  `BUILD_TESTING=ON` runs each passed `21/21`; a Release `BUILD_TESTING=OFF`
+  production build also passed. The test-target-only NDEBUG restoration gives
+  every test target `-DNDEBUG` then `-UNDEBUG`, while `game_lib`/`SuperMario`
+  retain only `-DNDEBUG`. No assert-disabled or production compiler warnings
+  were observed; the only warning was external Box2D CMake deprecation. The
+  MSVC branch was statically reviewed but not executed. The registered count
+  is 21; earlier 17/19/20 counts are historical snapshots.
+
+### Gates that remain open
+
+Syntactic map validation/load evidence is distinct from semantic Underwater
+acceptance. `levels/level3.txt` remains Castle-style and semantically invalid
+for the Underwater catalog entry; that TV4-owned map/asset gate is `BLOCKED`.
+Manual four-level playthrough, screenshots, device-audio, source/license
+attribution, `S6-TV5-43/44` dispositions, `BUG-038`, and final TV1/TV5
+release sign-off remain `REVIEW`/`PENDING`. Automated Debug/Release 21/21,
+the Release production build, and clean Debug/Release package inventory
+evidence do not establish a final RC, no-P0/P1 state, or a candidate hash.
+
+See the task-by-task matrix in
+[S7_TV1_TV5_STATUS.md](S7_TV1_TV5_STATUS.md).

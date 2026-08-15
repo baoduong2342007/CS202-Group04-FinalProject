@@ -471,6 +471,31 @@ void testHudTimeoutAndGameplayFreeze() {
     assert(timeouts == 1);
 }
 
+void testHudWorldLabelsAndTimerFormatting() {
+    Mario mario;
+    HUD hud(mario);
+
+    for (int level = 1; level <= 4; ++level) {
+        hud.setWorldLevel(1, level);
+        assert(hud.getWorldLabel() == "WORLD 1-" + std::to_string(level));
+    }
+
+    assert(hud.getTimeLabel() == "TIME 400");
+
+    hud.resetTimer(0);
+    assert(hud.getTimeLabel() == "TIME 000");
+    hud.update(10.f, true);
+    assert(hud.getTimeRemaining() == 0);
+
+    hud.resetTimer(-5);
+    assert(hud.getTimeLabel() == "TIME 000");
+
+    hud.resetTimer(101);
+    hud.update(1.f, true);
+    assert(hud.getTimeLabel() == "TIME 100");
+    assert(hud.isTimeWarningActive());
+}
+
 void testInputBindingsAndSuppression() {
     InputState input;
     InputHandler handler;
@@ -554,6 +579,17 @@ void testStarMusicOverrideAndVolumePersistence() {
         assert(sound.isSoundLoaded(effect));
     }
 
+    // Exercise every registered level path independently of a renderer or
+    // level-file transition.
+    for (const MusicId levelTrack : {MusicId::OVERWORLD,
+                                     MusicId::UNDERGROUND,
+                                     MusicId::UNDERWATER,
+                                     MusicId::CASTLE}) {
+        sound.playMusic(levelTrack);
+        assert(sound.getCurrentMusicId().has_value());
+        assert(sound.getCurrentMusicId().value() == levelTrack);
+    }
+
     sound.setLevelMusic(MusicId::UNDERGROUND);
     sound.playMusic(MusicId::UNDERGROUND);
     sound.playStarMusic();
@@ -585,6 +621,44 @@ void testStarMusicOverrideAndVolumePersistence() {
     assert(reloaded.getData().musicVolume == 44.f);
 
     std::filesystem::remove_all(saveDirectory, errorCode);
+}
+
+void testMissingMusicClearsCurrentState() {
+    SoundManager& sound = SoundManager::getInstance();
+    sound.playMusic(MusicId::OVERWORLD);
+    assert(sound.isMusicLoaded());
+    assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+
+    // A missing next-level asset while Star is active must stop the stream and
+    // clear the observable current ID without erasing the valid resume target.
+    sound.playStarMusic();
+    assert(sound.isStarMusicActive());
+    assert(!sound.loadMusic(MusicId::UNDERGROUND,
+                            "assets/sounds/music/missing-tv5-track.flac"));
+    assert(!sound.isMusicLoaded());
+    assert(!sound.getCurrentMusicId().has_value());
+    assert(sound.getLevelMusicId().value() == MusicId::OVERWORLD);
+
+    EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED);
+    assert(!sound.getCurrentMusicId().has_value());
+
+    sound.restoreLevelMusic();
+    assert(sound.isMusicLoaded());
+    assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
+
+    // Restore the catalog path after the injected failure so subsequent
+    // lifecycle tests exercise the packaged Underground track.
+    assert(sound.loadMusic(MusicId::UNDERGROUND,
+                           "assets/sounds/music/underground.flac"));
+    assert(sound.getCurrentMusicId().value() == MusicId::UNDERGROUND);
+
+    // An invalid catalog ID has the same deterministic no-current behavior.
+    const auto invalidId = static_cast<MusicId>(999);
+    sound.playMusic(invalidId);
+    assert(!sound.isMusicLoaded());
+    assert(!sound.getCurrentMusicId().has_value());
+    sound.playMusic(MusicId::OVERWORLD);
+    assert(sound.getCurrentMusicId().value() == MusicId::OVERWORLD);
 }
 
 void testStateAudioRuntimeAndLevelTracks() {
@@ -729,7 +803,9 @@ int main() {
     testAdaptiveQuestionBlockAndFireFlowerContract();
     testStarTimerHudAndExpiryEvent();
     testHudTimeoutAndGameplayFreeze();
+    testHudWorldLabelsAndTimerFormatting();
     testInputBindingsAndSuppression();
+    testMissingMusicClearsCurrentState();
     testStarMusicOverrideAndVolumePersistence();
     testStateAudioRuntimeAndLevelTracks();
     testVolumeClampAndAssetManifest();

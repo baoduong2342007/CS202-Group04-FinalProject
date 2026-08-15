@@ -1,8 +1,11 @@
-# Sprint 6 Class Diagram
+# Sprint 6 Class Diagram (Sprint 7 contract addendum)
 
-> Updated: 2026-08-12
+> Updated: 2026-08-16
 > Source of truth: current headers in `include/`
 > Scope: release ownership, state lifecycle, gameplay transactions, and the five documented patterns
+>
+> The diagram remains a Sprint 6 baseline; the catalog paragraph below is the
+> dated current Sprint 7 contract addendum.
 
 ## Application and state ownership
 
@@ -230,7 +233,16 @@ classDiagram
     WinState *-- UIMenuWidget
 ```
 
-The release catalog contains only Level 1 Overworld, Level 2 Underground, and Level 3 Castle. Physical input is remapped to the logical 640x360 canvas using the same centered integer viewport used for rendering; bar input is rejected.
+The current Sprint 7 catalog metadata contains four entries: Level 1
+Overworld (`1-1`), Level 2 Underground (`1-2`), Level 3 Underwater (`1-3`),
+and Level 4 Castle (`1-4`), followed by the Win boundary. Physical input is
+remapped to the logical 640x360 canvas using the same centered integer
+viewport used for rendering; bar input is rejected.
+
+Catalog metadata and syntactic map validation are separate contracts. The
+current `levels/level3.txt` is Castle-style despite its Underwater catalog
+metadata, so semantic Underwater acceptance/playthrough remains a blocked,
+TV4-owned gate pending map/asset scope.
 
 ## Patterns and event flow
 

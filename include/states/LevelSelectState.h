@@ -49,6 +49,7 @@ private:
     void initStageCards();
     void confirmSelection(int levelNumber);
     void selectCard(int index);
+    bool isLevelUnlocked(int levelNumber) const;
 
     sf::Font m_font;
     bool m_fontLoaded = false;
@@ -63,6 +64,7 @@ private:
 
     std::vector<StageCard> m_cards;
     int m_selectedIndex = 0;
+    int m_highestUnlockedLevel = 1;
     float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

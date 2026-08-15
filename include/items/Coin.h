@@ -31,6 +31,7 @@ public:
     static void awardTo(Mario& mario);
 
     CoinType getCoinType() const { return m_type; }
+    bool isCoin() const override { return true; }
 
 private:
     // 6. Private members

@@ -196,12 +196,38 @@ bool testRejectsMissingFlagpoleTop() {
     return true;
 }
 
+bool testProductionLevelsLoad() {
+    std::cout << "[RUNNING] testProductionLevelsLoad..." << std::endl;
+
+    const std::vector<std::string> releaseLevelPaths = {
+        "levels/level1.txt",
+        "levels/level2.txt",
+        "levels/level3.txt",
+        "levels/level4.txt"
+    };
+
+    for (const auto& path : releaseLevelPaths) {
+        TileMap tileMap;
+        const bool loaded = tileMap.loadFromFile(path);
+        assert(loaded);
+        assert(tileMap.getWidth() > 0);
+        assert(tileMap.getHeight() > 0);
+        assert(tileMap.findTiles('M').size() == 1);
+        assert(tileMap.findTiles('F').size() == 1);
+        assert(tileMap.findTiles('T').size() == 1);
+    }
+
+    std::cout << "[PASSED] testProductionLevelsLoad" << std::endl;
+    return true;
+}
+
 } // namespace
 
 int main() {
     cleanTestDirectory();
 
     const bool success = testLevelZeroFixtureLoads() &&
+                         testProductionLevelsLoad() &&
                          testRejectsInconsistentWidth() &&
                          testRejectsInvalidSymbol() &&
                          testRejectsMissingMarioSpawn() &&

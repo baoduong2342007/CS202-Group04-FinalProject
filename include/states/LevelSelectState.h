@@ -43,6 +43,10 @@ private:
         std::optional<sf::Sprite> previewSprite;
     };
 
+    void initStageTextures();
+    void initBackdropPanel();
+    void initTextLabels();
+    void initStageCards();
     void confirmSelection(int levelNumber);
     void selectCard(int index);
 

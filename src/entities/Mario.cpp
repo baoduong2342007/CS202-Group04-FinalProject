@@ -274,48 +274,154 @@ Mario::Mario(const sf::Vector2f &position, const sf::Vector2f &size)
   setSprite(MARIO_TEXTURE_PATH);
 }
 
+bool Mario::handleDeathPhase(float dt) {
+  if (!m_isDying) {
+    return false;
+  }
+
+  if (m_animationSystem->getCurrentAnimationName() != "death") {
+    playAnimation("death");
+    updateAnimation(0.f);
+  }
+  if (m_body) {
+    // Keep the characteristic death jump while suppressing horizontal
+    // movement. The body is already sensor-only, so gravity can animate the
+    // arc without letting Mario interact with the level again.
+    const b2Vec2 velocity = m_body->GetLinearVelocity();
+    m_body->SetLinearVelocity(b2Vec2(0.f, velocity.y));
+  }
+  syncPhysics();
+  updateAnimation(dt);
+  updateSpriteLayout();
+  if (m_sprite) {
+    m_sprite->setColor(sf::Color::White);
+  }
+  if (m_animationSystem->isFinished()) {
+    // The sprite clip ends at the jump's apex. Keep gravity running for a
+    // short tail so Mario visibly falls instead of freezing in mid-air.
+    m_deathFallDelayTimer = std::max(0.0f, m_deathFallDelayTimer - dt);
+    if (m_deathFallDelayTimer <= 0.0f) {
+      m_deathAnimationFinished = true;
+      // Keep the final DEATH frame drawable and freeze only after the fall
+      // tail has completed and the state transition can consume the signal.
+      if (m_body) {
+        m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+      }
+    }
+  }
+  return true;
+}
+
+bool Mario::handleTransformPhase(float dt) {
+  if (!m_isTransforming) {
+    return false;
+  }
+
+  m_transformTimer -= dt;
+  if (m_body) {
+    b2Vec2 currentVel = m_body->GetLinearVelocity();
+    m_body->SetLinearVelocity(b2Vec2(0.f, currentVel.y));
+  }
+  if (m_sprite) {
+    int ms = static_cast<int>(m_transformTimer * 1000);
+    m_sprite->setColor((ms / 50) % 2 == 0 ? sf::Color::Transparent
+                                          : sf::Color::White);
+  }
+  syncPhysics();
+  updateAnimation(dt);
+  updateSpriteLayout();
+  if (m_transformTimer <= 0.f) {
+    m_isTransforming = false;
+    m_transformTimer = 0.f;
+    playAnimation("idle");
+    updateAnimation(0.f);
+    updateSpriteLayout();
+    if (m_sprite && !m_isInvincible && !m_isStarInvincible) {
+      m_sprite->setColor(sf::Color::White);
+    }
+  }
+  return true;
+}
+
+bool Mario::handleSpawnPhase(float dt) {
+  if (!m_isSpawning) {
+    return false;
+  }
+
+  if (m_animationSystem->isFinished()) {
+    m_isSpawning = false;
+    playAnimation("idle");
+    return false;
+  }
+
+  updateAnimation(dt);
+  return true;
+}
+
+void Mario::updateMovementAnimations(float dt) {
+  if (m_animationSystem->getCurrentAnimationName() == "action" &&
+      !m_animationSystem->isFinished()) {
+    // Keep playing action animation until it finishes so fireball throw is visible
+  } else if (m_isFlagpoleSliding) {
+    playAnimation("climb");
+  } else if (m_isClimbing) {
+    if (m_verticalIntent < 0.0f) {
+      playAnimation("climb_up");
+    } else if (m_verticalIntent > 0.0f) {
+      playAnimation("climb_down");
+    } else {
+      playAnimation("climb_idle");
+    }
+  } else if (m_isUnderwater) {
+    playAnimation("swim");
+  } else if (!isGrounded()) {
+    playAnimation("jump");
+  } else if (m_verticalIntent > 0.5f &&
+             (m_marioState == MarioState::SUPER ||
+              m_marioState == MarioState::FIRE_SUPER)) {
+    playAnimation("crouch");
+  } else if (m_isSkidding) {
+    playAnimation("skid");
+  } else if (std::abs(getVelocity().x) > 5.f) {
+    playAnimation("walk");
+  } else {
+    playAnimation("idle");
+  }
+  updateAnimation(dt);
+  updateSpriteLayout();
+}
+
+void Mario::applyWorldBoundsClamp() {
+  constexpr float MIN_WORLD_X = 16.0f; // Half Mario's width (32/2)
+  if (m_body) {
+    b2Vec2 bodyPos = m_body->GetPosition();
+    float minXPosMeters = PhysicsEngine::pixelsToMeters(MIN_WORLD_X);
+    if (bodyPos.x < minXPosMeters) {
+      m_body->SetTransform(b2Vec2(minXPosMeters, bodyPos.y),
+                           m_body->GetAngle());
+      b2Vec2 vel = m_body->GetLinearVelocity();
+      if (vel.x < 0.0f) {
+        m_body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
+      }
+    }
+  }
+
+  if (m_position.y > m_pitThreshold) {
+    loseLife();
+  }
+}
+
 void Mario::update(float dt) {
   if (!m_active)
     return;
 
-  // Death is a terminal presentation phase. Handle it before the normal
-  // invincibility/color clock so a leftover blink cannot make the DEATH frame
-  // invisible, and so the normal movement animation cannot replace it.
-  if (m_isDying) {
-    if (m_animationSystem->getCurrentAnimationName() != "death") {
-      playAnimation("death");
-      updateAnimation(0.f);
-    }
-    if (m_body) {
-      // Keep the characteristic death jump while suppressing horizontal
-      // movement. The body is already sensor-only, so gravity can animate the
-      // arc without letting Mario interact with the level again.
-      const b2Vec2 velocity = m_body->GetLinearVelocity();
-      m_body->SetLinearVelocity(b2Vec2(0.f, velocity.y));
-    }
-    syncPhysics();
-    updateAnimation(dt);
-    updateSpriteLayout();
-    if (m_sprite) {
-      m_sprite->setColor(sf::Color::White);
-    }
-    if (m_animationSystem->isFinished()) {
-      // The sprite clip ends at the jump's apex. Keep gravity running for a
-      // short tail so Mario visibly falls instead of freezing in mid-air.
-      m_deathFallDelayTimer = std::max(0.0f, m_deathFallDelayTimer - dt);
-      if (m_deathFallDelayTimer <= 0.0f) {
-        m_deathAnimationFinished = true;
-        // Keep the final DEATH frame drawable and freeze only after the fall
-        // tail has completed and the state transition can consume the signal.
-        if (m_body) {
-          m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
-        }
-      }
-    }
+  // CRITICAL (AGENTS.md #3): Unconditionally sync Box2D physics before movement logic
+  syncPhysics();
+
+  if (handleDeathPhase(dt)) {
     return;
   }
 
-  // These clocks are independent of one another and of presentation phases.
   updateInvincibility(dt);
   if (m_fireCooldown > 0.0f) {
     m_fireCooldown = std::max(0.0f, m_fireCooldown - dt);
@@ -337,53 +443,13 @@ void Mario::update(float dt) {
     rebuildFixture();
   }
 
-  // Handle transformation transition animation (0.5s freeze & flash)
-  if (m_isTransforming) {
-    m_transformTimer -= dt;
-    if (m_body) {
-      b2Vec2 currentVel = m_body->GetLinearVelocity();
-      m_body->SetLinearVelocity(b2Vec2(0.f, currentVel.y));
-    }
-    if (m_sprite) {
-      int ms = static_cast<int>(m_transformTimer * 1000);
-      m_sprite->setColor((ms / 50) % 2 == 0 ? sf::Color::Transparent
-                                            : sf::Color::White);
-    }
-    // Keep advancing and laying out the target/transition frame while
-    // movement is frozen. Returning before this step left the old Small frame
-    // on screen until the timer expired, which looked like a flattened sprite
-    // that suddenly popped to the large form.
-    syncPhysics();
-    updateAnimation(dt);
-    updateSpriteLayout();
-    if (m_transformTimer <= 0.f) {
-      m_isTransforming = false;
-      m_transformTimer = 0.f;
-      playAnimation("idle");
-      updateAnimation(0.f);
-      updateSpriteLayout();
-      if (m_sprite && !m_isInvincible && !m_isStarInvincible) {
-        // Fire Mario already uses the palette-authentic FireMario atlas rows;
-        // applying a tint here would wash the whole sprite orange/red.
-        m_sprite->setColor(sf::Color::White);
-      }
-    }
+  if (handleTransformPhase(dt)) {
     return;
   }
 
-  // Handle spawn animation phase
-  if (m_isSpawning) {
-    if (m_animationSystem->isFinished()) {
-      m_isSpawning = false;
-      playAnimation("idle");
-    } else {
-      updateAnimation(dt);
-      return;
-    }
+  if (handleSpawnPhase(dt)) {
+    return;
   }
-
-  // CRITICAL: Sync Box2D physics before doing custom movement/clamp logic
-  syncPhysics();
 
   if (m_pendingPowerDown) {
     m_pendingPowerDown = false;
@@ -399,57 +465,8 @@ void Mario::update(float dt) {
     }
   }
 
-  // Animation state machine (develop)
-  if (m_animationSystem->getCurrentAnimationName() == "action" &&
-      !m_animationSystem->isFinished()) {
-    // Keep playing action animation until it finishes so fireball throw is visible
-  } else if (m_isFlagpoleSliding) {
-    playAnimation("climb");
-  } else if (m_isClimbing) {
-    if (m_verticalIntent < 0.0f) {
-      playAnimation("climb_up");
-    } else if (m_verticalIntent > 0.0f) {
-      playAnimation("climb_down");
-    } else {
-      playAnimation("climb_idle");
-    }
-  } else if (m_isUnderwater) {
-    playAnimation("swim");
-  } else if (!isGrounded()) {
-    playAnimation("jump");
-  } else if (m_verticalIntent > 0.5f && (m_marioState == MarioState::SUPER || m_marioState == MarioState::FIRE_SUPER)) {
-    playAnimation("crouch");
-  } else if (m_isSkidding) {
-    playAnimation("skid");
-  } else if (std::abs(getVelocity().x) > 5.f) {
-    playAnimation("walk");
-  } else {
-    playAnimation("idle");
-  }
-  updateAnimation(dt);
-  updateSpriteLayout();
-
-  // Left world boundary clamp (S6-TV3-08): prevent Mario from moving left
-  // off-screen past X = 0
-  constexpr float MIN_WORLD_X = 16.0f; // Half Mario's width (32/2)
-  if (m_body) {
-    b2Vec2 bodyPos = m_body->GetPosition();
-    float minXPosMeters = PhysicsEngine::pixelsToMeters(MIN_WORLD_X);
-    if (bodyPos.x < minXPosMeters) {
-      m_body->SetTransform(b2Vec2(minXPosMeters, bodyPos.y),
-                           m_body->GetAngle());
-      b2Vec2 vel = m_body->GetLinearVelocity();
-      if (vel.x < 0.0f) {
-        m_body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
-      }
-    }
-  }
-
-  // Dynamic pit fall check (S6-TV3-07): uses dynamic m_pitThreshold set from
-  // Level map bounds
-  if (m_position.y > m_pitThreshold) {
-    loseLife();
-  }
+  updateMovementAnimations(dt);
+  applyWorldBoundsClamp();
 }
 
 void Mario::preparePhysics(float dt) {

@@ -62,27 +62,15 @@ const sf::Color AVATAR_BOX_OUTLINE_ACTIVE(255, 215, 0);
 CharacterSelectState::CharacterSelectState(int selectedLevel)
     : m_selectedLevel(selectedLevel) {}
 
-void CharacterSelectState::onEnter() {
-    m_transitioning = false;
-    m_animTimer = 0.f;
-    m_menu.reset();
-    m_titleText.reset();
-    m_subtitleText.reset();
-    m_marioDetailsText.reset();
-    m_luigiDetailsText.reset();
-    m_hintText.reset();
-
-    m_marioLeftSprite.reset();
-    m_marioRightSprite.reset();
-    m_luigiLeftSprite.reset();
-    m_luigiRightSprite.reset();
-
+void CharacterSelectState::initBackdropPanel() {
     m_panel.setSize({540.f, 324.f});
     m_panel.setPosition({50.f, 18.f});
     m_panel.setFillColor(PANEL_COLOR);
     m_panel.setOutlineColor(GOLD_COLOR);
     m_panel.setOutlineThickness(3.f);
+}
 
+void CharacterSelectState::initCards() {
     m_marioCard.setSize({CARD_WIDTH, CARD_HEIGHT});
     m_marioCard.setPosition({CARD_X, 112.f});
     m_marioCard.setFillColor(CARD_COLOR);
@@ -118,7 +106,9 @@ void CharacterSelectState::onEnter() {
     m_luigiRightBox.setFillColor(AVATAR_BOX_BG);
     m_luigiRightBox.setOutlineColor(AVATAR_BOX_OUTLINE);
     m_luigiRightBox.setOutlineThickness(1.f);
+}
 
+void CharacterSelectState::initAvatars() {
     m_characterTextureLoaded = false;
     try {
         m_characterTexture.emplace(CHARACTER_TEXTURE_PATH);
@@ -165,8 +155,9 @@ void CharacterSelectState::onEnter() {
             LUIGI_BOX_Y + (AVATAR_BOX_SIZE - 16.f * SMALL_HERO_SCALE) / 2.f
         });
     }
+}
 
-    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+void CharacterSelectState::initTextLabels() {
     if (!m_fontLoaded) {
         return;
     }
@@ -203,6 +194,12 @@ void CharacterSelectState::onEnter() {
     m_hintText->setFillColor(BODY_COLOR);
     UILayoutHelper::setPosition(*m_hintText, UIAnchor::TopCenter,
                                 {0.f, HINT_Y});
+}
+
+void CharacterSelectState::initMenu() {
+    if (!m_fontLoaded) {
+        return;
+    }
 
     m_menu = std::make_unique<UIMenuWidget>(m_font);
     m_menu->addItem("MARIO - FASTER RUNNER", [this]() {
@@ -214,6 +211,30 @@ void CharacterSelectState::onEnter() {
     m_menu->setSpacing(64.f);
     m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, MENU_CENTER_Y},
                         UIAnchor::Center);
+}
+
+void CharacterSelectState::onEnter() {
+    m_transitioning = false;
+    m_animTimer = 0.f;
+    m_menu.reset();
+    m_titleText.reset();
+    m_subtitleText.reset();
+    m_marioDetailsText.reset();
+    m_luigiDetailsText.reset();
+    m_hintText.reset();
+
+    m_marioLeftSprite.reset();
+    m_marioRightSprite.reset();
+    m_luigiLeftSprite.reset();
+    m_luigiRightSprite.reset();
+
+    initBackdropPanel();
+    initCards();
+    initAvatars();
+
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    initTextLabels();
+    initMenu();
 }
 
 void CharacterSelectState::onExit() {}

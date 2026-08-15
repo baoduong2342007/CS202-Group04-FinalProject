@@ -77,15 +77,7 @@ const sf::Color PREVIEW_FALLBACK_BG[4] = {
 
 LevelSelectState::LevelSelectState() {}
 
-void LevelSelectState::onEnter() {
-    m_transitioning = false;
-    m_animTimer = 0.f;
-    m_cards.clear();
-    m_stageTextures.clear();
-
-    m_fontLoaded = m_font.openFromFile(FONT_PATH);
-
-    // Load preview textures for all 4 stages
+void LevelSelectState::initStageTextures() {
     m_texturesLoaded = true;
     for (int i = 0; i < 4; ++i) {
         sf::Texture tex;
@@ -95,40 +87,45 @@ void LevelSelectState::onEnter() {
             // Fallback placeholder texture
             sf::Image fallbackImg;
             fallbackImg.resize({240, 180}, PREVIEW_FALLBACK_BG[i % 4]);
-            tex.loadFromImage(fallbackImg);
+            (void)tex.loadFromImage(fallbackImg);
             m_stageTextures.push_back(std::move(tex));
         }
     }
+}
 
-    // Outer backdrop panel
+void LevelSelectState::initBackdropPanel() {
     m_panel.setSize({PANEL_WIDTH, PANEL_HEIGHT});
     m_panel.setPosition({PANEL_X, PANEL_Y});
     m_panel.setFillColor(PANEL_COLOR);
     m_panel.setOutlineColor(GOLD_COLOR);
     m_panel.setOutlineThickness(2.5f);
+}
 
-    if (m_fontLoaded) {
-        m_titleText.emplace(m_font, "SELECT WORLD & STAGE", TITLE_FONT_SIZE);
-        m_titleText->setFillColor(GOLD_COLOR);
-        m_titleText->setOutlineColor(sf::Color::Black);
-        m_titleText->setOutlineThickness(1.5f);
-        sf::FloatRect titleBounds = m_titleText->getLocalBounds();
-        m_titleText->setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, 0.f});
-        m_titleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, TITLE_Y});
+void LevelSelectState::initTextLabels() {
+    if (!m_fontLoaded) return;
 
-        m_subtitleText.emplace(m_font, "Choose a stage to begin your adventure", SUBTITLE_FONT_SIZE);
-        m_subtitleText->setFillColor(MUTED_GOLD_COLOR);
-        sf::FloatRect subBounds = m_subtitleText->getLocalBounds();
-        m_subtitleText->setOrigin({subBounds.position.x + subBounds.size.x / 2.f, 0.f});
-        m_subtitleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, SUBTITLE_Y});
+    m_titleText.emplace(m_font, "SELECT WORLD & STAGE", TITLE_FONT_SIZE);
+    m_titleText->setFillColor(GOLD_COLOR);
+    m_titleText->setOutlineColor(sf::Color::Black);
+    m_titleText->setOutlineThickness(1.5f);
+    sf::FloatRect titleBounds = m_titleText->getLocalBounds();
+    m_titleText->setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, 0.f});
+    m_titleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, TITLE_Y});
 
-        m_hintText.emplace(m_font, "[A / D] SELECT STAGE    [ENTER / CLICK] START GAME    [ESC] BACK", HINT_FONT_SIZE);
-        m_hintText->setFillColor(GOLD_COLOR);
-        sf::FloatRect hintBounds = m_hintText->getLocalBounds();
-        m_hintText->setOrigin({hintBounds.position.x + hintBounds.size.x / 2.f, 0.f});
-        m_hintText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, HINT_Y});
-    }
+    m_subtitleText.emplace(m_font, "Choose a stage to begin your adventure", SUBTITLE_FONT_SIZE);
+    m_subtitleText->setFillColor(MUTED_GOLD_COLOR);
+    sf::FloatRect subBounds = m_subtitleText->getLocalBounds();
+    m_subtitleText->setOrigin({subBounds.position.x + subBounds.size.x / 2.f, 0.f});
+    m_subtitleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, SUBTITLE_Y});
 
+    m_hintText.emplace(m_font, "[A / D] SELECT STAGE    [ENTER / CLICK] START GAME    [ESC] BACK", HINT_FONT_SIZE);
+    m_hintText->setFillColor(GOLD_COLOR);
+    sf::FloatRect hintBounds = m_hintText->getLocalBounds();
+    m_hintText->setOrigin({hintBounds.position.x + hintBounds.size.x / 2.f, 0.f});
+    m_hintText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, HINT_Y});
+}
+
+void LevelSelectState::initStageCards() {
     const auto& catalog = LevelCatalog::getAll();
     const std::size_t count = std::min(catalog.size(), std::size_t(4));
 
@@ -160,7 +157,7 @@ void LevelSelectState::onEnter() {
         card.previewBox.setOutlineColor(CARD_OUTLINE);
         card.previewBox.setOutlineThickness(1.f);
 
-        // Setup Stage Preview Screenshot Sprite (cropping HUD bar at top for clean artwork)
+        // Setup Stage Preview Screenshot Sprite
         if (i < m_stageTextures.size()) {
             card.previewSprite.emplace(m_stageTextures[i]);
             const sf::Vector2u texSize = m_stageTextures[i].getSize();
@@ -214,6 +211,20 @@ void LevelSelectState::onEnter() {
 
         m_cards.push_back(std::move(card));
     }
+}
+
+void LevelSelectState::onEnter() {
+    m_transitioning = false;
+    m_animTimer = 0.f;
+    m_cards.clear();
+    m_stageTextures.clear();
+
+    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+
+    initStageTextures();
+    initBackdropPanel();
+    initTextLabels();
+    initStageCards();
 
     selectCard(0);
 }

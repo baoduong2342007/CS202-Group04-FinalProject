@@ -34,6 +34,11 @@ public:
     void render(sf::RenderTarget& target) override;
 
 private:
+    void initBackdropPanel();
+    void initCards();
+    void initAvatars();
+    void initTextLabels();
+    void initMenu();
     void queuePlay(CharacterType characterType);
 
     sf::Font m_font;

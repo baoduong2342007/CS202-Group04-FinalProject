@@ -24,6 +24,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-14 | Pipe Exit / Emerging Animation & Complete Luigi Warp Parity | CTest 20/20 PASS | Added smooth pipe emergence animation (`EXITING_VERTICAL`, rising UP out of destination pipe with `powerdown` audio cue); verified 100% full parity for Luigi (including Luigi crouch/walk/idle and sprite frames during pipe entrance/exit). |
 | 2026-08-15 | Sprint 7 TV1 4-Level Release Contract (`S7-TV1-01`..`04`) | CTest 20/20 PASS | Formalized 4-level release graph: `1-1 Overworld` -> `1-2 Underground` -> `1-3 Underwater` -> `1-4 Castle` -> `Win`. Updated `LevelCatalog.h`, `level4.txt`, `LevelCatalogTests.cpp`, `PlayStateTests.cpp`, `Gate0ContractTests.cpp`, and `TV5IntegrationTests.cpp`. |
 | 2026-08-15 | Stage Select UI & Flow Integration (`LevelSelectState`) | CTest 20/20 PASS | Created `LevelSelectState` presenting 4 themed cards (Overworld, Underground, Underwater, Castle) with keyboard and mouse interaction. Wired Title Menu `START GAME` -> `LevelSelectState` -> `CharacterSelectState(selectedLevel)` -> `PlayState(selectedLevel, characterType)`. |
+| 2026-08-15 | Code Review Remediation for `cc80466` (P0/P1/P2 fixes) | CTest 20/20 PASS | Eliminated hot-loop `dynamic_cast` via virtual `isCoin()`; decomposed `Mario::update()` (~40 lines) and `Level::update()` (~45 lines) into focused helpers; enforced Box2D physics sync at line 1 of update loop; decomposed `onEnter()` in `LevelSelectState` & `CharacterSelectState`; cleaned `level4.txt` trailing lines; added automated validation for all 4 release levels in `LevelValidatorTests.cpp`. |
 
 ## 2026-08-12 remediation scope
 
@@ -717,6 +718,43 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   5. Added dynamic action tags (`> PLAY <` in gold on active card, `STAGE N` on inactive cards) with animated golden pulsing borders.
   6. Verified via offscreen rendered snapshot inspection and 20/20 passing CTest suites.
 
-
-
-
+### 46. Code Review Remediation for Commit `cc80466` (P0/P1/P2 Quality & Performance Fixes)
+- **Date:** 2026-08-15
+- **Author:** TV1 (Dương)
+- **Status:** Completed; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/items/Item.h`
+  - `include/items/Coin.h`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `include/entities/Mario.h`
+  - `src/entities/Mario.cpp`
+  - `include/states/LevelSelectState.h`
+  - `src/states/LevelSelectState.cpp`
+  - `include/states/CharacterSelectState.h`
+  - `src/states/CharacterSelectState.cpp`
+  - `levels/level4.txt`
+  - `tests/LevelValidatorTests.cpp`
+  - `docs/change_in_develop.md`
+- **Logic Changes:**
+  1. **P0/P1 — Dynamic Cast Elimination in Hot Loop (`Level.cpp`)**:
+     - Added `virtual bool isCoin() const { return false; }` in `include/items/Item.h`.
+     - Overrode `bool isCoin() const override { return true; }` in `include/items/Coin.h`.
+     - Replaced `dynamic_cast<const Coin*>` inside `Level::checkItemCollisions()` with `item->isCoin()` virtual check and safe `static_cast<const Coin*>`, completely removing RTTI overhead in the hot collision loop (adhering to `AGENTS.md` Rule #5).
+  2. **P0/P1 — Mario Update Function Length & Physics Sync Order (`Mario.cpp`)**:
+     - Moved `syncPhysics()` unconditionally to line 1 of `Mario::update(float dt)`, ensuring Box2D physics solver state is always synchronized before any movement logic runs (adhering to `AGENTS.md` Rule #3).
+     - Decomposed the ~176-line `Mario::update()` into 5 clean, focused helper methods: `handleDeathPhase(dt)`, `handleTransformPhase(dt)`, `handleSpawnPhase(dt)`, `updateMovementAnimations(dt)`, and `applyWorldBoundsClamp()`.
+     - Reduced `Mario::update()` to ~40 lines, strictly complying with the 40-50 line convention.
+  3. **P0/P1 — Level Update Function Length Deconstruction (`Level.cpp`)**:
+     - Decomposed the ~235-line `Level::update()` by extracting `updateFlagSequence(dt)`, `updateEntities(dt)`, and `updateExplosions()`.
+     - Reduced `Level::update()` to ~45 lines.
+  4. **P2 — Decomposed `onEnter()` in Select States (`LevelSelectState.cpp`, `CharacterSelectState.cpp`)**:
+     - Split `LevelSelectState::onEnter()` into `initStageTextures()`, `initBackdropPanel()`, `initTextLabels()`, and `initStageCards()`.
+     - Split `CharacterSelectState::onEnter()` into `initBackdropPanel()`, `initCards()`, `initAvatars()`, `initTextLabels()`, and `initMenu()`.
+     - Silenced nodiscard compiler warning for image loading in fallback preview path.
+  5. **P2 — Cleaned Trailing Empty Lines in `levels/level4.txt`**:
+     - Removed trailing empty lines 26-27 so `level4.txt` conforms cleanly to rectangular map bounds.
+  6. **P2 — Extended `LevelValidatorTests.cpp` Coverage**:
+     - Added `testProductionLevelsLoad()` ensuring all 4 release levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) are validated for valid non-zero dimensions, single Mario spawn (`M`), single Flagpole (`F`/`T`), and valid parsing.
+  7. **Release Gate Verification**:
+     - Ran full CTest suite: all 20/20 test suites passed in 8.79s with 0 failures.

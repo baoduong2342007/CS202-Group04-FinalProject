@@ -275,6 +275,7 @@ void HUD::setTimeoutCallback(std::function<void()> callback) {
 bool HUD::loadFont(const std::string &filepath) {
   // SFML 3: sf::Font::openFromFile returns bool — check it explicitly.
   if (m_font.openFromFile(filepath)) {
+    m_font.setSmooth(false);
     return true;
   }
 

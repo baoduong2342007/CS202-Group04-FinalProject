@@ -88,6 +88,8 @@ public:
     void powerDown();
     void queuePowerDown();
     void addScore(int points);
+    /// Queue an arbitrary score popup feedback (and apply points/life).
+    void queueScoreAward(const sf::Vector2f& position, int points, bool grantsLife = false);
     /// Award the next airborne stomp-chain value and queue its popup.
     StompScoreAward awardStompScore(const sf::Vector2f& position);
     /// Drain popups after the Box2D step and begin a new simultaneity window.

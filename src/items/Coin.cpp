@@ -25,12 +25,34 @@ constexpr const char *MAP_COIN_TEXTURE_PATH =
 constexpr const char *QUESTION_COIN_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
 
-std::vector<sf::IntRect> mapCoinFrames() {
-  return {
-      TileFrames::COIN_OVERWORLD,
-      TileFrames::COIN_OVERWORLD_SIDE,
-      TileFrames::COIN_OVERWORLD_THIN,
-  };
+std::vector<sf::IntRect> mapCoinFrames(LevelTheme theme) {
+  switch (theme) {
+    case LevelTheme::UNDERGROUND:
+      return {
+          TileFrames::COIN_UNDERGROUND,
+          TileFrames::COIN_UNDERGROUND_SIDE,
+          TileFrames::COIN_UNDERGROUND_THIN,
+      };
+    case LevelTheme::CASTLE:
+      return {
+          TileFrames::COIN_CASTLE,
+          TileFrames::COIN_CASTLE_SIDE,
+          TileFrames::COIN_CASTLE_THIN,
+      };
+    case LevelTheme::UNDERWATER:
+      return {
+          TileFrames::COIN_UNDERWATER,
+          TileFrames::COIN_UNDERWATER_SIDE,
+          TileFrames::COIN_UNDERWATER_THIN,
+      };
+    case LevelTheme::OVERWORLD:
+    default:
+      return {
+          TileFrames::COIN_OVERWORLD,
+          TileFrames::COIN_OVERWORLD_SIDE,
+          TileFrames::COIN_OVERWORLD_THIN,
+      };
+  }
 }
 
 void scaleCoinSprite(sf::Sprite &sprite, const sf::Vector2f &size) {
@@ -55,19 +77,20 @@ float scaleQuestionPopupSprite(sf::Sprite &sprite, const sf::Vector2f &size) {
 }
 } // namespace
 
-Coin::Coin()
+Coin::Coin(LevelTheme theme)
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)),
-      m_type(CoinType::COLLECTIBLE), m_initialY(0.f) {
+      m_type(CoinType::COLLECTIBLE), m_theme(theme), m_initialY(0.f) {
   initPhysics(nullptr, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT),
               true);
   setSprite(MAP_COIN_TEXTURE_PATH);
   m_animationSystem->addAnimation(
-      "idle", AnimationSystem::createManualAnimation(mapCoinFrames(), 0.2f));
+      "idle", AnimationSystem::createManualAnimation(mapCoinFrames(m_theme), 0.2f));
   playAnimation("idle");
 }
 
-Coin::Coin(const sf::Vector2f &position, b2World *world, CoinType type)
+Coin::Coin(const sf::Vector2f &position, b2World *world, CoinType type, LevelTheme theme)
     : Item(position, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT)), m_type(type),
+      m_theme(theme),
       m_initialY(position.y) {
   if (m_type == CoinType::COLLECTIBLE) {
     initPhysics(world, b2_staticBody, sf::Vector2f(COIN_WIDTH, COIN_HEIGHT),
@@ -81,7 +104,7 @@ Coin::Coin(const sf::Vector2f &position, b2World *world, CoinType type)
   m_animationSystem->addAnimation(
       "idle", AnimationSystem::createManualAnimation(
                   isQuestionPopup ? SpriteFrames::shared::Items::coinFrames()
-                                  : mapCoinFrames(),
+                                  : mapCoinFrames(m_theme),
                   frameDuration));
   playAnimation("idle");
 

@@ -83,12 +83,14 @@ void LevelSelectState::initStageTextures() {
     for (int i = 0; i < 4; ++i) {
         sf::Texture tex;
         if (tex.loadFromFile(STAGE_TEXTURE_PATHS[i])) {
+            tex.setSmooth(false);
             m_stageTextures.push_back(std::move(tex));
         } else {
             // Fallback placeholder texture
             sf::Image fallbackImg;
             fallbackImg.resize({240, 180}, PREVIEW_FALLBACK_BG[i % 4]);
             (void)tex.loadFromImage(fallbackImg);
+            tex.setSmooth(false);
             m_stageTextures.push_back(std::move(tex));
         }
     }
@@ -234,6 +236,9 @@ void LevelSelectState::onEnter() {
     }
 
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (m_fontLoaded) {
+        m_font.setSmooth(false);
+    }
 
     initStageTextures();
     initBackdropPanel();

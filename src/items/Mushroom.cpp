@@ -12,6 +12,9 @@
 #include "patterns/EventType.h"
 #include "core/AnimationSystem.h"
 #include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_udg.h"
+#include "core/SpriteFrames_castle.h"
+#include "core/SpriteFrames_udw.h"
 #include "core/ScoreRules.h"
 
 namespace {
@@ -20,29 +23,51 @@ constexpr float MUSHROOM_HEIGHT = 32.f;
 constexpr float DEFAULT_MUSHROOM_SPEED = 60.f;
 constexpr const char* MUSHROOM_TEXTURE_PATH =
     "assets/textures/items/items_objects.png";
+
+sf::IntRect getMushroomFrame(MushroomType type, LevelTheme theme) {
+    if (type == MushroomType::ONE_UP) {
+        switch (theme) {
+            case LevelTheme::UNDERGROUND: return SpriteFrames::udg::Items::ONE_UP_MUSHROOM;
+            case LevelTheme::CASTLE:      return SpriteFrames::castle::Items::ONE_UP_MUSHROOM;
+            case LevelTheme::UNDERWATER:  return SpriteFrames::udw::Items::ONE_UP_MUSHROOM;
+            case LevelTheme::OVERWORLD:
+            default:                      return SpriteFrames::ovw::Items::ONE_UP_MUSHROOM;
+        }
+    } else {
+        switch (theme) {
+            case LevelTheme::UNDERGROUND: return SpriteFrames::udg::Items::SUPER_MUSHROOM;
+            case LevelTheme::CASTLE:      return SpriteFrames::castle::Items::SUPER_MUSHROOM;
+            case LevelTheme::UNDERWATER:  return SpriteFrames::udw::Items::SUPER_MUSHROOM;
+            case LevelTheme::OVERWORLD:
+            default:                      return SpriteFrames::ovw::Items::SUPER_MUSHROOM;
+        }
+    }
+}
 } // namespace
 
-Mushroom::Mushroom(MushroomType type)
+Mushroom::Mushroom(MushroomType type, LevelTheme theme)
     : Item(sf::Vector2f(0.f, 0.f), sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
       m_type(type),
+      m_theme(theme),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
     initPhysics(nullptr, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
-    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::ovw::Items::ONE_UP_MUSHROOM : SpriteFrames::ovw::Items::SUPER_MUSHROOM;
+    sf::IntRect frame = getMushroomFrame(m_type, m_theme);
     m_animationSystem->addAnimation("idle",
         AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");
 }
 
-Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType type)
+Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType type, LevelTheme theme)
     : Item(position, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT)),
       m_type(type),
+      m_theme(theme),
       m_patrolSpeed(DEFAULT_MUSHROOM_SPEED),
       m_patrolDirection(1) {
     initPhysics(world, b2_dynamicBody, sf::Vector2f(MUSHROOM_WIDTH, MUSHROOM_HEIGHT));
     setSprite(MUSHROOM_TEXTURE_PATH);
-    sf::IntRect frame = (m_type == MushroomType::ONE_UP) ? SpriteFrames::ovw::Items::ONE_UP_MUSHROOM : SpriteFrames::ovw::Items::SUPER_MUSHROOM;
+    sf::IntRect frame = getMushroomFrame(m_type, m_theme);
     m_animationSystem->addAnimation("idle",
         AnimationSystem::createManualAnimation(std::vector<sf::IntRect>{frame}, 1.f));
     playAnimation("idle");

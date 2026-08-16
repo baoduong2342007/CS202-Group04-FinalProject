@@ -25,6 +25,9 @@ namespace {
 WinState::WinState(const GameProgress& progress)
     : m_font(), m_fontLoaded(false), m_progress(progress) {
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (m_fontLoaded) {
+        m_font.setSmooth(false);
+    }
     if (!m_fontLoaded) {
 #ifdef DEBUG
         std::cerr << "[DEBUG][WinState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";

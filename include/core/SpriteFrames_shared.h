@@ -804,15 +804,16 @@ inline const std::vector<sf::IntRect> &fireballExplosionFrames() {
 
 // Score Text
 inline const sf::IntRect SCORE_100({234, 26}, {16, 8});
-inline const sf::IntRect SCORE_200({252, 26}, {16, 8});
-inline const sf::IntRect SCORE_400({270, 26}, {16, 8});
-inline const sf::IntRect SCORE_800({288, 26}, {16, 8});
-inline const sf::IntRect SCORE_1000({234, 36}, {16, 8});
+inline const sf::IntRect SCORE_1000({252, 26}, {16, 8});
+inline const sf::IntRect SCORE_200({234, 36}, {16, 8});
 inline const sf::IntRect SCORE_2000({252, 36}, {16, 8});
-inline const sf::IntRect SCORE_4000({270, 36}, {16, 8});
-inline const sf::IntRect SCORE_5000({288, 36}, {16, 8});
-inline const sf::IntRect SCORE_8000({234, 46}, {16, 8});
-inline const sf::IntRect SCORE_1UP({252, 46}, {16, 8});
+inline const sf::IntRect SCORE_400({234, 46}, {16, 8});
+inline const sf::IntRect SCORE_4000({252, 46}, {16, 8});
+inline const sf::IntRect SCORE_500({234, 56}, {16, 8});
+inline const sf::IntRect SCORE_5000({252, 56}, {16, 8});
+inline const sf::IntRect SCORE_800({234, 66}, {16, 8});
+inline const sf::IntRect SCORE_8000({252, 66}, {16, 8});
+inline const sf::IntRect SCORE_1UP({252, 76}, {16, 8});
 
 // Trampoline / Springboard
 // Overworld Palette (Y offset = 0)
@@ -1693,6 +1694,7 @@ inline const std::vector<sf::IntRect> &fireballExplosionFrames() {
 inline const sf::IntRect &SCORE_100 = legacy::Items::SCORE_100;
 inline const sf::IntRect &SCORE_200 = legacy::Items::SCORE_200;
 inline const sf::IntRect &SCORE_400 = legacy::Items::SCORE_400;
+inline const sf::IntRect &SCORE_500 = legacy::Items::SCORE_500;
 inline const sf::IntRect &SCORE_800 = legacy::Items::SCORE_800;
 inline const sf::IntRect &SCORE_1000 = legacy::Items::SCORE_1000;
 inline const sf::IntRect &SCORE_2000 = legacy::Items::SCORE_2000;

@@ -661,6 +661,7 @@ void Level::update(float dt) {
     checkFinishFlag();
     updateExplosions();
     removeDeadEntities();
+    processPendingStompScorePopups();
 
     // Update camera to follow Mario's center
     if (m_mario) {
@@ -689,7 +690,7 @@ void Level::processPendingStompScorePopups() {
 
 void Level::spawnScorePopup(const StompScoreAward& award) {
     auto popup =
-        std::make_unique<ScorePopup>(award.position, award.points, award.grantsLife);
+        std::make_unique<ScorePopup>(award.position, award.points, award.grantsLife, m_theme);
     popup->setTextureManager(m_textureManager);
     popup->update(0.f);
     m_entities.push_back(std::move(popup));

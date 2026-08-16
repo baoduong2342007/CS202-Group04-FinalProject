@@ -25,6 +25,14 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-15 | Sprint 7 TV1 4-Level Release Contract (`S7-TV1-01`..`04`) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Formalized 4-level release graph: `1-1 Overworld` -> `1-2 Underground` -> `1-3 Underwater` -> `1-4 Castle` -> `Win`. Updated `LevelCatalog.h`, `level4.txt`, `LevelCatalogTests.cpp`, `PlayStateTests.cpp`, `Gate0ContractTests.cpp`, and `TV5IntegrationTests.cpp`. |
 | 2026-08-15 | Stage Select UI & Flow Integration (`LevelSelectState`) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Created `LevelSelectState` presenting 4 themed cards (Overworld, Underground, Underwater, Castle) with keyboard and mouse interaction. Wired Title Menu `START GAME` -> `LevelSelectState` -> `CharacterSelectState(selectedLevel)` -> `PlayState(selectedLevel, characterType)`. |
 | 2026-08-15 | Code Review Remediation for `cc80466` (P0/P1/P2 fixes) | CTest 20/20 PASS (historical snapshot; not current RC evidence) | Eliminated hot-loop `dynamic_cast` via virtual `isCoin()`; decomposed `Mario::update()` (~40 lines) and `Level::update()` (~45 lines) into focused helpers; enforced Box2D physics sync at line 1 of update loop; decomposed `onEnter()` in `LevelSelectState` & `CharacterSelectState`; cleaned `level4.txt` trailing lines; added automated validation for all 4 release levels in `LevelValidatorTests.cpp`. |
+| 2026-08-16 | Fix Fire State Growth/Shrink Transformation Animation | CTest 21/21 PASS | Fixed `Mario::applyStateTransition` to prioritize `usesFireTransition` over `m_characterType == LUIGI` so Fire Small -> Fire Super uses Fire transformation frames instead of normal green Luigi frames; added regression tests. |
+| 2026-08-16 | Multi-kill Combo Scoring & Defeat Score Popup Fixes | CTest 21/21 PASS | Fixed missing score popups for FireBall, sliding Koopa shell, Star, and block bump kills; implemented sliding shell combo kill streak (200..8000, 1UP); verified airborne stomp multi-kill handling. |
+| 2026-08-16 | Item/Enemy Theme Support, Pixel Sharpness & Title Screen Redesign | CTest 21/21 PASS | Added `LevelTheme` to `Coin` and `Mushroom`; fixed `CheepCheep` red swim frames across all themes; redesigned `levels/level3.txt` (1-3 Underwater); disabled font smoothing for crystal-clear UI; redesigned `MenuState` Title Screen with full scenery, HUD, and live character animation. |
+| 2026-08-16 | Fix Score Popup Texture Rect Mapping in Shared Atlas | CTest 21/21 PASS | Corrected completely scrambled score popup texture rect coordinates in `SpriteFrames_shared.h` (SCORE_200..8000, 1UP) so displayed visual score popups precisely match the points awarded to Mario; added `SCORE_500` support. |
+| 2026-08-16 | Multi-Theme Score Popups & Title Screen Layout Fine-tuning | CTest 21/21 PASS | Implemented theme-aware score popups across all 4 environments (Overworld, Underground, Castle, Underwater); removed clunky bounding boxes and overlapping blocks from `MenuState` Title Screen for authentic NES presentation; verified with render snapshot tests. |
+| 2026-08-16 | Title Cover Screen Branding & Clutter Cleanup | CTest 21/21 PASS | Removed gameplay HUD banner (`MARIO 000000 | x00 WORLD 1-1 TIME 400`) and arbitrary high-score line from Title cover screen; added project credit `CS202 - OOP FINAL PROJECT` and team name `GROUP 04`; polished vertical layout and spacing. |
+| 2026-08-16 | Title Screen Pipe Symmetry & Title Punctuation Cleanup | CTest 21/21 PASS | Symmetrically balanced left pipe (`x=32..96`) and right pipe (`x=544..608`) with exact 32px screen edge margins; centered Goomba (`x=320`) and balanced Mario (`x=200`) and Luigi (`x=440`); removed trailing dot from `SUPER MARIO BROS`. |
+| 2026-08-16 | Authentic NES Underwater Cheep Cheep Sprite Configuration | CTest 21/21 PASS | Configured `SpriteFrames_udw.h` and `Level.cpp` to use the authentic NES 1985 grey/white underwater palette (`UW_SWIM_UP {292, 164}`) for Cheep Cheeps swimming in World 1-3. |
 
 ## 2026-08-12 remediation scope
 
@@ -791,3 +799,214 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   [S7_TV5_PACKAGE_MANIFEST.md](management/S7_TV5_PACKAGE_MANIFEST.md),
   [TV1_CHANGES_SUMMARY.md](management/TV1_CHANGES_SUMMARY.md), and
   [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md).
+
+### 48. Fix Fire State Growth/Shrink Transformation Animation Selection
+- **Date:** 2026-08-16
+- **Author:** TV1 (Dương)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `src/entities/Mario.cpp`
+  - `tests/MarioPhysicsTests.cpp`
+- **Detailed Logic Changes:**
+  1. **Fixed Priority in `isGrowth` / `isShrink` in `Mario::applyStateTransition()`**:
+     - Previously, `m_characterType == CharacterType::LUIGI` was evaluated before `usesFireTransition`, causing Luigi in `FIRE_SMALL` upgrading to `FIRE_SUPER` (e.g., collecting a Mushroom) to mistakenly play `GrowShrink::Luigi::growSequence()` (normal green Luigi small->medium->big frames) instead of Fire transformation frames.
+     - Changed the sequence selector to prioritize `usesFireTransition` (`GrowShrink::FireMario::growSequence()` / `shrinkSequence()`) for both Mario and Luigi whenever transitioning between Fire body states, and preserved character-specific normal sequences (`Luigi::growSequence()` / `Mario::growSequence()`) for standard non-fire state transitions.
+  2. **Character-Aware Fire Upgrade/Downgrade Sequence**:
+     - Updated `isFireUpgrade || isFireDowngrade` presentation branch so Luigi properly uses `GrowShrink::Luigi::bigFireSequence()` / `smallFireSequence()`, while Mario uses `GrowShrink::FireMario::bigFireSequence()` / `smallFireSequence()`.
+  3. **Regression Test Coverage in `MarioPhysicsTests.cpp`**:
+     - Extended `testLuigiTransformationUsesLuigiRows()` to verify that `FIRE_SMALL` + Mushroom -> `FIRE_SUPER` explicitly renders frames from `SpriteFrames::shared::GrowShrink::FireMario::BIG` instead of the green normal Luigi row.
+  4. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 9.50s with 0 failures.
+
+### 49. Fix Defeat Score Popups (Fireball, Shell, Star, Block Bump) & Implement Shell Kill Streak
+- **Date:** 2026-08-16
+- **Author:** TV3 (Bảo) & TV1 (Dương)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/entities/Mario.h`
+  - `src/entities/Mario.cpp`
+  - `include/entities/Koopa.h`
+  - `src/entities/Koopa.cpp`
+  - `include/physics/CollisionManager.h`
+  - `src/physics/CollisionManager.cpp`
+  - `src/level/Level.cpp`
+  - `tests/StompScoreTests.cpp`
+- **Detailed Logic Changes:**
+  1. **Generic Score Award Queueing (`Mario::queueScoreAward`)**:
+     - Added `Mario::queueScoreAward(position, points, grantsLife)` to handle score point awards, 1UP lives addition + `EventType::ONE_UP_COLLECTED` notification, and queueing of `StompScoreAward` for `Level` to render as `ScorePopup`.
+  2. **Fireball Defeat Score Popup (`CollisionManager::defeatEnemy`)**:
+     - Fixed missing score popup when enemies are defeated by FireBall (`DefeatCause::FIREBALL`). It now queues a 200-point `ScorePopup` at the defeated enemy's center position.
+  3. **Koopa Shell Sliding Streak & Combo Scoring (`Koopa` & `CollisionManager`)**:
+     - Added `m_shellKillStreak` to `Koopa` class to track consecutive kills by the sliding shell; reset on kick, stomp, and death.
+     - Updated `CollisionManager::defeatEnemy` with `streakIndex` parameter applying canonical SMB1 progression: `200 -> 400 -> 800 -> 1000 -> 2000 -> 4000 -> 5000 -> 8000 -> 1UP` and spawning appropriate `ScorePopup`s at each victim's position.
+     - Updated `CollisionManager::tryShellKill` lambda to query and increment shell kill streak on successful defeat transactions.
+  4. **Star & Block Bump Score Popups**:
+     - Added score popup generation for Starman kills (200 pts) and Block bump kills (100 pts).
+  5. **Immediate Score Popup Processing in `Level::update()`**:
+     - Added a second drain call to `processPendingStompScorePopups()` after `updateEntities()` and `removeDeadEntities()` so popups generated during entity/block updates appear in the very same frame without 1-frame latency.
+  6. **Unit Test Suite Expansion (`StompScoreTests.cpp`)**:
+     - Added `testFireballDefeatScoreAndPopup()`, `testSlidingShellDefeatChainAndPopups()` (testing full 8-step score progression + 1UP), and `testStarAndBlockBumpScoreAndPopups()`.
+  7. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 5.81s with 0 failures.
+
+### 50. Item/Enemy Theme Support, Pixel Sharpness & Title Screen Redesign
+- **Date:** 2026-08-16
+- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/items/Coin.h`
+  - `src/items/Coin.cpp`
+  - `include/items/Mushroom.h`
+  - `src/items/Mushroom.cpp`
+  - `src/entities/QuestionBlock.cpp`
+  - `include/patterns/EntityFactory.h`
+  - `src/patterns/EntityFactory.cpp`
+  - `src/entities/CheepCheep.cpp`
+  - `levels/level3.txt`
+  - `levels/cheep_cheep.txt`
+  - `levels/elevators.txt`
+  - `include/states/MenuState.h`
+  - `src/states/MenuState.cpp`
+  - `src/states/LevelSelectState.cpp`
+  - `src/states/CharacterSelectState.cpp`
+  - `src/states/PauseState.cpp`
+  - `src/states/GameOverState.cpp`
+  - `src/states/WinState.cpp`
+  - `src/ui/HUD.cpp`
+  - `tests/SpriteFramesThemeTests.cpp`
+- **Detailed Logic Changes:**
+  1. **Item Theme Propagation (`Coin` & `Mushroom`)**:
+     - Added `LevelTheme` support to `Coin` and `Mushroom`. Map coins (`'C'`) and mushrooms now resolve palette-accurate sprites corresponding to the active `LevelTheme` (`OVERWORLD`, `UNDERGROUND`, `CASTLE`, `UNDERWATER`).
+     - `QuestionBlock::onHit()` now maps its `BlockTheme` to `LevelTheme` and passes it to spawned `Coin` and `Mushroom` entities so power-ups emerging from blocks match the level palette.
+     - Updated `EntityFactory::createItem` and `createFromTileCode` to forward `LevelTheme`.
+  2. **Cheep Cheep Red/Green Swim Animation Fix (`CheepCheep.cpp`)**:
+     - Fixed `CheepCheep::initAnimations` so red Cheep Cheeps (`m_color == CheepCheepColor::RED`) use `redSwimFrames()` across all themes (`UNDERGROUND`, `CASTLE`, `UNDERWATER`, `OVERWORLD`) instead of defaulting to green swim frames in non-overworld themes.
+  3. **Level 3 (World 1-3 Underwater) Authentic Redesign (`levels/level3.txt`)**:
+     - Converted `levels/level3.txt` from a legacy Castle duplicate into an authentic, rich Underwater coral reef stage featuring swimming Cheep Cheeps (`c`, `x`), coral formations (`1`), question blocks (`?`, `U`, `f`, `O`), and floating coin paths (`C`), fully compliant with `Gate0ContractTests` and `LevelValidatorTests`.
+     - Updated `levels/cheep_cheep.txt` and `levels/elevators.txt` documentation and route comments.
+  4. **Global UI Pixel Sharpness & Font Smoothing Elimination**:
+     - Added `m_font.setSmooth(false)` across all UI states (`MenuState`, `LevelSelectState`, `CharacterSelectState`, `PauseState`, `GameOverState`, `WinState`, `HUD`) to eliminate font texture blurriness and achieve razor-sharp retro pixel typography.
+     - Disabled texture smoothing on preview cards and character avatars (`tex.setSmooth(false)`).
+  5. **Polished Title / Cover Screen Overhaul (`MenuState.cpp`)**:
+     - Replaced the squished fractional-scaled 256px NES banner with a full-canvas (640x360) presentation:
+       - Double-row ground tiles, classic green pipes, and floating question/brick blocks.
+       - Top arcade HUD (`MARIO`, `WORLD 1-1`, `TIME 400`, `x00` spinning coin).
+       - Floating 3D Title Plaque (`SUPER MARIO - CS202 REMASTERED`) with gold/crimson styling and subtle bobbing animation.
+       - Live animated Mario (left), Luigi (right), and Goomba.
+       - Arcade `TOP - 000000` high-score display and blinking `PRESS ENTER OR CLICK TO START`.
+       - Interactive menu with animated Super Mushroom cursor.
+  6. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 5.37s with 0 failures.
+
+### 51. Fix Score Popup Texture Rect Mapping in Shared Atlas
+- **Date:** 2026-08-16
+- **Author:** TV5 (Truyền) & TV1 (Dương)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/core/SpriteFrames_shared.h`
+  - `src/entities/ScorePopup.cpp`
+  - `tests/SpriteFramesThemeTests.cpp`
+- **Detailed Logic Changes:**
+  1. **Atlas Coordinate Grid Alignment in `SpriteFrames_shared.h`**:
+     - Discovered that score frame coordinates in `items_objects.png` were completely misaligned with the texture atlas:
+       - `SCORE_200` was previously pointing to `(252, 26)` which is actually `1000`.
+       - `SCORE_400` & `SCORE_800` were pointing to `(270, 26)` & `(288, 26)` which are empty/transparent areas.
+       - `SCORE_1000` was pointing to `(234, 36)` which is actually `200`.
+       - `SCORE_4000` & `SCORE_5000` were pointing to empty areas.
+       - `SCORE_8000` was pointing to `(234, 46)` which is `400`.
+       - `SCORE_1UP` was pointing to `(252, 46)` which is `4000`.
+     - Corrected the entire score mapping to match the authentic 2-column vertical grid:
+       - Column X=234: `SCORE_100` (Y=26), `SCORE_200` (Y=36), `SCORE_400` (Y=46), `SCORE_500` (Y=56), `SCORE_800` (Y=66).
+       - Column X=252: `SCORE_1000` (Y=26), `SCORE_2000` (Y=36), `SCORE_4000` (Y=46), `SCORE_5000` (Y=56), `SCORE_8000` (Y=66), `SCORE_1UP` (Y=76).
+  2. **Added `SCORE_500` Frame Support (`ScorePopup.cpp`)**:
+     - Added `case 500: return SCORE_500;` to `ScorePopup::frameFor` to handle 500-point awards cleanly.
+  3. **Expanded Regression Tests (`SpriteFramesThemeTests.cpp`)**:
+     - Added `testScoreCoordinates()` asserting exact pixel positions for all 11 score text frames (`SCORE_100` .. `SCORE_8000`, `SCORE_1UP`).
+  4. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 10.09s with 0 failures.
+
+### 52. Multi-Theme Score Popups & Title Screen Layout Fine-tuning
+- **Date:** 2026-08-16
+- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/entities/ScorePopup.h`
+  - `src/entities/ScorePopup.cpp`
+  - `src/level/Level.cpp`
+  - `include/states/MenuState.h`
+  - `src/states/MenuState.cpp`
+  - `tests/DisplayCameraUITests.cpp`
+- **Detailed Logic Changes:**
+  1. **Multi-Theme Score Popups Support (`ScorePopup` & `Level`)**:
+     - Extended `ScorePopup` to take `LevelTheme` and resolve palette-themed score digits across all 4 environments:
+       - Overworld: base Y offsets (Y=26..76)
+       - Underground: cyan palette Y offsets (+108 -> Y=134..184)
+       - Castle: stone grey palette Y offsets (+216 -> Y=242..292)
+       - Underwater: teal palette Y offsets (+324 -> Y=350..400)
+     - `Level::spawnScorePopup` forwards `m_theme` so floating defeat score numbers visually match the environment palette.
+  2. **Title Screen Polish & Clutter Removal (`MenuState.cpp`)**:
+     - Removed arbitrary bounding boxes and floating blocks that overlapped with menu text.
+     - Replaced with authentic, clean NES Super Mario Bros title composition:
+       - Large gold `SUPER MARIO BROS.` 3D title with crimson shadow.
+       - Centered `(C) 1985 NINTENDO` and `TOP - 000000` high score.
+       - Perfectly aligned `1 PLAYER GAME` and `STAGE SELECT` with animated Super Mushroom cursor.
+       - Blinking `PRESS ENTER OR CLICK TO START` prompt.
+       - Clear, unobstructed ground with animated Mario, Luigi, and Goomba.
+  3. **Visual Verification (`DisplayCameraUITests.cpp`)**:
+     - Added `testMenuStateRenderSnapshot()` to render and export full 640x360 frame snapshots for automated visual validation.
+  4. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 9.43s with 0 failures.
+
+### 53. Title Cover Screen Branding & Clutter Cleanup
+- **Date:** 2026-08-16
+- **Author:** TV1 (Dương) & TV2 (Nhật)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/states/MenuState.h`
+  - `src/states/MenuState.cpp`
+- **Detailed Logic Changes:**
+  1. **Removed In-Game HUD Elements from Title Screen (`MenuState.cpp`)**:
+     - Removed the in-game gameplay HUD bar (`MARIO 000000 | x00 WORLD 1-1 TIME 400`) and the `TOP - 000000` text to make the title screen clean, authentic, and uncluttered.
+  2. **Added Course & Group Branding**:
+     - Added `CS202 - OOP FINAL PROJECT` in crisp white retro pixel font directly under the 3D Title logo (`Y=108`).
+     - Added `GROUP 04` in arcade gold retro pixel font (`Y=126`).
+  3. **Optimized Spacing & Vertical Hierarchy**:
+     - Balanced menu options `1 PLAYER GAME` and `STAGE SELECT` (`Y=182`) with aligned animated mushroom cursor.
+     - Positioned copyright `(C) 1985 NINTENDO` cleanly below the menu (`Y=228`).
+     - Maintained clear open sky for blinking `PRESS ENTER OR CLICK TO START` (`Y=262`).
+  4. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 5.70s with 0 failures.
+
+### 54. Title Screen Pipe Symmetry & Title Punctuation Cleanup
+- **Date:** 2026-08-16
+- **Author:** TV1 (Dương) & TV2 (Nhật)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `src/states/MenuState.cpp`
+- **Detailed Logic Changes:**
+  1. **Centered & Symmetrized Green Pipes (`MenuState.cpp`)**:
+     - Adjusted right pipe position from `x=576` (which touched the right edge) to `x=544..608`.
+     - Now both the left pipe (`x=32..96`) and right pipe (`x=544..608`) maintain an identical 32px margin from the screen borders for flawless horizontal symmetry.
+  2. **Balanced Ground Characters**:
+     - Centered Goomba precisely at `x=304` (center at `x=320`).
+     - Balanced Mario at `x=184` (center at `x=200`, -120px from center) and Luigi at `x=424` (center at `x=440`, +120px from center).
+  3. **Removed Trailing Dot in Title**:
+     - Changed `"SUPER MARIO BROS."` to `"SUPER MARIO BROS"` in both shadow and main text.
+  4. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 9.70s with 0 failures.
+
+### 55. Authentic NES Underwater Cheep Cheep Sprite Configuration
+- **Date:** 2026-08-16
+- **Author:** TV4 (Vy) & TV1 (Dương)
+- **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/core/SpriteFrames_udw.h`
+  - `src/level/Level.cpp`
+- **Detailed Logic Changes:**
+  1. **Maintained Authentic NES Underwater Palette (`SpriteFrames_udw.h`)**:
+     - Preserved `UW_SWIM_UP ({292, 164})` and `UW_SWIM_DOWN ({310, 164})` as canonical underwater swimming fish frames, honoring the authentic grey/white NES 1985 underwater hardware palette for World 1-3 / World 2-2.
+     - Kept `RED_SWIM_UP ({0, 370})` available for red jumping fish variants.
+  2. **Configured Level Cheep Cheep Routes (`Level.cpp`)**:
+     - Set `Level::spawnCheepCheepRoutesFromTileMap` to spawn `CheepCheepColor::GREEN` so underwater levels render the authentic NES grey/white Cheep Cheeps swimming along reef routes.
+  3. **Release Gate Verification**:
+     - Ran full CTest suite: all 21/21 test suites passed in 9.12s with 0 failures.

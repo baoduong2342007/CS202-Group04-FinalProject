@@ -56,7 +56,10 @@ public:
                                                LevelTheme theme = LevelTheme::OVERWORLD);
 
     /// Create an item by type (caller owns the returned unique_ptr)
-    static std::unique_ptr<Entity> createItem(ItemType type, const sf::Vector2f& position, b2World* world);
+    static std::unique_ptr<Entity> createItem(ItemType type,
+                                              const sf::Vector2f& position,
+                                              b2World* world,
+                                              LevelTheme theme = LevelTheme::OVERWORLD);
 
     /// Helper for TV4's TileMap parser: maps character code ('G', 'K', 'C', '?') to exact entity
     static std::unique_ptr<Entity> createFromTileCode(char tileCode,

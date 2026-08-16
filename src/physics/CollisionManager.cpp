@@ -424,7 +424,8 @@ void handleEnemyWallCollision(Enemy* enemy, Entity* obstacle,
 
 bool CollisionManager::defeatEnemy(Enemy& victim,
                                     DefeatCause cause,
-                                    Mario* owner) {
+                                    Mario* owner,
+                                    int streakIndex) {
     if (cause == DefeatCause::STOMP) {
         // A Koopa stomp is an interaction rather than a terminal death: the
         // walking/sliding shell changes state and remains available for a
@@ -448,17 +449,34 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
         return false;
     }
 
+    const sf::Vector2f popupPosition =
+        victim.getPosition() + sf::Vector2f(victim.getSize().x / 2.f, 0.f);
+
+    int points = 0;
+    bool grantsLife = false;
+
     switch (cause) {
-        case DefeatCause::SHELL:
+        case DefeatCause::SHELL: {
             // Shell defeats use the same launched, flipped presentation as a
             // FireBall. The defeat transaction still owns the shell-specific
             // score/event; the enemy owns its death animation and cleanup.
             victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_SHELL);
+            constexpr std::array<int, 8> SHELL_SCORE_CHAIN = {
+                200, 400, 800, 1000, 2000, 4000, 5000, 8000
+            };
+            if (streakIndex >= static_cast<int>(SHELL_SCORE_CHAIN.size())) {
+                grantsLife = true;
+                points = 0;
+            } else {
+                points = SHELL_SCORE_CHAIN[std::max(0, streakIndex)];
+            }
             break;
+        }
         case DefeatCause::FIREBALL:
             victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_FIREBALL);
+            points = ScoreRules::pointsFor(DefeatCause::FIREBALL);
             break;
         case DefeatCause::STAR:
             // Star contact uses the same visual defeat response as a FireBall:
@@ -467,24 +485,26 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             // deduplication, while the enemy owns its presentation/lifecycle.
             victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
+            points = ScoreRules::pointsFor(DefeatCause::STAR);
             break;
         case DefeatCause::BLOCK_BUMP:
             // A block bump uses the same launched death presentation as a
             // FireBall while keeping its own score/event identity.
             victim.onFireHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_BLOCK);
+            points = ScoreRules::pointsFor(DefeatCause::BLOCK_BUMP);
             break;
         case DefeatCause::PIT:
             victim.takeDamage(victim.getHealth());
             victim.markForRemoval();
-            break;
+            return true;
         case DefeatCause::STOMP:
             // Handled above; keep the switch exhaustive for future callers.
             return false;
     }
 
     if (owner) {
-        owner->addScore(ScoreRules::pointsFor(cause));
+        owner->queueScoreAward(popupPosition, points, grantsLife);
     }
     return true;
 }
@@ -745,10 +765,15 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 return false;
             }
 
-            return CollisionManager::defeatEnemy(*victim,
-                                                 DefeatCause::SHELL,
-                                                 koopa->getDefeatOwner()
-                                                 );
+            const int streak = koopa->getShellKillStreak();
+            const bool defeated = CollisionManager::defeatEnemy(*victim,
+                                                                 DefeatCause::SHELL,
+                                                                 koopa->getDefeatOwner(),
+                                                                 streak);
+            if (defeated) {
+                koopa->incrementShellKillStreak();
+            }
+            return defeated;
         };
 
         tryShellKill(enemyA, enemyB);

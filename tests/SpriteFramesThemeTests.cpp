@@ -228,6 +228,32 @@ void testCanonicalFlagpoleCoordinates() {
     assert(hasPosition(SpriteFrames::legacy::Items::VINE_STEM_2, 148, 90));
 }
 
+void testMushroomCoordinates() {
+    assert(hasPosition(SpriteFrames::ovw::Items::SUPER_MUSHROOM, 0, 8));
+    assert(hasPosition(SpriteFrames::ovw::Items::ONE_UP_MUSHROOM, 0, 26));
+    assert(hasPosition(SpriteFrames::udg::Items::SUPER_MUSHROOM, 0, 116));
+    assert(hasPosition(SpriteFrames::udg::Items::ONE_UP_MUSHROOM, 0, 134));
+    assert(hasPosition(SpriteFrames::castle::Items::SUPER_MUSHROOM, 0, 224));
+    assert(hasPosition(SpriteFrames::castle::Items::ONE_UP_MUSHROOM, 0, 242));
+    assert(hasPosition(SpriteFrames::udw::Items::SUPER_MUSHROOM, 0, 332));
+    assert(hasPosition(SpriteFrames::udw::Items::ONE_UP_MUSHROOM, 0, 350));
+}
+
+void testScoreCoordinates() {
+    using namespace SpriteFrames::shared::Items;
+    assert(hasPosition(SCORE_100, 234, 26));
+    assert(hasPosition(SCORE_1000, 252, 26));
+    assert(hasPosition(SCORE_200, 234, 36));
+    assert(hasPosition(SCORE_2000, 252, 36));
+    assert(hasPosition(SCORE_400, 234, 46));
+    assert(hasPosition(SCORE_4000, 252, 46));
+    assert(hasPosition(SCORE_500, 234, 56));
+    assert(hasPosition(SCORE_5000, 252, 56));
+    assert(hasPosition(SCORE_800, 234, 66));
+    assert(hasPosition(SCORE_8000, 252, 66));
+    assert(hasPosition(SCORE_1UP, 252, 76));
+}
+
 } // namespace
 
 int main() {
@@ -238,6 +264,8 @@ int main() {
     testCanonicalEnemyCoordinates();
     testCanonicalTileCoordinates();
     testCanonicalFlagpoleCoordinates();
+    testMushroomCoordinates();
+    testScoreCoordinates();
 
     std::cout << "SpriteFramesThemeTests passed." << std::endl;
     return 0;

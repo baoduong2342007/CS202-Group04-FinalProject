@@ -29,7 +29,7 @@ public:
 
     /// Commit one enemy defeat transaction. This is the only operation that
     /// applies defeat score and its cause-specific EventBus event.
-    static bool defeatEnemy(Enemy& victim, DefeatCause cause, Mario* owner);
+    static bool defeatEnemy(Enemy& victim, DefeatCause cause, Mario* owner, int streakIndex = 0);
 
     /// @brief Adjusts active contact properties before Box2D solves them
     static void preSolve(b2Contact* contact, TileMap& tileMap);

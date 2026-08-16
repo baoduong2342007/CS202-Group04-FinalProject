@@ -1,167 +1,236 @@
 /**
  * @file MenuState.cpp
- * @author TV2 (Nhật)
- * @brief Sprite-based main menu with bitmap text from HUD spritesheet
- * @note Sprint 5 — replaces text-only MenuState with retro NES-style menu
+ * @author TV1 (Dương) & TV2 (Nhật)
+ * @brief Polished, crisp retro-modern Title / Main Menu state
  */
 
 #include "states/MenuState.h"
-#include "states/LevelSelectState.h"
-#include "states/CharacterSelectState.h"
-#include "core/GameManager.h"
-#include "patterns/InputState.h"
+
 #include "core/DisplayConfig.h"
+#include "core/GameManager.h"
+#include "core/SoundManager.h"
+#include "core/SpriteFrames_ovw.h"
+#include "core/SpriteFrames_shared.h"
+#include "level/TileFrames.h"
+#include "patterns/InputState.h"
+#include "states/LevelSelectState.h"
 #include "ui/UILayoutHelper.h"
 
-#include <iomanip>
-#include <sstream>
-
-#ifdef DEBUG
-#include <iostream>
-#endif
+#include <cmath>
 
 namespace {
-    const sf::IntRect BG_RECT({0, 192}, {256, 224}); // Nestopia scheme (1st column)
-    const sf::IntRect CURSOR_RECT({0, 440}, {8, 8}); // Estimated mushroom coords in hud.png
+constexpr const char* FONT_PATH = "assets/fonts/mario.ttf";
+constexpr const char* TILESET_PATH = "assets/textures/tiles/tileset.png";
+constexpr const char* CHARACTER_PATH = "assets/textures/mario/MarioLuigi.png";
+constexpr const char* ITEMS_PATH = "assets/textures/items/items_objects.png";
+constexpr const char* ENEMIES_PATH = "assets/textures/enemies/enemies.png";
 
-    const float SCORE_POS_X = 16.f;
-    const float SCORE_POS_Y = 24.f;
-    const float COIN_TEXT_POS_X = 104.f;
-    const float COIN_TEXT_POS_Y = 24.f;
-    const float WORLD_POS_X = 152.f;
-    const float WORLD_POS_Y = 24.f;
-    const float TOP_SCORE_POS_X = 128.f;
-    const float TOP_SCORE_POS_Y = 184.f;
-    
-    const float COIN_ICON_POS_X = 88.f;
-    const float COIN_ICON_POS_Y = 24.f;
+const sf::Color SKY_COLOR(92, 148, 252);
+const sf::Color GOLD_COLOR(255, 215, 0);
+const sf::Color SHADOW_COLOR(180, 20, 20);
+const sf::Color MUTED_GOLD_COLOR(255, 231, 128);
 
-    const float COIN_ANIM_DURATION = 0.30f;
-    const int COIN_FRAMES = 3;
-    const int COIN_FRAME_SPACING = 10;
-    const int COIN_BASE_X = 0;
-    const int COIN_BASE_Y = 156;
-    
-    const unsigned int PRESS_TO_PLAY_FONT_SIZE = 14;
-    const sf::Color GOLD_COLOR(255, 215, 0);
-    const float OUTLINE_THICKNESS = 1.f;
-    const float PRESS_TO_PLAY_OFFSET_Y = 20.f;
-    const char* FONT_PATH = "assets/fonts/mario.ttf";
+constexpr float TILE_SCALE = 2.0f; // 16px * 2 = 32px per tile
+constexpr float SPRITE_SCALE = 2.0f;
+} // namespace
 
-    sf::IntRect getCharRect(char c) {
-        // Tilemap "0123456789ABCDEF" starts at X=328, Y=0
-        int baseX = 0;
-        int baseY = 105;
-        
-        if (c >= '0' && c <= '9') {
-            return sf::IntRect({baseX + (c - '0') * 9, baseY}, {8, 8});
-        } else if (c == '-') {
-            return sf::IntRect({108, 114}, {8, 8}); // Guessing '-'
-        }
-        return sf::IntRect({baseX, baseY}, {8, 8});
-    }
-}
+MenuState::MenuState(int score, int coins, int world, int level, int topScore)
+    : m_score(score), m_coins(coins), m_world(world), m_level(level), m_topScore(topScore) {}
 
-MenuState::MenuState(int score, int coins, int world, int level, int topScore) 
-    : m_bgSprite(m_hudTexture), m_cursorSprite(m_hudTexture),
-      m_font(), m_fontLoaded(false),
-      m_score(score), m_coins(coins), m_world(world), m_level(level), m_topScore(topScore),
-      m_coinSprite(m_hudTexture) {}
+void MenuState::initTextures() {
+    m_texturesLoaded = true;
 
-void MenuState::onEnter() {
-    m_topScore = GameManager::getInstance().getSaveManager().getData().highScore;
-    m_dynamicTextSprites.clear();
-    m_transitioning = false;
-
-    try {
-        m_hudTexture = sf::Texture("assets/textures/ui/hud.png");
-    } catch (const std::exception& e) {
-#ifdef DEBUG
-        std::cerr << "[DEBUG][MenuState] Failed to load hud.png: " << e.what() << "\n";
-#endif
-        return; // Cannot render menu without texture
-    }
-    
-    // Scale to fit logical height
-    const float SCALE = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT) / 224.f;
-    
-    // Background
-    m_bgSprite.setTexture(m_hudTexture);
-    m_bgSprite.setTextureRect(BG_RECT);
-    m_bgSprite.setScale({SCALE, SCALE});
-    m_bgSprite.setPosition({
-        (DisplayConfig::LOGICAL_WIDTH - 256.f * SCALE) / 2.f,
-        (DisplayConfig::LOGICAL_HEIGHT - 224.f * SCALE) / 2.f
-    });
-
-    // Cursor (shifted 1 tile right)
-    m_cursorSprite.setTexture(m_hudTexture);
-    m_cursorSprite.setTextureRect(CURSOR_RECT);
-    m_cursorSprite.setScale({SCALE, SCALE});
-    m_cursorSprite.setPosition(m_bgSprite.getPosition() + sf::Vector2f(72.f * SCALE, 144.f * SCALE));
-
-    // Bitmap Text (shifted 1 tile right)
-    auto addText = [&](const std::string& str, float startX, float startY) {
-        for (size_t i = 0; i < str.length(); ++i) {
-            sf::Sprite s(m_hudTexture, getCharRect(str[i]));
-            s.setScale({SCALE, SCALE});
-            s.setPosition(m_bgSprite.getPosition() + sf::Vector2f((startX + i * 8.f) * SCALE, startY * SCALE));
-            m_dynamicTextSprites.push_back(s);
+    auto loadSafe = [this](sf::Texture& tex, const char* path) {
+        if (tex.loadFromFile(path)) {
+            tex.setSmooth(false);
+        } else {
+            m_texturesLoaded = false;
         }
     };
 
-    std::ostringstream ssScore;
-    ssScore << std::setfill('0') << std::setw(7) << m_score;
-    
-    std::ostringstream ssCoins;
-    ssCoins << std::setfill('0') << std::setw(2) << m_coins;
-    
-    std::ostringstream ssWorld;
-    ssWorld << m_world << "-" << m_level;
+    loadSafe(m_tilesetTexture, TILESET_PATH);
+    loadSafe(m_characterTexture, CHARACTER_PATH);
+    loadSafe(m_itemsTexture, ITEMS_PATH);
+    loadSafe(m_enemiesTexture, ENEMIES_PATH);
+}
 
-    std::ostringstream ssTop;
-    ssTop << std::setfill('0') << std::setw(7) << m_topScore;
+void MenuState::initScenery() {
+    m_scenerySprites.clear();
+    if (!m_texturesLoaded) return;
 
-    addText(ssScore.str(), SCORE_POS_X, SCORE_POS_Y);  
-    addText(ssCoins.str(), COIN_TEXT_POS_X, COIN_TEXT_POS_Y);    
-    addText(ssWorld.str(), WORLD_POS_X, WORLD_POS_Y);    
-    addText(ssTop.str(), TOP_SCORE_POS_X, TOP_SCORE_POS_Y);
+    // Ground tiles along the bottom (2 rows: y=328 and y=344)
+    for (int col = 0; col < 20; ++col) {
+        float x = static_cast<float>(col * 32);
+        
+        // Row 1 (top ground tile)
+        sf::Sprite groundTop(m_tilesetTexture, TileFrames::GROUND);
+        groundTop.setScale({TILE_SCALE, TILE_SCALE});
+        groundTop.setPosition({x, 328.f});
+        m_scenerySprites.push_back(groundTop);
 
-    // Coin Animation
-    m_coinSprite.setTexture(m_hudTexture);
-    m_coinSprite.setTextureRect(sf::IntRect({COIN_BASE_X, COIN_BASE_Y}, {8, 8}));
-    m_coinSprite.setScale({SCALE, SCALE});
-    m_coinSprite.setPosition(m_bgSprite.getPosition() + sf::Vector2f(COIN_ICON_POS_X * SCALE, COIN_ICON_POS_Y * SCALE));
+        // Row 2 (bottom ground tile)
+        sf::Sprite groundBot(m_tilesetTexture, TileFrames::GROUND);
+        groundBot.setScale({TILE_SCALE, TILE_SCALE});
+        groundBot.setPosition({x, 344.f});
+        m_scenerySprites.push_back(groundBot);
+    }
+
+    // Left Decorative Pipe at x=32, y=264
+    sf::Sprite pipeLeftTopL(m_tilesetTexture, TileFrames::PIPE_TOP_LEFT);
+    pipeLeftTopL.setScale({TILE_SCALE, TILE_SCALE});
+    pipeLeftTopL.setPosition({32.f, 264.f});
+    m_scenerySprites.push_back(pipeLeftTopL);
+
+    sf::Sprite pipeLeftTopR(m_tilesetTexture, TileFrames::PIPE_TOP_RIGHT);
+    pipeLeftTopR.setScale({TILE_SCALE, TILE_SCALE});
+    pipeLeftTopR.setPosition({64.f, 264.f});
+    m_scenerySprites.push_back(pipeLeftTopR);
+
+    sf::Sprite pipeLeftBodyL(m_tilesetTexture, TileFrames::PIPE_BODY_LEFT);
+    pipeLeftBodyL.setScale({TILE_SCALE, TILE_SCALE});
+    pipeLeftBodyL.setPosition({32.f, 296.f});
+    m_scenerySprites.push_back(pipeLeftBodyL);
+
+    sf::Sprite pipeLeftBodyR(m_tilesetTexture, TileFrames::PIPE_BODY_RIGHT);
+    pipeLeftBodyR.setScale({TILE_SCALE, TILE_SCALE});
+    pipeLeftBodyR.setPosition({64.f, 296.f});
+    m_scenerySprites.push_back(pipeLeftBodyR);
+
+    // Right Decorative Pipe at x=544, y=264 (symmetric with left pipe at x=32)
+    sf::Sprite pipeRightTopL(m_tilesetTexture, TileFrames::PIPE_TOP_LEFT);
+    pipeRightTopL.setScale({TILE_SCALE, TILE_SCALE});
+    pipeRightTopL.setPosition({544.f, 264.f});
+    m_scenerySprites.push_back(pipeRightTopL);
+
+    sf::Sprite pipeRightTopR(m_tilesetTexture, TileFrames::PIPE_TOP_RIGHT);
+    pipeRightTopR.setScale({TILE_SCALE, TILE_SCALE});
+    pipeRightTopR.setPosition({576.f, 264.f});
+    m_scenerySprites.push_back(pipeRightTopR);
+
+    sf::Sprite pipeRightBodyL(m_tilesetTexture, TileFrames::PIPE_BODY_LEFT);
+    pipeRightBodyL.setScale({TILE_SCALE, TILE_SCALE});
+    pipeRightBodyL.setPosition({544.f, 296.f});
+    m_scenerySprites.push_back(pipeRightBodyL);
+
+    sf::Sprite pipeRightBodyR(m_tilesetTexture, TileFrames::PIPE_BODY_RIGHT);
+    pipeRightBodyR.setScale({TILE_SCALE, TILE_SCALE});
+    pipeRightBodyR.setPosition({576.f, 296.f});
+    m_scenerySprites.push_back(pipeRightBodyR);
+
+    // Mario Sprite on the left (symmetric at x=184)
+    m_marioSprite.emplace(m_characterTexture, SpriteFrames::shared::SmallMario::WALK1);
+    m_marioSprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+    m_marioSprite->setPosition({184.f, 296.f});
+
+    // Luigi Sprite on the right (symmetric at x=424)
+    m_luigiSprite.emplace(m_characterTexture, SpriteFrames::shared::SmallLuigi::IDLE);
+    m_luigiSprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+    m_luigiSprite->setPosition({424.f, 296.f});
+
+    // Goomba Sprite in the exact center (x=304)
+    m_goombaSprite.emplace(m_enemiesTexture, SpriteFrames::ovw::Enemies::Goomba::WALK1);
+    m_goombaSprite->setScale({SPRITE_SCALE, SPRITE_SCALE});
+    m_goombaSprite->setPosition({304.f, 296.f});
+
+    // Cursor Mushroom
+    m_cursorMushroomSprite.emplace(m_itemsTexture, SpriteFrames::ovw::Items::SUPER_MUSHROOM);
+    m_cursorMushroomSprite->setScale({1.5f, 1.5f});
+}
+
+void MenuState::initTitleBanner() {
+    if (!m_fontLoaded) return;
+
+    // Main 3D Title Shadow
+    m_titleShadowText.emplace(m_font, "SUPER MARIO BROS", 36);
+    m_titleShadowText->setFillColor(SHADOW_COLOR);
+    sf::FloatRect shadowB = m_titleShadowText->getLocalBounds();
+    m_titleShadowText->setOrigin({shadowB.position.x + shadowB.size.x / 2.f, 0.f});
+    m_titleShadowText->setPosition({322.f, 57.f});
+
+    // Main Title Text
+    m_titleMainText.emplace(m_font, "SUPER MARIO BROS", 36);
+    m_titleMainText->setFillColor(GOLD_COLOR);
+    m_titleMainText->setOutlineColor(sf::Color::Black);
+    m_titleMainText->setOutlineThickness(2.0f);
+    sf::FloatRect titleB = m_titleMainText->getLocalBounds();
+    m_titleMainText->setOrigin({titleB.position.x + titleB.size.x / 2.f, 0.f});
+    m_titleMainText->setPosition({320.f, 55.f});
+}
+
+void MenuState::initCredits() {
+    if (!m_fontLoaded) return;
+
+    // Course Title Text
+    m_courseText.emplace(m_font, "CS202 - OOP FINAL PROJECT", 11);
+    m_courseText->setFillColor(sf::Color::White);
+    m_courseText->setOutlineColor(sf::Color::Black);
+    m_courseText->setOutlineThickness(1.f);
+    sf::FloatRect courseB = m_courseText->getLocalBounds();
+    m_courseText->setOrigin({courseB.position.x + courseB.size.x / 2.f, 0.f});
+    m_courseText->setPosition({320.f, 108.f});
+
+    // Team Name Text
+    m_groupText.emplace(m_font, "GROUP 04", 13);
+    m_groupText->setFillColor(MUTED_GOLD_COLOR);
+    m_groupText->setOutlineColor(sf::Color::Black);
+    m_groupText->setOutlineThickness(1.2f);
+    sf::FloatRect groupB = m_groupText->getLocalBounds();
+    m_groupText->setOrigin({groupB.position.x + groupB.size.x / 2.f, 0.f});
+    m_groupText->setPosition({320.f, 126.f});
+
+    // Copyright Text below menu
+    m_copyrightText.emplace(m_font, "(C) 1985 NINTENDO", 10);
+    m_copyrightText->setFillColor(sf::Color::White);
+    sf::FloatRect copyB = m_copyrightText->getLocalBounds();
+    m_copyrightText->setOrigin({copyB.position.x + copyB.size.x / 2.f, 0.f});
+    m_copyrightText->setPosition({320.f, 228.f});
+
+    // Prompt Text
+    m_promptText.emplace(m_font, "PRESS ENTER OR CLICK TO START", 11);
+    m_promptText->setFillColor(GOLD_COLOR);
+    m_promptText->setOutlineColor(sf::Color::Black);
+    m_promptText->setOutlineThickness(1.5f);
+    sf::FloatRect promptB = m_promptText->getLocalBounds();
+    m_promptText->setOrigin({promptB.position.x + promptB.size.x / 2.f, 0.f});
+    m_promptText->setPosition({320.f, 262.f});
+}
+
+void MenuState::initMenu() {
+    if (!m_fontLoaded) return;
+
+    m_menu = std::make_unique<UIMenuWidget>(m_font);
+    m_menu->addItem("1 PLAYER GAME", [this]() {
+        if (m_transitioning) return;
+        m_transitioning = true;
+        GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
+    }, 14);
+    m_menu->addItem("STAGE SELECT", [this]() {
+        if (m_transitioning) return;
+        m_transitioning = true;
+        GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
+    }, 14);
+
+    m_menu->setSpacing(28.f);
+    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 182.f}, UIAnchor::Center);
+}
+
+void MenuState::onEnter() {
+    m_topScore = GameManager::getInstance().getSaveManager().getData().highScore;
+    m_transitioning = false;
+    m_animTimer = 0.f;
+    m_blinkTimer = 0.f;
+
+    initTextures();
 
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
-    if (!m_fontLoaded) {
-#ifdef DEBUG
-        std::cerr << "[DEBUG][MenuState] Failed to load packaged font from '" << FONT_PATH << "'. Text rendering is disabled.\n";
-#endif
-    } else {
-        m_pressToPlayText.emplace(m_font);
-        m_pressToPlayText->setString("PRESS ENTER OR CLICK TO PLAY");
-        m_pressToPlayText->setCharacterSize(PRESS_TO_PLAY_FONT_SIZE); // Scaled for logical res
-        m_pressToPlayText->setFillColor(GOLD_COLOR); // Retro arcade gold
-        m_pressToPlayText->setOutlineColor(sf::Color::Black);
-        m_pressToPlayText->setOutlineThickness(OUTLINE_THICKNESS);
-        
-        sf::FloatRect bounds = m_pressToPlayText->getLocalBounds();
-        m_pressToPlayText->setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f});
-        m_pressToPlayText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, DisplayConfig::LOGICAL_HEIGHT - PRESS_TO_PLAY_OFFSET_Y});
-
-        m_menu = std::make_unique<UIMenuWidget>(m_font);
-        m_menu->addItem("START GAME", [this]() {
-            if (m_transitioning) return;
-            m_transitioning = true;
-            GameManager::getInstance().changeState(
-                std::make_unique<LevelSelectState>());
-        });
-        m_menu->setPosition(
-            UILayoutHelper::getAnchorPosition(UIAnchor::BottomCenter) +
-                sf::Vector2f(0.f, -45.f),
-            UIAnchor::Center);
+    if (m_fontLoaded) {
+        m_font.setSmooth(false);
     }
+
+    initScenery();
+    initTitleBanner();
+    initCredits();
+    initMenu();
 }
 
 void MenuState::onExit() {}
@@ -179,45 +248,90 @@ void MenuState::processInput(const InputState& inputState) {
 }
 
 void MenuState::update(float dt) {
+    m_animTimer += dt;
+    m_blinkTimer += dt;
+
     if (m_menu) {
         m_menu->update(dt);
     }
-    // Coin Animation Logic
-    m_coinAnimTimer += dt;
-    if (m_coinAnimTimer >= COIN_ANIM_DURATION) {
-        m_coinAnimTimer = 0.f;
-        m_coinCurrentFrame = (m_coinCurrentFrame + 1) % COIN_FRAMES;
-        
-        m_coinSprite.setTextureRect(sf::IntRect(
-            {COIN_BASE_X + m_coinCurrentFrame * COIN_FRAME_SPACING, COIN_BASE_Y}, 
-            {8, 8}
-        ));
+
+    // Blink prompt every 0.45s
+    if (m_blinkTimer >= 0.45f) {
+        m_blinkTimer = 0.f;
+        m_showPrompt = !m_showPrompt;
     }
 
-    // Blinking effect for PRESS TO PLAY text
-    m_blinkTimer += dt;
-    if (m_blinkTimer >= 0.5f) {
-        m_blinkTimer = 0.f;
-        m_showPressToPlay = !m_showPressToPlay;
+    // Float Title Banner with subtle bobbing
+    const float floatY = std::sin(m_animTimer * 2.5f) * 2.5f;
+    if (m_titleShadowText) m_titleShadowText->setPosition({322.f, 63.f + floatY});
+    if (m_titleMainText) m_titleMainText->setPosition({320.f, 61.f + floatY});
+
+    // Update Mario, Luigi, Goomba animation frames
+    if (m_texturesLoaded) {
+        const int marioFrame = static_cast<int>(m_animTimer / 0.16f) % 3;
+        static const sf::IntRect marioWalk[3] = {
+            SpriteFrames::shared::SmallMario::WALK1,
+            SpriteFrames::shared::SmallMario::WALK2,
+            SpriteFrames::shared::SmallMario::WALK3
+        };
+        if (m_marioSprite) {
+            m_marioSprite->setTextureRect(marioWalk[marioFrame]);
+        }
+
+        const int luigiFrame = static_cast<int>(m_animTimer / 0.22f) % 2;
+        if (m_luigiSprite) {
+            m_luigiSprite->setTextureRect(luigiFrame == 0 ? SpriteFrames::shared::SmallLuigi::IDLE
+                                                           : SpriteFrames::shared::SmallLuigi::JUMP);
+        }
+
+        const int goombaFrame = static_cast<int>(m_animTimer / 0.2f) % 2;
+        if (m_goombaSprite) {
+            m_goombaSprite->setTextureRect(goombaFrame == 0 ? SpriteFrames::ovw::Enemies::Goomba::WALK1
+                                                            : SpriteFrames::ovw::Enemies::Goomba::WALK2);
+        }
+    }
+
+    // Update cursor position beside selected menu item
+    if (m_menu && m_cursorMushroomSprite) {
+        const int selectedIdx = m_menu->getSelectedIndex();
+        const float cursorY = (selectedIdx == 0) ? 165.f : 193.f;
+        m_cursorMushroomSprite->setPosition({166.f, cursorY});
     }
 }
 
 void MenuState::render(sf::RenderTarget& target) {
-    target.clear(sf::Color(92, 148, 252)); // Classic sky blue
+    target.clear(SKY_COLOR);
     target.setView(target.getDefaultView());
-    
-    target.draw(m_bgSprite);
-    
-    for (const auto& sprite : m_dynamicTextSprites) {
+
+    // Draw static scenery and terrain
+    for (const auto& sprite : m_scenerySprites) {
         target.draw(sprite);
     }
-    
-    target.draw(m_cursorSprite);
-    target.draw(m_coinSprite);
-    if (m_fontLoaded && m_showPressToPlay && m_pressToPlayText) {
-        target.draw(*m_pressToPlayText);
-    }
+
+    // Draw live animated characters
+    if (m_marioSprite) target.draw(*m_marioSprite);
+    if (m_luigiSprite) target.draw(*m_luigiSprite);
+    if (m_goombaSprite) target.draw(*m_goombaSprite);
+
+    // Draw Title Plaque
+    if (m_titleShadowText) target.draw(*m_titleShadowText);
+    if (m_titleMainText) target.draw(*m_titleMainText);
+
+    // Draw Course & Group Credits
+    if (m_courseText) target.draw(*m_courseText);
+    if (m_groupText) target.draw(*m_groupText);
+    if (m_copyrightText) target.draw(*m_copyrightText);
+
+    // Draw Interactive Menu & Cursor
     if (m_menu) {
         m_menu->draw(target);
+    }
+    if (m_cursorMushroomSprite) {
+        target.draw(*m_cursorMushroomSprite);
+    }
+
+    // Draw Prompt
+    if (m_showPrompt && m_promptText) {
+        target.draw(*m_promptText);
     }
 }

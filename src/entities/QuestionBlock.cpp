@@ -145,8 +145,18 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
         sf::Vector2f spawnPos = getPosition() - sf::Vector2f(0.f, BLOCK_SIZE);
         b2World* world = getBody() ? getBody()->GetWorld() : nullptr;
 
+        const LevelTheme levelTheme = [this]() {
+            switch (m_theme) {
+                case BlockTheme::UNDERGROUND: return LevelTheme::UNDERGROUND;
+                case BlockTheme::CASTLE:      return LevelTheme::CASTLE;
+                case BlockTheme::UNDERWATER:  return LevelTheme::UNDERWATER;
+                case BlockTheme::OVERWORLD:
+                default:                      return LevelTheme::OVERWORLD;
+            }
+        }();
+
         if (resolvedContent == QuestionBlockContent::COIN) {
-            auto popupCoin = std::make_unique<Coin>(spawnPos, world, CoinType::QUESTION_POPUP);
+            auto popupCoin = std::make_unique<Coin>(spawnPos, world, CoinType::QUESTION_POPUP, levelTheme);
             popupCoin->setTextureManager(texMgr);
             entities->push_back(std::move(popupCoin));
         } else if (resolvedContent == QuestionBlockContent::SUPER_MUSHROOM ||
@@ -155,7 +165,7 @@ void QuestionBlock::onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* en
                 resolvedContent == QuestionBlockContent::ONEUP_MUSHROOM
                     ? MushroomType::ONE_UP
                     : MushroomType::SUPER;
-            auto mushroom = std::make_unique<Mushroom>(spawnPos, world, mushroomType);
+            auto mushroom = std::make_unique<Mushroom>(spawnPos, world, mushroomType, levelTheme);
             mushroom->setTextureManager(texMgr);
             mushroom->setCollectibleDelay(ITEM_EMERGE_DELAY);
             entities->push_back(std::move(mushroom));

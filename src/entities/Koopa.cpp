@@ -176,6 +176,7 @@ void Koopa::onFireHit() {
 
     m_isFlippedDead = true;
     setHealth(0);
+    resetShellKillStreak();
 
     b2Body* body = getBody();
     if (body) {
@@ -187,6 +188,7 @@ void Koopa::onFireHit() {
 }
 
 void Koopa::onStomp() {
+    resetShellKillStreak();
     if (m_state == KoopaState::WALKING) {
         m_state = KoopaState::SHELL_IDLE;
         m_pendingShellFixtureRebuild = true;
@@ -248,6 +250,7 @@ void Koopa::kick(Direction direction) {
         return;
     }
 
+    resetShellKillStreak();
     m_state = KoopaState::SHELL_SLIDING;
     setFacingDirection(direction);
 

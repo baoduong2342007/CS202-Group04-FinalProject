@@ -3,8 +3,11 @@
 #include <iostream>
 
 #include "core/SpriteFrames_shared.h"
+#include "entities/Goomba.h"
+#include "entities/Koopa.h"
 #include "entities/Mario.h"
 #include "entities/ScorePopup.h"
+#include "physics/CollisionManager.h"
 
 namespace {
 
@@ -82,6 +85,86 @@ void testPopupMovesAndExpires() {
     assert(popup.shouldRemove());
 }
 
+void testFireballDefeatScoreAndPopup() {
+    b2World world({0.f, 0.f});
+    Mario mario;
+    Goomba goomba({100.f, 150.f}, &world);
+
+    const int initialScore = mario.getScore();
+    const bool defeated = CollisionManager::defeatEnemy(goomba, DefeatCause::FIREBALL, &mario);
+    assert(defeated);
+    assert(goomba.isDead());
+    assert(mario.getScore() == initialScore + 200);
+
+    const auto pending = mario.consumePendingStompScoreAwards();
+    assert(pending.size() == 1);
+    assert(pending[0].points == 200);
+    assert(!pending[0].grantsLife);
+    assert(pending[0].position.x == 100.f + goomba.getSize().x / 2.f);
+}
+
+void testSlidingShellDefeatChainAndPopups() {
+    b2World world({0.f, 0.f});
+    Mario mario;
+    const int initialLives = mario.getLives();
+
+    constexpr std::array<int, 8> expectedShellScores = {
+        200, 400, 800, 1000, 2000, 4000, 5000, 8000
+    };
+
+    int total = 0;
+    for (std::size_t i = 0; i < expectedShellScores.size(); ++i) {
+        Goomba victim({static_cast<float>(i * 50), 100.f}, &world);
+        const bool defeated = CollisionManager::defeatEnemy(
+            victim, DefeatCause::SHELL, &mario, static_cast<int>(i));
+        assert(defeated);
+        assert(victim.isDead());
+
+        total += expectedShellScores[i];
+        assert(mario.getScore() == total);
+
+        const auto pending = mario.consumePendingStompScoreAwards();
+        assert(pending.size() == 1);
+        assert(pending[0].points == expectedShellScores[i]);
+        assert(!pending[0].grantsLife);
+    }
+
+    // 9th kill by sliding shell grants 1UP!
+    Goomba ninthVictim({500.f, 100.f}, &world);
+    const bool ninthDefeated = CollisionManager::defeatEnemy(
+        ninthVictim, DefeatCause::SHELL, &mario, 8);
+    assert(ninthDefeated);
+    assert(mario.getLives() == initialLives + 1);
+
+    const auto pendingOneUp = mario.consumePendingStompScoreAwards();
+    assert(pendingOneUp.size() == 1);
+    assert(pendingOneUp[0].grantsLife);
+    assert(pendingOneUp[0].points == 0);
+}
+
+void testStarAndBlockBumpScoreAndPopups() {
+    b2World world({0.f, 0.f});
+    Mario mario;
+
+    // Star defeat
+    Goomba starVictim({200.f, 200.f}, &world);
+    bool defeated = CollisionManager::defeatEnemy(starVictim, DefeatCause::STAR, &mario);
+    assert(defeated);
+    assert(mario.getScore() == 200);
+    auto pending = mario.consumePendingStompScoreAwards();
+    assert(pending.size() == 1);
+    assert(pending[0].points == 200);
+
+    // Block bump defeat
+    Goomba bumpVictim({300.f, 200.f}, &world);
+    defeated = CollisionManager::defeatEnemy(bumpVictim, DefeatCause::BLOCK_BUMP, &mario);
+    assert(defeated);
+    assert(mario.getScore() == 300); // 200 + 100
+    pending = mario.consumePendingStompScoreAwards();
+    assert(pending.size() == 1);
+    assert(pending[0].points == 100);
+}
+
 } // namespace
 
 int main() {
@@ -89,6 +172,9 @@ int main() {
     testSimultaneousStompsSkipOneStep();
     testSequentialChainEndsInOneUp();
     testPopupMovesAndExpires();
+    testFireballDefeatScoreAndPopup();
+    testSlidingShellDefeatChainAndPopups();
+    testStarAndBlockBumpScoreAndPopups();
     std::cout << "All stomp score tests passed successfully!\n";
     return 0;
 }

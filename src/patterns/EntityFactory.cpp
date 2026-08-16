@@ -65,12 +65,15 @@ std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
     }
 }
 
-std::unique_ptr<Entity> EntityFactory::createItem(ItemType type, const sf::Vector2f& position, b2World* world) {
+std::unique_ptr<Entity> EntityFactory::createItem(ItemType type,
+                                                   const sf::Vector2f& position,
+                                                   b2World* world,
+                                                   LevelTheme theme) {
     switch (type) {
         case ItemType::COIN:
-            return std::make_unique<Coin>(position, world);
+            return std::make_unique<Coin>(position, world, CoinType::COLLECTIBLE, theme);
         case ItemType::MUSHROOM:
-            return std::make_unique<Mushroom>(position, world);
+            return std::make_unique<Mushroom>(position, world, MushroomType::SUPER, theme);
         case ItemType::FIRE_FLOWER:
             return std::make_unique<FireFlower>(position, world);
         case ItemType::STAR:
@@ -97,7 +100,7 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
                                                 CheepCheepBehavior::SWIMMING,
                                                 CheepCheepColor::GREEN);
         case 'C':
-            return createItem(ItemType::COIN, position, world);
+            return createItem(ItemType::COIN, position, world, theme);
         case '?':
             // Normal '?' blocks resolve once on hit: mostly Coin, otherwise a
             // random Mushroom or FireFlower.

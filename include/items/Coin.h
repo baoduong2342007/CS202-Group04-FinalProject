@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/LevelCatalog.h"
 #include "items/Item.h"
 
 enum class CoinType {
@@ -17,8 +18,11 @@ enum class CoinType {
 class Coin : public Item {
 public:
     // 1. Constructor / Destructor
-    Coin();
-    Coin(const sf::Vector2f& position, b2World* world, CoinType type = CoinType::COLLECTIBLE);
+    Coin(LevelTheme theme = LevelTheme::OVERWORLD);
+    Coin(const sf::Vector2f& position,
+         b2World* world,
+         CoinType type = CoinType::COLLECTIBLE,
+         LevelTheme theme = LevelTheme::OVERWORLD);
     ~Coin() override = default;
 
     // 2. Override methods
@@ -31,11 +35,13 @@ public:
     static void awardTo(Mario& mario);
 
     CoinType getCoinType() const { return m_type; }
+    LevelTheme getTheme() const { return m_theme; }
     bool isCoin() const override { return true; }
 
 private:
     // 6. Private members
     CoinType m_type = CoinType::COLLECTIBLE;
+    LevelTheme m_theme = LevelTheme::OVERWORLD;
     float m_popupTimer = 0.f;
     float m_initialY = 0.f;
 

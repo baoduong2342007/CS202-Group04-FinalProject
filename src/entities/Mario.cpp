@@ -954,9 +954,13 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
         (usesFireTransition && !isGrowth && !isShrink)) {
       const bool isSuper = usesSuperBody(state) || usesSuperBody(m_marioState);
       const auto &sequence =
-          isSuper
-              ? SpriteFrames::shared::GrowShrink::FireMario::bigFireSequence()
-              : SpriteFrames::shared::GrowShrink::FireMario::smallFireSequence();
+          m_characterType == CharacterType::LUIGI
+              ? (isSuper
+                     ? SpriteFrames::shared::GrowShrink::Luigi::bigFireSequence()
+                     : SpriteFrames::shared::GrowShrink::Luigi::smallFireSequence())
+              : (isSuper
+                     ? SpriteFrames::shared::GrowShrink::FireMario::bigFireSequence()
+                     : SpriteFrames::shared::GrowShrink::FireMario::smallFireSequence());
       m_animationSystem->addAnimation(
           "transform",
           AnimationSystem::createManualAnimation(
@@ -964,10 +968,10 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
       playAnimation("transform");
     } else if (isGrowth) {
       const auto &sequence =
-          m_characterType == CharacterType::LUIGI
-              ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
-              : (usesFireTransition
-                     ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+          usesFireTransition
+              ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+              : (m_characterType == CharacterType::LUIGI
+                     ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
                      : SpriteFrames::shared::GrowShrink::Mario::growSequence());
       m_animationSystem->addAnimation(
           "transform",
@@ -976,10 +980,10 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
       playAnimation("transform");
     } else if (isShrink) {
       const auto &sequence =
-          m_characterType == CharacterType::LUIGI
-              ? SpriteFrames::shared::GrowShrink::Luigi::shrinkSequence()
-              : (usesFireTransition
-                     ? SpriteFrames::shared::GrowShrink::FireMario::shrinkSequence()
+          usesFireTransition
+              ? SpriteFrames::shared::GrowShrink::FireMario::shrinkSequence()
+              : (m_characterType == CharacterType::LUIGI
+                     ? SpriteFrames::shared::GrowShrink::Luigi::shrinkSequence()
                      : SpriteFrames::shared::GrowShrink::Mario::shrinkSequence());
       m_animationSystem->addAnimation(
           "transform",
@@ -988,10 +992,10 @@ bool Mario::applyStateTransition(MarioState state, bool withPresentation) {
       playAnimation("transform");
     } else {
       const auto &sequence =
-          m_characterType == CharacterType::LUIGI
-              ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
-              : (usesFireTransition
-                     ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+          usesFireTransition
+              ? SpriteFrames::shared::GrowShrink::FireMario::growSequence()
+              : (m_characterType == CharacterType::LUIGI
+                     ? SpriteFrames::shared::GrowShrink::Luigi::growSequence()
                      : SpriteFrames::shared::GrowShrink::Mario::growSequence());
       m_animationSystem->addAnimation(
           "transform",
@@ -1255,6 +1259,21 @@ void Mario::setMarioState(MarioState state) {
 }
 
 void Mario::addScore(int points) { m_score += points; }
+
+void Mario::queueScoreAward(const sf::Vector2f &position, int points, bool grantsLife) {
+  if (grantsLife) {
+    addLife();
+    EventBus::getInstance().notify(EventType::ONE_UP_COLLECTED);
+  } else if (points > 0) {
+    addScore(points);
+  }
+
+  StompScoreAward award;
+  award.position = position;
+  award.points = points;
+  award.grantsLife = grantsLife;
+  m_pendingStompScoreAwards.push_back(award);
+}
 
 StompScoreAward Mario::awardStompScore(const sf::Vector2f &position) {
   std::size_t awardIndex = m_stompScoreChainIndex;

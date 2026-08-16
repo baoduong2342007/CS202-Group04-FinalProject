@@ -49,9 +49,10 @@
 # level2.txt ROUTE 188 5 188 11 35.0 GREEN
 # level2.txt ROUTE 203 4 203 11 35.0 GREEN
 
-# --- Level 3 (Castle Examples) ---
-# level3.txt ROUTE 60 8 80 8 40.0 RED
+# --- Level 3 (Underwater Examples) ---
+# Example: Horizontal swimming fish in the open reef
+# level3.txt ROUTE 40 6 60 6 35.0 GREEN
+# level3.txt ROUTE 65 9 85 9 40.0 RED
 
-# --- Level 4 (Underwater Examples) ---
-# level4.txt ROUTE 40 5 40 12 35.0 GREEN
-# level4.txt ROUTE 70 8 95 8 45.0 RED
+# --- Level 4 (Castle Examples) ---
+# level4.txt ROUTE 50 8 70 8 40.0 RED

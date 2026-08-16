@@ -568,11 +568,26 @@ bool testLuigiTransformationUsesLuigiRows() {
     luigi.powerDown();
     luigi.update(0.14f);
     const sf::IntRect shrinkFrame = luigi.currentTextureRect();
-    return check(luigi.getMarioState() == MarioState::SMALL,
-                 "Luigi power-down must return to SMALL") &&
-           check(shrinkFrame.position ==
-                     SpriteFrames::shared::GrowShrink::Luigi::SMALL.position,
-                 "Luigi shrink must use the Luigi transition row");
+    if (!check(luigi.getMarioState() == MarioState::SMALL,
+               "Luigi power-down must return to SMALL") ||
+        !check(shrinkFrame.position ==
+                   SpriteFrames::shared::GrowShrink::Luigi::SMALL.position,
+               "Luigi shrink must use the Luigi transition row")) {
+        return false;
+    }
+
+    // Fire growth: FIRE_SMALL + Mushroom -> FIRE_SUPER must use Fire transition row
+    luigi.update(0.5f);
+    luigi.setMarioState(MarioState::FIRE_SMALL);
+    Mushroom fireMushroom;
+    fireMushroom.onCollect(luigi);
+    luigi.update(0.14f);
+    const sf::IntRect fireGrowFrame = luigi.currentTextureRect();
+    return check(luigi.getMarioState() == MarioState::FIRE_SUPER,
+                 "Luigi FIRE_SMALL + Mushroom must reach FIRE_SUPER") &&
+           check(fireGrowFrame.position ==
+                     SpriteFrames::shared::GrowShrink::FireMario::BIG.position,
+                 "Luigi Fire growth must use FireMario transition row instead of green Luigi row");
 }
 
 bool testLuigiFireBodyUsesLuigiRows() {

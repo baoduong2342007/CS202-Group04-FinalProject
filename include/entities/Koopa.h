@@ -43,6 +43,10 @@ public:
     void setDefeatOwner(Mario* owner) { m_defeatOwner = owner; }
     Mario* getDefeatOwner() const { return m_defeatOwner; }
 
+    int getShellKillStreak() const { return m_shellKillStreak; }
+    void incrementShellKillStreak() { ++m_shellKillStreak; }
+    void resetShellKillStreak() { m_shellKillStreak = 0; }
+
     bool isInShell() const;
     bool isShellSliding() const;
     KoopaState getState() const;
@@ -65,4 +69,5 @@ private:
 
     bool m_pendingShellFixtureRebuild = false;
     Mario* m_defeatOwner = nullptr;
+    int m_shellKillStreak = 0;
 };

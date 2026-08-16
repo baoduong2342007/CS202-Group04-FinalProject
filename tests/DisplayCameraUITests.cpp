@@ -18,6 +18,8 @@
 #include "level/TileMap.h"
 #include "ui/UIMenuWidget.h"
 #include "states/LevelSelectState.h"
+#include "states/MenuState.h"
+#include "states/CharacterSelectState.h"
 
 namespace {
 bool close(float left, float right) {
@@ -184,6 +186,19 @@ void testLevelSelectStateRenderSnapshot() {
     const bool saved = rt.getTexture().copyToImage().saveToFile("level_select_preview.png");
     assert(saved);
 }
+
+void testMenuStateRenderSnapshot() {
+    MenuState state;
+    state.onEnter();
+    state.update(0.1f);
+
+    sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
+    state.render(rt);
+    rt.display();
+
+    const bool saved = rt.getTexture().copyToImage().saveToFile("menu_state_preview.png");
+    assert(saved);
+}
 } // namespace
 
 int main() {
@@ -192,5 +207,6 @@ int main() {
     testCameraFollowsMarioAndReturnsToOriginalView();
     testMenuWidgetLogicalMouseClick();
     testLevelSelectStateRenderSnapshot();
+    testMenuStateRenderSnapshot();
     return 0;
 }

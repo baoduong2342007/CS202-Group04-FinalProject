@@ -78,17 +78,22 @@ void CheepCheep::initAnimations(LevelTheme theme) {
     const auto& frames = [this, theme]() -> const std::vector<sf::IntRect>& {
         switch (theme) {
             case LevelTheme::UNDERGROUND:
-                return SpriteFrames::udg::Enemies::CheepCheep::greenSwimFrames();
+                return (m_color == CheepCheepColor::RED)
+                    ? SpriteFrames::udg::Enemies::CheepCheep::redSwimFrames()
+                    : SpriteFrames::udg::Enemies::CheepCheep::greenSwimFrames();
             case LevelTheme::CASTLE:
-                return SpriteFrames::castle::Enemies::CheepCheep::greenSwimFrames();
+                return (m_color == CheepCheepColor::RED)
+                    ? SpriteFrames::castle::Enemies::CheepCheep::redSwimFrames()
+                    : SpriteFrames::castle::Enemies::CheepCheep::greenSwimFrames();
             case LevelTheme::UNDERWATER:
-                return SpriteFrames::udw::Enemies::CheepCheep::greenSwimFrames();
+                return (m_color == CheepCheepColor::RED)
+                    ? SpriteFrames::udw::Enemies::CheepCheep::redSwimFrames()
+                    : SpriteFrames::udw::Enemies::CheepCheep::greenSwimFrames();
             case LevelTheme::OVERWORLD:
             default:
-                if (m_color == CheepCheepColor::RED) {
-                    return SpriteFrames::ovw::Enemies::CheepCheep::redSwimFrames();
-                }
-                return SpriteFrames::ovw::Enemies::CheepCheep::greenSwimFrames();
+                return (m_color == CheepCheepColor::RED)
+                    ? SpriteFrames::ovw::Enemies::CheepCheep::redSwimFrames()
+                    : SpriteFrames::ovw::Enemies::CheepCheep::greenSwimFrames();
         }
     }();
 

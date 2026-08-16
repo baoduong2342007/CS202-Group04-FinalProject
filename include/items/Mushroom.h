@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "core/LevelCatalog.h"
 #include "items/Item.h"
 
 enum class MushroomType {
@@ -18,14 +19,18 @@ enum class MushroomType {
 class Mushroom : public Item {
 public:
     // 1. Constructor / Destructor
-    Mushroom(MushroomType type = MushroomType::SUPER);
-    Mushroom(const sf::Vector2f& position, b2World* world, MushroomType type = MushroomType::SUPER);
+    Mushroom(MushroomType type = MushroomType::SUPER, LevelTheme theme = LevelTheme::OVERWORLD);
+    Mushroom(const sf::Vector2f& position,
+             b2World* world,
+             MushroomType type = MushroomType::SUPER,
+             LevelTheme theme = LevelTheme::OVERWORLD);
     ~Mushroom() override = default;
 
     // 2. Override methods
     void update(float dt) override;
     void onCollect(Mario& mario) override;
     bool isMushroom() const override { return true; }
+    LevelTheme getTheme() const { return m_theme; }
 
     // 3. Public methods
     /// Reverse horizontal direction when hitting a wall
@@ -40,6 +45,7 @@ private:
 
     // 6. Private members
     MushroomType m_type;
+    LevelTheme m_theme = LevelTheme::OVERWORLD;
     float m_patrolSpeed;
     /// +1 = moving right, -1 = moving left
     int m_patrolDirection;

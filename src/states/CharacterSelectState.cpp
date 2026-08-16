@@ -119,6 +119,7 @@ void CharacterSelectState::initAvatars() {
     }
 
     if (m_characterTextureLoaded && m_characterTexture) {
+        m_characterTexture->setSmooth(false);
         // Mario Left Avatar: Big Mario
         m_marioLeftSprite.emplace(*m_characterTexture);
         m_marioLeftSprite->setTextureRect(SpriteFrames::shared::BigMario::WALK1);
@@ -233,6 +234,9 @@ void CharacterSelectState::onEnter() {
     initAvatars();
 
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
+    if (m_fontLoaded) {
+        m_font.setSmooth(false);
+    }
     initTextLabels();
     initMenu();
 }

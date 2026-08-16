@@ -26,6 +26,22 @@
 #include "patterns/EventType.h"
 #include "core/ScoreRules.h"
 
+std::vector<PvpHit> CollisionManager::s_pendingPvpHits;
+
+void CollisionManager::queuePvpHit(const PvpHit& hit) {
+    s_pendingPvpHits.push_back(hit);
+}
+
+std::vector<PvpHit> CollisionManager::consumePendingPvpHits() {
+    std::vector<PvpHit> drained;
+    drained.swap(s_pendingPvpHits);
+    return drained;
+}
+
+void CollisionManager::clearPendingPvpHits() {
+    s_pendingPvpHits.clear();
+}
+
 namespace {
 
 constexpr float STOMP_BOUNCE_SPEED = 300.f;
@@ -641,6 +657,16 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
     contact->GetWorldManifold(&worldManifold);
     b2Vec2 normal = worldManifold.normal;
 
+    // PvP: a contact between the two fighters is a duel event, not a regular
+    // Mario-vs-entity collision. Handled first so the second Mario is never
+    // dispatched through the single-player obstacle branches.
+    if (entityA && entityA->isMario() && entityB && entityB->isMario()) {
+        handlePvpPlayerCollision(static_cast<Mario*>(entityA),
+                                 static_cast<Mario*>(entityB),
+                                 contact);
+        return;
+    }
+
     // Handle FireBall collisions if present
     FireBall* fireBall = nullptr;
     Entity* target = nullptr;
@@ -665,8 +691,21 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
             normal = -normal; // Flip so normal points away from FireBall
         }
 
-        // Ignore collisions between FireBall and Mario
+        // Fireballs always pass through their shooter. In PvP arenas each
+        // fighter carries his own collision group, so a fireball that reaches
+        // the opponent is a queued knockback hit instead of a pass-through.
         if (target && target->isMario()) {
+            Mario* victim = static_cast<Mario*>(target);
+            if (fireBall->getOwner() != victim && !victim->isCollisionLocked()) {
+                PvpHit hit;
+                hit.cause = PvpHit::Cause::FIREBALL;
+                hit.attacker = fireBall->getOwner();
+                hit.victim = victim;
+                hit.position = victim->getPosition() +
+                               sf::Vector2f(victim->getSize().x / 2.f, 0.f);
+                queuePvpHit(hit);
+                fireBall->deactivate();
+            }
             return;
         }
 
@@ -976,4 +1015,98 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         marioVel.y >= -0.1f) {
         mario->setGrounded(true);
     }
+}
+
+void CollisionManager::handlePvpPlayerCollision(Mario* playerA,
+                                                Mario* playerB,
+                                                b2Contact* contact) {
+    if (!playerA || !playerB) {
+        return;
+    }
+
+    // A dying/locked fighter cannot score or be scored on; the pre-solve pass
+    // already disables the physical contact for the loser's death jump.
+    if (playerA->isCollisionLocked() || playerB->isCollisionLocked()) {
+        return;
+    }
+
+    b2Body* bodyA = playerA->getBody();
+    b2Body* bodyB = playerB->getBody();
+    if (!bodyA || !bodyB) {
+        return;
+    }
+
+    b2WorldManifold worldManifold;
+    contact->GetWorldManifold(&worldManifold);
+
+    // Re-orient the manifold normal so it always points away from playerA,
+    // matching the convention handleMarioCollision uses for its stomp test.
+    b2Vec2 normal = worldManifold.normal;
+    if (contact->GetFixtureA()->GetBody() == bodyB) {
+        normal = -normal;
+    }
+
+    const auto bottomMeters = [](b2Body* body, const sf::Vector2f& size) {
+        return body->GetPosition().y +
+               PhysicsEngine::pixelsToMeters(size.y / 2.0f);
+    };
+    const auto headWindow = [](float attackerBottom,
+                               b2Body* victimBody,
+                               const sf::Vector2f& victimSize) {
+        const float victimMid = victimBody->GetPosition().y;
+        const float tolerance =
+            PhysicsEngine::pixelsToMeters(victimSize.y * 0.2f);
+        return attackerBottom <= victimMid + tolerance;
+    };
+
+    // Geometry: X can stomp Y when X's feet are at or above Y's midpoint —
+    // the same glancing-contact fallback the enemy stomp uses.
+    const bool geometryA =
+        (normal.y > TOP_STOMP_NORMAL_THRESHOLD &&
+         std::abs(normal.x) < MAX_WALL_NORMAL_X) ||
+        headWindow(bottomMeters(bodyA, playerA->getSize()), bodyB,
+                   playerB->getSize());
+    const bool geometryB =
+        (normal.y < -TOP_STOMP_NORMAL_THRESHOLD &&
+         std::abs(normal.x) < MAX_WALL_NORMAL_X) ||
+        headWindow(bottomMeters(bodyB, playerB->getSize()), bodyA,
+                   playerA->getSize());
+
+    // A scoring stomp must be a descent; rising grazes never count.
+    const bool fallingA = bodyA->GetLinearVelocity().y > 0.f;
+    const bool fallingB = bodyB->GetLinearVelocity().y > 0.f;
+
+    Mario* attacker = nullptr;
+    Mario* victim = nullptr;
+    if (geometryA && fallingA && geometryB && fallingB) {
+        // Symmetric mid-air clash: the higher feet wins outright; a perfect
+        // tie scores nobody.
+        const float bottomA = bottomMeters(bodyA, playerA->getSize());
+        const float bottomB = bottomMeters(bodyB, playerB->getSize());
+        if (bottomA < bottomB - 0.001f) {
+            attacker = playerA;
+            victim = playerB;
+        } else if (bottomB < bottomA - 0.001f) {
+            attacker = playerB;
+            victim = playerA;
+        }
+    } else if (geometryA && fallingA) {
+        attacker = playerA;
+        victim = playerB;
+    } else if (geometryB && fallingB) {
+        attacker = playerB;
+        victim = playerA;
+    }
+
+    if (!attacker || !victim) {
+        return;
+    }
+
+    PvpHit hit;
+    hit.cause = PvpHit::Cause::STOMP;
+    hit.attacker = attacker;
+    hit.victim = victim;
+    hit.position = victim->getPosition() +
+                   sf::Vector2f(victim->getSize().x / 2.f, 0.f);
+    queuePvpHit(hit);
 }

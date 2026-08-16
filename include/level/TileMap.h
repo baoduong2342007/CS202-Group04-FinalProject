@@ -85,7 +85,18 @@ public:
 
     void setTheme(LevelTheme theme);
 
-    bool loadFromFile(const std::string& path);
+    /// Validation contract of the layout being loaded.
+    /// CAMPAIGN requires exactly one 'M', one 'F' and one 'T' with a valid
+    /// flagpole. PVP_ARENA requires exactly one 'M' (player one spawn), one
+    /// 'm' (player two spawn) and one 'W' (fire flower pedestal), and allows
+    /// no finish markers.
+    enum class LayoutMode {
+        CAMPAIGN,
+        PVP_ARENA
+    };
+
+    bool loadFromFile(const std::string& path,
+                      LayoutMode mode = LayoutMode::CAMPAIGN);
 
     void render(sf::RenderTarget& target) const;
     /// Draw the flag cloth between the world layer and Mario/entities.

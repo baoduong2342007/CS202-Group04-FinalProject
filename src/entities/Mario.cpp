@@ -726,12 +726,13 @@ void Mario::rebuildFixture() {
   fixtureDef.friction = MARIO_FIXTURE_FRICTION;
   m_body->CreateFixture(&fixtureDef);
 
-  // Share the negative collision group used by FireBall so projectiles pass
-  // THROUGH Mario physically instead of bumping/pushing him. Applied on every
-  // fixture rebuild so the group survives Small<->Super/Fire state switches.
+  // Apply this Mario's collision group on every fixture rebuild so the
+  // assignment survives Small<->Super/Fire state switches. The default group
+  // shares the campaign projectile group (fireballs pass through Mario);
+  // PvP assigns a distinct negative group per player.
   if (b2Fixture *marioFixture = m_body->GetFixtureList()) {
     b2Filter filter = marioFixture->GetFilterData();
-    filter.groupIndex = COLLISION_GROUP_PLAYER_PROJECTILE;
+    filter.groupIndex = m_fixtureCollisionGroup;
     marioFixture->SetFilterData(filter);
   }
 
@@ -1028,6 +1029,20 @@ void Mario::powerUp(MarioState state) {
   applyStateTransition(state, true);
   // Pickup score/SFX/event happen once even if geometry defers the fixture.
   EventBus::getInstance().notify(EventType::PLAYER_POWER_UP);
+}
+
+void Mario::setFixtureCollisionGroup(int16_t group) {
+  m_fixtureCollisionGroup = group;
+
+  // Apply immediately to a live fixture (rebake on the next rebuild happens
+  // through the member above). Never call this from inside a physics step.
+  if (m_body && !m_body->GetWorld()->IsLocked()) {
+    if (b2Fixture *marioFixture = m_body->GetFixtureList()) {
+      b2Filter filter = marioFixture->GetFilterData();
+      filter.groupIndex = group;
+      marioFixture->SetFilterData(filter);
+    }
+  }
 }
 
 void Mario::setCharacterType(CharacterType type) {

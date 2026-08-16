@@ -109,8 +109,15 @@ The Sprint 6 candidate contained 17 CTest suites (historical):
 - `collision_matrix_tests`
 - `fireball_request_tests`
 - `display_camera_ui_tests`
+- `character_flow_tests`
+- `stomp_score_tests`
+- `pvp_arena_tests`
+- `pvp_stomp_tests`
+- `pvp_flow_tests`
 
-The current source registers 21 CTest suites. In the 2026-08-16 verification,
+The current source registers 24 CTest suites (the three `pvp_*` suites cover
+the 2 PLAYER VERSUS arena validation, contact rules, and round/fire-flower
+state machine). In the 2026-08-16 verification,
 fresh writable isolated MinGW Debug and Release `BUILD_TESTING=ON` runs each
 passed 21/21; a Release
 `BUILD_TESTING=OFF` production build also passed. These automated results do
@@ -125,6 +132,8 @@ complete registration source is [CMakeLists.txt](CMakeLists.txt).
 
 ## Controls
 
+Single player:
+
 | Action | Input |
 |---|---|
 | Move left | `A` or Left Arrow, held |
@@ -135,6 +144,21 @@ complete registration source is [CMakeLists.txt](CMakeLists.txt).
 | Pause | `Esc` |
 | Navigate menus | Arrow keys |
 | Confirm menu selection | Enter or logical mouse click |
+
+2 PLAYER VERSUS (best-of-3 stomp duel, both players on one keyboard):
+
+| Action | Player 1 | Player 2 |
+|---|---|---|
+| Move | `A` / `D` | Left / Right Arrow |
+| Jump (tap for short hop) | `W` | Up Arrow |
+| Run | Left Shift, held | Right Shift, held |
+| Shoot fireball (while on fire) | `X` | `/` |
+| Pause | `Esc` | `Esc` |
+
+Only landing on the opponent's head wins a round. The fire flower spawns on
+the center pedestal after a random 6-12s (never while a flower is on the
+field or someone is on fire) and grants a 5-second fire state; fireballs
+launch the victim airborne with a short stun instead of scoring.
 
 Clicks in letterbox bars are intentionally ignored. The game renders to a logical 640x360 canvas using centered integer scaling.
 

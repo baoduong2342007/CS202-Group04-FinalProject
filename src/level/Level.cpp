@@ -15,6 +15,7 @@
 
 #include "items/Item.h"
 #include "items/Coin.h"
+#include "items/FireFlower.h"
 #include "patterns/EntityFactory.h"
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
@@ -37,6 +38,16 @@
 namespace {
 
 constexpr unsigned int TILE_SIZE = 32;
+
+/// Box2D collision group for the second PvP fighter. Player one keeps the
+/// campaign projectile group (-1) while player two gets his own negative
+/// group: each fighter's fireballs share his group and therefore pass through
+/// their shooter while still reaching the opponent.
+constexpr int16_t PVP_PLAYER_TWO_COLLISION_GROUP = -2;
+
+/// Upward bounce given to the winner of a PvP head-stomp, mirroring the
+/// enemy-stomp bounce of the campaign flow.
+constexpr float PVP_STOMP_BOUNCE_SPEED = 300.f;
 // Elevator markers occupy one 32 px map cell, while the platform is 64 px
 // wide. Treat the marker as the platform's center anchor instead of its left
 // edge so a lift sits centered in the opening shown by the level layout.
@@ -129,6 +140,7 @@ Level::~Level() {
     // also keeps TileMap's destructor from observing a dead world pointer.
     m_entities.clear();
     m_mario.reset();
+    m_mario2.reset();
     m_tileMap.destroyPhysicsBodies();
     m_contactListener.reset();
     m_world.reset();
@@ -197,6 +209,87 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     // Initialize camera and entity sprite frames before first render
     update(0.f);
     
+    return true;
+}
+
+bool Level::loadPvpArena(const std::string& path,
+                          CharacterType playerOne,
+                          CharacterType playerTwo) {
+    m_pvpMode = true;
+    m_characterType = playerOne;
+    m_entities.clear();
+    m_pendingFireBallRequests.clear();
+    m_mario.reset();
+    m_mario2.reset();
+    m_pvpFireFlower = nullptr;
+    m_pvpFireballHits.clear();
+    CollisionManager::clearPendingPvpHits();
+    m_tileMap.destroyPhysicsBodies();
+    m_contactListener.reset();
+    m_world.reset();
+    m_levelCompleted = false;
+    m_flagSequenceActive = false;
+    m_flagWalkActive = false;
+    m_flagPhase = FlagPhase::NONE;
+    m_physicsAccumulator = 0.0f;
+    m_levelPath = path;
+    m_activeGenerators.clear();
+    m_generatorTimers.clear();
+    m_pipeWarpPhase = PipeWarpPhase::NONE;
+
+    if (!m_tileMap.loadFromFile(path, TileMap::LayoutMode::PVP_ARENA)) {
+        std::cerr << "Level: Failed to load PvP arena TileMap from " << path << std::endl;
+        return false;
+    }
+
+    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    m_camera.init(
+        sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
+                     static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
+        sf::FloatRect(sf::Vector2f(0.f, 0.f),
+                      sf::Vector2f(levelWidth, levelHeight))
+    );
+    m_camera.setVerticalMode(m_cameraVerticalMode);
+    const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
+    m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
+    m_contactListener = std::make_unique<ContactListener>(m_tileMap);
+    m_world->SetContactListener(m_contactListener.get());
+    m_tileMap.createPhysicsBodies(m_world.get());
+
+    // Player one spawns from 'M' (same rules as the campaign flow).
+    const auto playerOneSpawns = m_tileMap.findTiles('M');
+    const auto playerTwoSpawns = m_tileMap.findTiles('m');
+    if (playerOneSpawns.empty() || playerTwoSpawns.empty()) {
+        std::cerr << "Level: PvP arena is missing a player spawn point in " << path << std::endl;
+        return false;
+    }
+
+    const sf::Vector2f playerOnePos = TileMap::gridToWorldPosition(playerOneSpawns.front());
+    m_mario = std::make_unique<Mario>(playerOnePos, sf::Vector2f(32.f, 32.f));
+    m_mario->setCharacterType(playerOne);
+    m_mario->setRespawnPosition(playerOnePos);
+    m_mario->setPitThreshold(levelHeight + 64.f);
+    m_mario->setTextureManager(m_textureManager);
+    m_mario->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+
+    // Player two spawns from 'm'. A distinct negative collision group makes
+    // his own fireballs pass through him while reaching the opponent.
+    const sf::Vector2f playerTwoPos = TileMap::gridToWorldPosition(playerTwoSpawns.front());
+    m_mario2 = std::make_unique<Mario>(playerTwoPos, sf::Vector2f(32.f, 32.f));
+    m_mario2->setCharacterType(playerTwo);
+    m_mario2->setRespawnPosition(playerTwoPos);
+    m_mario2->setPitThreshold(levelHeight + 64.f);
+    m_mario2->setTextureManager(m_textureManager);
+    m_mario2->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+    m_mario2->setFixtureCollisionGroup(PVP_PLAYER_TWO_COLLISION_GROUP);
+
+    // A duel arena spawns no enemies, items, elevators, or generators.
+
+    // Initialize fighter sprite frames and the pinned camera before render.
+    updatePvp(0.f);
+
     return true;
 }
 
@@ -601,6 +694,11 @@ void Level::updateExplosions() {
 }
 
 void Level::update(float dt) {
+    if (m_pvpMode) {
+        updatePvp(dt);
+        return;
+    }
+
     updateFlagSequence(dt);
 
     if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
@@ -667,6 +765,96 @@ void Level::update(float dt) {
     if (m_mario) {
         sf::Vector2f centerPos = m_mario->getPosition() + (m_mario->getSize() / 2.0f);
         m_camera.update(dt, centerPos);
+    }
+}
+
+void Level::updatePvp(float dt) {
+    Mario* fighters[2] = {m_mario.get(), m_mario2.get()};
+
+    for (Mario* fighter : fighters) {
+        if (fighter) {
+            fighter->preparePhysics(dt);
+        }
+    }
+
+    if (m_world) {
+        const bool physicsStepped =
+            PhysicsEngine::update(*m_world, dt, m_physicsAccumulator);
+
+        if (physicsStepped) {
+            for (Mario* fighter : fighters) {
+                if (fighter) {
+                    fighter->refreshGroundedState();
+                }
+            }
+        }
+    }
+
+    // Apply deferred duel contacts (stomp KOs, fireball hits) after the step.
+    processPendingPvpHits();
+
+    processPendingFireballs();
+
+    // Update tilemap bump animations (head bumps on stone stay cosmetic).
+    m_tileMap.update(dt);
+
+    for (Mario* fighter : fighters) {
+        if (fighter) {
+            fighter->update(dt);
+        }
+    }
+
+    updateEntities(dt);
+    checkItemCollisions();
+    updateExplosions();
+
+    // Reconcile the on-field flower handle before dead entities are erased.
+    if (m_pvpFireFlower &&
+        (m_pvpFireFlower->isCollected() || m_pvpFireFlower->shouldRemove() ||
+         m_pvpFireFlower->isPendingDestroy() || !m_pvpFireFlower->isActive())) {
+        m_pvpFireFlower = nullptr;
+    }
+
+    removeDeadEntities();
+
+    for (Mario* fighter : fighters) {
+        if (fighter) {
+            for (const StompScoreAward& award :
+                 fighter->consumePendingStompScoreAwards()) {
+                spawnScorePopup(award);
+            }
+        }
+    }
+
+    // The arena is smaller than the logical view, so the camera stays pinned
+    // to the arena center; the update still runs to decay shake effects.
+    if (m_mario) {
+        m_camera.update(dt, m_mario->getPosition() + m_mario->getSize() / 2.0f);
+    }
+}
+
+void Level::processPendingPvpHits() {
+    for (const PvpHit& hit : CollisionManager::consumePendingPvpHits()) {
+        if (!hit.attacker || !hit.victim || hit.victim->isDying()) {
+            continue;
+        }
+
+        if (hit.cause == PvpHit::Cause::FIREBALL) {
+            // Knockback/stun policy belongs to the round state machine.
+            m_pvpFireballHits.push_back(hit);
+            continue;
+        }
+
+        // Head-stomp KO: the loser plays the death sequence while the winner
+        // bounces off, exactly like a defeated-enemy stomp.
+        hit.victim->loseLife();
+        if (b2Body* attackerBody = hit.attacker->getBody()) {
+            attackerBody->SetLinearVelocity(
+                b2Vec2(attackerBody->GetLinearVelocity().x,
+                       -PhysicsEngine::pixelsToMeters(PVP_STOMP_BOUNCE_SPEED)));
+        }
+        hit.attacker->clearGroundedState();
+        m_camera.shake(0.5f, 12.f);
     }
 }
 
@@ -759,13 +947,34 @@ void Level::render(sf::RenderTarget& target) {
     if (m_mario) {
         target.draw(*m_mario);
     }
+    if (m_pvpMode && m_mario2) {
+        target.draw(*m_mario2);
+    }
     
     // Draw foreground tiles (blocks, flagpoles, pipes) on top of Mario and entities
     m_tileMap.renderForeground(target);
 }
 
 void Level::checkItemCollisions() {
-    if (!m_mario || m_mario->isCollisionLocked()) return;
+    if (m_pvpMode) {
+        // Both fighters can contest the fire flower.
+        if (m_mario) {
+            checkItemCollisionFor(*m_mario);
+        }
+        if (m_mario2) {
+            checkItemCollisionFor(*m_mario2);
+        }
+        return;
+    }
+
+    if (!m_mario) {
+        return;
+    }
+    checkItemCollisionFor(*m_mario);
+}
+
+void Level::checkItemCollisionFor(Mario& player) {
+    if (player.isCollisionLocked()) return;
 
     for (auto& entity : m_entities) {
         // Use virtual isItem() instead of dynamic_cast to avoid RTTI overhead
@@ -786,8 +995,8 @@ void Level::checkItemCollisions() {
             continue;
         }
 
-        if (item->checkOverlap(*m_mario)) {
-            item->onCollect(*m_mario);
+        if (item->checkOverlap(player)) {
+            item->onCollect(player);
             item->markForRemoval();
         }
     }
@@ -887,8 +1096,47 @@ Mario* Level::getMario() {
 const Mario* Level::getMario() const {
     return m_mario.get();
 }
+Mario* Level::getMario2() {
+    return m_mario2.get();
+}
+const Mario* Level::getMario2() const {
+    return m_mario2.get();
+}
 bool Level::isLevelCompleted() const {
     return m_levelCompleted;
+}
+
+FireFlower* Level::spawnPvpFireFlower(const sf::Vector2f& position) {
+    if (!m_world || m_pvpFireFlower) {
+        return nullptr;
+    }
+
+    auto flower = std::make_unique<FireFlower>(position, m_world.get());
+    flower->setTextureManager(m_textureManager);
+    flower->update(0.f);
+    m_pvpFireFlower = flower.get();
+    m_entities.push_back(std::move(flower));
+    return m_pvpFireFlower;
+}
+
+void Level::clearPvpFireFlower() {
+    if (!m_pvpFireFlower) {
+        return;
+    }
+
+    for (auto& entity : m_entities) {
+        if (entity.get() == m_pvpFireFlower) {
+            entity->markForDestroy();
+            break;
+        }
+    }
+    m_pvpFireFlower = nullptr;
+}
+
+std::vector<PvpHit> Level::consumePvpFireballHits() {
+    std::vector<PvpHit> drained;
+    drained.swap(m_pvpFireballHits);
+    return drained;
 }
 
 
@@ -929,6 +1177,11 @@ bool Level::requestFireBallShot(Mario& mario) {
     auto fireball = std::make_unique<FireBall>(
         request.position, request.direction, m_world.get());
     fireball->setOwner(request.owner);
+    if (request.owner) {
+        // The projectile shares its shooter's collision group so it passes
+        // through him while still reaching the opposing fighter (PvP).
+        fireball->setCollisionGroup(request.owner->getFixtureCollisionGroup());
+    }
     fireball->setTextureManager(m_textureManager);
     m_entities.push_back(std::move(fireball));
     EventBus::getInstance().notify(EventType::FIREBALL_SHOT);
@@ -946,6 +1199,9 @@ void Level::processPendingFireballs() {
     for (const auto& req : m_pendingFireBallRequests) {
         auto fireball = std::make_unique<FireBall>(req.position, req.direction, m_world.get());
         fireball->setOwner(req.owner);
+        if (req.owner) {
+            fireball->setCollisionGroup(req.owner->getFixtureCollisionGroup());
+        }
         fireball->setTextureManager(m_textureManager);
         m_entities.push_back(std::move(fireball));
         EventBus::getInstance().notify(EventType::FIREBALL_SHOT);

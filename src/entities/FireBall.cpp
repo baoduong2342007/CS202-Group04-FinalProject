@@ -87,6 +87,16 @@ void FireBall::applyNoPlayerCollision() {
 }
 
 
+void FireBall::setCollisionGroup(int16_t group) {
+    if (!m_body) return;
+
+    if (b2Fixture* fixture = m_body->GetFixtureList()) {
+        b2Filter filter = fixture->GetFilterData();
+        filter.groupIndex = group;
+        fixture->SetFilterData(filter);
+    }
+}
+
 void FireBall::update(float dt) {
     if (!m_active || m_pendingDestroy) return;
 

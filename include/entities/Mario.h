@@ -150,6 +150,13 @@ public:
     }
     float getJumpForce() const noexcept { return m_jumpForce; }
 
+    /// Fixture collision group applied on every fixture (re)build.
+    /// The default makes this Mario share the campaign projectile group so
+    /// fireballs pass through him. PvP assigns a distinct negative group per
+    /// player so each fighter's fireballs hit the opponent but not himself.
+    void setFixtureCollisionGroup(int16_t group);
+    int16_t getFixtureCollisionGroup() const { return m_fixtureCollisionGroup; }
+
     bool isRunning() const;
     /// Set the per-frame run intent consumed by preparePhysics().
     void setRunIntent(bool running);
@@ -192,6 +199,7 @@ protected:
     CharacterType m_characterType = CharacterType::MARIO;
     std::unique_ptr<class IMarioState> m_statePattern;
     float m_jumpForce;
+    int16_t m_fixtureCollisionGroup = COLLISION_GROUP_PLAYER_PROJECTILE;
     int m_score;
     int m_coinCount;
     std::size_t m_stompScoreChainIndex = 0;

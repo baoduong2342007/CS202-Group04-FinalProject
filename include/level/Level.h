@@ -18,9 +18,11 @@
 #include "level/Camera.h"
 #include "level/TileMap.h"
 #include "level/CheepCheepConfig.h"
+#include "physics/CollisionManager.h"
 
 #include <box2d/box2d.h>
 class ContactListener;
+class FireFlower;
 
 class Level {
 public:
@@ -36,6 +38,13 @@ public:
     void setCameraVerticalMode(CameraVerticalMode mode);
     bool loadFromFile(const std::string& path,
                       CharacterType characterType = CharacterType::MARIO);
+    /// Load a two-fighter duel arena ('M' = player one, 'm' = player two,
+    /// 'W' = fire flower pedestal). Switches this Level into PvP mode, where
+    /// both fighters are simulated, deferred duel contacts are applied, and
+    /// the campaign-only systems (flagpole, pipes, generators) stay dormant.
+    bool loadPvpArena(const std::string& path,
+                      CharacterType playerOne,
+                      CharacterType playerTwo);
     void update(float dt);
     void render(sf::RenderTarget& target);
     /// Consolidated production entry point for FireBall shooting.
@@ -48,9 +57,23 @@ public:
     /// Spawn a deferred world-space stomp-score popup.
     void spawnScorePopup(const StompScoreAward& award);
 
+    // --- PvP duel support -------------------------------------------------
+    /// Place the contested fire flower on the arena. Only one flower may be
+    /// on the field at a time; returns nullptr when one already is.
+    FireFlower* spawnPvpFireFlower(const sf::Vector2f& position);
+    /// Remove the on-field fire flower (round reset). No-op when absent.
+    void clearPvpFireFlower();
+    bool hasPvpFireFlowerOnField() const { return m_pvpFireFlower != nullptr; }
+    /// Drain fireball hits forwarded from the deferred duel-contact queue.
+    /// The round state machine owns the knockback/stun policy for these.
+    std::vector<PvpHit> consumePvpFireballHits();
+
     // 4. Getters / Setters
     Mario* getMario();
     const Mario* getMario() const;
+    Mario* getMario2();
+    const Mario* getMario2() const;
+    bool isPvpMode() const { return m_pvpMode; }
     CharacterType getCharacterType() const { return m_characterType; }
     TileMap& getTileMap();
     Camera& getCamera();
@@ -97,10 +120,13 @@ private:
     void spawnCheepCheepsFromConfig();
     void updateCheepCheepGenerators(float dt);
     void updateFlagSequence(float dt);
+    void updatePvp(float dt);
+    void processPendingPvpHits();
     void updateEntities(float dt);
     void updateExplosions();
     void removeDeadEntities();
     void checkItemCollisions();
+    void checkItemCollisionFor(Mario& player);
     void checkFinishFlag();
     void processPendingFireballs();
     void processPendingStompScorePopups();
@@ -120,8 +146,15 @@ private:
     Camera m_camera;
     TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
+    /// Second PvP fighter; null in the campaign single-player flow.
+    std::unique_ptr<Mario> m_mario2;
     std::vector<std::unique_ptr<Entity>> m_entities;
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
+    bool m_pvpMode = false;
+    /// Non-owning handle to the contested fire flower (owned by m_entities).
+    FireFlower* m_pvpFireFlower = nullptr;
+    /// Fireball hits drained from the duel queue, forwarded to the round FSM.
+    std::vector<PvpHit> m_pvpFireballHits;
     bool m_levelCompleted = false;
     bool m_flagSequenceActive = false;
     bool m_flagWalkActive = false;

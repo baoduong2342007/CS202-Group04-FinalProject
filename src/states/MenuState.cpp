@@ -14,6 +14,7 @@
 #include "level/TileFrames.h"
 #include "patterns/InputState.h"
 #include "states/LevelSelectState.h"
+#include "states/PvpCharacterSelectState.h"
 #include "ui/UILayoutHelper.h"
 
 #include <cmath>
@@ -204,13 +205,18 @@ void MenuState::initMenu() {
         m_transitioning = true;
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
     }, 14);
+    m_menu->addItem("2 PLAYER VERSUS", [this]() {
+        if (m_transitioning) return;
+        m_transitioning = true;
+        GameManager::getInstance().changeState(std::make_unique<PvpCharacterSelectState>());
+    }, 14);
     m_menu->addItem("STAGE SELECT", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
     }, 14);
 
-    m_menu->setSpacing(28.f);
+    m_menu->setSpacing(26.f);
     m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 182.f}, UIAnchor::Center);
 }
 

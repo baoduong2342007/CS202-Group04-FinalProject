@@ -23,7 +23,7 @@ CS202-Group04-FinalProject/
 `-- thirdparty/
 ```
 
-- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 17 CTest executables.
+- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 24 CTest executables.
 - `CMakePresets.json` defines `mingw-debug`, `mingw-release`, and `mingw-tests`.
 - Evaluation and fix-plan versions are audit history. Version 4 is the input to the current remediation.
 
@@ -37,7 +37,7 @@ include/
 |-- level/      # Level ownership, TileMap, Camera, tile semantics and frames
 |-- patterns/   # commands, InputState, EventBus, Simple Factory, observer interfaces
 |-- physics/    # Box2D engine, listener, collision manager and tile resolver
-|-- states/     # Menu, Play, Pause, GameOver, Win and Mario State pattern classes
+|-- states/     # Menu, Play, Pause, GameOver, Win, PvP duel states and Mario State pattern classes
 |-- ui/         # HUD, layout anchors and shared menu widget
 `-- demo/       # optional demo interface; excluded from the production target
 
@@ -74,6 +74,7 @@ Important Sprint 6 ownership rules:
 | `levels/level4.txt` | Future/reference | Mechanics fixture excluded from the release catalog |
 | `levels/elevators.txt` | Config | External elevator moving platform route registry |
 | `levels/cheep_cheep.txt` | Config | External Cheep Cheep route and spawn registry |
+| `levels/pvp_arena.txt` | Runtime | 2 PLAYER VERSUS duel arena: one screen, center fire flower pedestal flanked by symmetric floating step blocks over a clear duel floor; loaded directly by `PvpPlayState` (not part of `LevelCatalog`) |
 
 Release levels use normal random `?` blocks and explicit `f`, `U`, and `O` placements. A normal `?` resolves once to a Coin (70%), Super Mushroom (15%), or FireFlower (15%); explicit `f` blocks always give a FireFlower while preserving Small Fire versus Super Fire body size.
 
@@ -89,6 +90,11 @@ Map symbols:
 - `J`: Springboard / Trampoline
 - `?` / `B` / `C`: Question Block, Brick Block, Coin
 - `F` / `|`: Finish Flagpole
+
+PvP-only arena markers (valid only with `TileMap::LayoutMode::PVP_ARENA`):
+- `M`: Player one spawn point (exactly one)
+- `m`: Player two spawn point (exactly one)
+- `W`: Fire flower pedestal (exactly one; `PvpPlayState` spawns the contested flower here)
 
 ## Automated tests
 
@@ -112,7 +118,12 @@ tests/
 |-- SpriteFramesThemeTests.cpp
 |-- CollisionMatrixTests.cpp
 |-- FireBallRequestTests.cpp
-`-- DisplayCameraUITests.cpp
+|-- DisplayCameraUITests.cpp
+|-- CharacterFlowTests.cpp
+|-- StompScoreTests.cpp
+|-- PvpArenaTests.cpp
+|-- PvpStompTests.cpp
+`-- PvpFlowTests.cpp
 ```
 
 `TestSpawnDeath.cpp` is a standalone diagnostic source and is not registered as a CTest suite.

@@ -39,7 +39,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~mW";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -746,6 +746,8 @@ void appendTexturedVertex(sf::VertexArray& vertices,
 struct LevelValidationState {
     std::size_t expectedWidth{0};
     std::size_t marioSpawnCount{0};
+    std::size_t secondSpawnCount{0};
+    std::size_t flowerPedestalCount{0};
     std::size_t finishCount{0};
     std::size_t flagpoleTopCount{0};
 };
@@ -753,6 +755,7 @@ struct LevelValidationState {
 bool validateRow(const std::string& row,
                  std::size_t lineNumber,
                  const std::string& path,
+                 TileMap::LayoutMode mode,
                  LevelValidationState& state) {
     if (state.expectedWidth == 0) {
         state.expectedWidth = row.size();
@@ -773,8 +776,21 @@ bool validateRow(const std::string& row,
             return false;
         }
 
+        // The PvP-only markers must not leak into campaign layouts, and vice
+        // versa the campaign finish markers are rejected by the arena rules.
+        const bool pvpOnlySymbol = (symbol == 'm' || symbol == 'W');
+        if (pvpOnlySymbol && mode != TileMap::LayoutMode::PVP_ARENA) {
+            std::cerr << "PvP-only tile symbol '" << symbol << "' at row " << lineNumber << ", column " << column + 1 << " is not allowed in this layout mode in " << path << std::endl;
+
+            return false;
+        }
+
         if (symbol == 'M') {
             ++state.marioSpawnCount;
+        } else if (symbol == 'm') {
+            ++state.secondSpawnCount;
+        } else if (symbol == 'W') {
+            ++state.flowerPedestalCount;
         } else if (symbol == 'F') {
             ++state.finishCount;
         } else if (symbol == 'T') {
@@ -785,7 +801,7 @@ bool validateRow(const std::string& row,
     return true;
 }
 
-bool validateLevelMarkers(const LevelValidationState& state, const std::string& path) {
+bool validateCampaignMarkers(const LevelValidationState& state, const std::string& path) {
     if (state.marioSpawnCount != 1) {
         std::cerr << "Invalid level file: expected exactly one Mario spawn but found " << state.marioSpawnCount << " in " << path << std::endl;
 
@@ -805,6 +821,44 @@ bool validateLevelMarkers(const LevelValidationState& state, const std::string& 
     }
     
     return true;
+}
+
+bool validatePvpArenaMarkers(const LevelValidationState& state, const std::string& path) {
+    if (state.marioSpawnCount != 1) {
+        std::cerr << "Invalid PvP arena file: expected exactly one player one spawn ('M') but found " << state.marioSpawnCount << " in " << path << std::endl;
+
+        return false;
+    }
+
+    if (state.secondSpawnCount != 1) {
+        std::cerr << "Invalid PvP arena file: expected exactly one player two spawn ('m') but found " << state.secondSpawnCount << " in " << path << std::endl;
+
+        return false;
+    }
+
+    if (state.flowerPedestalCount != 1) {
+        std::cerr << "Invalid PvP arena file: expected exactly one fire flower pedestal ('W') but found " << state.flowerPedestalCount << " in " << path << std::endl;
+
+        return false;
+    }
+
+    if (state.finishCount != 0) {
+        std::cerr << "Invalid PvP arena file: finish markers are not allowed but found " << state.finishCount << " in " << path << std::endl;
+
+        return false;
+    }
+    
+    return true;
+}
+
+bool validateLevelMarkers(const LevelValidationState& state,
+                          const std::string& path,
+                          TileMap::LayoutMode mode) {
+    if (mode == TileMap::LayoutMode::PVP_ARENA) {
+        return validatePvpArenaMarkers(state, path);
+    }
+
+    return validateCampaignMarkers(state, path);
 }
 
 bool validateFlagPole(const std::vector<std::string>& grid, const std::string& path) {
@@ -893,7 +947,7 @@ TileMap::~TileMap() {
     clearPhysicsBodies();
 }
 
-bool TileMap::loadFromFile(const std::string& path) {
+bool TileMap::loadFromFile(const std::string& path, LayoutMode mode) {
     std::ifstream inputFile(path);
     if (!inputFile.is_open()) {
         std::cerr << "Failed to open level file: " << path << std::endl;
@@ -919,7 +973,7 @@ bool TileMap::loadFromFile(const std::string& path) {
             continue;
         }
 
-        if (!validateRow(line, lineNumber, path, validationState)) {
+        if (!validateRow(line, lineNumber, path, mode, validationState)) {
             return false;
         }
 
@@ -931,7 +985,7 @@ bool TileMap::loadFromFile(const std::string& path) {
         return false;
     }
     
-    if (!validateLevelMarkers(validationState, path)) {
+    if (!validateLevelMarkers(validationState, path, mode)) {
         return false;
     }
     
@@ -952,7 +1006,8 @@ bool TileMap::loadFromFile(const std::string& path) {
         return false;
     }
 
-    if (!validateFlagPole(loadedGrid, path)) {
+    // PvP arenas have no flagpole; the campaign pole walk is skipped for them.
+    if (mode == LayoutMode::CAMPAIGN && !validateFlagPole(loadedGrid, path)) {
         return false;
     }
     

@@ -313,6 +313,35 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    # PvP duel mode (2 PLAYER VERSUS): arena validation, contact rules and
+    # the round/fire-flower state machine.
+    add_executable(pvp_arena_tests
+        tests/PvpArenaTests.cpp
+    )
+    target_link_libraries(pvp_arena_tests PRIVATE game_lib)
+    add_test(NAME pvp_arena_tests COMMAND pvp_arena_tests)
+    set_tests_properties(pvp_arena_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(pvp_stomp_tests
+        tests/PvpStompTests.cpp
+    )
+    target_link_libraries(pvp_stomp_tests PRIVATE game_lib)
+    add_test(NAME pvp_stomp_tests COMMAND pvp_stomp_tests)
+    set_tests_properties(pvp_stomp_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(pvp_flow_tests
+        tests/PvpFlowTests.cpp
+    )
+    target_link_libraries(pvp_flow_tests PRIVATE game_lib)
+    add_test(NAME pvp_flow_tests COMMAND pvp_flow_tests)
+    set_tests_properties(pvp_flow_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     # Keep test assertions and assertion-contained setup active in optimized
     # configurations.  CMake adds -DNDEBUG (/DNDEBUG) for Release-like builds;
     # undefine it only on the registered test executables, leaving game_lib and
@@ -339,6 +368,9 @@ if(BUILD_TESTING)
         display_camera_ui_tests
         character_flow_tests
         stomp_score_tests
+        pvp_arena_tests
+        pvp_stomp_tests
+        pvp_flow_tests
     )
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
@@ -424,6 +456,8 @@ set(SUPERMARIO_RUNTIME_LEVELS
     # so configured Cheep Cheep/elevator routes remain reproducible.
     "cheep_cheep.txt"
     "elevators.txt"
+    # 2 PLAYER VERSUS duel arena (loaded directly by PvpPlayState).
+    "pvp_arena.txt"
 )
 
 # TARGET_FILE_DIR is the package root for both single- and multi-config

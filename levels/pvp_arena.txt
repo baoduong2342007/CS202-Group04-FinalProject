@@ -1,0 +1,29 @@
+# PvP Arena — Stomp Duel (2 player versus)
+# Width: 20 tiles (640 px, exactly one logical screen)
+# Height: 11 tiles (352 px, camera stays pinned to the arena center)
+# Layout: open duel floor with a contested high ground.
+#   - Center pedestal platform with the fire flower spawner on top.
+#   - Two symmetric floating step blocks flank the pedestal; each is the
+#     single hop needed to reach the flower floor (ground -> block -> top).
+#   - The whole ground level stays clear so both players have room to duel.
+#   - One head-stomp on the opponent wins the round (best of 3).
+# PvP-only symbols:
+#   M = player one spawn point (exactly 1)
+#   m = player two spawn point (exactly 1)
+#   W = fire flower pedestal (exactly 1; flower spawns on this tile)
+# Shared symbols:
+#   . = empty (air)
+#   0 = ground tile (solid)
+#   S = unbreakable stone block (solid)
+
+S..................S
+S..................S
+S........W.........S
+S.......SSSS.......S
+S..................S
+S..................S
+S......S....S......S
+S..................S
+S.M..............m.S
+00000000000000000000
+00000000000000000000

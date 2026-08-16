@@ -37,6 +37,10 @@ public:
     void setOwner(Mario* owner) { m_owner = owner; }
     Mario* getOwner() const { return m_owner; }
 
+    /// Override the fixture collision group (PvP mirrors the shooter's group
+    /// so the projectile passes through its owner but reaches the opponent).
+    void setCollisionGroup(int16_t group);
+
     // 4. Getters / Setters
     int getBounceCount() const;
     Direction getDirection() const;

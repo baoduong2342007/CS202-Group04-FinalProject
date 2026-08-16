@@ -342,6 +342,17 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    # Co-op campaign mode (2 PLAYER CO-OP): two-player level loading, team
+    # score/lives accounting and the shared-death reload contract.
+    add_executable(coop_flow_tests
+        tests/CoopFlowTests.cpp
+    )
+    target_link_libraries(coop_flow_tests PRIVATE game_lib)
+    add_test(NAME coop_flow_tests COMMAND coop_flow_tests)
+    set_tests_properties(coop_flow_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     # Keep test assertions and assertion-contained setup active in optimized
     # configurations.  CMake adds -DNDEBUG (/DNDEBUG) for Release-like builds;
     # undefine it only on the registered test executables, leaving game_lib and
@@ -371,6 +382,7 @@ if(BUILD_TESTING)
         pvp_arena_tests
         pvp_stomp_tests
         pvp_flow_tests
+        coop_flow_tests
     )
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")

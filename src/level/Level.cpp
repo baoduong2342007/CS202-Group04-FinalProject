@@ -160,6 +160,11 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     m_entities.clear();
     m_pendingFireBallRequests.clear();
     m_mario.reset();
+    m_mario2.reset();
+    m_coopMode = false;
+    m_flagPlayer = nullptr;
+    m_warpPlayer = nullptr;
+    m_pipeWarpPhase = PipeWarpPhase::NONE;
     m_tileMap.destroyPhysicsBodies();
     m_contactListener.reset();
     m_world.reset();
@@ -201,14 +206,73 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     
     // Spawn Mario and all entities from tile codes
     spawnEntitiesFromTileMap();
+    m_flagPlayer = m_mario.get();
 
     m_pipeWarpCooldown = 0.0f;
     m_activeGenerators = CheepCheepConfig::generatorsFor(m_levelPath);
     m_generatorTimers.assign(m_activeGenerators.size(), 0.0f);
-    
+
     // Initialize camera and entity sprite frames before first render
     update(0.f);
-    
+
+    return true;
+}
+
+bool Level::loadFromFile(const std::string& path,
+                         CharacterType playerOne,
+                         CharacterType playerTwo) {
+    if (!loadFromFile(path, playerOne)) {
+        return false;
+    }
+
+    m_coopMode = true;
+
+    // Player two spawns beside the campaign 'M' tile so both players start
+    // the level together. The adjacent free tile is preferred; the exact spot
+    // is acceptable because the solver separates overlapping bodies.
+    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+    const auto marioSpawns = m_tileMap.findTiles('M');
+    const sf::Vector2f basePos = marioSpawns.empty()
+        ? m_mario->getPosition()
+        : TileMap::gridToWorldPosition(marioSpawns.front());
+
+    const auto findFreeAdjacentTile = [this](const sf::Vector2f& base,
+                                             sf::Vector2f& out) -> bool {
+        const int column = static_cast<int>(base.x / static_cast<float>(TILE_SIZE));
+        const int row = static_cast<int>(base.y / static_cast<float>(TILE_SIZE));
+        for (int dc : {1, -1}) {
+            const int c = column + dc;
+            if (c >= 0 && c < static_cast<int>(m_tileMap.getWidth()) &&
+                !m_tileMap.isSolid(c, row)) {
+                out = sf::Vector2f(base.x + static_cast<float>(dc) * TILE_SIZE, base.y);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    sf::Vector2f partnerPos = basePos;
+    findFreeAdjacentTile(basePos, partnerPos);
+
+    m_mario2 = std::make_unique<Mario>(partnerPos, sf::Vector2f(32.f, 32.f));
+    m_mario2->setCharacterType(playerTwo);
+    m_mario2->setRespawnPosition(partnerPos);
+    m_mario2->setPitThreshold(levelHeight + 64.f);
+    m_mario2->setTextureManager(m_textureManager);
+    m_mario2->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+
+    // Wire underwater swim mechanics for both players, matching player one.
+    if (m_theme == LevelTheme::UNDERWATER) {
+        m_mario2->setUnderwater(true);
+        if (m_mario2->getBody()) {
+            m_mario2->getBody()->SetLinearDamping(1.5f);
+        }
+    }
+
+    // Re-run the zero-dt update so player two's sprite transforms and the
+    // midpoint camera are initialized before the first render.
+    updateCoop(0.f);
+
     return true;
 }
 
@@ -478,7 +542,13 @@ void Level::updateCheepCheepGenerators(float dt) {
         return;
     }
 
-    const float marioX = m_mario->getPosition().x;
+    const auto playerInRange = [](const Mario* player, float startX, float endX) {
+        if (!player) {
+            return false;
+        }
+        const float x = player->getPosition().x;
+        return x >= startX && x <= endX;
+    };
     static std::mt19937 rng(std::random_device{}());
 
     for (std::size_t i = 0; i < m_activeGenerators.size(); ++i) {
@@ -486,7 +556,11 @@ void Level::updateCheepCheepGenerators(float dt) {
         const float startX = static_cast<float>(gen.startColumn * TILE_SIZE);
         const float endX = static_cast<float>(gen.endColumn * TILE_SIZE);
 
-        if (marioX < startX || marioX > endX) {
+        // In co-op the generator reacts while either player is inside the gate.
+        const bool anyPlayerInRange =
+            playerInRange(m_mario.get(), startX, endX) ||
+            (m_coopMode && playerInRange(m_mario2.get(), startX, endX));
+        if (!anyPlayerInRange) {
             continue;
         }
 
@@ -528,22 +602,25 @@ void Level::updateCheepCheepGenerators(float dt) {
 }
 
 void Level::updateFlagSequence(float dt) {
-    if (!m_flagSequenceActive || !m_mario) {
+    // The sequence is driven by the player who touched the pole
+    // (m_flagPlayer == m_mario in single player).
+    if (!m_flagSequenceActive || !m_flagPlayer) {
         return;
     }
+    Mario* const mario = m_flagPlayer;
 
     switch (m_flagPhase) {
     case FlagPhase::SLIDING:
     case FlagPhase::WAITING_FLAG_DROP: {
-        m_mario->setMoveIntent(0.0f);
-        m_mario->setRunIntent(false);
+        mario->setMoveIntent(0.0f);
+        mario->setRunIntent(false);
 
         if (m_flagPhase == FlagPhase::SLIDING) {
             // Scripted descent: Mario slides down the pole while the flag
             // follows his displacement exactly.
-            m_mario->updateFlagpoleSlide(dt);
+            mario->updateFlagpoleSlide(dt);
             const float marioDisplacement =
-                m_mario->getPosition().y - m_flagSlideStartMarioY;
+                mario->getPosition().y - m_flagSlideStartMarioY;
             m_tileMap.setFlagDropDistance(
                 std::max(0.0f,
                          m_flagSlideStartDropDistance + marioDisplacement));
@@ -551,8 +628,8 @@ void Level::updateFlagSequence(float dt) {
             // Mario already reached the pole base but the flag still needs
             // to descend to its validated maximum. Hold Mario still and
             // finish the flag drop independently (no rough time estimate).
-            if (m_mario->getBody()) {
-                m_mario->getBody()->SetLinearVelocity(b2Vec2(0.f, 0.f));
+            if (mario->getBody()) {
+                mario->getBody()->SetLinearVelocity(b2Vec2(0.f, 0.f));
             }
             m_tileMap.setFlagDropDistance(
                 m_tileMap.getFlagDropDistance() +
@@ -561,64 +638,64 @@ void Level::updateFlagSequence(float dt) {
                              m_tileMap.getFlagDropDistance()));
         }
 
-        if (m_mario->isFlagpoleSlideComplete() &&
+        if (mario->isFlagpoleSlideComplete() &&
             m_tileMap.isFlagFullyDropped()) {
             // Once the flag reaches the bottom, Mario must leave the pole
             // toward the castle. If he is still on the pole's left side,
             // first move him around to the right side of the pole.
             const float marioCenterX =
-                m_mario->getPosition().x + m_mario->getSize().x / 2.0f;
+                mario->getPosition().x + mario->getSize().x / 2.0f;
             if (marioCenterX < m_flagPoleCenterX) {
                 m_flagTurnTargetX =
-                    m_flagPoleCenterX - m_mario->getSize().x / 2.0f + 14.0f;
-                m_mario->setFlagpoleSliding(false);
-                m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
-                m_mario->setMoveIntent(1.0f);
+                    m_flagPoleCenterX - mario->getSize().x / 2.0f + 14.0f;
+                mario->setFlagpoleSliding(false);
+                mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
+                mario->setMoveIntent(1.0f);
                 m_flagPhase = FlagPhase::TURNING_RIGHT;
                 break;
             }
 
             // The original game gives Mario a short pause at the bottom,
             // then takes control and walks him right into the castle.
-            m_mario->setFlagpoleSliding(false);
-            m_mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
-            m_mario->setMoveIntent(1.0f);
-            m_mario->setRunIntent(false);
+            mario->setFlagpoleSliding(false);
+            mario->setAutomaticWalkSpeed(FLAGPOLE_WALK_SPEED);
+            mario->setMoveIntent(1.0f);
+            mario->setRunIntent(false);
             m_flagWalkActive = true;
             m_flagPhase = FlagPhase::WALKING;
-        } else if (m_mario->isFlagpoleSlideComplete() &&
+        } else if (mario->isFlagpoleSlideComplete() &&
                    !m_tileMap.isFlagFullyDropped()) {
             m_flagPhase = FlagPhase::WAITING_FLAG_DROP;
         }
         break;
     }
     case FlagPhase::TURNING_RIGHT: {
-        m_mario->setMoveIntent(1.0f);
-        m_mario->setRunIntent(false);
+        mario->setMoveIntent(1.0f);
+        mario->setRunIntent(false);
 
-        if (m_mario->getPosition().x >= m_flagTurnTargetX) {
-            m_mario->setPosition({m_flagTurnTargetX,
-                                  m_mario->getPosition().y});
-            m_mario->stopMoving();
-            m_mario->setVelocity({0.0f, 0.0f});
-            m_mario->setMoveIntent(1.0f);
+        if (mario->getPosition().x >= m_flagTurnTargetX) {
+            mario->setPosition({m_flagTurnTargetX,
+                                  mario->getPosition().y});
+            mario->stopMoving();
+            mario->setVelocity({0.0f, 0.0f});
+            mario->setMoveIntent(1.0f);
             m_flagWalkActive = true;
             m_flagPhase = FlagPhase::WALKING;
         }
         break;
     }
     case FlagPhase::WALKING: {
-        m_mario->setMoveIntent(1.0f);
-        m_mario->setRunIntent(false);
+        mario->setMoveIntent(1.0f);
+        mario->setRunIntent(false);
 
         // The walk is driven by Mario's actual physics position.
-        if (m_mario->getPosition().x >= m_flagWalkTargetX) {
+        if (mario->getPosition().x >= m_flagWalkTargetX) {
             const sf::Vector2f stopPosition(m_flagWalkTargetX,
-                                            m_mario->getPosition().y);
-            m_mario->setPosition(stopPosition);
-            m_mario->stopMoving();
-            m_mario->setVelocity({0.0f, 0.0f});
-            m_mario->setAutomaticWalkSpeed(0.0f);
+                                            mario->getPosition().y);
+            mario->setPosition(stopPosition);
+            mario->stopMoving();
+            mario->setVelocity({0.0f, 0.0f});
+            mario->setAutomaticWalkSpeed(0.0f);
             m_flagSequenceActive = false;
             m_flagWalkActive = false;
             m_flagPhase = FlagPhase::NONE;
@@ -657,7 +734,19 @@ void Level::updateEntities(float dt) {
         }
 
         if (enemy->isPiranhaPlant() && m_mario) {
-            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(m_mario->getPosition());
+            // The plant reacts to the closest player so it does not pop out
+            // under a co-op partner standing on the pipe.
+            sf::Vector2f nearestPos = m_mario->getPosition();
+            if (m_coopMode && m_mario2) {
+                const float playerOneDistance =
+                    std::abs(m_mario->getPosition().x - enemy->getPosition().x);
+                const float playerTwoDistance =
+                    std::abs(m_mario2->getPosition().x - enemy->getPosition().x);
+                if (playerTwoDistance < playerOneDistance) {
+                    nearestPos = m_mario2->getPosition();
+                }
+            }
+            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(nearestPos);
         }
 
         enemy->update(dt);
@@ -699,13 +788,18 @@ void Level::update(float dt) {
         return;
     }
 
+    if (m_coopMode) {
+        updateCoop(dt);
+        return;
+    }
+
     updateFlagSequence(dt);
 
     if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
         updatePipeWarp(dt);
-        if (m_mario) {
-            m_mario->updateVisuals(dt);
-            const sf::Vector2f centerPos = m_mario->getPosition() + (m_mario->getSize() / 2.0f);
+        if (m_warpPlayer) {
+            m_warpPlayer->updateVisuals(dt);
+            const sf::Vector2f centerPos = m_warpPlayer->getPosition() + (m_warpPlayer->getSize() / 2.0f);
             m_camera.update(dt, centerPos);
         }
         return;
@@ -833,6 +927,97 @@ void Level::updatePvp(float dt) {
     }
 }
 
+void Level::updateCoop(float dt) {
+    Mario* players[2] = {m_mario.get(), m_mario2.get()};
+
+    updateFlagSequence(dt);
+
+    if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
+        updatePipeWarp(dt);
+        if (m_warpPlayer) {
+            m_warpPlayer->updateVisuals(dt);
+            const sf::Vector2f centerPos =
+                m_warpPlayer->getPosition() + (m_warpPlayer->getSize() / 2.0f);
+            m_camera.update(dt, centerPos);
+        }
+        return;
+    }
+
+    for (Mario* player : players) {
+        if (!player) {
+            continue;
+        }
+        const sf::Vector2f center = player->getPosition() + player->getSize() / 2.0f;
+        const int column = static_cast<int>(center.x / static_cast<float>(TILE_SIZE));
+        const int row = static_cast<int>(center.y / static_cast<float>(TILE_SIZE));
+        const bool onVine = m_tileMap.isClimbable(column, row);
+        const float vineCenterX = static_cast<float>(column * TILE_SIZE) + TILE_SIZE / 2.0f;
+        player->setClimbContext(onVine, vineCenterX);
+        player->preparePhysics(dt);
+    }
+
+    if (m_world) {
+        const bool physicsStepped =
+            PhysicsEngine::update(*m_world, dt, m_physicsAccumulator);
+
+        if (physicsStepped) {
+            for (Mario* player : players) {
+                if (player) {
+                    player->refreshGroundedState();
+                }
+            }
+        }
+    }
+
+    processPendingStompScorePopups();
+
+    if (m_pipeWarpCooldown > 0.0f) {
+        m_pipeWarpCooldown = std::max(0.0f, m_pipeWarpCooldown - dt);
+    }
+
+    checkPipeWarps();
+
+    // Flush any pending fireball creation requests queued while Box2D world was locked
+    processPendingFireballs();
+
+    // Update tilemap bump animations
+    m_tileMap.update(dt);
+
+    // Either player may break brick blocks; block rewards still credit
+    // player one, which the shared team HUD reports as the team total.
+    const bool canBreakBlocks = (m_mario && m_mario->canBreakBricks()) ||
+                                (m_mario2 && m_mario2->canBreakBricks());
+    m_tileMap.processPendingHits(m_entities, m_textureManager,
+                                 canBreakBlocks, m_mario.get());
+
+    for (Mario* player : players) {
+        if (player) {
+            player->update(dt);
+        }
+    }
+
+    updateCheepCheepGenerators(dt);
+    updateEntities(dt);
+
+    checkItemCollisions();
+    checkFinishFlag();
+    updateExplosions();
+    removeDeadEntities();
+    processPendingStompScorePopups();
+
+    // The team shares one view: track the midpoint of both players. During
+    // the flagpole cinematic the camera follows the player on the pole.
+    if (m_flagSequenceActive && m_flagPlayer) {
+        m_camera.update(dt, m_flagPlayer->getPosition() + m_flagPlayer->getSize() / 2.0f);
+    } else if (m_mario && m_mario2) {
+        const sf::Vector2f center1 = m_mario->getPosition() + m_mario->getSize() / 2.0f;
+        const sf::Vector2f center2 = m_mario2->getPosition() + m_mario2->getSize() / 2.0f;
+        m_camera.update(dt, (center1 + center2) / 2.0f);
+    } else if (m_mario) {
+        m_camera.update(dt, m_mario->getPosition() + m_mario->getSize() / 2.0f);
+    }
+}
+
 void Level::processPendingPvpHits() {
     for (const PvpHit& hit : CollisionManager::consumePendingPvpHits()) {
         if (!hit.attacker || !hit.victim || hit.victim->isDying()) {
@@ -873,6 +1058,13 @@ void Level::processPendingStompScorePopups() {
     for (const StompScoreAward& award :
          m_mario->consumePendingStompScoreAwards()) {
         spawnScorePopup(award);
+    }
+
+    if (m_coopMode && m_mario2) {
+        for (const StompScoreAward& award :
+             m_mario2->consumePendingStompScoreAwards()) {
+            spawnScorePopup(award);
+        }
     }
 }
 
@@ -947,7 +1139,7 @@ void Level::render(sf::RenderTarget& target) {
     if (m_mario) {
         target.draw(*m_mario);
     }
-    if (m_pvpMode && m_mario2) {
+    if (m_mario2) {
         target.draw(*m_mario2);
     }
     
@@ -956,8 +1148,9 @@ void Level::render(sf::RenderTarget& target) {
 }
 
 void Level::checkItemCollisions() {
-    if (m_pvpMode) {
-        // Both fighters can contest the fire flower.
+    if (m_pvpMode || m_coopMode) {
+        // Both fighters can contest the fire flower; in co-op both players
+        // pick up coins, power-ups, and stars.
         if (m_mario) {
             checkItemCollisionFor(*m_mario);
         }
@@ -1003,8 +1196,7 @@ void Level::checkItemCollisionFor(Mario& player) {
 }
 
 void Level::checkFinishFlag() {
-    if (!m_mario || m_mario->isCollisionLocked() || m_levelCompleted ||
-        m_flagSequenceActive) {
+    if (!m_mario || m_levelCompleted || m_flagSequenceActive) {
         return;
     }
 
@@ -1035,48 +1227,63 @@ void Level::checkFinishFlag() {
                                                                     )
                                       );
 
-    const sf::FloatRect marioBounds = m_mario->getBoundingBox();
+    Mario* players[2] = {m_mario.get(), m_coopMode ? m_mario2.get() : nullptr};
 
-    if (marioBounds.findIntersection(finishTrigger)) {
-        // The flag is a one-shot gameplay sequence.  Keep the level active
-        // until Mario has finished the climb and walked into the exit.
-        m_flagSequenceActive = true;
-        m_flagWalkActive = false;
-        m_flagPhase = FlagPhase::SLIDING;
-        m_flagSlideStartMarioY = m_mario->getPosition().y;
-        m_flagSlideStartDropDistance = 0.0f;
-        const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
-        m_flagPoleCenterX = poleCenterX;
-        const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
-                                 m_mario->getSize().y;
-        m_mario->beginFlagpoleSlide(poleCenterX, targetTopY);
-        m_tileMap.setFlagDropDistance(m_flagSlideStartDropDistance);
-
-        // `L` is the bottom-left anchor of the five-tile-wide castle. Aim for
-        // its center door. Levels without a castle still get a short,
-        // authentic-looking walk toward the right edge before transitioning.
-        const auto castleAnchors = m_tileMap.findTiles('L');
-        const auto destinationCastle = std::find_if(
-            castleAnchors.begin(), castleAnchors.end(),
-            [&finishPosition](const sf::Vector2i& anchor) {
-                return anchor.x > finishPosition.x;
-            });
-        if (destinationCastle != castleAnchors.end()) {
-            // Some levels, notably Level 2, contain a decorative castle at
-            // the spawn and the real exit castle after the flag.  The first
-            // anchor is not necessarily the destination.
-            const float castleLeft = static_cast<float>(destinationCastle->x) * TILE_SIZE;
-            const float castleCenter = castleLeft + 2.5f * TILE_SIZE;
-            m_flagWalkTargetX = castleCenter - m_mario->getSize().x / 2.0f;
-        } else {
-            const float levelRight = static_cast<float>(m_tileMap.getWidth()) * TILE_SIZE;
-            const float rightEdgeTarget = levelRight - m_mario->getSize().x - 8.0f;
-            const float shortWalkTarget = m_mario->getPosition().x + 4.0f * TILE_SIZE;
-            m_flagWalkTargetX = std::min(rightEdgeTarget, shortWalkTarget);
+    // In co-op the first player to reach the pole claims the exit sequence.
+    Mario* triggeringPlayer = nullptr;
+    for (Mario* player : players) {
+        if (player && !player->isCollisionLocked() &&
+            player->getBoundingBox().findIntersection(finishTrigger)) {
+            triggeringPlayer = player;
+            break;
         }
-        m_flagWalkTargetX = std::max(m_flagWalkTargetX,
-                                     m_mario->getPosition().x + TILE_SIZE);
     }
+
+    if (!triggeringPlayer) {
+        return;
+    }
+
+    Mario* const mario = triggeringPlayer;
+    m_flagPlayer = mario;
+
+    // The flag is a one-shot gameplay sequence.  Keep the level active
+    // until Mario has finished the climb and walked into the exit.
+    m_flagSequenceActive = true;
+    m_flagWalkActive = false;
+    m_flagPhase = FlagPhase::SLIDING;
+    m_flagSlideStartMarioY = mario->getPosition().y;
+    m_flagSlideStartDropDistance = 0.0f;
+    const float poleCenterX = triggerPosition.x + TILE_SIZE / 2.0f;
+    m_flagPoleCenterX = poleCenterX;
+    const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
+                             mario->getSize().y;
+    mario->beginFlagpoleSlide(poleCenterX, targetTopY);
+    m_tileMap.setFlagDropDistance(m_flagSlideStartDropDistance);
+
+    // `L` is the bottom-left anchor of the five-tile-wide castle. Aim for
+    // its center door. Levels without a castle still get a short,
+    // authentic-looking walk toward the right edge before transitioning.
+    const auto castleAnchors = m_tileMap.findTiles('L');
+    const auto destinationCastle = std::find_if(
+        castleAnchors.begin(), castleAnchors.end(),
+        [&finishPosition](const sf::Vector2i& anchor) {
+            return anchor.x > finishPosition.x;
+        });
+    if (destinationCastle != castleAnchors.end()) {
+        // Some levels, notably Level 2, contain a decorative castle at
+        // the spawn and the real exit castle after the flag.  The first
+        // anchor is not necessarily the destination.
+        const float castleLeft = static_cast<float>(destinationCastle->x) * TILE_SIZE;
+        const float castleCenter = castleLeft + 2.5f * TILE_SIZE;
+        m_flagWalkTargetX = castleCenter - mario->getSize().x / 2.0f;
+    } else {
+        const float levelRight = static_cast<float>(m_tileMap.getWidth()) * TILE_SIZE;
+        const float rightEdgeTarget = levelRight - mario->getSize().x - 8.0f;
+        const float shortWalkTarget = mario->getPosition().x + 4.0f * TILE_SIZE;
+        m_flagWalkTargetX = std::min(rightEdgeTarget, shortWalkTarget);
+    }
+    m_flagWalkTargetX = std::max(m_flagWalkTargetX,
+                                 mario->getPosition().x + TILE_SIZE);
 }
 
 void Level::removeDeadEntities() {
@@ -1270,11 +1477,12 @@ void Level::suppressPiranhaAt(const sf::Vector2i& pipePosition) {
     }
 }
 
-void Level::startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile) {
-    if (!m_mario) {
+void Level::startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile) {
+    if (!player) {
         return;
     }
 
+    m_warpPlayer = player;
     m_pendingWarpId = warpId;
     m_pendingPipeTile = pipeTile;
     m_pipeWarpPhase = phase;
@@ -1282,50 +1490,51 @@ void Level::startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& 
 
     SoundManager::getInstance().playSound("powerdown");
 
-    if (m_mario->getBody()) {
-        m_mario->getBody()->SetGravityScale(0.0f);
-        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+    if (player->getBody()) {
+        player->getBody()->SetGravityScale(0.0f);
+        player->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
     }
-    m_mario->setVelocity({0.0f, 0.0f});
+    player->setVelocity({0.0f, 0.0f});
 
     if (phase == PipeWarpPhase::ENTERING_VERTICAL) {
-        if (m_mario->getMarioState() == MarioState::SUPER ||
-            m_mario->getMarioState() == MarioState::FIRE_SUPER) {
-            m_mario->playAnimation("crouch");
+        if (player->getMarioState() == MarioState::SUPER ||
+            player->getMarioState() == MarioState::FIRE_SUPER) {
+            player->playAnimation("crouch");
         } else {
-            m_mario->playAnimation("idle");
+            player->playAnimation("idle");
         }
     } else if (phase == PipeWarpPhase::ENTERING_HORIZONTAL) {
-        m_mario->playAnimation("walk");
+        player->playAnimation("walk");
     }
 }
 
 void Level::updatePipeWarp(float dt) {
-    if (!m_mario || m_pipeWarpPhase == PipeWarpPhase::NONE) {
+    if (!m_warpPlayer || m_pipeWarpPhase == PipeWarpPhase::NONE) {
         return;
     }
+    Mario* const mario = m_warpPlayer;
 
-    if (m_mario->getBody()) {
-        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
-        m_mario->getBody()->SetGravityScale(0.0f);
+    if (mario->getBody()) {
+        mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+        mario->getBody()->SetGravityScale(0.0f);
     }
-    m_mario->setVelocity({0.0f, 0.0f});
+    mario->setVelocity({0.0f, 0.0f});
 
     constexpr float PIPE_SLIDE_SPEED = 48.0f; // px/sec
 
     if (m_pipeWarpPhase == PipeWarpPhase::ENTERING_VERTICAL) {
         m_pipeWarpTimer -= dt;
-        const sf::Vector2f pos = m_mario->getPosition();
+        const sf::Vector2f pos = mario->getPosition();
         const float pipeCenterX = static_cast<float>(m_pendingPipeTile.x * TILE_SIZE) + static_cast<float>(TILE_SIZE);
-        const float targetX = pipeCenterX - m_mario->getSize().x / 2.0f;
+        const float targetX = pipeCenterX - mario->getSize().x / 2.0f;
         const float newX = pos.x + (targetX - pos.x) * std::min(1.0f, dt * 10.0f);
-        m_mario->setPosition({newX, pos.y + PIPE_SLIDE_SPEED * dt});
+        mario->setPosition({newX, pos.y + PIPE_SLIDE_SPEED * dt});
 
-        if (m_mario->getMarioState() == MarioState::SUPER ||
-            m_mario->getMarioState() == MarioState::FIRE_SUPER) {
-            m_mario->playAnimation("crouch");
+        if (mario->getMarioState() == MarioState::SUPER ||
+            mario->getMarioState() == MarioState::FIRE_SUPER) {
+            mario->playAnimation("crouch");
         } else {
-            m_mario->playAnimation("idle");
+            mario->playAnimation("idle");
         }
 
         if (m_pipeWarpTimer <= 0.0f) {
@@ -1335,9 +1544,9 @@ void Level::updatePipeWarp(float dt) {
         }
     } else if (m_pipeWarpPhase == PipeWarpPhase::ENTERING_HORIZONTAL) {
         m_pipeWarpTimer -= dt;
-        const sf::Vector2f pos = m_mario->getPosition();
-        m_mario->setPosition({pos.x + 60.0f * dt, pos.y});
-        m_mario->playAnimation("walk");
+        const sf::Vector2f pos = mario->getPosition();
+        mario->setPosition({pos.x + 60.0f * dt, pos.y});
+        mario->playAnimation("walk");
 
         if (m_pipeWarpTimer <= 0.0f) {
             m_pipeWarpPhase = PipeWarpPhase::WARPING_DELAY;
@@ -1351,27 +1560,63 @@ void Level::updatePipeWarp(float dt) {
         }
     } else if (m_pipeWarpPhase == PipeWarpPhase::EXITING_VERTICAL) {
         m_pipeWarpTimer -= dt;
-        const sf::Vector2f pos = m_mario->getPosition();
+        const sf::Vector2f pos = mario->getPosition();
         const float newY = std::max(m_pipeWarpExitTargetY, pos.y - PIPE_SLIDE_SPEED * dt);
-        m_mario->setPosition({pos.x, newY});
-        m_mario->playAnimation("idle");
+        mario->setPosition({pos.x, newY});
+        mario->playAnimation("idle");
 
         if (m_pipeWarpTimer <= 0.0f || pos.y <= m_pipeWarpExitTargetY) {
-            m_mario->setPosition({pos.x, m_pipeWarpExitTargetY});
+            mario->setPosition({pos.x, m_pipeWarpExitTargetY});
             m_pipeWarpPhase = PipeWarpPhase::NONE;
             m_pipeWarpCooldown = 0.5f;
-            if (m_mario->getBody()) {
-                m_mario->getBody()->SetGravityScale(1.0f);
+            if (mario->getBody()) {
+                mario->getBody()->SetGravityScale(1.0f);
             }
-            m_mario->playAnimation("idle");
+            mario->playAnimation("idle");
+            // Co-op: the partner travels along so the team shares one area.
+            teleportCoopPartner(*mario);
+            m_warpPlayer = nullptr;
         }
     }
 }
 
-void Level::warpMarioToReturn(char warpId) {
-    if (!m_mario) {
+void Level::teleportCoopPartner(const Mario& warpingPlayer) {
+    if (!m_coopMode || !m_mario || !m_mario2) {
         return;
     }
+
+    Mario* partner = (m_warpPlayer == m_mario.get()) ? m_mario2.get() : m_mario.get();
+
+    // Stand beside the warp exit when the adjacent tile is free; otherwise
+    // share the exact spot and let the solver separate the two bodies.
+    const sf::Vector2f destination = warpingPlayer.getPosition();
+    const int column = static_cast<int>(destination.x / static_cast<float>(TILE_SIZE));
+    const int row = static_cast<int>(destination.y / static_cast<float>(TILE_SIZE));
+    sf::Vector2f partnerPos = destination;
+    for (int dc : {1, -1}) {
+        const int c = column + dc;
+        if (c >= 0 && c < static_cast<int>(m_tileMap.getWidth()) &&
+            !m_tileMap.isSolid(c, row)) {
+            partnerPos = sf::Vector2f(destination.x + static_cast<float>(dc) * TILE_SIZE,
+                                      destination.y);
+            break;
+        }
+    }
+
+    partner->setPosition(partnerPos);
+    partner->setVelocity({0.0f, 0.0f});
+    if (b2Body* body = partner->getBody()) {
+        body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+        body->SetGravityScale(1.0f);
+    }
+    partner->playAnimation("idle");
+}
+
+void Level::warpMarioToReturn(char warpId) {
+    if (!m_warpPlayer) {
+        return;
+    }
+    Mario* const mario = m_warpPlayer;
 
     const auto destination = m_tileMap.findWarpReturn(warpId);
 
@@ -1394,7 +1639,7 @@ void Level::warpMarioToReturn(char warpId) {
         suppressPiranhaAt(tileBelow);
     }
 
-    const sf::Vector2f marioSize = m_mario->getSize();
+    const sf::Vector2f marioSize = mario->getSize();
 
     // RN marks the tile where Mario's feet should end.
     // Works for both Small and Big Mario.
@@ -1402,9 +1647,9 @@ void Level::warpMarioToReturn(char warpId) {
                               static_cast<float>((returnPosition.y + 1) * TILE_SIZE) - marioSize.y
                               };
 
-    m_mario->setVelocity({0.0f, 0.0f});
-    if (m_mario->getBody()) {
-        m_mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
+    mario->setVelocity({0.0f, 0.0f});
+    if (mario->getBody()) {
+        mario->getBody()->SetLinearVelocity(b2Vec2(0.0f, 0.0f));
     }
 
     // Check if the tile below is a pipe (so Mario should emerge upwards out of the pipe)
@@ -1415,19 +1660,22 @@ void Level::warpMarioToReturn(char warpId) {
     if (isPipeReturn) {
         // Start Mario positioned down inside the pipe, and slide upwards
         const sf::Vector2f startPos{target.x, target.y + marioSize.y};
-        m_mario->setPosition(startPos);
+        mario->setPosition(startPos);
         m_pipeWarpExitTargetY = target.y;
         m_pipeWarpPhase = PipeWarpPhase::EXITING_VERTICAL;
         m_pipeWarpTimer = 0.45f;
         SoundManager::getInstance().playSound("powerdown");
     } else {
-        m_mario->setPosition(target);
+        mario->setPosition(target);
         m_pipeWarpPhase = PipeWarpPhase::NONE;
         m_pipeWarpCooldown = 0.5f;
-        if (m_mario->getBody()) {
-            m_mario->getBody()->SetGravityScale(1.0f);
+        if (mario->getBody()) {
+            mario->getBody()->SetGravityScale(1.0f);
         }
-        m_mario->playAnimation("idle");
+        mario->playAnimation("idle");
+        // Co-op: the partner travels along so the team shares one area.
+        teleportCoopPartner(*mario);
+        m_warpPlayer = nullptr;
     }
 
     // Immediately snap camera to destination
@@ -1438,70 +1686,78 @@ void Level::warpMarioToReturn(char warpId) {
 void Level::checkPipeWarps() {
     if (!m_mario || m_pipeWarpCooldown > 0.0f ||
         m_pipeWarpPhase != PipeWarpPhase::NONE ||
-        m_mario->isCollisionLocked() || m_flagSequenceActive ||
+        m_flagSequenceActive ||
         m_levelCompleted) {
         return;
     }
 
-    const sf::Vector2f marioPos = m_mario->getPosition();
+    Mario* players[2] = {m_mario.get(), m_coopMode ? m_mario2.get() : nullptr};
 
-    const sf::Vector2f marioSize = m_mario->getSize();
+    for (Mario* mario : players) {
+        if (!mario || mario->isCollisionLocked()) {
+            continue;
+        }
 
-    for (const auto& entry : m_tileMap.getWarpEntries()) {
-        const sf::Vector2i pipe = entry.position;
+        const sf::Vector2f marioPos = mario->getPosition();
 
-        // ==============================================
-        // Hn — horizontal pipe
-        // Walk RIGHT into it.
-        // ==============================================
-        if (entry.type == TileMap::WarpEntryType::HORIZONTAL) {
-            if (m_mario->getHorizontalIntent() <= 0.5f) {
+        const sf::Vector2f marioSize = mario->getSize();
+
+        for (const auto& entry : m_tileMap.getWarpEntries()) {
+            const sf::Vector2i pipe = entry.position;
+
+            // ==============================================
+            // Hn — horizontal pipe
+            // Walk RIGHT into it.
+            // ==============================================
+            if (entry.type == TileMap::WarpEntryType::HORIZONTAL) {
+                if (mario->getHorizontalIntent() <= 0.5f) {
+                    continue;
+                }
+
+                const float pipeLeft = static_cast<float>(pipe.x * TILE_SIZE);
+                const float pipeTop = static_cast<float>((pipe.y - 1) * TILE_SIZE);
+                const float pipeBottom = static_cast<float>((pipe.y + 1) * TILE_SIZE);
+                const float marioRight = marioPos.x + marioSize.x;
+
+                const bool touchingPipe = std::abs(marioRight - pipeLeft) <= 12.0f;
+
+                const bool verticallyAligned = marioPos.y < pipeBottom && marioPos.y + marioSize.y > pipeTop;
+
+                if (touchingPipe && verticallyAligned) {
+                    startPipeWarp(mario, entry.id, PipeWarpPhase::ENTERING_HORIZONTAL, entry.position);
+                    return;
+                }
+
+                continue;
+            }
+
+            // ==============================================
+            // [n / pn — vertical pipe
+            // Stand on it + press Down.
+            // ==============================================
+            if (mario->getVerticalIntent() <= 0.5f || !mario->isGrounded()) {
+                continue;
+            }
+
+            // pn is locked until its Piranha dies.
+            if (entry.type == TileMap::WarpEntryType::PIRANHA && isPiranhaAliveAt(pipe)) {
                 continue;
             }
 
             const float pipeLeft = static_cast<float>(pipe.x * TILE_SIZE);
-            const float pipeTop = static_cast<float>((pipe.y - 1) * TILE_SIZE);
-            const float pipeBottom = static_cast<float>((pipe.y + 1) * TILE_SIZE);
-            const float marioRight = marioPos.x + marioSize.x;
+            const float pipeRight = pipeLeft + 2.0f * TILE_SIZE;
+            const float pipeTop = static_cast<float>(pipe.y * TILE_SIZE);
 
-            const bool touchingPipe = std::abs(marioRight - pipeLeft) <= 12.0f;
+            const float marioCenterX = marioPos.x + marioSize.x / 2.0f;
+            const float marioFeetY = marioPos.y + marioSize.y;
 
-            const bool verticallyAligned = marioPos.y < pipeBottom && marioPos.y + marioSize.y > pipeTop;
+            const bool centeredOnPipe = marioCenterX >= pipeLeft + 8.0f && marioCenterX <= pipeRight - 8.0f;
+            const bool standingOnPipe = std::abs(marioFeetY - pipeTop) <= 8.0f;
 
-            if (touchingPipe && verticallyAligned) {
-                startPipeWarp(entry.id, PipeWarpPhase::ENTERING_HORIZONTAL, entry.position);
+            if (centeredOnPipe && standingOnPipe) {
+                startPipeWarp(mario, entry.id, PipeWarpPhase::ENTERING_VERTICAL, entry.position);
                 return;
             }
-
-            continue;
-        }
-
-        // ==============================================
-        // [n / pn — vertical pipe
-        // Stand on it + press Down.
-        // ==============================================
-        if (m_mario->getVerticalIntent() <= 0.5f || !m_mario->isGrounded()) {
-            continue;
-        }
-
-        // pn is locked until its Piranha dies.
-        if (entry.type == TileMap::WarpEntryType::PIRANHA && isPiranhaAliveAt(pipe)) {
-            continue;
-        }
-
-        const float pipeLeft = static_cast<float>(pipe.x * TILE_SIZE);
-        const float pipeRight = pipeLeft + 2.0f * TILE_SIZE;
-        const float pipeTop = static_cast<float>(pipe.y * TILE_SIZE);
-
-        const float marioCenterX = marioPos.x + marioSize.x / 2.0f;
-        const float marioFeetY = marioPos.y + marioSize.y;
-
-        const bool centeredOnPipe = marioCenterX >= pipeLeft + 8.0f && marioCenterX <= pipeRight - 8.0f;
-        const bool standingOnPipe = std::abs(marioFeetY - pipeTop) <= 8.0f;
-
-        if (centeredOnPipe && standingOnPipe) {
-            startPipeWarp(entry.id, PipeWarpPhase::ENTERING_VERTICAL, entry.position);
-            return;
         }
     }
 }

@@ -22,6 +22,9 @@ public:
     // 1. Constructor / Destructor
     explicit PlayState(int startLevel, CharacterType characterType = CharacterType::MARIO);
     explicit PlayState(CharacterType characterType = CharacterType::MARIO);
+    /// Two-player co-op session: both players share one campaign level and
+    /// one team pool of score/coins/lives; any death reloads the level.
+    PlayState(int startLevel, CharacterType playerOne, CharacterType playerTwo);
     ~PlayState() override;
 
     // 2. Override methods
@@ -37,8 +40,19 @@ public:
 
     void onNotify(EventType event) override;
 
+    // 4. Introspection (tests)
+    Level* getLevel() { return m_level.get(); }
+    const Level* getLevel() const { return m_level.get(); }
+    bool isCoopSession() const { return m_isCoop; }
+    const GameProgress& getProgress() const { return m_progress; }
+
 private:
     void rebindCommands();
+    /// Co-op variant: split keyboard between the two players (P1 = WASD/X,
+    /// P2 = arrows + '/', mirroring the PvP duel layout plus pipe "down").
+    void rebindCoopCommands();
+    /// Co-op variant of processInput: per-player intents and gating.
+    void processCoopInput(const InputState& inputState);
 
     /// Load a level by one-based number and restore session progress onto Mario/HUD.
     /// Returns false if the level file is missing/invalid.
@@ -59,6 +73,9 @@ private:
     // 6. Private members
     std::unique_ptr<Level> m_level;
     InputHandler m_inputHandler;
+    /// Co-op: player two's command handler (arrow keys), mirroring PvpPlayState.
+    InputHandler m_inputHandler2;
+    bool m_isCoop = false;
     std::unique_ptr<HUD> m_hud;
 
     GameProgress m_progress;   ///< Session progress, independent of Level lifetime.

@@ -20,4 +20,9 @@ struct GameProgress {
     int lives = 3;
     MarioState power = MarioState::SMALL;
     CharacterType character = CharacterType::MARIO;
+    // Co-op extension: score/coins/lives stay the shared team totals while
+    // character2 names player two's fighter. Defaults keep the single-player
+    // contract unchanged.
+    bool isCoop = false;
+    CharacterType character2 = CharacterType::LUIGI;
 };

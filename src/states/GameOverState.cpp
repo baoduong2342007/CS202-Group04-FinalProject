@@ -59,14 +59,20 @@ GameOverState::GameOverState(const GameProgress& progress)
         m_menu = std::make_unique<UIMenuWidget>(m_font);
         const int retryLevel = m_progress.currentLevel;
         const CharacterType retryCharacter = m_progress.character;
-        m_menu->addItem("RETRY", [this, retryLevel, retryCharacter]() {
+        const CharacterType retryCharacterTwo = m_progress.character2;
+        const bool retryCoop = m_progress.isCoop;
+        m_menu->addItem("RETRY", [this, retryLevel, retryCharacter,
+                                  retryCharacterTwo, retryCoop]() {
             if (m_transitioning) return;
             m_transitioning = true;
             GameManager::getInstance().changeState(
                 // A retry starts the level that produced this GameOver state.
                 // PlayState clamps the one-based level to the catalog bounds;
                 // the persistent unlock graph remains owned by SaveManager.
-                std::make_unique<PlayState>(retryLevel, retryCharacter));
+                retryCoop
+                    ? std::make_unique<PlayState>(retryLevel, retryCharacter,
+                                                  retryCharacterTwo)
+                    : std::make_unique<PlayState>(retryLevel, retryCharacter));
         });
         m_menu->addItem("QUIT TO MENU", [this]() {
             if (m_transitioning) return;

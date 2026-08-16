@@ -46,6 +46,15 @@ PlayState::PlayState(int startLevel, CharacterType characterType) {
 PlayState::PlayState(CharacterType characterType)
     : PlayState(1, characterType) {}
 
+PlayState::PlayState(int startLevel, CharacterType playerOne, CharacterType playerTwo) {
+    m_progress.currentLevel = std::clamp(startLevel, 1, std::max(1, LevelCatalog::count()));
+    m_progress.character = playerOne;
+    m_progress.character2 = playerTwo;
+    m_progress.isCoop = true;
+    m_isCoop = true;
+    m_fadeOverlay.setFillColor(FADE_START_COLOR);
+}
+
 PlayState::~PlayState() {
     EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
@@ -55,6 +64,12 @@ PlayState::~PlayState() {
 
 void PlayState::rebindCommands() {
     m_inputHandler.clear(); // Reset handlers
+    m_inputHandler2.clear();
+
+    if (m_isCoop) {
+        rebindCoopCommands();
+        return;
+    }
 
     if (m_level && m_level->getMario()) {
         m_inputHandler.bindKey(sf::Keyboard::Key::A,
@@ -121,6 +136,94 @@ void PlayState::rebindCommands() {
     }
 }
 
+void PlayState::rebindCoopCommands() {
+    Mario* p1 = m_level ? m_level->getMario() : nullptr;
+    Mario* p2 = m_level ? m_level->getMario2() : nullptr;
+
+    // Player one: A/D move, W jump, S pipe-down, X shoot, LShift run.
+    if (p1) {
+        m_inputHandler.bindKey(sf::Keyboard::Key::A,
+                               std::make_unique<MoveLeftCommand>(p1),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::D,
+                               std::make_unique<MoveRightCommand>(p1),
+                               InputTrigger::Held,
+                               InputGroup::Horizontal);
+        m_inputHandler.bindKey(sf::Keyboard::Key::W,
+                               std::make_unique<JumpCommand>(p1),
+                               InputTrigger::Pressed);
+
+        const auto requestUp = [p1] {
+            if (p1) p1->setVerticalIntent(-1.0f);
+        };
+        const auto requestDown = [p1] {
+            if (p1) p1->setVerticalIntent(1.0f);
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::W, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler.bindKey(sf::Keyboard::Key::S, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
+
+        const auto requestRun = [p1] {
+            if (p1) p1->setRunIntent(true);
+        };
+        m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
+                               std::make_unique<RunCommand>(requestRun),
+                               InputTrigger::Held);
+
+        m_inputHandler.bindKey(sf::Keyboard::Key::X,
+                               std::make_unique<ShootCommand>([this, p1] {
+                                   if (m_level && p1) {
+                                       m_level->requestFireBallShot(*p1);
+                                   }
+                               }),
+                               InputTrigger::Pressed);
+    }
+
+    // Player two: arrows move, Up jump, Down pipe-down, '/' shoot, RShift run.
+    if (p2) {
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Left,
+                                std::make_unique<MoveLeftCommand>(p2),
+                                InputTrigger::Held,
+                                InputGroup::Horizontal);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Right,
+                                std::make_unique<MoveRightCommand>(p2),
+                                InputTrigger::Held,
+                                InputGroup::Horizontal);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Up,
+                                std::make_unique<JumpCommand>(p2),
+                                InputTrigger::Pressed);
+
+        const auto requestUp = [p2] {
+            if (p2) p2->setVerticalIntent(-1.0f);
+        };
+        const auto requestDown = [p2] {
+            if (p2) p2->setVerticalIntent(1.0f);
+        };
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Up, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Down, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
+
+        const auto requestRun = [p2] {
+            if (p2) p2->setRunIntent(true);
+        };
+        m_inputHandler2.bindKey(sf::Keyboard::Key::RShift,
+                                std::make_unique<RunCommand>(requestRun),
+                                InputTrigger::Held);
+
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Slash,
+                                std::make_unique<ShootCommand>([this, p2] {
+                                    if (m_level && p2) {
+                                        m_level->requestFireBallShot(*p2);
+                                    }
+                                }),
+                                InputTrigger::Pressed);
+    }
+
+    // Pause stays a shared team action on player one's handler.
+    m_inputHandler.bindKey(sf::Keyboard::Key::Escape,
+                           std::make_unique<PauseCommand>(),
+                           InputTrigger::Pressed);
+}
+
 void PlayState::onEnter() {
     EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
     EventBus::getInstance().subscribe(EventType::PLAYER_POWER_DOWN, this);
@@ -180,11 +283,21 @@ void PlayState::onNotify(EventType event) {
         // score. GameOver/Win keep calling updateHighScore (monotonic) as a
         // harmless fallback.
         if (m_level && m_level->getMario()) {
+            int sessionScore = m_level->getMario()->getScore();
+            int teamLives = m_level->getMario()->getLives();
+            if (m_isCoop && m_level->getMario2()) {
+                // Team totals: only the dying player's lives were just
+                // decremented, so the minimum is the shared pool.
+                sessionScore += m_level->getMario2()->getScore();
+                teamLives = std::min(teamLives, m_level->getMario2()->getLives());
+            }
             GameManager::getInstance().getSaveManager()
-                .updateHighScore(m_level->getMario()->getScore());
-        }
-        if (m_level && m_level->getMario() && m_level->getMario()->getLives() > 0) {
-            m_isReloadPending = true;
+                .updateHighScore(sessionScore);
+            if (teamLives > 0) {
+                m_isReloadPending = true;
+            } else {
+                m_isGameOverPending = true;
+            }
         } else {
             m_isGameOverPending = true;
         }
@@ -218,6 +331,11 @@ void PlayState::processEvents(const sf::Event& event) {
 }
 
 void PlayState::processInput(const InputState& inputState) {
+    if (m_isCoop) {
+        processCoopInput(inputState);
+        return;
+    }
+
     if (m_level && m_level->getMario()) {
         // Run is an edge-free per-frame intent. Resetting it before dispatch
         // prevents Shift held during a transition/pause from being buffered.
@@ -256,6 +374,56 @@ void PlayState::processInput(const InputState& inputState) {
     }
 }
 
+void PlayState::processCoopInput(const InputState& inputState) {
+    if (!m_level) {
+        return;
+    }
+
+    Mario* p1 = m_level->getMario();
+    Mario* p2 = m_level->getMario2();
+
+    // S6-TV1-12: block all gameplay input during a transition (freeze), and
+    // while a terminal result or the shared flagpole cinematic is running.
+    if (m_transitionPhase != TransitionPhase::NONE ||
+        m_needsReload || m_needsGameOver ||
+        m_level->isFlagSequenceActive()) {
+        return;
+    }
+
+    const auto dispatchPlayer = [&inputState](
+        Mario* player, InputHandler& handler,
+        sf::Keyboard::Key runKey, sf::Keyboard::Key jumpKey) {
+        // Reset per-frame intents first so held keys cannot bleed through a
+        // pause or a scripted sequence.
+        player->setMoveIntent(0.0f);
+        player->setVerticalIntent(0.0f);
+        player->setRunIntent(false);
+
+        if (!player->isActive() || player->isDying() ||
+            player->isTransforming() || player->isFlagpoleSliding()) {
+            return;
+        }
+
+        if (inputState.isHeld(runKey)) {
+            player->setRunIntent(true);
+        }
+        handler.handleInput(inputState);
+
+        if (inputState.wasReleased(jumpKey)) {
+            player->releaseJump();
+        }
+    };
+
+    if (p1) {
+        dispatchPlayer(p1, m_inputHandler,
+                       sf::Keyboard::Key::LShift, sf::Keyboard::Key::W);
+    }
+    if (p2) {
+        dispatchPlayer(p2, m_inputHandler2,
+                       sf::Keyboard::Key::RShift, sf::Keyboard::Key::Up);
+    }
+}
+
 void PlayState::snapshotProgress() {
     if (!m_level || !m_level->getMario()) {
         return;
@@ -267,6 +435,16 @@ void PlayState::snapshotProgress() {
     m_progress.lives = m_level->getMario()->getLives();
     m_progress.power = m_level->getMario()->getMarioState();
     m_progress.character = m_level->getMario()->getCharacterType();
+
+    // Co-op team accounting: score/coins are the team total, lives are the
+    // shared pool (equal on both players except the one who just died, so
+    // the minimum is exactly the post-death team value).
+    if (m_isCoop && m_level->getMario2()) {
+        const Mario* playerTwo = m_level->getMario2();
+        m_progress.score += playerTwo->getScore();
+        m_progress.coins += playerTwo->getCoinCount();
+        m_progress.lives = std::min(m_progress.lives, playerTwo->getLives());
+    }
 }
 
 void PlayState::restoreProgress() {
@@ -281,6 +459,17 @@ void PlayState::restoreProgress() {
     m_level->getMario()->setLives(m_progress.lives);
     if (m_progress.power != MarioState::SMALL) {
         m_level->getMario()->setMarioState(m_progress.power);
+    }
+
+    // Co-op: the team totals land on player one so the invariant
+    // "team score == p1.score + p2.score" holds across reloads; player two
+    // restarts each level SMALL and re-accumulates his own pickups.
+    if (m_isCoop && m_level->getMario2()) {
+        Mario* playerTwo = m_level->getMario2();
+        playerTwo->setCharacterType(m_progress.character2);
+        playerTwo->setScore(0);
+        playerTwo->setCoinCount(0);
+        playerTwo->setLives(m_progress.lives);
     }
 
     if (m_hud) {
@@ -304,7 +493,10 @@ bool PlayState::loadLevel(int levelNumber) {
     m_level = std::make_unique<Level>();
     m_level->setTheme(def->theme);
     m_level->setCameraVerticalMode(def->cameraMode);
-    if (!m_level->loadFromFile(def->filePath, m_progress.character)) {
+    const bool levelLoaded = m_isCoop
+        ? m_level->loadFromFile(def->filePath, m_progress.character, m_progress.character2)
+        : m_level->loadFromFile(def->filePath, m_progress.character);
+    if (!levelLoaded) {
         m_level.reset();
         return false;
     }
@@ -312,6 +504,9 @@ bool PlayState::loadLevel(int levelNumber) {
     // Create HUD after Level (and Mario) are initialized
     if (m_level->getMario()) {
         m_hud = std::make_unique<HUD>(*(m_level->getMario()), 1, def->number);
+        if (m_isCoop && m_level->getMario2()) {
+            m_hud->attachSecondPlayer(*(m_level->getMario2()));
+        }
         m_hud->setTimeWarningCallback([] {
             SoundManager::getInstance().playSound("hurryup");
         });
@@ -367,9 +562,16 @@ void PlayState::update(float dt) {
 
     if (m_isGameOverPending || m_isReloadPending) {
         m_deathDelayTimer = std::max(0.f, m_deathDelayTimer - dt);
+        // In co-op either player's finished death animation releases the
+        // pending result; the fallback timer still guards against a missing
+        // animation asset.
+        const auto dyingAnimationFinished = [](const Mario* player) {
+            return player && player->isDying() && player->isDeathAnimationFinished();
+        };
         const bool animationFinished =
-            m_level && m_level->getMario() &&
-            m_level->getMario()->isDeathAnimationFinished();
+            m_level &&
+            (dyingAnimationFinished(m_level->getMario()) ||
+             dyingAnimationFinished(m_level->getMario2()));
         const bool fallbackExpired = m_deathDelayTimer <= 0.f;
         if (animationFinished || fallbackExpired) {
             if (m_isGameOverPending) {

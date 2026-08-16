@@ -185,6 +185,11 @@ void HUD::update() {
   refreshText();
 }
 
+void HUD::attachSecondPlayer(const Mario& player) {
+    m_mario2 = &player;
+    refreshText();
+}
+
 void HUD::update(float dt, bool gameplayActive) {
     advanceTimer(dt, gameplayActive);
     refreshText();
@@ -204,7 +209,13 @@ void HUD::draw(sf::RenderTarget& target) const {
 
 // ── Getters / Setters ────────────────────────────────────────
 
-int HUD::getCoinCount() const { return m_mario.getCoinCount(); }
+int HUD::getCoinCount() const {
+    int coins = m_mario.getCoinCount();
+    if (m_mario2) {
+        coins += m_mario2->getCoinCount();
+    }
+    return coins;
+}
 
 std::string HUD::getPowerLabel() const {
     if (m_starPowerActive && m_mario.isStarInvincible()) {
@@ -294,21 +305,32 @@ void HUD::refreshText() {
   }
 
     // Format score as a zero-padded 6-digit string (classic Mario style).
+    // In co-op the displayed score/coins are the team totals and lives are
+    // the shared pool (the minimum across both players).
+    int displayScore = m_mario.getScore();
+    int displayCoins = m_mario.getCoinCount();
+    int displayLives = m_mario.getLives();
+    if (m_mario2) {
+        displayScore += m_mario2->getScore();
+        displayCoins += m_mario2->getCoinCount();
+        displayLives = std::min(displayLives, m_mario2->getLives());
+    }
+    displayScore = std::clamp(displayScore, 0, 999999);
+
     std::ostringstream scoreStream;
-    const int displayScore = std::clamp(m_mario.getScore(), 0, 999999);
     scoreStream << "SCORE " << std::setw(SCORE_PAD_WIDTH) << std::setfill('0')
                 << displayScore;
     m_scoreText->setString(scoreStream.str());
 
   // Format lives as "LIVES x N".
   std::ostringstream livesStream;
-  livesStream << "LIVES x " << m_mario.getLives();
+  livesStream << "LIVES x " << displayLives;
   m_livesText->setString(livesStream.str());
 
   // Format coin count with padding.
   std::ostringstream coinStream;
   coinStream << "COINS x " << std::setw(COIN_PAD_WIDTH) << std::setfill('0')
-             << m_mario.getCoinCount();
+             << displayCoins;
   m_coinText->setString(coinStream.str());
 
     // Format world indicator as "WORLD W-L" and timer consistently with the

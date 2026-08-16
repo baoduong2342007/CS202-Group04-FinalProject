@@ -205,6 +205,12 @@ void MenuState::initMenu() {
         m_transitioning = true;
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
     }, 14);
+    m_menu->addItem("2 PLAYER CO-OP", [this]() {
+        if (m_transitioning) return;
+        m_transitioning = true;
+        GameManager::getInstance().changeState(
+            std::make_unique<LevelSelectState>(LevelSelectState::Mode::Coop));
+    }, 14);
     m_menu->addItem("2 PLAYER VERSUS", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;

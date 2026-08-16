@@ -21,7 +21,14 @@
  */
 class LevelSelectState final : public IGameState {
 public:
-    LevelSelectState();
+    /// Which flow opened this stage select: single player routes to
+    /// CharacterSelectState, co-op routes to CoopCharacterSelectState.
+    enum class Mode {
+        SinglePlayer,
+        Coop
+    };
+
+    explicit LevelSelectState(Mode mode = Mode::SinglePlayer);
     ~LevelSelectState() override = default;
 
     void onEnter() override;
@@ -65,6 +72,7 @@ private:
     std::vector<StageCard> m_cards;
     int m_selectedIndex = 0;
     int m_highestUnlockedLevel = 1;
+    Mode m_mode = Mode::SinglePlayer;
     float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

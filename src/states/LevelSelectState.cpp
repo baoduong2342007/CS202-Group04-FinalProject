@@ -11,6 +11,7 @@
 #include "core/SoundManager.h"
 #include "patterns/InputState.h"
 #include "states/CharacterSelectState.h"
+#include "states/CoopCharacterSelectState.h"
 #include "states/MenuState.h"
 #include "ui/UILayoutHelper.h"
 
@@ -76,7 +77,8 @@ const sf::Color PREVIEW_FALLBACK_BG[4] = {
 };
 } // namespace
 
-LevelSelectState::LevelSelectState() {}
+LevelSelectState::LevelSelectState(Mode mode)
+    : m_mode(mode) {}
 
 void LevelSelectState::initStageTextures() {
     m_texturesLoaded = true;
@@ -115,7 +117,11 @@ void LevelSelectState::initTextLabels() {
     m_titleText->setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, 0.f});
     m_titleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, TITLE_Y});
 
-    m_subtitleText.emplace(m_font, "Choose a stage to begin your adventure", SUBTITLE_FONT_SIZE);
+    m_subtitleText.emplace(m_font,
+                           m_mode == Mode::Coop
+                               ? "Choose a stage for your co-op team"
+                               : "Choose a stage to begin your adventure",
+                           SUBTITLE_FONT_SIZE);
     m_subtitleText->setFillColor(MUTED_GOLD_COLOR);
     sf::FloatRect subBounds = m_subtitleText->getLocalBounds();
     m_subtitleText->setOrigin({subBounds.position.x + subBounds.size.x / 2.f, 0.f});
@@ -303,8 +309,13 @@ void LevelSelectState::confirmSelection(int levelNumber) {
 
     m_transitioning = true;
     SoundManager::getInstance().playSound("coin");
-    GameManager::getInstance().changeState(
-        std::make_unique<CharacterSelectState>(levelNumber));
+    if (m_mode == Mode::Coop) {
+        GameManager::getInstance().changeState(
+            std::make_unique<CoopCharacterSelectState>(levelNumber));
+    } else {
+        GameManager::getInstance().changeState(
+            std::make_unique<CharacterSelectState>(levelNumber));
+    }
 }
 
 bool LevelSelectState::isLevelUnlocked(int levelNumber) const {

@@ -38,6 +38,15 @@ public:
     void setCameraVerticalMode(CameraVerticalMode mode);
     bool loadFromFile(const std::string& path,
                       CharacterType characterType = CharacterType::MARIO);
+    /// Load a campaign level for two cooperative players. Player one spawns
+    /// from the 'M' tile as usual; player two is placed on the adjacent tile.
+    /// Switches this Level into co-op mode, where both players share every
+    /// campaign system (enemies, items, flagpole, pipes, generators) and the
+    /// camera tracks their midpoint. Any death is expected to be answered by
+    /// a full level reload from the owning state (like single player).
+    bool loadFromFile(const std::string& path,
+                      CharacterType playerOne,
+                      CharacterType playerTwo);
     /// Load a two-fighter duel arena ('M' = player one, 'm' = player two,
     /// 'W' = fire flower pedestal). Switches this Level into PvP mode, where
     /// both fighters are simulated, deferred duel contacts are applied, and
@@ -74,6 +83,7 @@ public:
     Mario* getMario2();
     const Mario* getMario2() const;
     bool isPvpMode() const { return m_pvpMode; }
+    bool isCoopMode() const { return m_coopMode; }
     CharacterType getCharacterType() const { return m_characterType; }
     TileMap& getTileMap();
     Camera& getCamera();
@@ -121,6 +131,7 @@ private:
     void updateCheepCheepGenerators(float dt);
     void updateFlagSequence(float dt);
     void updatePvp(float dt);
+    void updateCoop(float dt);
     void processPendingPvpHits();
     void updateEntities(float dt);
     void updateExplosions();
@@ -132,9 +143,12 @@ private:
     void processPendingStompScorePopups();
     
     void checkPipeWarps();
-    void startPipeWarp(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);
+    void startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);
     void updatePipeWarp(float dt);
     void warpMarioToReturn(char warpId);
+    /// Co-op: after a warp finished for m_warpPlayer, relocate the partner
+    /// next to him so both players stay in the same area of the level.
+    void teleportCoopPartner(const Mario& warpingPlayer);
 
     bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
     void suppressPiranhaAt(const sf::Vector2i& pipePosition);
@@ -146,11 +160,17 @@ private:
     Camera m_camera;
     TextureManager& m_textureManager;
     std::unique_ptr<Mario> m_mario;
-    /// Second PvP fighter; null in the campaign single-player flow.
+    /// Second PvP fighter or co-op player two; null in single-player flow.
     std::unique_ptr<Mario> m_mario2;
     std::vector<std::unique_ptr<Entity>> m_entities;
     std::vector<FireBallSpawnRequest> m_pendingFireBallRequests;
     bool m_pvpMode = false;
+    /// Co-op campaign mode: both players are simulated and every campaign
+    /// system (flagpole, pipes, generators) stays active for both of them.
+    bool m_coopMode = false;
+    /// Player driving the flagpole sequence (m_mario unless co-op player two
+    /// touched the pole first).
+    Mario* m_flagPlayer = nullptr;
     /// Non-owning handle to the contested fire flower (owned by m_entities).
     FireFlower* m_pvpFireFlower = nullptr;
     /// Fireball hits drained from the duel queue, forwarded to the round FSM.
@@ -171,6 +191,9 @@ private:
     CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
     float m_pipeWarpCooldown = 0.0f;
     PipeWarpPhase m_pipeWarpPhase = PipeWarpPhase::NONE;
+    /// Player currently inside the pipe-warp state machine (m_mario in
+    /// single-player; either player in co-op).
+    Mario* m_warpPlayer = nullptr;
     float m_pipeWarpTimer = 0.0f;
     float m_pipeWarpExitTargetY = 0.0f;
     char m_pendingWarpId = '0';

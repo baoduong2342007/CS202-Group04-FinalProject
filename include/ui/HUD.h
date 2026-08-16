@@ -49,6 +49,10 @@ public:
     /// @brief Re-reads score/lives and updates the text objects.
     void update();
 
+    /// Co-op: aggregate a second player into the display. Score/coins show
+    /// the team total and lives show the shared pool (the minimum).
+    void attachSecondPlayer(const Mario& player);
+
     /// @brief Advances the level timer and refreshes all HUD values.
     /// @param dt Seconds elapsed since the previous frame.
     /// @param gameplayActive False while paused, transitioning, or otherwise
@@ -105,6 +109,8 @@ private:
 
     // 6. Private members
     const Mario& m_mario;       ///< Player reference for score queries.
+    /// Co-op second player; null in single player (no behavior change).
+    const Mario* m_mario2 = nullptr;
     sf::Font m_font;            ///< Pixel font (openFromFile returns bool).
     std::optional<sf::Text> m_scoreText;  ///< "SCORE 000000"
     std::optional<sf::Text> m_livesText;  ///< "LIVES x 3"

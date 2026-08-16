@@ -54,6 +54,42 @@ inline const std::vector<sf::IntRect>& swimFrames() {
 }
 } // namespace CheepCheep
 
+namespace BuzzyBeetle {
+inline const sf::IntRect& WALK1 = legacy::Enemies::BuzzyBeetle::CASTLE_WALK1;
+inline const sf::IntRect& WALK2 = legacy::Enemies::BuzzyBeetle::CASTLE_WALK2;
+inline const sf::IntRect& SHELL = legacy::Enemies::BuzzyBeetle::CASTLE_SHELL;
+inline const std::vector<sf::IntRect>& walkFrames() {
+    static const std::vector<sf::IntRect> frames = {WALK1, WALK2};
+    return frames;
+}
+} // namespace BuzzyBeetle
+
+namespace RedKoopa {
+inline const sf::IntRect& WALK1 = legacy::Enemies::RedKoopa::WALK1;
+inline const sf::IntRect& WALK2 = legacy::Enemies::RedKoopa::WALK2;
+inline const sf::IntRect& PARATROOPA1 = legacy::Enemies::RedKoopa::PARATROOPA1;
+inline const sf::IntRect& PARATROOPA2 = legacy::Enemies::RedKoopa::PARATROOPA2;
+inline const sf::IntRect& SHELL = legacy::Enemies::RedKoopa::SHELL;
+inline const sf::IntRect& SHELL_WAKING = legacy::Enemies::RedKoopa::SHELL_WAKING;
+inline const std::vector<sf::IntRect>& walkFrames() {
+    static const std::vector<sf::IntRect> frames = {WALK1, WALK2};
+    return frames;
+}
+inline const std::vector<sf::IntRect>& flyFrames() {
+    static const std::vector<sf::IntRect> frames = {PARATROOPA1, PARATROOPA2};
+    return frames;
+}
+} // namespace RedKoopa
+
+// Castle shares the Underground palette row of the green paratroopa frames.
+namespace Paratroopa {
+inline const sf::IntRect& FLY1 = udg::Enemies::Paratroopa::FLY1;
+inline const sf::IntRect& FLY2 = udg::Enemies::Paratroopa::FLY2;
+inline const std::vector<sf::IntRect>& flyFrames() {
+    return udg::Enemies::Paratroopa::flyFrames();
+}
+} // namespace Paratroopa
+
 // Compatibility namespace for callers that still organize frames by atlas block.
 namespace GreenEnemiesBlock {
 inline const sf::IntRect& WALK1 = Koopa::WALK1;

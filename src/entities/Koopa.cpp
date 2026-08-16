@@ -3,6 +3,7 @@
  * @author TV4 (Vy)
  * @brief Implementation of Koopa walking and patrol foundation
  * @note Sprint 5 - walking, stationary shell, and sliding shell states
+ * @note Enemy expansion - shell wake-up cycle shared by every Koopa variant
  */
 
 #include "entities/Koopa.h"
@@ -35,12 +36,8 @@ constexpr const char* KOOPA_TEXTURE_PATH = "assets/textures/enemies/enemies.png"
 
 constexpr float TILE_SIZE = 32.f;
 constexpr float KOOPA_HEIGHT = 48.f;
-constexpr float KOOPA_VERTICAL_SPAWN_OFFSET = KOOPA_HEIGHT - TILE_SIZE;
 
 const sf::Vector2f KOOPA_SIZE{32.f, KOOPA_HEIGHT};
-
-constexpr float KOOPA_SHELL_WIDTH = 32.f;
-constexpr float KOOPA_SHELL_HEIGHT = 28.f;
 
 constexpr float KOOPA_WALK_FRAME_DURATION = 0.15f;
 
@@ -49,31 +46,39 @@ constexpr const char* KOOPA_WALK_ANIMATION = "walk";
 constexpr float KOOPA_SHELL_FRAME_DURATION = 0.15f;
 
 constexpr const char* KOOPA_SHELL_IDLE_ANIMATION = "shell_idle";
+constexpr const char* KOOPA_SHELL_WAKING_ANIMATION = "shell_waking";
 
-sf::Vector2f alignKoopaToGround(const sf::Vector2f& position) {
-    return {position.x, position.y - KOOPA_VERTICAL_SPAWN_OFFSET};
+sf::Vector2f alignToGroundTile(const sf::Vector2f& position, float walkHeight) {
+    return {position.x, position.y - (walkHeight - TILE_SIZE)};
 }
 
 } // namespace
 
 Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
-    : Enemy(alignKoopaToGround(position),
-            KOOPA_SIZE,
+    : Koopa(position, world, theme, KOOPA_SIZE,
+            sf::Vector2f{32.f, 28.f}, DEFAULT_KOOPA_PATROL_SPEED) {
+}
+
+Koopa::Koopa(const sf::Vector2f& position,
+             b2World* world,
+             LevelTheme theme,
+             const sf::Vector2f& walkSize,
+             const sf::Vector2f& shellSize,
+             float patrolSpeed)
+    : Enemy(alignToGroundTile(position, walkSize.y),
+            walkSize,
             DEFAULT_KOOPA_HEALTH
             ),
       m_state(KoopaState::WALKING),
-      m_patrolSpeed(DEFAULT_KOOPA_PATROL_SPEED) {
+      m_patrolSpeed(patrolSpeed),
+      m_shellSize(shellSize) {
 
     setFacingDirection(Direction::LEFT);
-    initPhysics(world, b2_dynamicBody, KOOPA_SIZE);
+    initPhysics(world, b2_dynamicBody, walkSize);
 
     setSprite(KOOPA_TEXTURE_PATH);
 
     m_animationSystem = std::make_unique<AnimationSystem>();
-
-    const bool useUndergroundPalette = theme == LevelTheme::UNDERGROUND ||
-                                       theme == LevelTheme::CASTLE;
-    const bool useUnderwaterPalette = theme == LevelTheme::UNDERWATER;
 
     const auto& walkFrames = [theme]() -> const std::vector<sf::IntRect>& {
         switch (theme) {
@@ -89,6 +94,42 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
         }
     }();
 
+    const sf::IntRect& shellRect = [theme]() -> const sf::IntRect& {
+        switch (theme) {
+            case LevelTheme::UNDERGROUND:
+                return SpriteFrames::udg::Enemies::Koopa::SHELL;
+            case LevelTheme::CASTLE:
+                return SpriteFrames::castle::Enemies::Koopa::SHELL;
+            case LevelTheme::UNDERWATER:
+                return SpriteFrames::udw::Enemies::Koopa::SHELL;
+            case LevelTheme::OVERWORLD:
+            default:
+                return SpriteFrames::ovw::Enemies::Koopa::SHELL;
+        }
+    }();
+
+    const sf::IntRect& wakingRect = [theme]() -> const sf::IntRect& {
+        switch (theme) {
+            case LevelTheme::UNDERGROUND:
+                return SpriteFrames::udg::Enemies::Koopa::SHELL_WAKING;
+            case LevelTheme::CASTLE:
+                return SpriteFrames::castle::Enemies::Koopa::SHELL_WAKING;
+            case LevelTheme::UNDERWATER:
+                return SpriteFrames::udw::Enemies::Koopa::SHELL_WAKING;
+            case LevelTheme::OVERWORLD:
+            default:
+                return SpriteFrames::ovw::Enemies::Koopa::SHELL_WAKING;
+        }
+    }();
+
+    registerKoopaAnimations(walkFrames, shellRect, wakingRect);
+
+    playAnimation(KOOPA_WALK_ANIMATION);
+}
+
+void Koopa::registerKoopaAnimations(const std::vector<sf::IntRect>& walkFrames,
+                                    const sf::IntRect& shellRect,
+                                    const sf::IntRect& wakingRect) {
     const Animation walkAnimation =
         AnimationSystem::createManualAnimation(walkFrames,
                                                 KOOPA_WALK_FRAME_DURATION,
@@ -96,21 +137,15 @@ Koopa::Koopa(const sf::Vector2f& position, b2World* world, LevelTheme theme)
 
     const Animation shellIdleAnimation =
         AnimationSystem::createManualAnimation(
-            {useUndergroundPalette
-                 ? (theme == LevelTheme::CASTLE
-                        ? SpriteFrames::castle::Enemies::Koopa::SHELL
-                        : SpriteFrames::udg::Enemies::Koopa::SHELL)
-                 : (useUnderwaterPalette ? SpriteFrames::udw::Enemies::Koopa::SHELL
-                 : SpriteFrames::ovw::Enemies::Koopa::SHELL)},
-            KOOPA_SHELL_FRAME_DURATION,
-            false);
+            {shellRect}, KOOPA_SHELL_FRAME_DURATION, false);
+
+    const Animation shellWakingAnimation =
+        AnimationSystem::createManualAnimation(
+            {wakingRect}, KOOPA_SHELL_FRAME_DURATION, false);
 
     m_animationSystem->addAnimation(KOOPA_WALK_ANIMATION, walkAnimation);
-
-    m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION,
-                                    shellIdleAnimation);
-
-    playAnimation(KOOPA_WALK_ANIMATION);
+    m_animationSystem->addAnimation(KOOPA_SHELL_IDLE_ANIMATION, shellIdleAnimation);
+    m_animationSystem->addAnimation(KOOPA_SHELL_WAKING_ANIMATION, shellWakingAnimation);
 }
 
 void Koopa::update(float dt) {
@@ -129,6 +164,10 @@ void Koopa::update(float dt) {
 
     if (m_pendingShellFixtureRebuild) {
         rebuildShellFixture();
+    }
+
+    if (m_pendingWalkFixtureRestore) {
+        restoreWalkingFixture();
     }
 
     syncPhysics();
@@ -154,6 +193,28 @@ void Koopa::update(float dt) {
         const sf::Vector2f velocity = getVelocity();
         if (std::abs(velocity.x) > 0.001f) {
             setVelocity({0.f, velocity.y});
+        }
+
+        m_shellIdleTimer += dt;
+        if (m_shellIdleTimer >= SHELL_WAKE_DELAY) {
+            if (showsWakeWarning()) {
+                m_state = KoopaState::SHELL_WAKING;
+                m_wakingTimer = 0.f;
+                playAnimation(KOOPA_SHELL_WAKING_ANIMATION);
+                updateAnimation(0.f);
+            } else {
+                wakeUpFromShell();
+            }
+        }
+    } else if (m_state == KoopaState::SHELL_WAKING) {
+        const sf::Vector2f velocity = getVelocity();
+        if (std::abs(velocity.x) > 0.001f) {
+            setVelocity({0.f, velocity.y});
+        }
+
+        m_wakingTimer += dt;
+        if (m_wakingTimer >= SHELL_WAKE_DURATION) {
+            wakeUpFromShell();
         }
     } else if (m_state == KoopaState::SHELL_SLIDING) {
         sf::Vector2f velocity = getVelocity();
@@ -190,19 +251,17 @@ void Koopa::onFireHit() {
 void Koopa::onStomp() {
     resetShellKillStreak();
     if (m_state == KoopaState::WALKING) {
-        m_state = KoopaState::SHELL_IDLE;
-        m_pendingShellFixtureRebuild = true;
-
-        const sf::Vector2f currentVelocity = getVelocity();
-        setVelocity({0.f, currentVelocity.y});
-
-        playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
-        updateAnimation(0.f);
+        enterShellState();
         return;
     }
 
-    if (m_state == KoopaState::SHELL_SLIDING) {
+    if (m_state == KoopaState::SHELL_SLIDING ||
+        m_state == KoopaState::SHELL_WAKING) {
+        // Stomping a sliding shell stops it; stomping a waking shell pushes
+        // it back into the full shell, restarting the wake timer.
         m_state = KoopaState::SHELL_IDLE;
+        m_shellIdleTimer = 0.f;
+        m_wakingTimer = 0.f;
 
         const sf::Vector2f currentVelocity = getVelocity();
         setVelocity({0.f, currentVelocity.y});
@@ -210,6 +269,29 @@ void Koopa::onStomp() {
         playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
         updateAnimation(0.f);
     }
+}
+
+void Koopa::enterShellState() {
+    m_state = KoopaState::SHELL_IDLE;
+    m_shellIdleTimer = 0.f;
+    m_wakingTimer = 0.f;
+    m_pendingShellFixtureRebuild = true;
+
+    const sf::Vector2f currentVelocity = getVelocity();
+    setVelocity({0.f, currentVelocity.y});
+
+    playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
+    updateAnimation(0.f);
+}
+
+void Koopa::wakeUpFromShell() {
+    m_state = KoopaState::WALKING;
+    m_shellIdleTimer = 0.f;
+    m_wakingTimer = 0.f;
+    m_pendingWalkFixtureRestore = true;
+
+    playAnimation(KOOPA_WALK_ANIMATION);
+    updateAnimation(0.f);
 }
 
 void Koopa::onWallCollision() {
@@ -246,12 +328,15 @@ void Koopa::patrol() {
 }
 
 void Koopa::kick(Direction direction) {
-    if (m_state != KoopaState::SHELL_IDLE) {
+    if (m_state != KoopaState::SHELL_IDLE &&
+        m_state != KoopaState::SHELL_WAKING) {
         return;
     }
 
     resetShellKillStreak();
     m_state = KoopaState::SHELL_SLIDING;
+    m_shellIdleTimer = 0.f;
+    m_wakingTimer = 0.f;
     setFacingDirection(direction);
 
     sf::Vector2f velocity = getVelocity();
@@ -272,6 +357,10 @@ bool Koopa::isInShell() const {
 
 bool Koopa::isShellSliding() const {
     return m_state == KoopaState::SHELL_SLIDING;
+}
+
+bool Koopa::isShellWaking() const {
+    return m_state == KoopaState::SHELL_WAKING;
 }
 
 KoopaState Koopa::getState() const {
@@ -352,10 +441,14 @@ void Koopa::rebuildShellFixture() {
     fixtureDef.isSensor = oldFixture->IsSensor();
     fixtureDef.filter = oldFixture->GetFilterData();
 
-    const float halfWidth = PhysicsEngine::pixelsToMeters(KOOPA_SHELL_WIDTH / 2.f);
-    const float halfHeight = PhysicsEngine::pixelsToMeters(KOOPA_SHELL_HEIGHT / 2.f);
+    const float halfWidth = PhysicsEngine::pixelsToMeters(m_shellSize.x / 2.f);
+    const float halfHeight = PhysicsEngine::pixelsToMeters(m_shellSize.y / 2.f);
 
-    const float footOffset = PhysicsEngine::pixelsToMeters((KOOPA_HEIGHT - KOOPA_SHELL_HEIGHT) / 2.f);
+    // The shell box hangs from the body center so its bottom stays aligned
+    // with the walking box's feet; the body therefore never shifts when the
+    // fixture is swapped between walking and shell geometry.
+    const float footOffset = PhysicsEngine::pixelsToMeters(
+        (m_size.y - m_shellSize.y) / 2.f);
 
     b2PolygonShape shellShape;
 
@@ -373,6 +466,47 @@ void Koopa::rebuildShellFixture() {
     m_pendingShellFixtureRebuild = false;
 }
 
+void Koopa::restoreWalkingFixture() {
+    if (!m_body) {
+        m_pendingWalkFixtureRestore = false;
+        return;
+    }
+
+    b2World* world = m_body->GetWorld();
+
+    if (!world || world->IsLocked()) {
+        return;
+    }
+
+    b2Fixture* oldFixture = m_body->GetFixtureList();
+
+    if (!oldFixture) {
+        m_pendingWalkFixtureRestore = false;
+        return;
+    }
+
+    b2FixtureDef fixtureDef;
+    fixtureDef.density = oldFixture->GetDensity();
+    fixtureDef.friction = oldFixture->GetFriction();
+    fixtureDef.restitution = oldFixture->GetRestitution();
+    fixtureDef.isSensor = oldFixture->IsSensor();
+    fixtureDef.filter = oldFixture->GetFilterData();
+
+    const float halfWidth = PhysicsEngine::pixelsToMeters(m_size.x / 2.f);
+    const float halfHeight = PhysicsEngine::pixelsToMeters(m_size.y / 2.f);
+
+    b2PolygonShape walkShape;
+    walkShape.SetAsBox(halfWidth, halfHeight, b2Vec2(0.f, 0.f), 0.f);
+
+    fixtureDef.shape = &walkShape;
+
+    m_body->DestroyFixture(oldFixture);
+    m_body->CreateFixture(&fixtureDef);
+    m_body->ResetMassData();
+
+    m_pendingWalkFixtureRestore = false;
+}
+
 void Koopa::syncSpriteToFeet() {
     if (!m_sprite) {
         return;
@@ -385,7 +519,7 @@ void Koopa::syncSpriteToFeet() {
     const float renderedWidth = static_cast<float>(rect.size.x) * SPRITE_SCALE;
     const float renderedHeight = static_cast<float>(rect.size.y) * SPRITE_SCALE;
 
-    const float footY = m_position.y + KOOPA_HEIGHT;
+    const float footY = m_position.y + m_size.y;
 
     if (getFacingDirection() == Direction::LEFT) {
         m_sprite->setScale({SPRITE_SCALE, SPRITE_SCALE});

@@ -39,7 +39,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~mW";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~mWbkydqlPDtsn=XA";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;
@@ -50,8 +50,9 @@ constexpr float TWO_PI = 6.28318530718f;
 bool isSolidTileSymbol(char tile) {
     return (tile == '0' || tile == '1') || tile == 'B' || tile == 'E' || tile == 'S' ||
            tile == '[' || tile == ']' ||
-           tile == 'p' || tile == 'r' ||
-           tile == '{' || tile == '}';
+           tile == 'p' || tile == 'r' || tile == 'q' ||
+           tile == '{' || tile == '}' ||
+           tile == '=';
 }
 
 bool isForegroundTile(char symbol) {
@@ -60,7 +61,7 @@ bool isForegroundTile(char symbol) {
            symbol == 'F' || symbol == 'T' ||
            symbol == '|' || symbol == 'H' ||
            symbol == '[' || symbol == ']' ||
-           symbol == 'p' || symbol == 'r' ||
+           symbol == 'p' || symbol == 'r' || symbol == 'q' ||
            symbol == '{' || symbol == '}';
 }
 
@@ -186,6 +187,27 @@ void TileMap::queueTileHit(int column, int row, float overlap) {
     m_pendingTileHits.push_back({{column, row}, overlap});
 }
 
+void TileMap::removeTile(int column, int row) {
+    if (row < 0 || row >= static_cast<int>(m_grid.size())) {
+        return;
+    }
+    if (column < 0 || column >= static_cast<int>(m_grid[row].size())) {
+        return;
+    }
+    if (m_grid[row][column] == '.') {
+        return;
+    }
+
+    m_grid[row][column] = '.';
+    buildVertices();
+
+    if (m_physicsWorld && !m_physicsWorld->IsLocked()) {
+        // One tile may live inside a merged span, so rebuild the static
+        // terrain from the updated grid instead of destroying one body.
+        createPhysicsBodies(m_physicsWorld);
+    }
+}
+
 void TileMap::processPendingHits(std::vector<std::unique_ptr<Entity>>& entities, TextureManager& textureManager, bool isBigMario, Mario* mario) {
     if (m_pendingTileHits.empty()) {
         return;
@@ -248,8 +270,9 @@ bool isRenderableTile(char symbol) {
            symbol == 'L' || symbol == 'H' ||
            symbol == 'S' || symbol == '|' || symbol == 'E' ||
            symbol == '[' || symbol == ']' ||
-           symbol == 'p' || symbol == 'r' ||
-           symbol == '{' || symbol == '}';
+           symbol == 'p' || symbol == 'r' || symbol == 'q' ||
+           symbol == '{' || symbol == '}' ||
+           symbol == '=';
 }
 
 bool isWarpId(char symbol) {
@@ -688,6 +711,7 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
 
         case '[':
         case 'p':
+        case 'q':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::PIPE_TOP_LEFT_UNDERWATER;
             if (theme == LevelTheme::UNDERGROUND) return TileFrames::PIPE_TOP_LEFT_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::PIPE_TOP_LEFT_CASTLE;
@@ -723,10 +747,15 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
 
         case '|':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_POLE_UNDERWATER;
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERWATER;
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
-            
+
+        case '=':
+            // Bowser's bridge: the Castle Platform cell of the tileset atlas
+            // (docs/tileset_coordinate.md #191). One palette serves every theme.
+            return sf::IntRect({428, 129}, {16, 16});
+
         default:
             return TileFrames::GROUND;
     }

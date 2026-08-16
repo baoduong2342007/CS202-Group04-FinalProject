@@ -17,6 +17,19 @@
 #include "entities/Koopa.h"           // TV4 (Sprint 5)
 #include "entities/PiranhaPlant.h"    // TV4 (Sprint 7)
 #include "entities/CheepCheep.h"       // TV4 (Cheep Cheep)
+#include "entities/BuzzyBeetle.h"     // Enemy expansion
+#include "entities/RedKoopa.h"        // Enemy expansion
+#include "entities/Paratroopa.h"      // Enemy expansion
+#include "entities/Blooper.h"         // Enemy expansion
+#include "entities/Podoboo.h"         // Enemy expansion
+#include "entities/BulletBill.h"      // Enemy expansion
+#include "entities/BulletBillLauncher.h" // Enemy expansion
+#include "entities/Lakitu.h"          // Enemy expansion
+#include "entities/SpinyEgg.h"        // Enemy expansion
+#include "entities/Spiny.h"           // Enemy expansion
+#include "entities/HammerBro.h"       // Enemy expansion
+#include "entities/Bowser.h"          // Enemy expansion
+#include "entities/BowserAxe.h"       // Enemy expansion
 #include "items/Coin.h"              // TV5 (Sprint 4)
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
@@ -60,6 +73,34 @@ std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
             return std::make_unique<CheepCheep>(position, world, theme,
                                                 CheepCheepBehavior::SWIMMING,
                                                 CheepCheepColor::GREEN);
+        case EnemyType::BUZZY_BEETLE:
+            return std::make_unique<BuzzyBeetle>(position, world, theme);
+        case EnemyType::RED_KOOPA:
+            return std::make_unique<RedKoopa>(position, world, theme);
+        case EnemyType::PARATROOPA_HOP:
+            return std::make_unique<Paratroopa>(position, world, theme,
+                                                ParatroopaMode::HOP);
+        case EnemyType::PARATROOPA_FLY:
+            return std::make_unique<Paratroopa>(position, world, theme,
+                                                ParatroopaMode::FLY_VERTICAL);
+        case EnemyType::PIRANHA_PLANT_RED:
+            return std::make_unique<PiranhaPlant>(position, world, theme,
+                                                  PiranhaPlant::Color::RED);
+        case EnemyType::BLOOPER:
+            return std::make_unique<Blooper>(position, world, theme);
+        case EnemyType::PODOBOO:
+            return std::make_unique<Podoboo>(position, world, theme);
+        case EnemyType::BULLET_BILL:
+            return std::make_unique<BulletBill>(position, world, theme,
+                                                Direction::LEFT);
+        case EnemyType::LAKITU:
+            return std::make_unique<Lakitu>(position, world, theme);
+        case EnemyType::SPINY:
+            return std::make_unique<Spiny>(position, world, theme);
+        case EnemyType::HAMMER_BRO:
+            return std::make_unique<HammerBro>(position, world, theme);
+        case EnemyType::BOWSER:
+            return std::make_unique<Bowser>(position, world, theme);
         default:
             return nullptr;
     }
@@ -99,6 +140,32 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
             return std::make_unique<CheepCheep>(position, world, theme,
                                                 CheepCheepBehavior::SWIMMING,
                                                 CheepCheepColor::GREEN);
+        case 'b':
+            return createEnemy(EnemyType::BUZZY_BEETLE, position, world, theme);
+        case 'k':
+            return createEnemy(EnemyType::RED_KOOPA, position, world, theme);
+        case 'y':
+            return createEnemy(EnemyType::PARATROOPA_HOP, position, world, theme);
+        case 'd':
+            return createEnemy(EnemyType::PARATROOPA_FLY, position, world, theme);
+        case 'q':
+            return createEnemy(EnemyType::PIRANHA_PLANT_RED, position, world, theme);
+        case 'l':
+            return createEnemy(EnemyType::BLOOPER, position, world, theme);
+        case 'P':
+            return createEnemy(EnemyType::PODOBOO, position, world, theme);
+        case 't':
+            return createEnemy(EnemyType::LAKITU, position, world, theme);
+        case 's':
+            return createEnemy(EnemyType::SPINY, position, world, theme);
+        case 'n':
+            return createEnemy(EnemyType::HAMMER_BRO, position, world, theme);
+        case 'X':
+            return createEnemy(EnemyType::BOWSER, position, world, theme);
+        case 'A':
+            return std::make_unique<BowserAxe>(position, theme);
+        case 'D':
+            return std::make_unique<BulletBillLauncher>(position, world, theme);
         case 'C':
             return createItem(ItemType::COIN, position, world, theme);
         case '?':

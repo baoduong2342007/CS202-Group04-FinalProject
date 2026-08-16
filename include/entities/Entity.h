@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <SFML/Graphics.hpp>
 #include <box2d/box2d.h>
@@ -82,6 +83,13 @@ public:
     virtual void onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal);
     virtual void onCollisionEnd(Entity* other, b2Contact* contact);
 
+    /// Children this entity produced since the last drain (Lakitu's Spiny
+    /// eggs, a cannon's Bullet Bills). Level is the single owner of the
+    /// entity list and adopts whatever an entity hands over each frame.
+    virtual std::vector<std::unique_ptr<Entity>> takePendingSpawns() {
+        return {};
+    }
+
     /// Legacy helper type checks
     virtual bool isItem() const { return getType() == EntityType::ITEM; }
     virtual bool isMario() const { return getType() == EntityType::MARIO; }
@@ -92,6 +100,22 @@ public:
     virtual bool isKoopa() const { return false; }
     virtual bool isPiranhaPlant() const { return false; }
     virtual bool isCheepCheep() const { return false; }
+    virtual bool isBuzzyBeetle() const { return false; }
+    virtual bool isRedKoopa() const { return false; }
+    virtual bool isParatroopa() const { return false; }
+    virtual bool isBlooper() const { return false; }
+    virtual bool isPodoboo() const { return false; }
+    virtual bool isBulletBill() const { return false; }
+    virtual bool isBulletBillLauncher() const { return false; }
+    virtual bool isLakitu() const { return false; }
+    virtual bool isSpinyEgg() const { return false; }
+    virtual bool isSpiny() const { return false; }
+    virtual bool isHammerBro() const { return false; }
+    virtual bool isHammer() const { return false; }
+    virtual bool isBowserFire() const { return false; }
+    virtual bool isEnemyProjectile() const { return false; }
+    virtual bool isBowser() const { return false; }
+    virtual bool isBowserAxe() const { return false; }
     virtual bool isMushroom() const { return false; }
     virtual bool isStar() const { return false; }
     virtual bool isQuestionBlock() const { return false; }

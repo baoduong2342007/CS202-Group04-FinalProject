@@ -131,6 +131,11 @@ public:
     }
 
     void queueTileHit(int column, int row, float overlap = 0.f);
+
+    /// Clear one tile and rebuild the render/physics terrain from the grid
+    /// (bridge-collapse demolition reuses the brick-shatter path).
+    void removeTile(int column, int row);
+
     void processPendingHits(std::vector<std::unique_ptr<class Entity>>& entities,
                             class TextureManager& textureManager,
                             bool isBigMario,

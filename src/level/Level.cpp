@@ -25,12 +25,19 @@
 #include "level/ElevatorConfig.h"
 #include "level/CheepCheepConfig.h"
 #include "entities/PiranhaPlant.h"
+#include "entities/Blooper.h"
+#include "entities/Lakitu.h"
+#include "entities/HammerBro.h"
+#include "entities/Bowser.h"
+#include "entities/BowserAxe.h"
+#include "entities/BulletBillLauncher.h"
 #include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
 #include "entities/FireballExplosion.h"
 #include "entities/ScorePopup.h"
 #include "core/SpriteFrames_ovw.h"
 #include "core/LevelCatalog.h"
+#include "core/ScoreRules.h"
 #include "core/SoundManager.h"
 
 #include "core/DisplayConfig.h"
@@ -91,8 +98,11 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
            top > levelHeight + ENTITY_CLEANUP_MARGIN;
 }
 
-// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, CheepCheep, Coin, QuestionBlock, Springboard)
-constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'c', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e'};
+// Tile codes that represent spawnable standalone entities (Goomba, Koopa, PiranhaPlant, CheepCheep, Coin, QuestionBlock, Springboard,
+// BuzzyBeetle 'b', RedKoopa 'k', Paratroopa 'y'/'d', Red PiranhaPlant 'q', Blooper 'l', Podoboo 'P', Lakitu 't', Spiny 's',
+// Bullet Bill launcher 'D')
+constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'c', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e',
+                                'b', 'k', 'y', 'd', 'q', 'l', 'P', 't', 's', 'D', 'n', 'X', 'A'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -216,6 +226,70 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     update(0.f);
 
     return true;
+}
+
+void Level::beginBridgeCollapse(Mario* scorer) {
+    if (m_bridgeCollapseActive || m_levelCompleted) {
+        return;
+    }
+
+    m_bridgeTilesRemaining = m_tileMap.findTiles('=');
+    // The collapse ripples outward from the axe, so fall axe-side first:
+    // sort descending by column (the axe sits at the bridge's right end).
+    std::sort(m_bridgeTilesRemaining.begin(), m_bridgeTilesRemaining.end(),
+              [](const sf::Vector2i& a, const sf::Vector2i& b) {
+                  return a.x > b.x;
+              });
+
+    m_bridgeCollapseActive = true;
+    m_bridgeCollapseTimer = 0.f;
+    m_bridgeCompletionDelay = 0.f;
+    m_bridgeCollapseScorer = scorer;
+}
+
+void Level::updateBridgeCollapse(float dt) {
+    if (!m_bridgeCollapseActive) {
+        return;
+    }
+
+    if (m_bridgeCompletionDelay > 0.f) {
+        m_bridgeCompletionDelay -= dt;
+        if (m_bridgeCompletionDelay <= 0.f) {
+            m_bridgeCollapseActive = false;
+            m_levelCompleted = true;
+            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+        }
+        return;
+    }
+
+    m_bridgeCollapseTimer += dt;
+    if (m_bridgeCollapseTimer < 0.08f) {
+        return;
+    }
+    m_bridgeCollapseTimer = 0.f;
+
+    if (!m_bridgeTilesRemaining.empty()) {
+        const sf::Vector2i tile = m_bridgeTilesRemaining.back();
+        m_bridgeTilesRemaining.pop_back();
+        m_tileMap.removeTile(tile.x, tile.y);
+        return;
+    }
+
+    // Bridge gone: every Bowser sinks into the lava and the siege pays out.
+    for (auto& entity : m_entities) {
+        if (!entity || !entity->isBowser()) {
+            continue;
+        }
+        Bowser* bowser = static_cast<Bowser*>(entity.get());
+        bowser->collapseIntoLava();
+        if (m_bridgeCollapseScorer) {
+            m_bridgeCollapseScorer->queueScoreAward(
+                bowser->getPosition() + sf::Vector2f(bowser->getSize().x / 2.f, 0.f),
+                ScoreRules::BOWSER_DEFEATED, false);
+        }
+    }
+
+    m_bridgeCompletionDelay = 1.2f;
 }
 
 bool Level::loadFromFile(const std::string& path,
@@ -733,9 +807,10 @@ void Level::updateEntities(float dt) {
             enemy->activate();
         }
 
-        if (enemy->isPiranhaPlant() && m_mario) {
-            // The plant reacts to the closest player so it does not pop out
-            // under a co-op partner standing on the pipe.
+        if ((enemy->isPiranhaPlant() || enemy->isBlooper() || enemy->isLakitu() ||
+             enemy->isHammerBro() || enemy->isBowser()) && m_mario) {
+            // These enemies react to the closest player so they do not
+            // misbehave around a co-op partner.
             sf::Vector2f nearestPos = m_mario->getPosition();
             if (m_coopMode && m_mario2) {
                 const float playerOneDistance =
@@ -746,10 +821,67 @@ void Level::updateEntities(float dt) {
                     nearestPos = m_mario2->getPosition();
                 }
             }
-            static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(nearestPos);
+            if (enemy->isPiranhaPlant()) {
+                static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(nearestPos);
+            } else if (enemy->isBlooper()) {
+                static_cast<Blooper*>(enemy)->updateMarioPosition(nearestPos);
+            } else if (enemy->isLakitu()) {
+                static_cast<Lakitu*>(enemy)->updateMarioPosition(nearestPos);
+            } else if (enemy->isHammerBro()) {
+                static_cast<HammerBro*>(enemy)->updateMarioPosition(nearestPos);
+            } else {
+                static_cast<Bowser*>(enemy)->updateMarioPosition(nearestPos);
+            }
         }
 
         enemy->update(dt);
+    }
+
+    // Non-enemy entities that need player awareness (Bullet Bill launchers
+    // only fire while someone stands in range).
+    if (m_mario) {
+        for (auto& entity : m_entities) {
+            if (entity && entity->isBulletBillLauncher()) {
+                static_cast<BulletBillLauncher*>(entity.get())
+                    ->updateMarioPosition(m_mario->getPosition());
+            }
+        }
+    }
+
+    // Spawner entities (Lakitu, launchers) hand their children over through
+    // an outbox; Level stays the single owner of the entity list. Collect
+    // first, then append - never mutate m_entities while iterating it.
+    std::vector<std::unique_ptr<Entity>> adoptedSpawns;
+    for (auto& entity : m_entities) {
+        if (!entity) {
+            continue;
+        }
+        for (auto& child : entity->takePendingSpawns()) {
+            child->setTextureManager(m_textureManager);
+            if (child->isEnemy()) {
+                auto* childEnemy = static_cast<Enemy*>(child.get());
+                childEnemy->setTileMap(&m_tileMap);
+                childEnemy->activate();
+            }
+            adoptedSpawns.push_back(std::move(child));
+        }
+    }
+    for (auto& child : adoptedSpawns) {
+        m_entities.push_back(std::move(child));
+    }
+
+    // Bowser's axe: a body-less pickup, so the overlap is watched here
+    // rather than routed through the contact listener.
+    if (!m_bridgeCollapseActive && !m_levelCompleted && m_mario) {
+        for (auto& entity : m_entities) {
+            if (!entity || !entity->isBowserAxe()) {
+                continue;
+            }
+            if (m_mario->getBoundingBox().findIntersection(entity->getBoundingBox())) {
+                beginBridgeCollapse(m_mario.get());
+                break;
+            }
+        }
     }
 
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
@@ -836,6 +968,9 @@ void Level::update(float dt) {
 
     // Update tilemap bump animations
     m_tileMap.update(dt);
+
+    // Bowser arena: advance the bridge-collapse sequence once started.
+    updateBridgeCollapse(dt);
 
     // Process queued tile hits (bumping Question blocks & shattering Brick blocks).
     const bool canBreakBlocks = m_mario && m_mario->canBreakBricks();

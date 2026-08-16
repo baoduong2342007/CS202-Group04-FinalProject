@@ -103,7 +103,8 @@ bool testRejectsInvalidSymbol() {
 
     auto rows = makeValidLevel();
 
-    rows[0][0] = 'X';
+    // 'Z' is not a registered tile symbol ('X' now spawns Bowser).
+    rows[0][0] = 'Z';
 
     assert(rejectsLevel("invalid_symbol.txt", rows));
 

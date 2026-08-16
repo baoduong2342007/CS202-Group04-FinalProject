@@ -35,6 +35,10 @@ public:
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
     virtual void onFireHit();
+    /// Star-contact response; defaults to the fireball presentation so
+    /// existing enemies keep their flipped death. Bowser overrides this to
+    /// die outright to star power.
+    virtual void onStarHit();
 
     virtual void setTileMap(const TileMap* tileMap) {
         (void)tileMap;
@@ -49,6 +53,43 @@ public:
         return !isActive() || isDead();
     }
 
+    /// Whether Mario's fireballs simply burst against this enemy without
+    /// defeating it (Buzzy Beetle shell, Bullet Bill).
+    virtual bool isFireproof() const {
+        return false;
+    }
+
+    /// Whether a top contact counts as a stomp. Swimming Cheep Cheeps,
+    /// Bloopers, and Podoboo harm Mario instead of being stompable.
+    virtual bool canBeStomped() const {
+        return true;
+    }
+
+    /// Whether this enemy is absolutely unkillable by any defeat cause
+    /// (the Podoboo lava bubble ignores star, fire, and shell alike).
+    virtual bool isIndestructible() const {
+        return false;
+    }
+
+    /// Species-specific stomp score; 0 = use the shared airborne stomp
+    /// chain (Bullet Bill 200, Lakitu 800, Hammer Bro 1000).
+    virtual int getStompScore() const {
+        return 0;
+    }
+
+    /// Species-specific score for a non-stomp defeat; 0 = use the cause
+    /// default. The cause value matches CollisionManager's DefeatCause.
+    virtual int getDefeatScore(int cause) const {
+        (void)cause;
+        return 0;
+    }
+
+    /// Hits a fireball must land before the enemy falls (multi-hit boss).
+    /// 0 = the classic one-shot transaction. Bowser returns 5.
+    virtual int getFireballHealth() const {
+        return 0;
+    }
+
     /// Claim the one shared defeat transaction for this victim.
     /// CollisionManager owns the transaction; the latch only prevents a
     /// second fixture/contact from applying damage, score, or SFX again.
@@ -58,6 +99,12 @@ public:
     /// changes it into a shell instead of killing it, so this is separate from
     /// the terminal defeat latch.
     bool tryCommitStomp();
+
+protected:
+    /// Re-arm the one-shot stomp latch. Paratroopa uses this after a stomp
+    /// only clipped its wings, so a second stomp can still claim the shell
+    /// transition.
+    void allowNextStomp();
 
 private:
     bool m_activated = false;

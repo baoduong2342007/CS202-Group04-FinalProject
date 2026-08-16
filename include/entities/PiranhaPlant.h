@@ -21,9 +21,17 @@ public:
         WAITING_BOTTOM
     };
 
+    /// Green plants follow the level-theme palette; the red variant keeps its
+    /// own single palette in every environment.
+    enum class Color {
+        GREEN,
+        RED
+    };
+
     PiranhaPlant(const sf::Vector2f& position,
                  b2World* world,
-                 LevelTheme theme = LevelTheme::OVERWORLD);
+                 LevelTheme theme = LevelTheme::OVERWORLD,
+                 Color color = Color::GREEN);
     ~PiranhaPlant() override = default;
 
     void update(float dt) override;
@@ -39,6 +47,7 @@ public:
     }
 
     State getState() const { return m_state; }
+    Color getColor() const { return m_color; }
 
     /// Update Mario position to check proximity before emerging from pipe
     void updateMarioProximity(const sf::Vector2f& marioPos);
@@ -48,6 +57,7 @@ private:
     void updateState(float dt);
     bool isMarioNearPipe() const { return m_isMarioNear; }
 
+    Color m_color{Color::GREEN};
     State m_state{State::WAITING_BOTTOM};
     sf::Vector2f m_basePosition;
     float m_stateTimer{0.f};

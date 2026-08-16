@@ -24,7 +24,19 @@ enum class EnemyType {
     GOOMBA,
     KOOPA,
     PIRANHA_PLANT,
-    CHEEP_CHEEP
+    CHEEP_CHEEP,
+    BUZZY_BEETLE,
+    RED_KOOPA,
+    PARATROOPA_HOP,
+    PARATROOPA_FLY,
+    PIRANHA_PLANT_RED,
+    BLOOPER,
+    PODOBOO,
+    BULLET_BILL,
+    LAKITU,
+    SPINY,
+    HAMMER_BRO,
+    BOWSER
 };
 
 enum class ItemType {

@@ -442,6 +442,12 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
                                     DefeatCause cause,
                                     Mario* owner,
                                     int streakIndex) {
+    // Indestructible enemies (Podoboo) survive every defeat cause; callers
+    // treat the false return as "no transaction happened".
+    if (victim.isIndestructible() && cause != DefeatCause::PIT) {
+        return false;
+    }
+
     if (cause == DefeatCause::STOMP) {
         // A Koopa stomp is an interaction rather than a terminal death: the
         // walking/sliding shell changes state and remains available for a
@@ -455,7 +461,14 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             victim.getPosition() + sf::Vector2f(victim.getSize().x / 2.f, 0.f);
         victim.onStomp();
         if (owner) {
-            owner->awardStompScore(popupPosition);
+            const int speciesStompScore = victim.getStompScore();
+            if (speciesStompScore > 0) {
+                // Species with a flat stomp price (Bullet Bill, Lakitu,
+                // Hammer Bro) never feed the airborne stomp chain.
+                owner->queueScoreAward(popupPosition, speciesStompScore, false);
+            } else {
+                owner->awardStompScore(popupPosition);
+            }
         }
         EventBus::getInstance().notify(EventType::ENEMY_STOMPED);
         return true;
@@ -495,11 +508,11 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             points = ScoreRules::pointsFor(DefeatCause::FIREBALL);
             break;
         case DefeatCause::STAR:
-            // Star contact uses the same visual defeat response as a FireBall:
-            // the enemy flips and gets launched upward instead of disappearing
-            // immediately. The transaction latch above still owns score/event
+            // Star contact uses the fireball-style flipped death for most
+            // enemies; multi-hit bosses override onStarHit to die outright.
+            // The transaction latch above still owns score/event
             // deduplication, while the enemy owns its presentation/lifecycle.
-            victim.onFireHit();
+            victim.onStarHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
             points = ScoreRules::pointsFor(DefeatCause::STAR);
             break;
@@ -517,6 +530,13 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
         case DefeatCause::STOMP:
             // Handled above; keep the switch exhaustive for future callers.
             return false;
+    }
+
+    // Species-specific prices (Hammer Bro's flat 1000, Bowser's 5000)
+    // override the per-cause defaults.
+    const int speciesScore = victim.getDefeatScore(static_cast<int>(cause));
+    if (speciesScore > 0) {
+        points = speciesScore;
     }
 
     if (owner) {
@@ -653,6 +673,29 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
         return;
     }
 
+    // Enemy-owned projectiles (Hammer Bro's hammers, Bowser's fire breath)
+    // only ever interact with a player; they fly through terrain, enemies,
+    // and Mario's own fireballs, and a star-powered player is immune.
+    Entity* enemyProjectile = nullptr;
+    Entity* projectileTarget = nullptr;
+    if (entityA && entityA->isEnemyProjectile()) {
+        enemyProjectile = entityA;
+        projectileTarget = entityB;
+    } else if (entityB && entityB->isEnemyProjectile()) {
+        enemyProjectile = entityB;
+        projectileTarget = entityA;
+    }
+
+    if (enemyProjectile) {
+        if (projectileTarget && projectileTarget->isMario()) {
+            Mario* victim = static_cast<Mario*>(projectileTarget);
+            if (!victim->isCollisionLocked() && !victim->isStarInvincible()) {
+                victim->queuePowerDown();
+            }
+        }
+        return;
+    }
+
     b2WorldManifold worldManifold;
     contact->GetWorldManifold(&worldManifold);
     b2Vec2 normal = worldManifold.normal;
@@ -716,6 +759,31 @@ void CollisionManager::resolve(b2Contact* contact, TileMap& tileMap) {
                 // animation. It is no longer a gameplay target, so the
                 // projectile must pass through it and remain active.
                 if (enemy->isDying()) {
+                    return;
+                }
+
+                // A fireproof shell (Buzzy Beetle) blocks the shot: the
+                // fireball bursts against it, the enemy survives.
+                if (enemy->isFireproof()) {
+                    fireBall->deactivate();
+                    return;
+                }
+
+                // Multi-hit bosses (Bowser) chip their health outside the
+                // one-shot defeat transaction; the killing blow pays the
+                // species price.
+                if (enemy->getFireballHealth() > 0) {
+                    enemy->onFireHit();
+                    fireBall->deactivate();
+                    if (Mario* owner = fireBall->getOwner()) {
+                        const sf::Vector2f popupPosition =
+                            enemy->getPosition() +
+                            sf::Vector2f(enemy->getSize().x / 2.f, 0.f);
+                        const int points = enemy->isDying()
+                            ? enemy->getDefeatScore(static_cast<int>(DefeatCause::FIREBALL))
+                            : ScoreRules::pointsFor(DefeatCause::FIREBALL);
+                        owner->queueScoreAward(popupPosition, points, false);
+                    }
                     return;
                 }
 
@@ -913,9 +981,11 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         // Star invincibility is a separate gameplay authority from damage
         // grace. It defeats the enemy through the same cause/score/event
         // transaction regardless of whether the contact looks like a stomp
-        // or a side hit.
+        // or a side hit. Indestructible enemies (Podoboo) simply pass by.
         if (mario->isStarInvincible()) {
-            CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
+            if (!enemy->isIndestructible()) {
+                CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
+            }
             mario->clearGroundedState();
             return;
         }
@@ -925,12 +995,11 @@ void CollisionManager::handleMarioCollision(Mario* mario,
             return;
         }
 
-        if (enemy->isCheepCheep()) {
-            const auto* cheep = static_cast<const CheepCheep*>(enemy);
-            if (!cheep->canBeStomped()) {
-                mario->queuePowerDown();
-                return;
-            }
+        // Unstompable enemies (swimming Cheep Cheeps, Bloopers, Podoboo)
+        // always power Mario down on contact.
+        if (!enemy->canBeStomped()) {
+            mario->queuePowerDown();
+            return;
         }
 
         if (normal.y > TOP_STOMP_NORMAL_THRESHOLD && std::abs(normal.x) < MAX_WALL_NORMAL_X) {

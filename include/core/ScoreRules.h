@@ -33,6 +33,13 @@ enum class ScoreEvent {
 
 namespace ScoreRules {
 
+/// Species-specific prices for the enemy-expansion bestiary. Enemies return
+/// these from Enemy::getStompScore()/getDefeatScore() overrides.
+inline constexpr int BULLET_BILL_STOMPED = 200;
+inline constexpr int LAKITU_STOMPED = 800;
+inline constexpr int HAMMER_BRO_DEFEATED = 1000;
+inline constexpr int BOWSER_DEFEATED = 5000;
+
 /// Return the single authoritative score value for a gameplay event.
 constexpr int pointsFor(ScoreEvent event) {
     switch (event) {

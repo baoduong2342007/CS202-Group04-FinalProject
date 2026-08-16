@@ -18,8 +18,10 @@ constexpr const char* ENEMIES_TEXTURE_PATH = "assets/textures/enemies/enemies.pn
 
 PiranhaPlant::PiranhaPlant(const sf::Vector2f& position,
                            b2World* world,
-                           LevelTheme theme)
+                           LevelTheme theme,
+                           Color color)
     : Enemy(sf::Vector2f(position.x + 16.f, position.y + 16.f), PIRANHA_SIZE, 1),
+      m_color(color),
       m_basePosition(position.x + 16.f, position.y + 16.f) {
     setSprite(ENEMIES_TEXTURE_PATH);
 
@@ -36,7 +38,11 @@ void PiranhaPlant::initAnimations(LevelTheme theme) {
     sf::IntRect closedRect;
     sf::IntRect openRect;
 
-    switch (theme) {
+    if (m_color == Color::RED) {
+        closedRect = SpriteFrames::legacy::Enemies::RedRow2::PIRANHA_CLOSED;
+        openRect = SpriteFrames::legacy::Enemies::RedRow2::PIRANHA_OPEN;
+    } else {
+        switch (theme) {
         case LevelTheme::UNDERGROUND:
         case LevelTheme::CASTLE:
             closedRect = SpriteFrames::legacy::Enemies::PiranhaPlant::UG_CASTLE_CLOSED;
@@ -51,6 +57,7 @@ void PiranhaPlant::initAnimations(LevelTheme theme) {
             closedRect = SpriteFrames::legacy::Enemies::PiranhaPlant::CLOSED;
             openRect = SpriteFrames::legacy::Enemies::PiranhaPlant::OPEN;
             break;
+        }
     }
 
     m_animationSystem->addAnimation("bite",

@@ -238,6 +238,45 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    add_executable(koopa_variant_tests
+        tests/KoopaVariantTests.cpp
+    )
+    target_link_libraries(koopa_variant_tests PRIVATE game_lib)
+    add_test(NAME koopa_variant_tests COMMAND koopa_variant_tests)
+
+    add_executable(buzzy_beetle_tests
+        tests/BuzzyBeetleTests.cpp
+    )
+    target_link_libraries(buzzy_beetle_tests PRIVATE game_lib)
+    add_test(NAME buzzy_beetle_tests COMMAND buzzy_beetle_tests)
+
+    add_executable(blooper_podoboo_tests
+        tests/BlooperPodobooTests.cpp
+    )
+    target_link_libraries(blooper_podoboo_tests PRIVATE game_lib)
+    add_test(NAME blooper_podoboo_tests COMMAND blooper_podoboo_tests)
+
+    add_executable(spawner_enemy_tests
+        tests/SpawnerEnemyTests.cpp
+    )
+    target_link_libraries(spawner_enemy_tests PRIVATE game_lib)
+    add_test(NAME spawner_enemy_tests COMMAND spawner_enemy_tests)
+
+    add_executable(hammer_bro_tests
+        tests/HammerBroTests.cpp
+    )
+    target_link_libraries(hammer_bro_tests PRIVATE game_lib)
+    add_test(NAME hammer_bro_tests COMMAND hammer_bro_tests)
+
+    add_executable(bowser_tests
+        tests/BowserTests.cpp
+    )
+    target_link_libraries(bowser_tests PRIVATE game_lib)
+    add_test(NAME bowser_tests COMMAND bowser_tests)
+    set_tests_properties(bowser_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     set_tests_properties(level_validator_tests PROPERTIES
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
@@ -371,6 +410,12 @@ if(BUILD_TESTING)
         springboard_tests
         elevator_tests
         cheep_cheep_tests
+        koopa_variant_tests
+        buzzy_beetle_tests
+        blooper_podoboo_tests
+        spawner_enemy_tests
+        hammer_bro_tests
+        bowser_tests
         gate0_contract_tests
         save_session_tests
         sprite_frames_theme_tests
@@ -432,6 +477,7 @@ set(SUPERMARIO_RUNTIME_ASSETS
     "textures/items/items_blocks.png"
     "textures/items/items_objects.png"
     "textures/enemies/enemies.png"
+    "textures/enemies/hammer.png"
     "sounds/effects/1up.wav"
     "sounds/effects/brick.wav"
     "sounds/effects/bump.wav"

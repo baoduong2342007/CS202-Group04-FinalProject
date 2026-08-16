@@ -18,6 +18,10 @@ void Enemy::onFireHit() {
     markForRemoval();
 }
 
+void Enemy::onStarHit() {
+    onFireHit();
+}
+
 void Enemy::activate() {
     m_activated = true;
 }
@@ -44,4 +48,8 @@ bool Enemy::tryCommitStomp() {
 
     m_stompCommitted = true;
     return true;
+}
+
+void Enemy::allowNextStomp() {
+    m_stompCommitted = false;
 }

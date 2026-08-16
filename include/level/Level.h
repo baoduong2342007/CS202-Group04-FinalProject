@@ -153,6 +153,10 @@ private:
     bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
     void suppressPiranhaAt(const sf::Vector2i& pipePosition);
 
+    /// Bowser arena: touching the axe starts the bridge-collapse sequence.
+    void beginBridgeCollapse(Mario* scorer);
+    void updateBridgeCollapse(float dt);
+
     // 6. Private members
     std::unique_ptr<b2World> m_world;
     std::unique_ptr<ContactListener> m_contactListener;
@@ -200,4 +204,14 @@ private:
     sf::Vector2i m_pendingPipeTile{0, 0};
     std::vector<CheepCheepGeneratorConfig> m_activeGenerators;
     std::vector<float> m_generatorTimers;
+
+    // Bowser bridge-collapse sequence state.
+    bool m_bridgeCollapseActive = false;
+    float m_bridgeCollapseTimer = 0.f;
+    /// Bridge tiles still standing, ordered axe-side first.
+    std::vector<sf::Vector2i> m_bridgeTilesRemaining;
+    /// Player who touched the axe; receives the siege reward.
+    Mario* m_bridgeCollapseScorer = nullptr;
+    /// Pause after the last tile falls before the level completes.
+    float m_bridgeCompletionDelay = 0.f;
 };

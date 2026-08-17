@@ -151,13 +151,13 @@ void testBridgeTileLoadsAndRemoves() {
     assert(map.loadFromFile("levels/level4.txt"));
 
     const auto bridge = map.findTiles('=');
-    assert(bridge.size() == 11);
+    assert(bridge.size() == 13);
 
     // The bridge is solid, walkable terrain that can be demolished tile by tile.
     assert(map.isSolid(bridge.front().x, bridge.front().y));
     map.removeTile(bridge.front().x, bridge.front().y);
     assert(!map.isSolid(bridge.front().x, bridge.front().y));
-    assert(map.findTiles('=').size() == 10);
+    assert(map.findTiles('=').size() == 12);
 
     std::cout << "[PASSED] testBridgeTileLoadsAndRemoves" << std::endl;
 }

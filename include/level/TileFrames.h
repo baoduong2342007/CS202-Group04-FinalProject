@@ -20,7 +20,7 @@ inline constexpr int SOURCE_TILE_SIZE = 16;
 inline constexpr sf::IntRect GROUND{ {0, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK{ {17, 16}, {16, 16} };
 inline constexpr sf::IntRect STONE{ {0, 33}, {16, 16} };
-inline constexpr sf::IntRect HARD_BLOCK{ {51, 16}, {16, 16} };
+inline constexpr sf::IntRect HARD_BLOCK{ {349, 78}, {16, 16} };
 
 // Theme variations — Palette 1 uses theme-specific terrain slots.  The
 // Underground row has two brick patterns followed by the plain cyan solid
@@ -29,17 +29,17 @@ inline constexpr sf::IntRect GROUND_UNDERGROUND{ {147, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERGROUND{ {164, 16}, {16, 16} };
 inline constexpr sf::IntRect BRICK_VARIANT_UNDERGROUND{ {181, 16}, {16, 16} };
 inline constexpr sf::IntRect STONE_UNDERGROUND{ {147, 33}, {16, 16} };
-inline constexpr sf::IntRect HARD_BLOCK_UNDERGROUND{ {147, 33}, {16, 16} };
+inline constexpr sf::IntRect HARD_BLOCK_UNDERGROUND{ {445, 78}, {16, 16} };
 
-inline constexpr sf::IntRect GROUND_CASTLE{ {0, 100}, {16, 16} };
+inline constexpr sf::IntRect GROUND_CASTLE{ {0, 151}, {16, 16} };
 inline constexpr sf::IntRect BRICK_CASTLE{ {17, 100}, {16, 16} };
-inline constexpr sf::IntRect STONE_CASTLE{ {0, 117}, {16, 16} };
-inline constexpr sf::IntRect HARD_BLOCK_CASTLE{ {51, 100}, {16, 16} };
+inline constexpr sf::IntRect STONE_CASTLE{ {0, 151}, {16, 16} };
+inline constexpr sf::IntRect HARD_BLOCK_CASTLE{ {541, 78}, {16, 16} };
 
 inline constexpr sf::IntRect GROUND_UNDERWATER{ {147, 134}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERWATER{ {164, 100}, {16, 16} };
 inline constexpr sf::IntRect STONE_UNDERWATER{ {215, 297}, {16, 16} };
-inline constexpr sf::IntRect HARD_BLOCK_UNDERWATER{ {198, 100}, {16, 16} };
+inline constexpr sf::IntRect HARD_BLOCK_UNDERWATER{ {637, 78}, {16, 16} };
 
 // Palette 3 — animated question and used blocks.  The game currently uses
 // items_blocks.png for the QuestionBlock entity, but these rects are the

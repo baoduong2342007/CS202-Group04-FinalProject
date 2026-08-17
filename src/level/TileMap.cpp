@@ -754,7 +754,7 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
         case '=':
             // Bowser's bridge: the Castle Platform cell of the tileset atlas
             // (docs/tileset_coordinate.md #191). One palette serves every theme.
-            return sf::IntRect({428, 129}, {16, 16});
+            return sf::IntRect({558, 33}, {16, 16});
 
         default:
             return TileFrames::GROUND;
@@ -1187,14 +1187,19 @@ void TileMap::render(sf::RenderTarget& target) const {
     sf::RenderStates states;
     states.texture = &m_tileset;
 
-    // Liquid behind terrain/entities.
-    target.draw(m_waterVertices, states);
-
+    // Terrain only.
     target.draw(m_vertices, states);
 
     sf::RenderStates objectStates;
     objectStates.texture = &m_objectsTileset;
     target.draw(m_objectVertices, objectStates);
+}
+
+void TileMap::renderWater(sf::RenderTarget& target) const {
+    sf::RenderStates states;
+    states.texture = &m_tileset;
+
+    target.draw(m_waterVertices, states);
 }
 
 void TileMap::renderFlags(sf::RenderTarget& target) const {
@@ -1439,6 +1444,14 @@ void TileMap::buildVertices() {
             
             if (symbol == 'W') {
                 // handled separately by buildWaterVertices()
+                continue;
+            }
+
+            if (symbol == 'e') {
+                appendTileQuad(m_vertices,
+                               static_cast<int>(column), static_cast<int>(row),
+                               TileFrames::HARD_BLOCK_CASTLE);
+
                 continue;
             }
 

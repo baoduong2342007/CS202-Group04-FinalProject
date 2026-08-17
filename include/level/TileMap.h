@@ -100,6 +100,7 @@ public:
 
     void render(sf::RenderTarget& target) const;
     /// Draw the flag cloth between the world layer and Mario/entities.
+    void renderWater(sf::RenderTarget& target) const;
     void renderFlags(sf::RenderTarget& target) const;
     void renderForeground(sf::RenderTarget& target) const;
 

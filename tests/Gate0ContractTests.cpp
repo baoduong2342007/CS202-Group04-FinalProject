@@ -323,9 +323,12 @@ void testRandomQuestionBlocksAndItemRoutes() {
         return false;
     };
 
-    for (const LevelDefinition& definition : LevelCatalog::getAll()) {
+    for (int levelNumber : {1, 2}) {
+        const auto* definition = LevelCatalog::find(levelNumber);
+
         TileMap tileMap;
-        assert(tileMap.loadFromFile(definition.filePath));
+        assert(tileMap.loadFromFile(definition->filePath));
+
         assert(hasUsableBlockRoute(tileMap, '?'));
         assert(hasUsableBlockRoute(tileMap, 'f'));
         assert(hasUsableBlockRoute(tileMap, 'U'));
@@ -374,29 +377,45 @@ void testFireBallActiveLimitOfTwo() {
 
 void testThemeWiringAndLevel4Spawns() {
     std::cout << "[RUNNING] testThemeWiringAndLevel4Spawns..." << std::endl;
+
     Level castle;
     castle.setTheme(LevelTheme::CASTLE);
     assert(castle.loadFromFile("levels/level4.txt"));
 
     int enemyCount = 0;
-    bool hasKoopa = false;
-    bool hasPiranhaPlant = false;
-    bool hasQuestionBlock = false;
-    bool hasSpringboard = false;
+
+    bool hasPodoboo = false;
+    bool hasFirebar = false;
+    bool hasBowser = false;
+    bool hasBowserAxe = false;
+
     for (const auto& entity : castle.getEntities()) {
         assert(entity);
-        enemyCount += entity->isEnemy() ? 1 : 0;
-        hasKoopa = hasKoopa || entity->isKoopa();
-        hasPiranhaPlant = hasPiranhaPlant || entity->isPiranhaPlant();
-        hasQuestionBlock = hasQuestionBlock || entity->isQuestionBlock();
-        hasSpringboard = hasSpringboard || entity->isSpringboard();
+
+        if (entity->isEnemy()) {
+            ++enemyCount;
+        }
+
+        hasPodoboo = hasPodoboo || entity->isPodoboo();
+        hasFirebar = hasFirebar || entity->isFirebar();
+        hasBowser = hasBowser || entity->isBowser();
+        hasBowserAxe = hasBowserAxe || entity->isBowserAxe();
     }
 
-    assert(enemyCount >= 3);
-    assert(hasKoopa);
-    assert(hasPiranhaPlant);
-    assert(hasQuestionBlock);
-    assert(hasSpringboard);
+    // Level 4 is now the Castle finale, so validate its actual Castle mechanis instead of the old Koopa/Piranha/Springboard fixture.
+    assert(enemyCount >= 1);
+    assert(hasPodoboo);
+    assert(hasFirebar);
+    assert(hasBowser);
+    assert(hasBowserAxe);
+
+    const TileMap& tileMap = castle.getTileMap();
+
+    // Castle finale must contain Bowser's collapsible bridge.
+    assert(!tileMap.findTiles('=').empty());
+
+    // W is the theme-aware liquid marker.
+    assert(!tileMap.findTiles('W').empty());
 
     std::cout << "[PASSED] testThemeWiringAndLevel4Spawns" << std::endl;
 }

@@ -1314,16 +1314,28 @@ void Level::render(sf::RenderTarget& target) {
         }
     }
 
-    // Draw tilemap background
+    // Podoboo belongs behind the liquid layer.
+    for (const auto& entity : m_entities) {
+        if (!entity || !entity->isPodoboo()) {
+            continue;
+        }
+
+        target.draw(*entity);
+    }
+
+    // Water in normal themes, lava in Castle.
+    // Drawn over Podoboo so it appears to emerge from the liquid.
+    m_tileMap.renderWater(target);
+
+    // Terrain stays above liquid.
     m_tileMap.render(target);
 
-    // The cloth belongs behind the actors, while the pole shaft/cap remains
-    // in the foreground layer below. This keeps the pole connector visible
-    // and prevents the flag quad from hiding Mario during the slide.
-    m_tileMap.renderFlags(target);
-
-    // Draw all entities (enemies, items)
+    // All remaining entities stay above terrain/liquid.
     for (const auto& entity : m_entities) {
+        if (!entity || entity->isPodoboo()) {
+            continue;
+        }
+
         target.draw(*entity);
     }
 

@@ -10,6 +10,7 @@
 
 #include "core/TextureManager.h"
 #include <iostream>
+#include <SFML/Window/Context.hpp>
 
 TextureManager& TextureManager::getInstance() {
     static TextureManager instance;
@@ -113,3 +114,13 @@ bool TextureManager::hasTexture(const std::string& id) const {
     return m_textures.find(id) != m_textures.end();
 }
 
+void TextureManager::shutdown() {
+    if (m_textures.empty()) {
+        return;
+    }
+
+    // Destroy GPU resources while SFML's context subsystem is still alive,
+    // instead of waiting for process-wide static destruction.
+    sf::Context cleanupContext;
+    m_textures.clear();
+}

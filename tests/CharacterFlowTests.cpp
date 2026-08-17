@@ -12,6 +12,7 @@
 
 #include "core/DisplayConfig.h"
 #include "core/GameManager.h"
+#include "core/TextureManager.h"
 #include "entities/Mario.h"
 #include "level/Level.h"
 #include "patterns/InputState.h"
@@ -251,11 +252,17 @@ int main() {
     const auto root = projectRoot();
     const auto original = std::filesystem::current_path();
     std::filesystem::current_path(root);
+
     const bool ok = testImmutableProfilesAndDefaultCompatibility() &&
                     testIdentitySurvivesLevelLoadAndSameLevelReload() &&
                     testMenuKeyboardAndLogicalMouseSelection() &&
                     testCharacterSelectRendersAndWritesArtifact() &&
                     testDuplicateEnterQueuesOnlyOneTransition();
+
+    // TextureManager is a process-lifetime singleton. Release its SFML
+    // textures explicitly while SFML's context subsystem is still valid.
+    TextureManager::getInstance().shutdown();
+
     std::filesystem::current_path(original);
     return ok ? 0 : 1;
 }

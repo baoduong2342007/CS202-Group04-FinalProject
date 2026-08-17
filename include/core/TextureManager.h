@@ -61,7 +61,11 @@ public:
      */
     bool hasTexture(const std::string& id) const;
 
-
+    /**
+     * @brief Releases all managed GPU textures before process-wide
+     * static destruction begins.
+     */
+    void shutdown();
 
 private:
     /**

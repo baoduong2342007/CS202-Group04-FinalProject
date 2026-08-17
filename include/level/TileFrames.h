@@ -36,9 +36,9 @@ inline constexpr sf::IntRect BRICK_CASTLE{ {17, 100}, {16, 16} };
 inline constexpr sf::IntRect STONE_CASTLE{ {0, 117}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_CASTLE{ {51, 100}, {16, 16} };
 
-inline constexpr sf::IntRect GROUND_UNDERWATER{ {147, 100}, {16, 16} };
+inline constexpr sf::IntRect GROUND_UNDERWATER{ {147, 134}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERWATER{ {164, 100}, {16, 16} };
-inline constexpr sf::IntRect STONE_UNDERWATER{ {147, 117}, {16, 16} };
+inline constexpr sf::IntRect STONE_UNDERWATER{ {215, 297}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_UNDERWATER{ {198, 100}, {16, 16} };
 
 // Palette 3 — animated question and used blocks.  The game currently uses
@@ -120,5 +120,18 @@ inline constexpr sf::IntRect PIPE_BODY_LEFT_UNDERWATER{ {283, 297}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT_UNDERWATER{ {300, 297}, {16, 16} };
 inline constexpr sf::IntRect FINISH_TOP_UNDERWATER{ {300, 314}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_UNDERWATER{ {300, 331}, {16, 16} };
+
+// Liquid surface / body
+inline constexpr sf::IntRect WATER_SURFACE{ {349, 16}, {16, 16} };
+inline constexpr sf::IntRect WATER_BODY{ {349, 33}, {16, 16} };
+
+inline constexpr sf::IntRect WATER_SURFACE_UNDERGROUND{ {445, 16}, {16, 16} };
+inline constexpr sf::IntRect WATER_BODY_UNDERGROUND{ {445, 33}, {16, 16} };
+
+inline constexpr sf::IntRect WATER_SURFACE_CASTLE{ {541, 16}, {16, 16} };
+inline constexpr sf::IntRect WATER_BODY_CASTLE{ {541, 33}, {16, 16} };
+
+inline constexpr sf::IntRect WATER_SURFACE_UNDERWATER{ {637, 16}, {16, 16} };
+inline constexpr sf::IntRect WATER_BODY_UNDERWATER{ {637, 33}, {16, 16} };
 
 } // namespace TileFrames

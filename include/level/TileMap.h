@@ -176,11 +176,13 @@ private:
     };
 
     void buildVertices();
+    void buildWaterVertices();
     void buildFlagVertices();
     void clearPhysicsBodies();
 
     std::vector<std::string> m_grid;
     sf::VertexArray m_vertices{sf::PrimitiveType::Triangles};
+    sf::VertexArray m_waterVertices{sf::PrimitiveType::Triangles};
     sf::VertexArray m_foregroundVertices{sf::PrimitiveType::Triangles};
     sf::VertexArray m_objectVertices{sf::PrimitiveType::Triangles};
     sf::VertexArray m_flagVertices{sf::PrimitiveType::Triangles};
@@ -193,6 +195,7 @@ private:
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
+    LayoutMode m_layoutMode{LayoutMode::CAMPAIGN};
     
     std::vector<WarpEntry> m_warpEntries;
     std::vector<WarpReturn> m_warpReturns;

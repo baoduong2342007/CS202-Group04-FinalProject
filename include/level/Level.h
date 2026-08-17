@@ -156,6 +156,8 @@ private:
     /// Bowser arena: touching the axe starts the bridge-collapse sequence.
     void beginBridgeCollapse(Mario* scorer);
     void updateBridgeCollapse(float dt);
+    
+    void applyAreaTheme(LevelTheme theme);
 
     // 6. Private members
     std::unique_ptr<b2World> m_world;

@@ -681,8 +681,8 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::GROUND;
 
         case 'S':
-            if (theme == LevelTheme::UNDERWATER) return TileFrames::HARD_BLOCK_UNDERWATER;
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::HARD_BLOCK_UNDERGROUND;
+            if (theme == LevelTheme::UNDERWATER) return TileFrames::STONE_UNDERWATER;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::STONE_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::STONE_CASTLE;
             return TileFrames::STONE;
 
@@ -761,6 +761,40 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     }
 }
 
+sf::IntRect getWaterSurfaceRect(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return TileFrames::WATER_SURFACE_UNDERGROUND;
+
+        case LevelTheme::CASTLE:
+            return TileFrames::WATER_SURFACE_CASTLE;
+
+        case LevelTheme::UNDERWATER:
+            return TileFrames::WATER_SURFACE_UNDERWATER;
+
+        case LevelTheme::OVERWORLD:
+        default:
+            return TileFrames::WATER_SURFACE;
+    }
+}
+
+sf::IntRect getWaterBodyRect(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return TileFrames::WATER_BODY_UNDERGROUND;
+
+        case LevelTheme::CASTLE:
+            return TileFrames::WATER_BODY_CASTLE;
+
+        case LevelTheme::UNDERWATER:
+            return TileFrames::WATER_BODY_UNDERWATER;
+
+        case LevelTheme::OVERWORLD:
+        default:
+            return TileFrames::WATER_BODY;
+    }
+}
+
 void appendTexturedVertex(sf::VertexArray& vertices,
                           float x, float y,
                           float textureX, float textureY){
@@ -770,6 +804,52 @@ void appendTexturedVertex(sf::VertexArray& vertices,
     vertex.texCoords = {textureX, textureY};
 
     vertices.append(vertex);
+}
+
+void appendTileQuad(sf::VertexArray& vertices,
+                    int column, int row,
+                    const sf::IntRect& rect) {
+    const float left = static_cast<float>(column) * TILE_SIZE_PIXELS;
+    const float top = static_cast<float>(row) * TILE_SIZE_PIXELS;
+    const float right = left + TILE_SIZE_PIXELS;
+    const float bottom = top + TILE_SIZE_PIXELS;
+
+    constexpr float texEpsilon = 0.02f;
+
+    const float textureLeft = static_cast<float>(rect.position.x) + texEpsilon;
+    const float textureTop = static_cast<float>(rect.position.y) + texEpsilon;
+    const float textureRight = static_cast<float>(rect.position.x + rect.size.x) - texEpsilon;
+    const float textureBottom = static_cast<float>(rect.position.y + rect.size.y) - texEpsilon;
+
+    appendTexturedVertex(vertices,
+                         left, top,
+                         textureLeft, textureTop
+                         );
+
+    appendTexturedVertex(vertices,
+                         left, bottom,
+                         textureLeft, textureBottom
+                         );
+
+    appendTexturedVertex(vertices,
+                         right, bottom,
+                         textureRight, textureBottom
+                         );
+
+    appendTexturedVertex(vertices,
+                         left, top,
+                         textureLeft, textureTop
+                         );
+
+    appendTexturedVertex(vertices,
+                         right, bottom,
+                         textureRight, textureBottom
+                         );
+
+    appendTexturedVertex(vertices,
+                         right, top,
+                         textureRight, textureTop
+                         );
 }
 
 struct LevelValidationState {
@@ -807,7 +887,7 @@ bool validateRow(const std::string& row,
 
         // The PvP-only markers must not leak into campaign layouts, and vice
         // versa the campaign finish markers are rejected by the arena rules.
-        const bool pvpOnlySymbol = (symbol == 'm' || symbol == 'W');
+        const bool pvpOnlySymbol = (symbol == 'm');
         if (pvpOnlySymbol && mode != TileMap::LayoutMode::PVP_ARENA) {
             std::cerr << "PvP-only tile symbol '" << symbol << "' at row " << lineNumber << ", column " << column + 1 << " is not allowed in this layout mode in " << path << std::endl;
 
@@ -818,7 +898,7 @@ bool validateRow(const std::string& row,
             ++state.marioSpawnCount;
         } else if (symbol == 'm') {
             ++state.secondSpawnCount;
-        } else if (symbol == 'W') {
+        } else if (symbol == 'W' && mode == TileMap::LayoutMode::PVP_ARENA) {
             ++state.flowerPedestalCount;
         } else if (symbol == 'F') {
             ++state.finishCount;
@@ -1091,9 +1171,12 @@ bool TileMap::loadFromFile(const std::string& path, LayoutMode mode) {
     m_elevatorRoutes = std::move(loadedElevatorRoutes);
     m_cheepCheepRoutes = std::move(loadedCheepCheepRoutes);
 
+    m_layoutMode = mode;
+
     m_grid = std::move(loadedGrid);
     m_tileset = std::move(loadedTileset);
     m_objectsTileset = std::move(loadedObjectsTileset);
+
     m_flagAnimationTime = 0.0f;
     m_flagDropDistance = 0.0f;
     buildVertices();
@@ -1104,10 +1187,11 @@ void TileMap::render(sf::RenderTarget& target) const {
     sf::RenderStates states;
     states.texture = &m_tileset;
 
+    // Liquid behind terrain/entities.
+    target.draw(m_waterVertices, states);
+
     target.draw(m_vertices, states);
 
-    // Vines belong to the world layer, so Mario and enemies render in front
-    // of them instead of being hidden by the stem texture.
     sf::RenderStates objectStates;
     objectStates.texture = &m_objectsTileset;
     target.draw(m_objectVertices, objectStates);
@@ -1248,6 +1332,7 @@ void TileMap::update(float dt) {
 
 void TileMap::buildVertices() {
     m_vertices.clear();
+    m_waterVertices.clear();
     m_foregroundVertices.clear();
     m_objectVertices.clear();
     m_flagVertices.clear();
@@ -1349,6 +1434,11 @@ void TileMap::buildVertices() {
                                      textureRight, textureTop
                                      );
 
+                continue;
+            }
+            
+            if (symbol == 'W') {
+                // handled separately by buildWaterVertices()
                 continue;
             }
 
@@ -1467,6 +1557,7 @@ void TileMap::buildVertices() {
         }
     }
 
+    buildWaterVertices();
     buildFlagVertices();
 }
 
@@ -1726,4 +1817,44 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
     }
 
     return false;
+}
+
+void TileMap::buildWaterVertices() {
+    m_waterVertices.clear();
+
+    // In PvP, W keeps its existing meaning: fire-flower pedestal, not liquid.
+    if (m_layoutMode != LayoutMode::CAMPAIGN) {
+        return;
+    }
+    
+    const sf::IntRect surfaceRect = getWaterSurfaceRect(m_theme);
+    const sf::IntRect bodyRect = getWaterBodyRect(m_theme);
+
+    for (std::size_t row = 0; row < m_grid.size(); ++row) {
+        for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
+            if (m_grid[row][col] != 'W') {
+                continue;
+            }
+
+            // W itself is the liquid surface.
+            appendTileQuad(m_waterVertices,
+                           static_cast<int>(col), static_cast<int>(row),
+                           surfaceRect
+                           );
+
+            // Fill the same column down to the bottom of the map.
+            // Terrain is rendered afterward and naturally covers liquid where solid blicks exist.
+            for (std::size_t waterRow = row + 1; waterRow < m_grid.size(); ++waterRow) {
+                // If another explicit surface exists lower in this column, let that marker own the remaining region.
+                if (m_grid[waterRow][col] == 'W') {
+                    break;
+                }
+
+                appendTileQuad(m_waterVertices,
+                               static_cast<int>(col), static_cast<int>(waterRow),
+                               bodyRect
+                               );
+            }
+        }
+    }
 }

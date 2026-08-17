@@ -51,8 +51,8 @@ namespace LevelCatalog {
                 MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
             {2, "levels/level2.txt", "1-2", LevelTheme::UNDERGROUND,
                 MusicId::UNDERGROUND, CameraVerticalMode::DEAD_ZONE},
-            {3, "levels/level3.txt", "1-3", LevelTheme::UNDERWATER,
-                MusicId::UNDERWATER, CameraVerticalMode::DEAD_ZONE},
+            {3, "levels/level3.txt", "1-3", LevelTheme::OVERWORLD,
+                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
             {4, "levels/level4.txt", "1-4", LevelTheme::CASTLE,
                 MusicId::CASTLE, CameraVerticalMode::DEAD_ZONE},
         };

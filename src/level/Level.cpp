@@ -161,6 +161,44 @@ void Level::setTheme(LevelTheme theme) {
     m_tileMap.setTheme(theme);
 }
 
+void Level::applyAreaTheme(LevelTheme theme) {
+    if (m_theme == theme) {
+        return;
+    }
+
+    m_theme = theme;
+    m_tileMap.setTheme(theme);
+
+    const bool underwater = theme == LevelTheme::UNDERWATER;
+
+    // Global Box2D gravity.
+    if (m_world) {
+        m_world->SetGravity(b2Vec2(0.f, underwater ? 8.0f : 25.0f));
+    }
+
+    const auto configureMario = [underwater](Mario* mario) {
+        if (!mario) {
+            return;
+        }
+
+        mario->setUnderwater(underwater);
+
+        if (b2Body* body = mario->getBody()) {
+            body->SetLinearDamping(underwater ? 1.5f : 0.0f);
+        }
+    };
+
+    configureMario(m_mario.get());
+    configureMario(m_mario2.get());
+
+    auto& sound = SoundManager::getInstance();
+
+    const MusicId music = underwater ? MusicId::UNDERWATER : MusicId::OVERWORLD;
+
+    sound.setLevelMusic(music);
+    sound.playMusic(music);
+}
+
 void Level::setCameraVerticalMode(CameraVerticalMode mode) {
     m_cameraVerticalMode = mode;
     m_camera.setVerticalMode(mode);
@@ -1779,6 +1817,18 @@ void Level::warpMarioToReturn(char warpId) {
     }
 
     const sf::Vector2i returnPosition = *destination;
+
+    // Level 3 constains multiple enviromental areas:
+    //
+    // H1 -> R1 : Overworld -> Underwater
+    // H2 -> R2 : Underwater -> Overworld
+    if (m_levelPath.find("level3.txt") != std::string::npos) {
+        if (warpId == '1') {
+            applyAreaTheme(LevelTheme::UNDERWATER);
+        } else if (warpId == '2') {
+            applyAreaTheme(LevelTheme::OVERWORLD);
+        }
+    }
 
     // Special rule:
     //

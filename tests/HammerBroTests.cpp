@@ -155,8 +155,8 @@ void testBowserFireWave() {
         minY = std::min(minY, fire.getPosition().y);
         maxY = std::max(maxY, fire.getPosition().y);
     }
-    assert(maxY - minY > 16.f); // full wave swing, 16 px amplitude
-    assert(maxY - minY < 40.f);
+    assert(maxY - minY > 6.f); // subtle natural wave swing, 6 px amplitude
+    assert(maxY - minY < 20.f);
 
     std::cout << "[PASSED] testBowserFireWave" << std::endl;
 }

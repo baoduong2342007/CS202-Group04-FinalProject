@@ -30,6 +30,7 @@
 #include "entities/HammerBro.h"
 #include "entities/Bowser.h"
 #include "entities/BowserAxe.h"
+#include "entities/Firebar.h"
 #include "entities/BulletBillLauncher.h"
 #include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
@@ -880,6 +881,24 @@ void Level::updateEntities(float dt) {
             if (m_mario->getBoundingBox().findIntersection(entity->getBoundingBox())) {
                 beginBridgeCollapse(m_mario.get());
                 break;
+            }
+        }
+    }
+
+    // Firebar rotating hazard overlap
+    for (auto& entity : m_entities) {
+        if (!entity || !entity->isFirebar()) {
+            continue;
+        }
+        Firebar* firebar = static_cast<Firebar*>(entity.get());
+        if (m_mario && !m_mario->isDead() && !m_mario->isInvincible()) {
+            if (firebar->checkMarioCollision(m_mario->getBoundingBox())) {
+                m_mario->loseLife();
+            }
+        }
+        if (m_mario2 && !m_mario2->isDead() && !m_mario2->isInvincible()) {
+            if (firebar->checkMarioCollision(m_mario2->getBoundingBox())) {
+                m_mario2->loseLife();
             }
         }
     }

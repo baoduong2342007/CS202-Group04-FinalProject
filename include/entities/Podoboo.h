@@ -34,6 +34,8 @@ public:
     /// True while the bubble is above the lava line.
     bool isAirborne() const { return m_phase == Phase::FLYING; }
 
+    std::vector<std::unique_ptr<Entity>> takePendingSpawns() override;
+
 private:
     enum class Phase {
         FLYING,          ///< Rising and falling along the manual parabola
@@ -44,6 +46,7 @@ private:
     float m_timer{0.f};
     float m_lavaY{0.f};
     float m_velocityY{0.f};
+    std::vector<std::unique_ptr<Entity>> m_pending;
 
     static constexpr float LAUNCH_SPEED = 554.f; ///< px/s upward (~192 px peak)
     static constexpr float GRAVITY = 800.f;      ///< px/s^2 downward

@@ -72,13 +72,6 @@ void BowserFire::update(float dt) {
     // horizontal speed while its altitude oscillates around the launch row.
     m_waveTime += dt;
 
-    sf::Vector2f velocity = getVelocity();
-    velocity.x = m_direction == Direction::LEFT ? -SPEED : SPEED;
-    velocity.y = 0.f;
-    setVelocity(velocity);
-
-    EnemyProjectile::update(dt);
-
     constexpr float TWO_PI = 6.28318530718f;
     const float offsetY =
         WAVE_AMPLITUDE * std::sin(TWO_PI * WAVE_FREQUENCY * m_waveTime);
@@ -89,6 +82,13 @@ void BowserFire::update(float dt) {
             PhysicsEngine::pixelsToMeters(m_baseY + offsetY + m_size.y / 2.f);
         m_body->SetTransform(b2Vec2(center.x, centerY), 0.f);
     }
+
+    sf::Vector2f velocity = getVelocity();
+    velocity.x = m_direction == Direction::LEFT ? -SPEED : SPEED;
+    velocity.y = 0.f;
+    setVelocity(velocity);
+
+    EnemyProjectile::update(dt);
 }
 
 void BowserFire::updatePresentation(float dt) {

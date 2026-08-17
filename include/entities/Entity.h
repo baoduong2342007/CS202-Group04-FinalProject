@@ -116,6 +116,7 @@ public:
     virtual bool isEnemyProjectile() const { return false; }
     virtual bool isBowser() const { return false; }
     virtual bool isBowserAxe() const { return false; }
+    virtual bool isFirebar() const { return false; }
     virtual bool isMushroom() const { return false; }
     virtual bool isStar() const { return false; }
     virtual bool isQuestionBlock() const { return false; }

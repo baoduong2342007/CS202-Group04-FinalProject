@@ -157,11 +157,23 @@ void Lakitu::update(float dt) {
             break;
     }
 
+    if (m_marioKnown) {
+        setFacingDirection(m_marioPosition.x > m_position.x + 8.f ? Direction::RIGHT : Direction::LEFT);
+    } else if (std::abs(vx) > 5.f) {
+        setFacingDirection(vx > 0.f ? Direction::RIGHT : Direction::LEFT);
+    }
+
     updateAnimation(dt);
 
     if (m_sprite) {
+        if (getFacingDirection() == Direction::RIGHT) {
+            m_sprite->setScale({-2.f, 2.f});
+            m_sprite->setOrigin({static_cast<float>(m_sprite->getTextureRect().size.x), 0.f});
+        } else {
+            m_sprite->setScale({2.f, 2.f});
+            m_sprite->setOrigin({0.f, 0.f});
+        }
         m_sprite->setPosition(m_position);
-        m_sprite->setScale({2.f, 2.f});
     }
 }
 

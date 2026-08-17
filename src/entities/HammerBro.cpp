@@ -245,6 +245,7 @@ void HammerBro::throwHammer() {
     Direction direction = getFacingDirection();
     if (m_marioKnown) {
         direction = m_marioPosition.x < m_position.x ? Direction::LEFT : Direction::RIGHT;
+        setFacingDirection(direction);
     }
 
     m_pending.push_back(std::make_unique<Hammer>(

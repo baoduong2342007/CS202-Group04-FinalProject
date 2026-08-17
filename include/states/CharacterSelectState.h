@@ -47,28 +47,33 @@ private:
     std::optional<sf::Texture> m_characterTexture;
     bool m_characterTextureLoaded = false;
 
-    std::optional<sf::Text> m_titleText;
-    std::optional<sf::Text> m_subtitleText;
-    std::optional<sf::Text> m_marioDetailsText;
-    std::optional<sf::Text> m_luigiDetailsText;
-    std::optional<sf::Text> m_hintText;
-
     sf::RectangleShape m_panel;
     sf::RectangleShape m_marioCard;
     sf::RectangleShape m_luigiCard;
-    sf::RectangleShape m_marioLeftBox;
-    sf::RectangleShape m_marioRightBox;
-    sf::RectangleShape m_luigiLeftBox;
-    sf::RectangleShape m_luigiRightBox;
+    sf::RectangleShape m_marioHeader;
+    sf::RectangleShape m_luigiHeader;
+    sf::RectangleShape m_marioAvatarBox;
+    sf::RectangleShape m_luigiAvatarBox;
 
-    std::optional<sf::Sprite> m_marioLeftSprite;
-    std::optional<sf::Sprite> m_marioRightSprite;
-    std::optional<sf::Sprite> m_luigiLeftSprite;
-    std::optional<sf::Sprite> m_luigiRightSprite;
+    std::optional<sf::Sprite> m_marioSprite;
+    std::optional<sf::Sprite> m_luigiSprite;
+
+    std::optional<sf::Text> m_titleText;
+    std::optional<sf::Text> m_subtitleText;
+    std::optional<sf::Text> m_marioNameText;
+    std::optional<sf::Text> m_luigiNameText;
+    std::optional<sf::Text> m_marioRoleText;
+    std::optional<sf::Text> m_luigiRoleText;
+    std::optional<sf::Text> m_marioStatsText;
+    std::optional<sf::Text> m_luigiStatsText;
+    std::optional<sf::Text> m_marioActionText;
+    std::optional<sf::Text> m_luigiActionText;
+    std::optional<sf::Text> m_hintText;
 
     std::unique_ptr<UIMenuWidget> m_menu;
 
     int m_selectedLevel = 1;
+    int m_selectedIndex = 0;
     float m_animTimer = 0.f;
     bool m_transitioning = false;
 };

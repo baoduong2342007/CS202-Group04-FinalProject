@@ -46,6 +46,7 @@ bool TextureManager::loadTexture(const std::string& id, const std::string& filen
         // Background textures (e.g. bg_mountains.png) should not mask out sky blue colors
         if (id.find("bg_") != std::string::npos || filename.find("bg_") != std::string::npos) {
             auto texture = std::make_unique<sf::Texture>(filename);
+            texture->setSmooth(false);
             m_textures[id] = std::move(texture);
             return true;
         }
@@ -65,12 +66,14 @@ bool TextureManager::loadTexture(const std::string& id, const std::string& filen
             }
 
             auto texture = std::make_unique<sf::Texture>(img);
+            texture->setSmooth(false);
             m_textures[id] = std::move(texture);
             return true;
         }
 
         // Fallback direct load
         auto texture = std::make_unique<sf::Texture>(filename);
+        texture->setSmooth(false);
         m_textures[id] = std::move(texture);
         return true;
     } catch (const sf::Exception& e) {

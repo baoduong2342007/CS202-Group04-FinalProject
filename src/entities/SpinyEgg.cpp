@@ -5,6 +5,7 @@
 
 #include "entities/SpinyEgg.h"
 #include "entities/Spiny.h"
+#include "entities/FireballExplosion.h"
 
 #include <cmath>
 

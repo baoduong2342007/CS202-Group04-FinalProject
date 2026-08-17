@@ -66,6 +66,11 @@ private:
     bool m_fireReleased{false};
     bool m_hammerVariant{false};
 
+    Direction m_patrolMoveDir{Direction::LEFT};
+    float m_patrolTurnTimer{2.f};
+    float m_damageFlashTimer{0.f};
+    float m_spawnOriginX{0.f};
+
     sf::Vector2f m_marioPosition{0.f, 0.f};
     bool m_marioKnown{false};
     b2World* m_world = nullptr;
@@ -77,7 +82,8 @@ private:
     static constexpr float ARENA_HALF_WIDTH = 96.f;   ///< Pacing range around spawn
     static constexpr float BREATHE_DURATION = 0.8f;
     static constexpr float FIRE_RELEASE_TIME = 0.3f;
-    static constexpr float HOP_SPEED = 450.f;
+    static constexpr float HOP_SPEED = 300.f;
+    static constexpr float DAMAGE_FLASH_DURATION = 0.15f;
     static constexpr float SINK_SPEED = 80.f;
     static constexpr float DIE_CLEANUP_Y = 700.f;
 };

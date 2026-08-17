@@ -30,6 +30,7 @@
 #include "entities/HammerBro.h"       // Enemy expansion
 #include "entities/Bowser.h"          // Enemy expansion
 #include "entities/BowserAxe.h"       // Enemy expansion
+#include "entities/Firebar.h"         // Enemy expansion
 #include "items/Coin.h"              // TV5 (Sprint 4)
 #include "items/Mushroom.h"         // TV5 (Sprint 5)
 #include "items/FireFlower.h"       // TV5 (Sprint 5)
@@ -101,6 +102,8 @@ std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type,
             return std::make_unique<HammerBro>(position, world, theme);
         case EnemyType::BOWSER:
             return std::make_unique<Bowser>(position, world, theme);
+        case EnemyType::FIREBAR:
+            return std::make_unique<Firebar>(position, world, theme);
         default:
             return nullptr;
     }
@@ -162,6 +165,9 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
             return createEnemy(EnemyType::HAMMER_BRO, position, world, theme);
         case 'X':
             return createEnemy(EnemyType::BOWSER, position, world, theme);
+        case 'e':
+        case 'E':
+            return createEnemy(EnemyType::FIREBAR, position, world, theme);
         case 'A':
             return std::make_unique<BowserAxe>(position, theme);
         case 'D':

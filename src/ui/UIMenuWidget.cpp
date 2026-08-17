@@ -6,6 +6,8 @@ UIMenuWidget::UIMenuWidget(const sf::Font& font)
 
 void UIMenuWidget::addItem(const std::string& label, std::function<void()> onSelect, unsigned int characterSize) {
     MenuItem item{sf::Text(m_font, label, characterSize), std::move(onSelect)};
+    item.text.setOutlineColor(sf::Color::Black);
+    item.text.setOutlineThickness(1.2f);
     
     m_items.push_back(std::move(item));
     updateLayout();
@@ -57,9 +59,13 @@ void UIMenuWidget::updateLayout() {
 void UIMenuWidget::updateSelectionColors() {
     for (size_t i = 0; i < m_items.size(); ++i) {
         if (static_cast<int>(i) == m_selectedIndex) {
-            m_items[i].text.setFillColor(sf::Color::Yellow);
+            m_items[i].text.setFillColor(sf::Color(255, 215, 0)); // Gold
+            m_items[i].text.setOutlineColor(sf::Color::Black);
+            m_items[i].text.setOutlineThickness(1.5f);
         } else {
-            m_items[i].text.setFillColor(sf::Color::White);
+            m_items[i].text.setFillColor(sf::Color(240, 240, 240)); // Crisp white
+            m_items[i].text.setOutlineColor(sf::Color(20, 20, 20));
+            m_items[i].text.setOutlineThickness(1.0f);
         }
     }
 }

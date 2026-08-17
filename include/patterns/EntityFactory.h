@@ -36,7 +36,8 @@ enum class EnemyType {
     LAKITU,
     SPINY,
     HAMMER_BRO,
-    BOWSER
+    BOWSER,
+    FIREBAR
 };
 
 enum class ItemType {

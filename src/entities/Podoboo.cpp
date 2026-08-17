@@ -4,6 +4,7 @@
  */
 
 #include "entities/Podoboo.h"
+#include "entities/FireballExplosion.h"
 
 #include <cmath>
 
@@ -65,6 +66,9 @@ void Podoboo::update(float dt) {
             m_phase = Phase::FLYING;
             m_timer = 0.f;
             m_velocityY = -LAUNCH_SPEED;
+            // Spawn lava splash when leaping out of lava
+            m_pending.push_back(std::make_unique<FireballExplosion>(
+                sf::Vector2f{m_position.x + 8.f, m_lavaY - 16.f}));
         }
     } else {
         // Manual parabola: integrate upward velocity against gravity until
@@ -76,6 +80,9 @@ void Podoboo::update(float dt) {
             m_position.y = m_lavaY;
             m_phase = Phase::SUBMERGED_WAITING;
             m_timer = 0.f;
+            // Spawn lava splash when plunging back into lava
+            m_pending.push_back(std::make_unique<FireballExplosion>(
+                sf::Vector2f{m_position.x + 8.f, m_lavaY - 16.f}));
         }
     }
 
@@ -89,9 +96,23 @@ void Podoboo::update(float dt) {
     updateAnimation(dt);
 
     if (m_sprite) {
+        if (m_velocityY > 0.f) {
+            // Flipped on descent: flame point aims downward
+            m_sprite->setScale({2.f, -2.f});
+            m_sprite->setOrigin({0.f, 16.f});
+        } else {
+            // Upright on ascent: flame point aims upward
+            m_sprite->setScale({2.f, 2.f});
+            m_sprite->setOrigin({0.f, 0.f});
+        }
         m_sprite->setPosition(m_position);
-        m_sprite->setScale({2.f, 2.f});
     }
+}
+
+std::vector<std::unique_ptr<Entity>> Podoboo::takePendingSpawns() {
+    std::vector<std::unique_ptr<Entity>> drained;
+    drained.swap(m_pending);
+    return drained;
 }
 
 void Podoboo::patrol() {

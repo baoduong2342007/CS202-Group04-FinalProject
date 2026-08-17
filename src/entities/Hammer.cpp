@@ -30,10 +30,6 @@ Hammer::Hammer(const sf::Vector2f& position,
 
 void Hammer::update(float dt) {
     EnemyProjectile::update(dt);
-
-    if (m_sprite && !shouldRemove()) {
-        m_sprite->setPosition(m_position);
-    }
 }
 
 void Hammer::updatePresentation(float dt) {

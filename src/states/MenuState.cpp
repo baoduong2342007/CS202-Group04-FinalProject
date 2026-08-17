@@ -142,58 +142,58 @@ void MenuState::initTitleBanner() {
     if (!m_fontLoaded) return;
 
     // Main 3D Title Shadow
-    m_titleShadowText.emplace(m_font, "SUPER MARIO BROS", 36);
+    m_titleShadowText.emplace(m_font, "SUPER MARIO BROS", 34);
     m_titleShadowText->setFillColor(SHADOW_COLOR);
     sf::FloatRect shadowB = m_titleShadowText->getLocalBounds();
     m_titleShadowText->setOrigin({shadowB.position.x + shadowB.size.x / 2.f, 0.f});
-    m_titleShadowText->setPosition({322.f, 57.f});
+    m_titleShadowText->setPosition({322.f, 44.f});
 
     // Main Title Text
-    m_titleMainText.emplace(m_font, "SUPER MARIO BROS", 36);
+    m_titleMainText.emplace(m_font, "SUPER MARIO BROS", 34);
     m_titleMainText->setFillColor(GOLD_COLOR);
     m_titleMainText->setOutlineColor(sf::Color::Black);
     m_titleMainText->setOutlineThickness(2.0f);
     sf::FloatRect titleB = m_titleMainText->getLocalBounds();
     m_titleMainText->setOrigin({titleB.position.x + titleB.size.x / 2.f, 0.f});
-    m_titleMainText->setPosition({320.f, 55.f});
+    m_titleMainText->setPosition({320.f, 42.f});
 }
 
 void MenuState::initCredits() {
     if (!m_fontLoaded) return;
 
-    // Course Title Text
-    m_courseText.emplace(m_font, "CS202 - OOP FINAL PROJECT", 11);
+    // Top Bar - Course / Project Label
+    m_courseText.emplace(m_font, "CS202 OOP PROJECT", 11);
     m_courseText->setFillColor(sf::Color::White);
     m_courseText->setOutlineColor(sf::Color::Black);
-    m_courseText->setOutlineThickness(1.f);
-    sf::FloatRect courseB = m_courseText->getLocalBounds();
-    m_courseText->setOrigin({courseB.position.x + courseB.size.x / 2.f, 0.f});
-    m_courseText->setPosition({320.f, 108.f});
+    m_courseText->setOutlineThickness(1.2f);
+    m_courseText->setPosition({24.f, 12.f});
 
-    // Team Name Text
-    m_groupText.emplace(m_font, "GROUP 04", 13);
-    m_groupText->setFillColor(MUTED_GOLD_COLOR);
+    // Top Bar - Team Name
+    m_groupText.emplace(m_font, "GROUP 04", 11);
+    m_groupText->setFillColor(GOLD_COLOR);
     m_groupText->setOutlineColor(sf::Color::Black);
     m_groupText->setOutlineThickness(1.2f);
     sf::FloatRect groupB = m_groupText->getLocalBounds();
-    m_groupText->setOrigin({groupB.position.x + groupB.size.x / 2.f, 0.f});
-    m_groupText->setPosition({320.f, 126.f});
-
-    // Copyright Text below menu
-    m_copyrightText.emplace(m_font, "(C) 1985 NINTENDO", 10);
-    m_copyrightText->setFillColor(sf::Color::White);
-    sf::FloatRect copyB = m_copyrightText->getLocalBounds();
-    m_copyrightText->setOrigin({copyB.position.x + copyB.size.x / 2.f, 0.f});
-    m_copyrightText->setPosition({320.f, 228.f});
+    m_groupText->setOrigin({groupB.position.x + groupB.size.x, 0.f});
+    m_groupText->setPosition({616.f, 12.f});
 
     // Prompt Text
-    m_promptText.emplace(m_font, "PRESS ENTER OR CLICK TO START", 11);
+    m_promptText.emplace(m_font, "[ PRESS ENTER OR CLICK TO START ]", 10);
     m_promptText->setFillColor(GOLD_COLOR);
     m_promptText->setOutlineColor(sf::Color::Black);
     m_promptText->setOutlineThickness(1.5f);
     sf::FloatRect promptB = m_promptText->getLocalBounds();
     m_promptText->setOrigin({promptB.position.x + promptB.size.x / 2.f, 0.f});
-    m_promptText->setPosition({320.f, 262.f});
+    m_promptText->setPosition({320.f, 240.f});
+
+    // Copyright Text
+    m_copyrightText.emplace(m_font, "(C) 1985 NINTENDO   CS202-FINAL", 8);
+    m_copyrightText->setFillColor(sf::Color(180, 210, 250));
+    m_copyrightText->setOutlineColor(sf::Color::Black);
+    m_copyrightText->setOutlineThickness(1.f);
+    sf::FloatRect copyB = m_copyrightText->getLocalBounds();
+    m_copyrightText->setOrigin({copyB.position.x + copyB.size.x / 2.f, 0.f});
+    m_copyrightText->setPosition({320.f, 260.f});
 }
 
 void MenuState::initMenu() {
@@ -203,27 +203,25 @@ void MenuState::initMenu() {
     m_menu->addItem("1 PLAYER GAME", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
+        SoundManager::getInstance().playSound("coin");
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
-    }, 14);
+    }, 13);
     m_menu->addItem("2 PLAYER CO-OP", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
+        SoundManager::getInstance().playSound("coin");
         GameManager::getInstance().changeState(
             std::make_unique<LevelSelectState>(LevelSelectState::Mode::Coop));
-    }, 14);
+    }, 13);
     m_menu->addItem("2 PLAYER VERSUS", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
+        SoundManager::getInstance().playSound("coin");
         GameManager::getInstance().changeState(std::make_unique<PvpCharacterSelectState>());
-    }, 14);
-    m_menu->addItem("STAGE SELECT", [this]() {
-        if (m_transitioning) return;
-        m_transitioning = true;
-        GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
-    }, 14);
+    }, 13);
 
-    m_menu->setSpacing(26.f);
-    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 182.f}, UIAnchor::Center);
+    m_menu->setSpacing(24.f);
+    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 178.f}, UIAnchor::Center);
 }
 
 void MenuState::onEnter() {
@@ -275,8 +273,8 @@ void MenuState::update(float dt) {
 
     // Float Title Banner with subtle bobbing
     const float floatY = std::sin(m_animTimer * 2.5f) * 2.5f;
-    if (m_titleShadowText) m_titleShadowText->setPosition({322.f, 63.f + floatY});
-    if (m_titleMainText) m_titleMainText->setPosition({320.f, 61.f + floatY});
+    if (m_titleShadowText) m_titleShadowText->setPosition({322.f, 48.f + floatY});
+    if (m_titleMainText) m_titleMainText->setPosition({320.f, 46.f + floatY});
 
     // Update Mario, Luigi, Goomba animation frames
     if (m_texturesLoaded) {
@@ -306,8 +304,9 @@ void MenuState::update(float dt) {
     // Update cursor position beside selected menu item
     if (m_menu && m_cursorMushroomSprite) {
         const int selectedIdx = m_menu->getSelectedIndex();
-        const float cursorY = (selectedIdx == 0) ? 165.f : 193.f;
-        m_cursorMushroomSprite->setPosition({166.f, cursorY});
+        if (auto bounds = m_menu->getItemBounds(selectedIdx)) {
+            m_cursorMushroomSprite->setPosition({bounds->position.x - 28.f, bounds->position.y - 2.f});
+        }
     }
 }
 
@@ -329,7 +328,7 @@ void MenuState::render(sf::RenderTarget& target) {
     if (m_titleShadowText) target.draw(*m_titleShadowText);
     if (m_titleMainText) target.draw(*m_titleMainText);
 
-    // Draw Course & Group Credits
+    // Draw Top Bar & Copyright Credits
     if (m_courseText) target.draw(*m_courseText);
     if (m_groupText) target.draw(*m_groupText);
     if (m_copyrightText) target.draw(*m_copyrightText);

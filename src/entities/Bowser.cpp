@@ -6,6 +6,7 @@
 #include "entities/Bowser.h"
 #include "entities/BowserFire.h"
 #include "entities/Hammer.h"
+#include "entities/FireballExplosion.h"
 
 #include <algorithm>
 #include <cmath>
@@ -15,6 +16,7 @@
 
 #include "core/AnimationSystem.h"
 #include "core/ScoreRules.h"
+#include "core/SoundManager.h"
 #include "core/SpriteFrames_shared.h"
 
 namespace {
@@ -22,7 +24,8 @@ namespace {
 const sf::Vector2f BOWSER_SIZE{64.f, 64.f};
 constexpr const char* BOWSER_TEXTURE_PATH = "assets/textures/enemies/enemies.png";
 constexpr const char* WALK_ANIMATION = "walk";
-constexpr const char* FIRE_ANIMATION = "fire";
+constexpr const char* FIRE_WINDUP_ANIMATION = "fire_windup";
+constexpr const char* FIRE_EXHALE_ANIMATION = "fire_exhale";
 constexpr const char* THROW_ANIMATION = "throw";
 constexpr float BOWSER_FRAME_DURATION = 0.18f;
 
@@ -33,24 +36,37 @@ const std::vector<sf::IntRect>& walkFrames(LevelTheme theme) {
             SpriteFrames::legacy::Enemies::Bowser::UW_WALK_OPEN};
         return uwFrames;
     }
-    // Overworld, Underground, and Castle share the UG palette row.
+    if (theme == LevelTheme::OVERWORLD) {
+        static const std::vector<sf::IntRect> owFrames = {
+            SpriteFrames::legacy::Enemies::Bowser::WALK_CLOSED,
+            SpriteFrames::legacy::Enemies::Bowser::WALK_OPEN};
+        return owFrames;
+    }
+    // Underground and Castle share the UG palette row.
     static const std::vector<sf::IntRect> ugFrames = {
         SpriteFrames::legacy::Enemies::Bowser::UG_WALK_CLOSED,
         SpriteFrames::legacy::Enemies::Bowser::UG_WALK_OPEN};
     return ugFrames;
 }
 
-const std::vector<sf::IntRect>& fireFrames(LevelTheme theme) {
+const sf::IntRect& fireWindupFrame(LevelTheme theme) {
     if (theme == LevelTheme::UNDERWATER) {
-        static const std::vector<sf::IntRect> frames = {
-            SpriteFrames::legacy::Enemies::Bowser::UW_FIRE_POSE1,
-            SpriteFrames::legacy::Enemies::Bowser::UW_FIRE_POSE2};
-        return frames;
+        return SpriteFrames::legacy::Enemies::Bowser::UW_FIRE_POSE1;
     }
-    static const std::vector<sf::IntRect> frames = {
-        SpriteFrames::legacy::Enemies::Bowser::UG_FIRE_POSE1,
-        SpriteFrames::legacy::Enemies::Bowser::UG_FIRE_POSE2};
-    return frames;
+    if (theme == LevelTheme::OVERWORLD) {
+        return SpriteFrames::legacy::Enemies::Bowser::FIRE_POSE1;
+    }
+    return SpriteFrames::legacy::Enemies::Bowser::UG_FIRE_POSE1;
+}
+
+const sf::IntRect& fireExhaleFrame(LevelTheme theme) {
+    if (theme == LevelTheme::UNDERWATER) {
+        return SpriteFrames::legacy::Enemies::Bowser::UW_FIRE_POSE2;
+    }
+    if (theme == LevelTheme::OVERWORLD) {
+        return SpriteFrames::legacy::Enemies::Bowser::FIRE_POSE2;
+    }
+    return SpriteFrames::legacy::Enemies::Bowser::UG_FIRE_POSE2;
 }
 
 const std::vector<sf::IntRect>& throwFrames(LevelTheme theme) {
@@ -58,6 +74,12 @@ const std::vector<sf::IntRect>& throwFrames(LevelTheme theme) {
         static const std::vector<sf::IntRect> frames = {
             SpriteFrames::legacy::Enemies::Bowser::UW_THROW_LEFT,
             SpriteFrames::legacy::Enemies::Bowser::UW_THROW_RIGHT};
+        return frames;
+    }
+    if (theme == LevelTheme::OVERWORLD) {
+        static const std::vector<sf::IntRect> frames = {
+            SpriteFrames::legacy::Enemies::Bowser::THROW_LEFT,
+            SpriteFrames::legacy::Enemies::Bowser::THROW_RIGHT};
         return frames;
     }
     static const std::vector<sf::IntRect> frames = {
@@ -74,6 +96,7 @@ Bowser::Bowser(const sf::Vector2f& position,
                bool hammerVariant)
     : Enemy(position, BOWSER_SIZE, FIREBALL_HITS_TO_KILL),
       m_hammerVariant(hammerVariant),
+      m_spawnOriginX(position.x),
       m_world(world),
       m_theme(theme) {
     setFacingDirection(Direction::LEFT);
@@ -86,8 +109,12 @@ Bowser::Bowser(const sf::Vector2f& position,
         AnimationSystem::createManualAnimation(walkFrames(theme),
                                                 BOWSER_FRAME_DURATION, true));
     m_animationSystem->addAnimation(
-        FIRE_ANIMATION,
-        AnimationSystem::createManualAnimation(fireFrames(theme),
+        FIRE_WINDUP_ANIMATION,
+        AnimationSystem::createManualAnimation({fireWindupFrame(theme)},
+                                                BOWSER_FRAME_DURATION, true));
+    m_animationSystem->addAnimation(
+        FIRE_EXHALE_ANIMATION,
+        AnimationSystem::createManualAnimation({fireExhaleFrame(theme)},
                                                 BOWSER_FRAME_DURATION, true));
     m_animationSystem->addAnimation(
         THROW_ANIMATION,
@@ -97,11 +124,13 @@ Bowser::Bowser(const sf::Vector2f& position,
 }
 
 void Bowser::update(float dt) {
+    syncPhysics();
+
     if (m_state == State::DIE) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position);
             m_sprite->setScale({2.f, 2.f});
+            m_sprite->setColor(sf::Color::White);
         }
         if (m_position.y > DIE_CLEANUP_Y) {
             markForRemoval();
@@ -109,11 +138,21 @@ void Bowser::update(float dt) {
         return;
     }
 
-    syncPhysics();
-
     if (isDead()) {
         enterDie();
         return;
+    }
+
+    // Damage flash timer feedback
+    if (m_damageFlashTimer > 0.f) {
+        m_damageFlashTimer -= dt;
+        if (m_sprite) {
+            m_sprite->setColor(sf::Color(255, 120, 120, 240));
+        }
+    } else {
+        if (m_sprite) {
+            m_sprite->setColor(sf::Color::White);
+        }
     }
 
     m_stateTimer += dt;
@@ -125,13 +164,13 @@ void Bowser::update(float dt) {
             m_attackTimer -= dt;
             if (m_attackTimer <= 0.f) {
                 static std::mt19937 rng(std::random_device{}());
-                std::uniform_real_distribution<float> nextAttack(1.6f, 3.2f);
+                std::uniform_real_distribution<float> nextAttack(1.8f, 3.2f);
                 m_attackTimer = nextAttack(rng);
 
-                // Half of the attacks are hops; the rest are fire breath
-                // (or a hammer fling for the hammer variant).
-                std::uniform_int_distribution<int> coin(0, 1);
-                if (coin(rng) == 0) {
+                // Authentic boss rhythm: 75% fire breath / hammer toss, 25% short hop
+                std::uniform_int_distribution<int> attackChoice(0, 3);
+                int choice = attackChoice(rng);
+                if (choice == 0) {
                     sf::Vector2f velocity = getVelocity();
                     velocity.y = -HOP_SPEED;
                     setVelocity(velocity);
@@ -139,7 +178,7 @@ void Bowser::update(float dt) {
                     m_state = State::BREATHE;
                     m_stateTimer = 0.f;
                     m_fireReleased = false;
-                    playAnimation(m_hammerVariant ? THROW_ANIMATION : FIRE_ANIMATION);
+                    playAnimation(m_hammerVariant ? THROW_ANIMATION : FIRE_WINDUP_ANIMATION);
                 }
             }
             break;
@@ -149,9 +188,14 @@ void Bowser::update(float dt) {
             velocity.x = 0.f;
             setVelocity(velocity);
 
+            // Phase 1 (Windup): Bowser holds mouth open (FIRE_WINDUP_ANIMATION)
+            // Phase 2 (Release): Bowser unleashes flame at FIRE_RELEASE_TIME and switches to FIRE_EXHALE_ANIMATION
             if (!m_fireReleased && m_stateTimer >= FIRE_RELEASE_TIME) {
                 m_fireReleased = true;
                 breatheFire();
+                if (!m_hammerVariant) {
+                    playAnimation(FIRE_EXHALE_ANIMATION);
+                }
             }
             if (m_stateTimer >= BREATHE_DURATION) {
                 m_state = State::PATROL;
@@ -164,33 +208,54 @@ void Bowser::update(float dt) {
             break;
     }
 
-    updateAnimation(dt);
+    // While airborne in PATROL, keep feet steady on frame 1 instead of frantically running mid-air
+    if (m_state == State::PATROL && std::abs(getVelocity().y) > 20.f) {
+        // Paused on walk frame while airborne
+    } else {
+        updateAnimation(dt);
+    }
 
     if (m_sprite) {
+        if (getFacingDirection() == Direction::RIGHT) {
+            m_sprite->setScale({-2.f, 2.f});
+            m_sprite->setOrigin({static_cast<float>(m_sprite->getTextureRect().size.x), 0.f});
+        } else {
+            m_sprite->setScale({2.f, 2.f});
+            m_sprite->setOrigin({0.f, 0.f});
+        }
         m_sprite->setPosition(m_position);
-        m_sprite->setScale({2.f, 2.f});
     }
 }
 
 void Bowser::patrol() {
-    // Pace the arena around the spawn column, turning at the edges.
+    // Pace the arena around the spawn column within ARENA_HALF_WIDTH
     const float centerX = m_position.x + m_size.x / 2.f;
-    const float anchorX = m_marioKnown ? m_marioPosition.x : m_position.x;
 
-    if (centerX > anchorX + ARENA_HALF_WIDTH) {
-        setFacingDirection(Direction::LEFT);
-    } else if (centerX < anchorX - ARENA_HALF_WIDTH) {
-        setFacingDirection(Direction::RIGHT);
+    if (centerX > m_spawnOriginX + ARENA_HALF_WIDTH) {
+        m_patrolMoveDir = Direction::LEFT;
+    } else if (centerX < m_spawnOriginX - ARENA_HALF_WIDTH) {
+        m_patrolMoveDir = Direction::RIGHT;
     }
 
-    // Face the intruder between attacks.
+    // Direction swap timer for lively pacing
+    m_patrolTurnTimer -= 0.016f;
+    if (m_patrolTurnTimer <= 0.f) {
+        static std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<float> turnTime(1.5f, 3.0f);
+        m_patrolTurnTimer = turnTime(rng);
+        m_patrolMoveDir = (m_patrolMoveDir == Direction::LEFT) ? Direction::RIGHT : Direction::LEFT;
+    }
+
+    // Face the intruder (Mario)
     if (m_marioKnown) {
         setFacingDirection(m_marioPosition.x < m_position.x ? Direction::LEFT
                                                             : Direction::RIGHT);
+    } else {
+        setFacingDirection(m_patrolMoveDir);
     }
 
     sf::Vector2f velocity = getVelocity();
-    velocity.x = getFacingDirection() == Direction::LEFT ? -PATROL_SPEED : PATROL_SPEED;
+    velocity.x = (m_patrolMoveDir == Direction::LEFT) ? -PATROL_SPEED : PATROL_SPEED;
     setVelocity(velocity);
 }
 
@@ -207,6 +272,8 @@ void Bowser::onFireHit() {
     if (m_state == State::DIE) return;
 
     takeDamage(1);
+    m_damageFlashTimer = DAMAGE_FLASH_DURATION;
+
     if (getHealth() <= 0) {
         enterDie();
     }
@@ -239,6 +306,8 @@ void Bowser::enterDie() {
     m_state = State::DIE;
     setHealth(0);
 
+    SoundManager::getInstance().playSound("bowser_fall");
+
     b2Body* body = getBody();
     if (body) {
         for (b2Fixture* fixture = body->GetFixtureList(); fixture != nullptr; fixture = fixture->GetNext()) {
@@ -255,10 +324,28 @@ void Bowser::breatheFire() {
     }
 
     const Direction direction = getFacingDirection();
-    const float spawnX = direction == Direction::LEFT
-                             ? m_position.x - 48.f
-                             : m_position.x + m_size.x;
-    const float spawnY = m_position.y + m_size.y * 0.35f;
+    const float spawnX = (direction == Direction::LEFT)
+                             ? (m_position.x - 44.f)
+                             : (m_position.x + m_size.x - 4.f);
+
+    // Authentic SMB1 multi-height fire trajectory:
+    // 1. LOW (40%): Spits downward to skim the floor (Y = m_position.y + 38.f), forcing Small and Big Mario to jump.
+    // 2. MID (35%): Chest level (Y = m_position.y + 22.f), hitting Big Mario torso and Small Mario head.
+    // 3. HIGH (25%): Head level (Y = m_position.y + 8.f), allowing Small Mario to sprint underneath.
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> heightDist(0, 99);
+    const int roll = heightDist(rng);
+
+    float offsetY = 8.f; // Default HIGH (Head-level)
+    if (roll < 40) {
+        offsetY = 38.f;  // LOW (Ground-skimmer)
+    } else if (roll < 75) {
+        offsetY = 22.f;  // MID (Chest-level)
+    } else {
+        offsetY = 8.f;   // HIGH (Head-level)
+    }
+
+    const float spawnY = m_position.y + offsetY;
 
     if (m_hammerVariant) {
         m_pending.push_back(
@@ -266,6 +353,9 @@ void Bowser::breatheFire() {
         return;
     }
 
+    SoundManager::getInstance().playSound("bowser_fire");
+
     m_pending.push_back(std::make_unique<BowserFire>(
         sf::Vector2f{spawnX, spawnY}, m_world, m_theme, direction));
 }
+

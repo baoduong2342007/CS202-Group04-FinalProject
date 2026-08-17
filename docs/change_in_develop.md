@@ -33,6 +33,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-16 | Title Cover Screen Branding & Clutter Cleanup | CTest 21/21 PASS | Removed gameplay HUD banner (`MARIO 000000 | x00 WORLD 1-1 TIME 400`) and arbitrary high-score line from Title cover screen; added project credit `CS202 - OOP FINAL PROJECT` and team name `GROUP 04`; polished vertical layout and spacing. |
 | 2026-08-16 | Title Screen Pipe Symmetry & Title Punctuation Cleanup | CTest 21/21 PASS | Symmetrically balanced left pipe (`x=32..96`) and right pipe (`x=544..608`) with exact 32px screen edge margins; centered Goomba (`x=320`) and balanced Mario (`x=200`) and Luigi (`x=440`); removed trailing dot from `SUPER MARIO BROS`. |
 | 2026-08-16 | Authentic NES Underwater Cheep Cheep Sprite Configuration | CTest 21/21 PASS | Configured `SpriteFrames_udw.h` and `Level.cpp` to use the authentic NES 1985 grey/white underwater palette (`UW_SWIM_UP {292, 164}`) for Cheep Cheeps swimming in World 1-3. |
+| 2026-08-17 | Comprehensive Game UI Redesign & Screenshot Layout Overhaul | CTest 31/31 PASS | Complete redesign of all game state screens (`MenuState`, `LevelSelectState`, `CharacterSelectState`, `CoopCharacterSelectState`, `PvpCharacterSelectState`, `PauseState`, `GameOverState`, `WinState`, `HUD`) with screenshot-verified pixel perfection, crisp outlines, side-by-side hero showcase cards, modal dialogue frames, and balanced HUD. |
 
 ## 2026-08-12 remediation scope
 
@@ -1010,3 +1011,179 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Set `Level::spawnCheepCheepRoutesFromTileMap` to spawn `CheepCheepColor::GREEN` so underwater levels render the authentic NES grey/white Cheep Cheeps swimming along reef routes.
   3. **Release Gate Verification**:
      - Ran full CTest suite: all 21/21 test suites passed in 9.12s with 0 failures.
+
+### 56. Comprehensive Game UI Redesign & Screenshot Layout Overhaul
+- **Date:** 2026-08-17
+- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/states/MenuState.h` & `src/states/MenuState.cpp`
+  - `include/states/LevelSelectState.h` & `src/states/LevelSelectState.cpp`
+  - `include/states/CharacterSelectState.h` & `src/states/CharacterSelectState.cpp`
+  - `include/states/CoopCharacterSelectState.h` & `src/states/CoopCharacterSelectState.cpp`
+  - `include/states/PvpCharacterSelectState.h` & `src/states/PvpCharacterSelectState.cpp`
+  - `include/states/PauseState.h` & `src/states/PauseState.cpp`
+  - `include/states/GameOverState.h` & `src/states/GameOverState.cpp`
+  - `include/states/WinState.h` & `src/states/WinState.cpp`
+  - `include/ui/HUD.h` & `src/ui/HUD.cpp`
+  - `include/ui/UIMenuWidget.h` & `src/ui/UIMenuWidget.cpp`
+  - `tests/CaptureScreenshots.cpp` & `CMakeLists.txt`
+- **Detailed Logic Changes:**
+  1. **Automated Screenshot Generator (`CaptureScreenshots.cpp`)**:
+     - Added headless capture utility exporting 14 full-fidelity PNG screenshots (`01` through `14`) across all screens directly to `screenshots_output/`.
+  2. **Main Title Screen (`MenuState.cpp`)**:
+     - Removed redundant `TOP - ...` score line and redundant `STAGE SELECT` menu item.
+     - Cleanly spaced the 3 core game modes (`1 PLAYER GAME`, `2 PLAYER CO-OP`, `2 PLAYER VERSUS`) with exact 24px vertical spacing at `y = 178.f`.
+     - Positioned `CS202 OOP PROJECT` at top left (`x=24, y=12`) and `GROUP 04` at top right (`x=616, y=12`).
+  3. **Stage Select Screen (`LevelSelectState.cpp`)**:
+     - Fixed thumbnail preview boxes to maintain crisp 4:3 aspect ratio (121x90) without distortion.
+     - Added stage descriptions (`GRASSLANDS`, `UNDERGROUND`, `DEEP OCEAN`, `CASTLE KEEP`) and status badges (`CLEARED`, `UNLOCKED`, `LOCKED`).
+     - Added glowing gold selection outline and clean footer keybindings.
+  4. **Character Select Screens (`CharacterSelectState.cpp`, `CoopCharacterSelectState.cpp`, `PvpCharacterSelectState.cpp`)**:
+     - Redesigned into **Side-by-Side Dual Hero Cards** (Mario Crimson Card at x=65 vs Luigi Emerald Card at x=335, symmetrical 20px padding and 30px central gap).
+     - Centered stat meter blocks horizontally inside each card using dynamic text bounds (`getLocalBounds()`) with 8pt crisp typography.
+     - Implemented dynamic origin recalculation for action buttons (`> SELECT MARIO <`, `> SELECT LUIGI <`) so changing active hero retains exact mathematical centering.
+     - Fine-tuned top title (`TITLE_Y = 14`, `SUBTITLE_Y = 36`) and player badges to completely eliminate any visual overlap with headers in Co-op and PvP modes.
+     - Added animated showcase sprites, hero titles, attribute stat meters, and pulsing gold active selection highlights.
+  5. **Pause & Audio Settings Modal (`PauseState.cpp`, `PauseState.h`)**:
+     - Converted Pause screen into a unified 4-item interactive arcade modal (`MUSIC`, `SFX`, `RESUME GAME`, `QUIT TO MAIN MENU`).
+     - Renamed `SOUND` to `SFX` and aligned both labels to 7-character headers (`"MUSIC  "`, `"SFX    "`) with matching 2-character prefixes (`"> "` vs `"  "`) for symmetrical vertical column alignment.
+     - Implemented dynamic 2D centering (origin at text bounding box midpoint) and adaptive highlight capsule with 36px horizontal / 24px vertical padding for balanced framing.
+     - Enabled intuitive `Up` / `Down` (or `W` / `S`) navigation across all 4 items with a pulsing gold selection highlight bar.
+     - Enabled seamless `Left` / `Right` (or `A` / `D`) volume adjustment on the active volume slider with instant SFX feedback (`coin` preview on SFX volume, `bump` on Music volume) and atomic `SaveManager` persistence.
+     - Added mouse hover and click interaction support across all 4 menu rows with left/right volume delta detection.
+     - Compacted progress bars and text strings to fit within the modal frame with zero overflow.
+  6. **Cross-Screen Visual & Color Hierarchy Polish (`CharacterSelectState`, `Coop`, `PvP`, `LevelSelectState`, `GameOverState`, `WinState`)**:
+     - Eliminated monotone yellow overuse by establishing a layered multi-tone color system:
+       - Active/Selected: Bright Glowing Gold (`#FFD700`)
+       - Inactive/Unselected items: Crisp Pure White (`#F0F5FF` / `#EBF0FF`)
+       - Subtitles & Section headers: Soft Cyan (`#82C8FF`), Mint Green (`#82FFB4`), and Coral (`#FFA08C`)
+       - Footer keybinding hints: Soft Ice Blue (`#B4D2FA`)
+  7. **Game Over & Victory Scorecards (`GameOverState.cpp`, `WinState.cpp`)**:
+     - Replaced plain text screens with framed arcade scorecards displaying Final Score, High Score, Stage Reached, and World Status.
+     - Added glowing title animations and responsive action menus.
+  8. **Gameplay Heads-Up Display (`HUD.cpp`)**:
+     - Balanced all 5 columns evenly across the 640px logical canvas (`SCORE`, `COINS`, `WORLD`, `TIME`, `LIVES`).
+     - Increased font size to 10pt with crisp black text outlines (1.2px) for maximum contrast against all stage themes.
+  9. **Release Gate Verification & Cleanup**:
+     - Executed full CTest suite: all 31/31 test suites passed in 21.99s with 0 errors.
+     - Removed all temporary screen capture artifacts (`screenshots_output/`, `level_select_preview.png`, `menu_state_preview.png`, `tests/CaptureScreenshots.cpp`) ensuring a pristine repository state.
+
+
+### 57. Enemy Visual Effects Overhaul & Aesthetic Polish ("Hết Nhựa")
+- **Date:** 2026-08-17
+- **Author:** TV1 (Dương), TV4 (Vy), TV5 (Truyền)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `assets/textures/enemies/hammer.png`
+  - `src/core/TextureManager.cpp`
+  - `src/entities/Hammer.cpp`
+  - `include/entities/Podoboo.h` & `src/entities/Podoboo.cpp`
+  - `src/entities/Bowser.cpp`
+  - `src/entities/BulletBillLauncher.cpp`
+  - `include/entities/Paratroopa.h` & `src/entities/Paratroopa.cpp`
+  - `src/entities/Blooper.cpp`
+- **Detailed Logic Changes:**
+  1. **Fixed Hammer Transparency & Rotation Center (`hammer.png` & `Hammer.cpp`)**:
+     - Converted `assets/textures/enemies/hammer.png` from a 24-bit RGB file with an opaque blue box `RGB(146, 144, 255)` into a true 32-bit RGBA PNG with alpha transparency channel.
+     - Fixed `Hammer::update` so it does not overwrite `m_sprite->setPosition(m_position)`, allowing `updatePresentation` to control the exact center-of-mass rotation pivot `{8.f, 8.f}` at `m_position + m_size / 2.f`. Hammers now spin seamlessly and smoothly through the air without wobbly or rectangular box glitches.
+  2. **Nearest-Neighbor Texture Filtering Across All Assets (`TextureManager.cpp`)**:
+     - Explicitly enforced `texture->setSmooth(false)` on all created `sf::Texture` instances in `TextureManager::loadTexture`, ensuring sharp retro 8-bit NES pixel presentation and eliminating bilinear blur/plastic appearance.
+  3. **Podoboo Vertical Flip on Descent (`Podoboo.cpp`)**:
+     - Implemented dynamic vertical sprite flipping on descent (`setScale({2.f, -2.f})` with origin `{0.f, 16.f}` when `m_velocityY > 0.f`), matching authentic NES lava bubble physics where the flame point aims downward when plunging into lava.
+  4. **Bowser Multi-Theme Palettes (`Bowser.cpp`)**:
+     - Updated `walkFrames`, `fireFrames`, and `throwFrames` in `Bowser.cpp` to accurately return Overworld green skin frames (`WALK_CLOSED`, `WALK_OPEN`, `FIRE_POSE1`, `FIRE_POSE2`) when `LevelTheme::OVERWORLD` is active, and the classic grey/dark palette for Castle/Underground stages.
+  5. **Bullet Bill Cannon Launch Muzzle Effect (`BulletBillLauncher.cpp`)**:
+     - Added an animated muzzle smoke flash in `BulletBillLauncher::draw()` during the initial launch frame window (`m_fireTimer < 0.2f`), providing visual impact feedback when firing Bullet Bills.
+  6. **Paratroopa Wing-Clip & Blooper Flip Smoothness (`Paratroopa.cpp` & `Blooper.cpp`)**:
+     - Added wing-clip particle support and centered rotation pivot for Blooper's flipped death presentation (`setOrigin({8.f, 12.f})`).
+  7. **Release Gate Verification**:
+     - Clean build succeeded and all 31/31 CTest suites passed with 0 errors.
+
+### 58. Fix Enemy Facing Directions, Horizontal Sprite Flipping, and Ledge Turning
+- **Date:** 2026-08-17
+- **Author:** TV1 (Dương), TV4 (Vy)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `src/entities/Bowser.cpp`
+  - `src/entities/Lakitu.cpp`
+  - `src/entities/Paratroopa.cpp`
+  - `src/entities/HammerBro.cpp`
+- **Detailed Logic Changes:**
+  1. **Bowser Horizontal Facing Flip (`Bowser.cpp`)**:
+     - Fixed `Bowser::update` to dynamically flip the sprite horizontally (`setScale({-2.f, 2.f})` with origin at texture width) when moving/facing `Direction::RIGHT`. Bowser no longer walks backwards/moonwalks when pacing to the right.
+  2. **Lakitu Dynamic Mario Tracking & Facing Flip (`Lakitu.cpp`)**:
+     - Updated `Lakitu::update` to orient its facing direction toward Mario's relative column position (and movement velocity) and flip its sprite horizontally when facing `Direction::RIGHT`.
+  3. **Hopping Paratroopa Ledge Reversal (`Paratroopa.cpp`)**:
+     - Added `isApproachingLedge()` check inside `Paratroopa::patrol()` for `ParatroopaMode::HOP`. Green hopping Paratroopas now correctly detect platform edges and reverse direction instead of walking blindly off ledges.
+  4. **Hammer Bro Player-Facing & Throw Orientation (`HammerBro.cpp`)**:
+     - Fixed `HammerBro::throwHammer()` and patrol logic to update `setFacingDirection(direction)` so Hammer Bro properly turns around and faces Mario when throwing hammers.
+  5. **Release Gate Verification**:
+     - Ran full CTest suite: all 31/31 test suites passed in 22.43s with 0 errors.
+
+### 59. Bowser Boss Mechanics, Fire-Breathing Animations, SFX, and Combat Overhaul
+- **Date:** 2026-08-17
+- **Author:** TV1 (Dương), TV4 (Vy)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/entities/Bowser.h`
+  - `src/entities/Bowser.cpp`
+  - `include/entities/BowserFire.h`
+  - `src/entities/BowserFire.cpp`
+  - `src/core/SoundManager.cpp`
+- **Detailed Logic Changes:**
+  1. **Two-Stage Fire-Breathing Choreography (`Bowser.cpp` & `Bowser.h`)**:
+     - Separated the fire-breathing state into clear authentic stages: Phase 1 (0.0s to 0.3s) Windup (`FIRE_WINDUP_ANIMATION`, pose STT #115/#119/#123) where Bowser rears back with open mouth, and Phase 2 (0.3s to 0.7s) Exhale (`FIRE_EXHALE_ANIMATION`, pose STT #116/#120/#124) where fire bursts from his jaws and sustains the breath pose. Eliminated the rapid 0.18s mouth-snapping/jitter loop.
+  2. **Accurate Mouth Spawn Coordinates & Multi-Height Fire Breath (`Bowser.cpp`)**:
+     - Recalibrated `breatheFire()` spawn coordinates so `BowserFire` emerges directly from Bowser's mouth (`spawnX = m_position.x - 44.f` when facing left, `spawnX = m_position.x + m_size.x - 4.f` when facing right).
+     - Implemented authentic SMB1 **3-tier fire elevation distribution**:
+       - **Low (40%, `offsetY = +38px`)**: Ground-skimming flame that covers the floor ($Y=38..54\text{px}$), forcing Small and Big Mario to jump. Eliminates the safe camping spot where Small Mario stood immune.
+       - **Mid (35%, `offsetY = +22px`)**: Chest-level flame ($Y=22..38\text{px}$) hitting Big Mario torso and Small Mario head.
+       - **High (25%, `offsetY = +8px`)**: Head-level flame ($Y=8..24\text{px}$) that allows Small Mario to sprint underneath towards Bowser.
+  3. **Audio Preload & Boss SFX Integration (`SoundManager.cpp` & `Bowser.cpp`)**:
+     - Preloaded `"bowser_fire"` (`assets/sounds/effects/fire.wav`) and `"bowser_fall"` (`assets/sounds/effects/bowserfall.wav`).
+     - Triggered `bowser_fire` roar SFX on fire release and `bowser_fall` SFX on bridge collapse/lava descent in `enterDie()`.
+  4. **Patrol AI Pacing & Movement/Facing Decoupling (`Bowser.cpp` & `Bowser.h`)**:
+     - Decoupled movement velocity direction (`m_patrolMoveDir`) from visual tracking (`setFacingDirection`). Bowser now naturally paces back and forth across the arena bridge without getting locked moving left, while maintaining visual focus on Mario.
+  5. **Boss Jump Balancing, Airborne Animation Freeze & Hit Flash (`Bowser.cpp` & `Bowser.h`)**:
+     - Rebalanced boss rhythm to 75% fire breath / 25% low hop (`HOP_SPEED = 300.f`, ~2 tiles), preventing unnatural high-frequency jumping.
+     - Froze foot animation while airborne in `Bowser::update` to stop comical mid-air foot pedaling.
+     - Added damage flash timer (`m_damageFlashTimer = 0.15s`) that applies a hurt tint (`sf::Color(255, 120, 120, 240)`) when hit by Mario's fireballs.
+  6. **Flame Projectile Frame Flicker & Physics Sync (`BowserFire.cpp` & `BowserFire.h` & `HammerBroTests.cpp`)**:
+     - Adjusted subtle natural wave motion (`WAVE_AMPLITUDE = 6.f`, `WAVE_FREQUENCY = 1.0f`) and increased fire flickering animation rate to `0.08s` per frame for authentic retro flame presentation.
+     - Fixed Box2D wave transform calculation order in `BowserFire::update` to execute before `EnemyProjectile::update(dt)`, eliminating 1-frame rendering desync and jitter.
+
+### 60. World 1-4 Authentic NES Castle Remake & Rotating Firebar Entity Integration
+- **Date:** 2026-08-17
+- **Author:** TV1 (Dương), TV4 (Vy)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/entities/Entity.h`
+  - `include/entities/Firebar.h`
+  - `src/entities/Firebar.cpp`
+  - `include/patterns/EntityFactory.h`
+  - `src/patterns/EntityFactory.cpp`
+  - `src/level/Level.cpp`
+  - `levels/level4.txt`
+  - `scratch/generate_level4.ps1`
+- **Detailed Logic Changes:**
+  1. **Rotating Firebar Hazard Entity (`Firebar.h` & `Firebar.cpp`)**:
+     - Created `Firebar` entity extending `Enemy` with `canBeStomped() = false`, `isIndestructible() = true`, and `isFirebar() = true`.
+     - Implemented authentic rotational mechanics using angular velocity (`m_rotationSpeed`), radial fireball spacing (`m_ballSpacing = 16.f`), and animated rotating fireball sprites sourced from `items_objects.png` Castle fireball coordinates (`{180, 270}, 8x8` scaled 2x to 16x16).
+     - Implemented `Firebar::checkMarioCollision(const sf::FloatRect& marioBox)` calculating precise bounding box intersections for each fiery orb in the rotating chain.
+     - Implemented `void Firebar::draw(sf::RenderTarget& target, sf::RenderStates states) const override` satisfying `sf::Drawable` interface with lazy texture loading fallback.
+  2. **Entity Factory & Level Collision Integration (`EntityFactory.cpp`, `Entity.h`, `Level.cpp`)**:
+     - Added `virtual bool isFirebar() const` in base `Entity` class (avoiding `dynamic_cast` in hot loops per project rule #5).
+     - Added `FIREBAR` to `EnemyType` enum and mapped symbols `'e'` and `'E'` in `EntityFactory::createFromTileCode`.
+     - Integrated `Firebar` damage overlap loops in `Level::updateEntities` for both Player 1 (`m_mario`) and Player 2 (`m_mario2`).
+  3. **Authentic NES World 1-4 Map Recreation (`levels/level4.txt`)**:
+     - Rebuilt the full 168x16 Castle World 1-4 layout matching Ian Albert's verified NES level map:
+       - **Section 1 (Cols 0–17)**: Low ceiling entry chamber, downward stone staircase, lava pit with leaping Podoboo (`P`), and post-pit platform.
+       - **Section 2 (Cols 18–36)**: High chamber, Question block (`?`), ceiling Firebar (`e`), double lava pits with Podoboos, and central stone island with Firebar mount.
+       - **Section 3 (Cols 37–74)**: Long stone corridor with alternating ceiling and floor Firebars (`e`), patrolling Koopa (`K`), and Fire Flower block (`f`).
+       - **Section 4 (Cols 75–110)**: Stepping stone platforms (`B`) over double lava pits with leaping Podoboos, 1-Up Mushroom (`U`), Starman (`O`), and springboard (`J`).
+       - **Section 5 (Cols 111–125)**: Low ceiling narrow entryway to the boss arena.
+       - **Section 6 (Cols 126–153)**: High-vaulted Bowser Boss Chamber with wide lava pit, authentic 11-tile suspended collapsible bridge (`===========`), Bowser boss (`X`), and Bowser Axe (`A`).
+       - **Section 7 (Cols 154–168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
+  4. **Release Gate Verification**:
+     - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).

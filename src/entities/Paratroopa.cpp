@@ -4,6 +4,7 @@
  */
 
 #include "entities/Paratroopa.h"
+#include "entities/FireballExplosion.h"
 
 #include <cmath>
 
@@ -144,6 +145,10 @@ void Paratroopa::patrol() {
     }
 
     if (m_mode == ParatroopaMode::HOP) {
+        if (isApproachingLedge()) {
+            reverseDirection();
+        }
+
         sf::Vector2f velocity = getVelocity();
         velocity.x = getFacingDirection() == Direction::LEFT
                          ? -HOP_PATROL_SPEED : HOP_PATROL_SPEED;
@@ -195,10 +200,20 @@ void Paratroopa::clipWings() {
         m_body->SetGravityScale(1.f);
     }
 
+    // Spawn wing-clip feather/puff effect
+    m_pending.push_back(std::make_unique<FireballExplosion>(
+        sf::Vector2f{m_position.x + 8.f, m_position.y + 8.f}));
+
     playAnimation(WALK_ANIMATION);
     updateAnimation(0.f);
 
     // Re-arm the one-shot stomp latch: the wing clip was an interaction, not
     // a defeat, and the next stomp still has to claim the shell transition.
     allowNextStomp();
+}
+
+std::vector<std::unique_ptr<Entity>> Paratroopa::takePendingSpawns() {
+    std::vector<std::unique_ptr<Entity>> drained;
+    drained.swap(m_pending);
+    return drained;
 }

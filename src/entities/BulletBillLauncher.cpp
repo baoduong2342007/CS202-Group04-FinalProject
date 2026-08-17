@@ -5,6 +5,7 @@
 
 #include "entities/BulletBillLauncher.h"
 #include "entities/BulletBill.h"
+#include "entities/FireballExplosion.h"
 
 #include <cmath>
 
@@ -61,8 +62,10 @@ void BulletBillLauncher::update(float dt) {
     const float spawnX = direction == Direction::LEFT
                              ? m_position.x - 32.f
                              : m_position.x + m_size.x;
+    const float spawnY = m_position.y + m_size.y - 32.f;
+
     m_pending.push_back(std::make_unique<BulletBill>(
-        sf::Vector2f{spawnX, m_position.y + m_size.y - 32.f},
+        sf::Vector2f{spawnX, spawnY},
         m_world, m_theme, direction));
 }
 
@@ -86,6 +89,17 @@ void BulletBillLauncher::draw(sf::RenderTarget& target, sf::RenderStates states)
     m_parts[0]->setPosition({m_position.x, m_position.y});            // top
     for (const auto& part : m_parts) {
         target.draw(*part, states);
+    }
+
+    // When just fired (first 0.2s), draw a muzzle flash smoke puff at the cannon opening
+    if (m_fireTimer < 0.2f && m_parts[0].has_value()) {
+        const float dx = m_marioPosition.x - m_position.x;
+        const float muzzleX = (dx < 0.f) ? m_position.x - 16.f : m_position.x + m_size.x;
+        sf::Sprite puff = *m_parts[0];
+        puff.setTextureRect(CANNON_PARTS[0]);
+        puff.setColor(sf::Color(255, 255, 255, static_cast<uint8_t>(255 * (1.f - m_fireTimer / 0.2f))));
+        puff.setPosition({muzzleX, m_position.y});
+        target.draw(puff, states);
     }
 }
 

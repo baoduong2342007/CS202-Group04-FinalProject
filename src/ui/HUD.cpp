@@ -31,24 +31,22 @@
 namespace {
 // ── Constants ────────────────────────────────────────────────
 constexpr const char *FONT_PATH = "assets/fonts/mario.ttf";
-constexpr unsigned int FONT_SIZE = 8;
+constexpr unsigned int FONT_SIZE = 10;
+constexpr unsigned int POWER_FONT_SIZE = 8;
 
-// HUD layout positions (screen-space, drawn on default view)
-constexpr float SCORE_X = 6.f;
-constexpr float SCORE_Y = 3.f;
-constexpr float COINS_X = 120.f;
-constexpr float COINS_Y = 3.f;
-constexpr float WORLD_X = 210.f;
-constexpr float WORLD_Y = 3.f;
-constexpr float LIVES_X = 300.f;
-constexpr float LIVES_Y = 3.f;
-constexpr float TIME_X = 430.f;
-constexpr float TIME_Y = 3.f;
-// The current logical canvas is 426x240. Keep the power indicator on a
-// second compact HUD row until the display module moves to its locked 640x360
-// canvas; this prevents POWER from being clipped in the current build.
-constexpr float POWER_X = 4.f;
-constexpr float POWER_Y = 16.f;
+// HUD layout positions (screen-space across 640x360 canvas)
+constexpr float SCORE_X = 16.f;
+constexpr float SCORE_Y = 6.f;
+constexpr float COINS_X = 150.f;
+constexpr float COINS_Y = 6.f;
+constexpr float WORLD_X = 275.f;
+constexpr float WORLD_Y = 6.f;
+constexpr float TIME_X = 405.f;
+constexpr float TIME_Y = 6.f;
+constexpr float LIVES_X = 525.f;
+constexpr float LIVES_Y = 6.f;
+constexpr float POWER_X = 16.f;
+constexpr float POWER_Y = 22.f;
 constexpr unsigned int SECOND = 1;
 
 // Text padding widths
@@ -74,28 +72,40 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
         m_timeText.emplace(m_font);
         m_powerText.emplace(m_font);
 
-    m_scoreText->setCharacterSize(FONT_SIZE);
-    m_scoreText->setFillColor(sf::Color::White);
-    m_scoreText->setPosition({SCORE_X, SCORE_Y});
+        m_scoreText->setCharacterSize(FONT_SIZE);
+        m_scoreText->setFillColor(sf::Color::White);
+        m_scoreText->setOutlineColor(sf::Color::Black);
+        m_scoreText->setOutlineThickness(1.2f);
+        m_scoreText->setPosition({SCORE_X, SCORE_Y});
 
-    m_livesText->setCharacterSize(FONT_SIZE);
-    m_livesText->setFillColor(sf::Color::White);
-    m_livesText->setPosition({LIVES_X, LIVES_Y});
-
-    m_coinText->setCharacterSize(FONT_SIZE);
-    m_coinText->setFillColor(sf::Color::Yellow);
-    m_coinText->setPosition({COINS_X, COINS_Y});
+        m_coinText->setCharacterSize(FONT_SIZE);
+        m_coinText->setFillColor(sf::Color(255, 215, 0));
+        m_coinText->setOutlineColor(sf::Color::Black);
+        m_coinText->setOutlineThickness(1.2f);
+        m_coinText->setPosition({COINS_X, COINS_Y});
 
         m_worldText->setCharacterSize(FONT_SIZE);
         m_worldText->setFillColor(sf::Color::White);
+        m_worldText->setOutlineColor(sf::Color::Black);
+        m_worldText->setOutlineThickness(1.2f);
         m_worldText->setPosition({WORLD_X, WORLD_Y});
 
         m_timeText->setCharacterSize(FONT_SIZE);
         m_timeText->setFillColor(sf::Color::White);
+        m_timeText->setOutlineColor(sf::Color::Black);
+        m_timeText->setOutlineThickness(1.2f);
         m_timeText->setPosition({TIME_X, TIME_Y});
 
-        m_powerText->setCharacterSize(FONT_SIZE);
-        m_powerText->setFillColor(sf::Color::White);
+        m_livesText->setCharacterSize(FONT_SIZE);
+        m_livesText->setFillColor(sf::Color::White);
+        m_livesText->setOutlineColor(sf::Color::Black);
+        m_livesText->setOutlineThickness(1.2f);
+        m_livesText->setPosition({LIVES_X, LIVES_Y});
+
+        m_powerText->setCharacterSize(POWER_FONT_SIZE);
+        m_powerText->setFillColor(sf::Color(255, 230, 140));
+        m_powerText->setOutlineColor(sf::Color::Black);
+        m_powerText->setOutlineThickness(1.f);
         m_powerText->setPosition({POWER_X, POWER_Y});
     }
 

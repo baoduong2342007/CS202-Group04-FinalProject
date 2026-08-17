@@ -29,9 +29,16 @@ private:
     // 6. Private members
     sf::Font m_font;                             ///< Font for rendering text
     bool m_fontLoaded;                           ///< True if font loaded successfully
-    std::optional<sf::Text> m_titleText;         ///< "YOU WIN!" text
+    std::optional<sf::Text> m_titleText;         ///< "COURSE CLEAR!" text
+    std::optional<sf::Text> m_subtitleText;      ///< Subtitle text
     GameProgress m_progress;                     ///< Reference to the current game progress
     std::optional<sf::Text> m_scoreText;         ///< Text displaying the final score
     std::optional<sf::Text> m_highScoreText;     ///< Persisted high score
+    std::optional<sf::Text> m_levelText;         ///< Status text
+    std::optional<sf::Text> m_hintText;          ///< Navigation hint
+    sf::RectangleShape m_panel;                  ///< Modal scorecard panel
+    sf::RectangleShape m_scoreBox;               ///< Inner score container
     std::unique_ptr<UIMenuWidget> m_menu;        ///< The UI menu for the state
+    float m_animTimer = 0.f;                     ///< Pulse timer
+    bool m_transitioning = false;                ///< Ignore repeated activations
 };

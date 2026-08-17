@@ -33,6 +33,8 @@ public:
     ParatroopaMode getMode() const { return m_mode; }
     bool isParatroopa() const override { return true; }
 
+    std::vector<std::unique_ptr<Entity>> takePendingSpawns() override;
+
 private:
     /// SMB1 wing-clip transition: gravity returns, the walk animation takes
     /// over, and the stomp latch is re-armed for the shell stomp to come.
@@ -43,4 +45,5 @@ private:
     float m_anchorY = 0.f;
     bool m_flyingUp = true;
     float m_rearmTimer = 0.f;
+    std::vector<std::unique_ptr<Entity>> m_pending;
 };

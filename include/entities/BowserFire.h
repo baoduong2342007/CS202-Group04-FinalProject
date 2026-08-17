@@ -31,7 +31,7 @@ private:
     float m_baseY{0.f};
 
     static constexpr float SPEED = 180.f;
-    static constexpr float WAVE_AMPLITUDE = 16.f;
-    static constexpr float WAVE_FREQUENCY = 2.f;   ///< Hz
-    static constexpr float FRAME_DURATION = 0.15f;
+    static constexpr float WAVE_AMPLITUDE = 6.f;
+    static constexpr float WAVE_FREQUENCY = 1.0f;   ///< Hz
+    static constexpr float FRAME_DURATION = 0.08f;
 };

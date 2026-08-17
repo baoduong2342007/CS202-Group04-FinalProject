@@ -94,6 +94,8 @@ SoundManager::SoundManager()
     loadSound("oneup", "assets/sounds/effects/1up.wav");
     loadSound("pause", "assets/sounds/effects/pause.wav");
     loadSound("hurryup", "assets/sounds/effects/hurryup.wav");
+    loadSound("bowser_fire", "assets/sounds/effects/fire.wav");
+    loadSound("bowser_fall", "assets/sounds/effects/bowserfall.wav");
 
     registerDefaultMusicPaths();
     setLevelMusic(MusicId::OVERWORLD);

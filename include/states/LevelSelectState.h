@@ -44,8 +44,11 @@ private:
         sf::RectangleShape outerCard;
         sf::RectangleShape headerBanner;
         sf::RectangleShape previewBox;
+        sf::RectangleShape statusBadge;
         std::optional<sf::Text> titleText;
         std::optional<sf::Text> themeText;
+        std::optional<sf::Text> descText;
+        std::optional<sf::Text> statusBadgeText;
         std::optional<sf::Text> actionText;
         std::optional<sf::Sprite> previewSprite;
     };

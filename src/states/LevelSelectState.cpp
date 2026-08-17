@@ -32,26 +32,27 @@ constexpr unsigned int TITLE_FONT_SIZE = 22;
 constexpr unsigned int SUBTITLE_FONT_SIZE = 10;
 constexpr unsigned int CARD_TITLE_FONT_SIZE = 12;
 constexpr unsigned int CARD_THEME_FONT_SIZE = 8;
-constexpr unsigned int ACTION_FONT_SIZE = 9;
+constexpr unsigned int CARD_DESC_FONT_SIZE = 9;
+constexpr unsigned int ACTION_FONT_SIZE = 10;
 constexpr unsigned int HINT_FONT_SIZE = 9;
 
-constexpr float TITLE_Y = 22.f;
-constexpr float SUBTITLE_Y = 44.f;
-constexpr float HINT_Y = 316.f;
+constexpr float TITLE_Y = 16.f;
+constexpr float SUBTITLE_Y = 38.f;
+constexpr float HINT_Y = 322.f;
 
-constexpr float PANEL_X = 24.f;
-constexpr float PANEL_Y = 10.f;
-constexpr float PANEL_WIDTH = 592.f;
-constexpr float PANEL_HEIGHT = 340.f;
+constexpr float PANEL_X = 20.f;
+constexpr float PANEL_Y = 8.f;
+constexpr float PANEL_WIDTH = 600.f;
+constexpr float PANEL_HEIGHT = 344.f;
 
-constexpr float CARD_START_X = 41.f;
-constexpr float CARD_Y = 62.f;
-constexpr float CARD_WIDTH = 132.f;
-constexpr float CARD_HEIGHT = 242.f;
+constexpr float CARD_START_X = 35.f;
+constexpr float CARD_Y = 58.f;
+constexpr float CARD_WIDTH = 135.f;
+constexpr float CARD_HEIGHT = 252.f;
 constexpr float CARD_SPACING = 10.f;
 
-constexpr float PREVIEW_WIDTH = 118.f;
-constexpr float PREVIEW_HEIGHT = 150.f;
+constexpr float PREVIEW_WIDTH = 121.f;
+constexpr float PREVIEW_HEIGHT = 90.f;
 
 const sf::Color SKY_COLOR(18, 26, 56);
 const sf::Color PANEL_COLOR(12, 18, 40);
@@ -74,6 +75,20 @@ const sf::Color PREVIEW_FALLBACK_BG[4] = {
     sf::Color(0, 0, 0),       // 1-2: Cave Darkness
     sf::Color(32, 56, 236),   // 1-3: Ocean Blue
     sf::Color(18, 8, 12)      // 1-4: Dark Fortress
+};
+
+const char* STAGE_DESCRIPTIONS[4] = {
+    "GRASSLANDS",
+    "UNDERGROUND",
+    "DEEP OCEAN",
+    "CASTLE KEEP"
+};
+
+const char* STAGE_TAGS[4] = {
+    "CLASSIC ADVENTURE",
+    "WARP PIPES & BRICKS",
+    "SWIMMING CURRENTS",
+    "BOWSER BOSS BATTLE"
 };
 } // namespace
 
@@ -117,18 +132,21 @@ void LevelSelectState::initTextLabels() {
     m_titleText->setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, 0.f});
     m_titleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, TITLE_Y});
 
-    m_subtitleText.emplace(m_font,
-                           m_mode == Mode::Coop
-                               ? "Choose a stage for your co-op team"
-                               : "Choose a stage to begin your adventure",
-                           SUBTITLE_FONT_SIZE);
-    m_subtitleText->setFillColor(MUTED_GOLD_COLOR);
+    if (m_mode == Mode::Coop) {
+        m_subtitleText.emplace(m_font, "[ 2 PLAYER CO-OP ] - CHOOSE MISSION STAGE", SUBTITLE_FONT_SIZE);
+        m_subtitleText->setFillColor(sf::Color(130, 255, 180));
+    } else {
+        m_subtitleText.emplace(m_font, "[ 1 PLAYER CAMPAIGN ] - CHOOSE STARTING WORLD", SUBTITLE_FONT_SIZE);
+        m_subtitleText->setFillColor(sf::Color(130, 200, 255));
+    }
+    m_subtitleText->setOutlineColor(sf::Color::Black);
+    m_subtitleText->setOutlineThickness(1.f);
     sf::FloatRect subBounds = m_subtitleText->getLocalBounds();
     m_subtitleText->setOrigin({subBounds.position.x + subBounds.size.x / 2.f, 0.f});
     m_subtitleText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, SUBTITLE_Y});
 
-    m_hintText.emplace(m_font, "[A / D] SELECT STAGE    [ENTER / CLICK] START GAME    [ESC] BACK", HINT_FONT_SIZE);
-    m_hintText->setFillColor(GOLD_COLOR);
+    m_hintText.emplace(m_font, "[A / D / ARROWS] SELECT    [ENTER / CLICK] START    [ESC] BACK", HINT_FONT_SIZE);
+    m_hintText->setFillColor(sf::Color(180, 210, 250));
     sf::FloatRect hintBounds = m_hintText->getLocalBounds();
     m_hintText->setOrigin({hintBounds.position.x + hintBounds.size.x / 2.f, 0.f});
     m_hintText->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, HINT_Y});
@@ -153,13 +171,13 @@ void LevelSelectState::initStageCards() {
         card.outerCard.setOutlineThickness(1.f);
 
         // Header Banner (Colored by Theme)
-        card.headerBanner.setSize({CARD_WIDTH, 36.f});
+        card.headerBanner.setSize({CARD_WIDTH, 34.f});
         card.headerBanner.setPosition({cardX, CARD_Y});
         card.headerBanner.setFillColor(THEME_BANNER_COLORS[i % 4]);
 
-        // Preview Window Box
+        // Preview Window Box (Aspect ratio ~4:3)
         const float previewX = cardX + 7.f;
-        const float previewY = CARD_Y + 42.f;
+        const float previewY = CARD_Y + 40.f;
         card.previewBox.setSize({PREVIEW_WIDTH, PREVIEW_HEIGHT});
         card.previewBox.setPosition({previewX, previewY});
         card.previewBox.setFillColor(PREVIEW_FALLBACK_BG[i % 4]);
@@ -171,15 +189,9 @@ void LevelSelectState::initStageCards() {
             card.previewSprite.emplace(m_stageTextures[i]);
             const sf::Vector2u texSize = m_stageTextures[i].getSize();
             if (texSize.x > 0 && texSize.y > 0) {
-                const int topCrop = (texSize.y >= 200) ? 32 : 0;
-                const int cropHeight = static_cast<int>(texSize.y) - topCrop;
-                card.previewSprite->setTextureRect(sf::IntRect(
-                    {0, topCrop},
-                    {static_cast<int>(texSize.x), cropHeight}
-                ));
                 card.previewSprite->setScale({
                     PREVIEW_WIDTH / static_cast<float>(texSize.x),
-                    PREVIEW_HEIGHT / static_cast<float>(cropHeight)
+                    PREVIEW_HEIGHT / static_cast<float>(texSize.y)
                 });
             }
             card.previewSprite->setPosition({previewX, previewY});
@@ -191,10 +203,12 @@ void LevelSelectState::initStageCards() {
             // World Title (e.g. "WORLD 1-1")
             card.titleText.emplace(m_font, "WORLD " + def.worldLabel, CARD_TITLE_FONT_SIZE);
             card.titleText->setFillColor(sf::Color::White);
+            card.titleText->setOutlineColor(sf::Color::Black);
+            card.titleText->setOutlineThickness(1.f);
             card.titleText->setStyle(sf::Text::Bold);
             sf::FloatRect titleB = card.titleText->getLocalBounds();
             card.titleText->setOrigin({titleB.position.x + titleB.size.x / 2.f, 0.f});
-            card.titleText->setPosition({centerX, CARD_Y + 4.f});
+            card.titleText->setPosition({centerX, CARD_Y + 3.f});
 
             // Theme Name (e.g. "OVERWORLD")
             std::string themeName;
@@ -206,16 +220,41 @@ void LevelSelectState::initStageCards() {
             }
             card.themeText.emplace(m_font, themeName, CARD_THEME_FONT_SIZE);
             card.themeText->setFillColor(MUTED_GOLD_COLOR);
+            card.themeText->setOutlineColor(sf::Color::Black);
+            card.themeText->setOutlineThickness(0.8f);
             sf::FloatRect themeB = card.themeText->getLocalBounds();
             card.themeText->setOrigin({themeB.position.x + themeB.size.x / 2.f, 0.f});
-            card.themeText->setPosition({centerX, CARD_Y + 21.f});
+            card.themeText->setPosition({centerX, CARD_Y + 19.f});
+
+            // Description Label
+            card.descText.emplace(m_font, STAGE_DESCRIPTIONS[i % 4], CARD_DESC_FONT_SIZE);
+            card.descText->setFillColor(BODY_COLOR);
+            card.descText->setOutlineColor(sf::Color::Black);
+            card.descText->setOutlineThickness(1.f);
+            sf::FloatRect descB = card.descText->getLocalBounds();
+            card.descText->setOrigin({descB.position.x + descB.size.x / 2.f, 0.f});
+            card.descText->setPosition({centerX, CARD_Y + 138.f});
+
+            // Status Badge Box & Text
+            const float badgeW = 100.f;
+            const float badgeH = 18.f;
+            card.statusBadge.setSize({badgeW, badgeH});
+            card.statusBadge.setPosition({centerX - badgeW / 2.f, CARD_Y + 164.f});
+            card.statusBadge.setFillColor(sf::Color(10, 15, 35));
+            card.statusBadge.setOutlineThickness(1.f);
+
+            card.statusBadgeText.emplace(m_font, "", 8);
+            card.statusBadgeText->setOutlineColor(sf::Color::Black);
+            card.statusBadgeText->setOutlineThickness(1.f);
 
             // Bottom Action Tag
             card.actionText.emplace(m_font, (i == 0) ? "> PLAY <" : "STAGE " + std::to_string(def.number), ACTION_FONT_SIZE);
             card.actionText->setFillColor((i == 0) ? GOLD_COLOR : MUTED_GOLD_COLOR);
+            card.actionText->setOutlineColor(sf::Color::Black);
+            card.actionText->setOutlineThickness(1.2f);
             sf::FloatRect actB = card.actionText->getLocalBounds();
             card.actionText->setOrigin({actB.position.x + actB.size.x / 2.f, 0.f});
-            card.actionText->setPosition({centerX, CARD_Y + 208.f});
+            card.actionText->setPosition({centerX, CARD_Y + 218.f});
         }
 
         m_cards.push_back(std::move(card));
@@ -228,9 +267,6 @@ void LevelSelectState::onEnter() {
     m_cards.clear();
     m_stageTextures.clear();
 
-    // SaveManager is the source of persistent progression.  Keep a bounded
-    // snapshot for this menu so malformed in-memory data cannot make a card
-    // outside the release catalog launchable.
     const int levelCount = LevelCatalog::count();
     if (levelCount > 0) {
         m_highestUnlockedLevel = std::clamp(
@@ -262,36 +298,59 @@ void LevelSelectState::selectCard(int index) {
 
     for (std::size_t i = 0; i < m_cards.size(); ++i) {
         const bool active = (static_cast<int>(i) == m_selectedIndex);
+        const bool unlocked = isLevelUnlocked(m_cards[i].levelNumber);
+        const float centerX = m_cards[i].outerCard.getPosition().x + CARD_WIDTH / 2.f;
+
         m_cards[i].outerCard.setFillColor(active ? CARD_COLOR_ACTIVE : CARD_COLOR);
         m_cards[i].outerCard.setOutlineColor(active ? GOLD_COLOR : CARD_OUTLINE);
         m_cards[i].outerCard.setOutlineThickness(active ? 2.5f : 1.f);
         m_cards[i].previewBox.setOutlineColor(active ? GOLD_COLOR : CARD_OUTLINE);
 
+        // Update status badge
+        if (m_cards[i].statusBadgeText) {
+            if (!unlocked) {
+                m_cards[i].statusBadge.setOutlineColor(sf::Color(180, 50, 50));
+                m_cards[i].statusBadgeText->setString("LOCKED");
+                m_cards[i].statusBadgeText->setFillColor(sf::Color(240, 100, 100));
+            } else if (m_cards[i].levelNumber < m_highestUnlockedLevel) {
+                m_cards[i].statusBadge.setOutlineColor(sf::Color(60, 180, 75));
+                m_cards[i].statusBadgeText->setString("CLEARED");
+                m_cards[i].statusBadgeText->setFillColor(sf::Color(100, 240, 120));
+            } else {
+                m_cards[i].statusBadge.setOutlineColor(sf::Color(60, 150, 240));
+                m_cards[i].statusBadgeText->setString("UNLOCKED");
+                m_cards[i].statusBadgeText->setFillColor(sf::Color(120, 200, 255));
+            }
+            sf::FloatRect badgB = m_cards[i].statusBadgeText->getLocalBounds();
+            m_cards[i].statusBadgeText->setOrigin({badgB.position.x + badgB.size.x / 2.f, 0.f});
+            m_cards[i].statusBadgeText->setPosition({centerX, CARD_Y + 168.f});
+        }
+
+        // Update action button text
         if (m_cards[i].actionText) {
             if (active) {
-                if (isLevelUnlocked(m_cards[i].levelNumber)) {
-                    m_cards[i].actionText->setString("> PLAY <");
+                if (unlocked) {
+                    m_cards[i].actionText->setString("> START <");
                     m_cards[i].actionText->setFillColor(GOLD_COLOR);
                     m_cards[i].actionText->setStyle(sf::Text::Bold);
                 } else {
                     m_cards[i].actionText->setString("LOCKED");
-                    m_cards[i].actionText->setFillColor(sf::Color(220, 120, 120));
+                    m_cards[i].actionText->setFillColor(sf::Color(220, 100, 100));
                     m_cards[i].actionText->setStyle(sf::Text::Bold);
                 }
             } else {
-                if (isLevelUnlocked(m_cards[i].levelNumber)) {
+                if (unlocked) {
                     m_cards[i].actionText->setString("STAGE " + std::to_string(m_cards[i].levelNumber));
-                    m_cards[i].actionText->setFillColor(MUTED_GOLD_COLOR);
+                    m_cards[i].actionText->setFillColor(sf::Color(235, 240, 255));
                 } else {
                     m_cards[i].actionText->setString("LOCKED");
-                    m_cards[i].actionText->setFillColor(sf::Color(180, 100, 100));
+                    m_cards[i].actionText->setFillColor(sf::Color(150, 80, 80));
                 }
                 m_cards[i].actionText->setStyle(sf::Text::Regular);
             }
             sf::FloatRect actB = m_cards[i].actionText->getLocalBounds();
-            const float centerX = m_cards[i].outerCard.getPosition().x + CARD_WIDTH / 2.f;
             m_cards[i].actionText->setOrigin({actB.position.x + actB.size.x / 2.f, 0.f});
-            m_cards[i].actionText->setPosition({centerX, CARD_Y + 208.f});
+            m_cards[i].actionText->setPosition({centerX, CARD_Y + 218.f});
         }
     }
 }
@@ -299,9 +358,6 @@ void LevelSelectState::selectCard(int index) {
 void LevelSelectState::confirmSelection(int levelNumber) {
     if (m_transitioning) return;
 
-    // Selection input can arrive from either keyboard or mouse.  Validate at
-    // this final action boundary as well as in the card presentation so a
-    // locked or out-of-catalog level can never queue CharacterSelect/Play.
     if (!isLevelUnlocked(levelNumber)) {
         SoundManager::getInstance().playSound("bump");
         return;
@@ -416,9 +472,13 @@ void LevelSelectState::render(sf::RenderTarget& target) {
             target.draw(*card.previewSprite);
         }
 
+        target.draw(card.statusBadge);
+
         if (m_fontLoaded) {
             if (card.titleText) target.draw(*card.titleText);
             if (card.themeText) target.draw(*card.themeText);
+            if (card.descText) target.draw(*card.descText);
+            if (card.statusBadgeText) target.draw(*card.statusBadgeText);
             if (card.actionText) target.draw(*card.actionText);
         }
     }

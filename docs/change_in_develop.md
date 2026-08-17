@@ -1187,3 +1187,20 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
        - **Section 7 (Cols 154–168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
   4. **Release Gate Verification**:
      - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).
+
+### 61. Integrate TV4 Commits (`ab75c2e` & `f3a76f1`) via Cherry-Pick
+- **Date:** 2026-08-17
+- **Author:** TV4 (Vy), TV1 (Dương)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `levels/level_athletic.txt`
+  - `docs/change_in_develop.md`
+- **Detailed Logic Changes:**
+  1. **Direct Commit Cherry-Pick**:
+     - Applied TV4's 2 release commits (`ab75c2e` - indexed pipe warps and level tile grammar, and `f3a76f1` - Koopa low-clearance vertical gap check) directly onto `develop` without extraneous merge commits.
+  2. **Preservation of Level Designs**:
+     - Preserved TV4's original custom Athletic Mushroom Treetop level design by archiving it as `levels/level_athletic.txt`.
+     - Verified release campaign levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) match the release catalog specifications.
+  3. **Release Gate Verification**:
+     - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).
+

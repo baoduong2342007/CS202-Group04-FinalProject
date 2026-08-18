@@ -95,6 +95,7 @@ public:
     virtual bool isMario() const { return getType() == EntityType::MARIO; }
     virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
     virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
+    virtual bool isToad() const { return false; }
     virtual bool isSpringboard() const { return getType() == EntityType::SPRINGBOARD; }
     virtual bool isElevator() const { return getType() == EntityType::ELEVATOR; }
     virtual bool isKoopa() const { return false; }

@@ -156,6 +156,10 @@ private:
     /// Bowser arena: touching the axe starts the bridge-collapse sequence.
     void beginBridgeCollapse(Mario* scorer);
     void updateBridgeCollapse(float dt);
+
+    void checkToadEnding();
+    void updateToadDialogue(float dt);
+    void renderToadDialogue(sf::RenderTarget& target) const;
     
     void applyAreaTheme(LevelTheme theme);
 
@@ -216,4 +220,13 @@ private:
     Mario* m_bridgeCollapseScorer = nullptr;
     /// Pause after the last tile falls before the level completes.
     float m_bridgeCompletionDelay = 0.f;
+
+    // Castle finale: the axe no longer completes the level directly.
+    // Mario must reach Toad after Bowser's bridge has collapsed.
+    bool m_castleExitReady = false;
+    bool m_toadDialogueActive = false;
+    float m_toadDialogueTimer = 0.f;
+
+    sf::Font m_toadDialogueFont;
+    bool m_toadDialogueFontLoaded = false;
 };

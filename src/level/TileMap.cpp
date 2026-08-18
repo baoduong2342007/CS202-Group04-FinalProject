@@ -39,7 +39,7 @@
 
 namespace {
 
-constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~mWbkydqlPDtsn=XA";
+constexpr std::string_view VALID_TILE_SYMBOLS = ".0123456789B?CGKMFS|RUEOfhuoecx[]{}prJTLHV^~mWbkydqlPDtsn=XAN";
 constexpr float TILE_SIZE_PIXELS = 32.f;
 constexpr float TILE_FRICTION = 0.6f;
 constexpr float FLAG_WAVE_SPEED = 7.0f;

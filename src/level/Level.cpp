@@ -103,7 +103,7 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
 // BuzzyBeetle 'b', RedKoopa 'k', Paratroopa 'y'/'d', Red PiranhaPlant 'q', Blooper 'l', Podoboo 'P', Lakitu 't', Spiny 's',
 // Bullet Bill launcher 'D')
 constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'c', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e',
-                                'b', 'k', 'y', 'd', 'q', 'l', 'P', 't', 's', 'D', 'n', 'X', 'A'};
+                                'b', 'k', 'y', 'd', 'q', 'l', 'P', 't', 's', 'D', 'n', 'X', 'A', 'N'};
 
 std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
     const std::size_t height = tileMap.getHeight();
@@ -1329,6 +1329,9 @@ void Level::render(sf::RenderTarget& target) {
 
     // Terrain stays above liquid.
     m_tileMap.render(target);
+
+    // Flag cloth stays behind actor/Mario.
+    m_tileMap.renderFlags(target);
 
     // All remaining entities stay above terrain/liquid.
     for (const auto& entity : m_entities) {

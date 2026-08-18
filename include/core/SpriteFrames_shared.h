@@ -873,6 +873,9 @@ inline const sf::IntRect VINE_STEM_1({148, 90}, {16, 16});
 // compatible without pointing at the castle flag.
 inline const sf::IntRect VINE_STEM_2({148, 90}, {16, 16});
 
+// End-of-castle NPC
+inline const sf::IntRect TOAD({0, 444}, {16, 24});
+
 } // namespace Items
 
 //  Legacy item-atlas tile constants

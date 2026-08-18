@@ -665,8 +665,8 @@ void testFlagCompletionGatedOnFullFlagDrop() {
     std::cout << "[RUNNING] testFlagCompletionGatedOnFullFlagDrop..." << std::endl;
 
     Level level;
-    level.setTheme(LevelTheme::CASTLE);
-    assert(level.loadFromFile("levels/level4.txt"));
+    level.setTheme(LevelTheme::OVERWORLD);
+    assert(level.loadFromFile("levels/level1.txt"));
 
     CompletionCounter counter;
 
@@ -676,8 +676,15 @@ void testFlagCompletionGatedOnFullFlagDrop() {
 
     // Grab the pole near its base: Mario only slides a short way, so the flag
     // must still descend to its validated maximum before the level completes.
-    const float lowGrabY =
-        15.0f * TILE_SIZE - level.getMario()->getSize().y;
+    int bottomPoleRow =finish.y;
+    
+    for (const sf::Vector2i& pole : level.getTileMap().findTiles('|')) {
+        if (pole.x == finish.x && pole.y > bottomPoleRow) {
+            bottomPoleRow = pole.y;
+        }
+    }
+
+    const float lowGrabY = static_cast<float>((bottomPoleRow + 1) * TILE_SIZE) - level.getMario()->getSize().y - 1.0f;
     level.getMario()->setPosition(
         sf::Vector2f(triggerTopLeft.x + 7.0f, lowGrabY));
     level.update(0.0f);

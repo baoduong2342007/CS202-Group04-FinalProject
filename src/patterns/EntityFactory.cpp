@@ -37,6 +37,7 @@
 #include "items/Star.h"             // TV5 (Sprint 5)
 #include "entities/Springboard.h"     // TV1 (Sprint 7)
 #include "entities/QuestionBlock.h"    // TV5 (Sprint 4)
+#include "entities/Toad.h"
 
 namespace {
 
@@ -170,6 +171,8 @@ std::unique_ptr<Entity> EntityFactory::createFromTileCode(char tileCode,
             return createEnemy(EnemyType::FIREBAR, position, world, theme);
         case 'A':
             return std::make_unique<BowserAxe>(position, theme);
+        case 'N':
+            return std::make_unique<Toad>(position);
         case 'D':
             return std::make_unique<BulletBillLauncher>(position, world, theme);
         case 'C':

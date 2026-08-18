@@ -859,6 +859,7 @@ struct LevelValidationState {
     std::size_t flowerPedestalCount{0};
     std::size_t finishCount{0};
     std::size_t flagpoleTopCount{0};
+    std::size_t toadCount{0};
 };
 
 bool validateRow(const std::string& row,
@@ -904,6 +905,8 @@ bool validateRow(const std::string& row,
             ++state.finishCount;
         } else if (symbol == 'T') {
             ++state.flagpoleTopCount;
+        } else if (symbol == 'N') {
+            ++state.toadCount;
         }
     }
     
@@ -917,18 +920,19 @@ bool validateCampaignMarkers(const LevelValidationState& state, const std::strin
         return false;
     }
 
-    if (state.finishCount != 1) {
-        std::cerr << "Invalid level file: expected exactly one finish point but found " << state.finishCount << " in " << path << std::endl;
+    const bool hasFlagEnding = state.finishCount == 1 &&
+                               state.flagpoleTopCount == 1 &&
+                               state.toadCount == 0;
+
+    const bool hasToadEnding = state.finishCount == 0 &&
+                               state.flagpoleTopCount == 0 &&
+                               state.toadCount == 1;
+
+    if (!hasFlagEnding && !hasToadEnding) {
+        std::cerr << "Invalid level file: expected either one flag ending " << "(T + F) or one Toad ending (N) in " << path << std::endl;
 
         return false;
     }
-
-    if (state.flagpoleTopCount != 1) {
-        std::cerr << "Invalid level file: expected exactly one flagpole top marker but found " << state.flagpoleTopCount << " in " << path << std::endl;
-
-        return false;
-    }
-    
     return true;
 }
 
@@ -1115,8 +1119,9 @@ bool TileMap::loadFromFile(const std::string& path, LayoutMode mode) {
         return false;
     }
 
-    // PvP arenas have no flagpole; the campaign pole walk is skipped for them.
-    if (mode == LayoutMode::CAMPAIGN && !validateFlagPole(loadedGrid, path)) {
+    // Only flag-ending campaign levels need flagpole validation.
+    // Toad-ending levels do not contain F/T/| markers.
+    if (mode == LayoutMode::CAMPAIGN && validationState.finishCount > 0 && !validateFlagPole(loadedGrid, path)) {
         return false;
     }
     

@@ -214,8 +214,17 @@ bool testProductionLevelsLoad() {
         assert(tileMap.getWidth() > 0);
         assert(tileMap.getHeight() > 0);
         assert(tileMap.findTiles('M').size() == 1);
-        assert(tileMap.findTiles('F').size() == 1);
-        assert(tileMap.findTiles('T').size() == 1);
+
+        if (path == "levels/level4.txt") {
+            // Castle ends through Toad instead of a flagpole.
+            assert(tileMap.findTiles('N').size() == 1);
+            assert(tileMap.findTiles('F').empty());
+            assert(tileMap.findTiles('T').empty());
+        } else {
+            assert(tileMap.findTiles('F').size() == 1);
+            assert(tileMap.findTiles('T').size() == 1);
+            assert(tileMap.findTiles('N').empty());
+        }
     }
 
     std::cout << "[PASSED] testProductionLevelsLoad" << std::endl;

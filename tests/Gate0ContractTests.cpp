@@ -214,9 +214,17 @@ void testReleaseLevelMarkers() {
         assert(tileMap.loadFromFile(definition.filePath));
         assert(tileMap.getWidth() > 0);
         assert(tileMap.getHeight() > 0);
-        // Validator contract: exactly one Mario spawn and one finish per level.
         assert(tileMap.findTiles('M').size() == 1);
-        assert(tileMap.findTiles('F').size() == 1);
+
+        if (definition.number == 4) {
+            assert(tileMap.findTiles('N').size() == 1);
+            assert(tileMap.findTiles('F').empty());
+            assert(tileMap.findTiles('T').empty());
+        } else {
+            assert(tileMap.findTiles('F').size() == 1);
+            assert(tileMap.findTiles('T').size() == 1);
+            assert(tileMap.findTiles('N').empty());
+        }
     }
 
     std::cout << "[PASSED] testReleaseLevelMarkers" << std::endl;
@@ -230,7 +238,6 @@ void testAllLevelFlagMarkers() {
         "levels/level1.txt",
         "levels/level2.txt",
         "levels/level3.txt",
-        "levels/level4.txt",
     };
 
     // Flag markers are syntax/geometry contracts and do not establish a map's
@@ -432,7 +439,6 @@ void testFlagAnimationChangesPixelsForValidatedThemes() {
         {"levels/level0.txt", LevelTheme::OVERWORLD},
         {"levels/level1.txt", LevelTheme::OVERWORLD},
         {"levels/level2.txt", LevelTheme::UNDERGROUND},
-        {"levels/level4.txt", LevelTheme::CASTLE},
     };
 
     for (const ThemeCase& testCase : cases) {
@@ -497,53 +503,83 @@ void testFlagAnimationChangesPixelsForValidatedThemes() {
     std::cout << "[PASSED] testFlagAnimationChangesPixelsForValidatedThemes" << std::endl;
 }
 
-void testLevel4FlagSequencePublishesOnce() {
-    std::cout << "[RUNNING] testLevel4FlagSequencePublishesOnce..." << std::endl;
+void testLevel4ToadSequencePublishesOnce() {
+    std::cout << "[RUNNING] testLevel4ToadSequencePublishesOnce..." << std::endl;
 
     Level level;
     level.setTheme(LevelTheme::CASTLE);
     assert(level.loadFromFile("levels/level4.txt"));
 
     CompletionCounter counter;
-    const sf::Vector2i finish = level.getTileMap().findTiles('F').front();
-    const sf::Vector2f startPosition =
-        TileMap::gridToWorldPosition(finish) + sf::Vector2f(7.0f, 8.0f);
-    level.getMario()->setPosition(startPosition);
 
-    // Contact starts the sequence but must not complete the level immediately.
+    Mario* mario = level.getMario();
+    assert(mario != nullptr);
+
+    Entity* axe = nullptr;
+    Entity* toad = nullptr;
+
+    for (const auto& entity : level.getEntities()) {
+        assert(entity);
+
+        if (entity->isBowserAxe()) {
+            axe = entity.get();
+        }
+
+        if (entity->isToad()) {
+            toad = entity.get();
+        }
+    }
+
+    assert(axe != nullptr);
+    assert(toad != nullptr);
+
+    // Keep Mario alive while the scripted Castle finale runs.
+    mario->setInvincible(30.0f);
+
+    // Touching the axe starts the bridge collapse,
+    // but must NOT complete Level 4 anymore.
+    mario->setPosition(axe->getPosition());
     level.update(0.0f);
-    assert(level.getMario()->isFlagpoleSliding());
-    // Mario snaps beside the pole column: Y is unchanged, X is aligned against
-    // the pole (the previous exact-position assert no longer holds because the
-    // fix intentionally repositions Mario flush against the pole).
-    assert(level.getMario()->getPosition().y == startPosition.y);
-    assert(!level.getMario()->isFlagpoleSlideComplete());
-    assert(level.getTileMap().getFlagDropDistance() == 0.0f);
+
     assert(!level.isLevelCompleted());
     assert(counter.count == 0);
 
-    const float previousMarioY = level.getMario()->getPosition().y;
-    const float previousFlagDrop = level.getTileMap().getFlagDropDistance();
-    level.update(0.25f);
-    const float marioDisplacement =
-        level.getMario()->getPosition().y - previousMarioY;
-    assert(marioDisplacement > 0.0f);
-    assert(std::abs(level.getTileMap().getFlagDropDistance() -
-                    (previousFlagDrop + marioDisplacement)) < 0.1f);
+    // Move Mario back to the safe spawn while Bowser's bridge collapses.
+    const auto spawns = level.getTileMap().findTiles('M');
+    assert(spawns.size() == 1);
 
-    // The Castle pole is traversed at the fixed slide speed. With the fix the
-    // sequence no longer uses an estimated timer for the slide, so the full
-    // descent + flag drop + walk takes more seconds than the old shortcut.
-    for (int step = 0; step < 20 && !level.isLevelCompleted(); ++step) {
-        level.update(1.0f);
+    mario->setPosition(TileMap::gridToWorldPosition(spawns.front()));
+
+    // Allow enough time for every bridge tile to disappear
+    // and for Bowser's collapse delay to finish.
+    for (int step = 0; step < 40; ++step) {
+        level.update(0.1f);
     }
+
+    assert(level.getTileMap().findTiles('=').empty());
+
+    // Axe + bridge collapse alone must still NOT complete the level.
+    assert(!level.isLevelCompleted());
+    assert(counter.count == 0);
+
+    // Reaching Toad starts the ending dialogue.
+    mario->setPosition(toad->getPosition());
+    level.update(0.0f);
+
+    assert(!level.isLevelCompleted());
+    assert(counter.count == 0);
+
+    // Dialogue finishes, then LEVEL_COMPLETED is published once.
+    level.update(3.0f);
 
     assert(level.isLevelCompleted());
     assert(counter.count == 1);
+
+    // It must remain one-shot.
     level.update(1.0f);
     assert(counter.count == 1);
 
-    std::cout << "[PASSED] testLevel4FlagSequencePublishesOnce" << std::endl;
+    std::cout << "[PASSED] testLevel4ToadSequencePublishesOnce" << std::endl;
 }
 
 void testLevel2FlagSequenceMatchesLevel1() {
@@ -622,41 +658,65 @@ void testFlagSequenceSnapsMarioToPoleSide() {
     std::cout << "[RUNNING] testFlagSequenceSnapsMarioToPoleSide..." << std::endl;
 
     // Grab from the LEFT of the pole column.
-    Level leftLevel;
-    leftLevel.setTheme(LevelTheme::CASTLE);
-    assert(leftLevel.loadFromFile("levels/level4.txt"));
-    const sf::Vector2i finish = leftLevel.getTileMap().findTiles('F').front();
-    const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
-    const float poleCenterX = triggerTopLeft.x + TILE_SIZE / 2.0f;
+    {
+        Level level;
+        level.setTheme(LevelTheme::OVERWORLD);
+        assert(level.loadFromFile("levels/level1.txt"));
+        
+        const auto finishes = level.getTileMap().findTiles('F');
+        assert(finishes.size() == 1);
+        
+        const sf::Vector2i finish = finishes.front();
+        const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
+        
+        const float poleCenterX = triggerTopLeft.x + TILE_SIZE / 2.0f;
+        
+        const sf::Vector2f leftStart(triggerTopLeft.x - 10.0f,
+                                     triggerTopLeft.y + 8.0f);
+        
+        level.getMario()->setPosition(leftStart);
+        level.update(0.0f);
+        
+        assert(level.getMario()->isFlagpoleSliding());
+        
+        // Left grab: Mario faces right.
+        assert(level.getMario()->getFacingDirection() == Direction::RIGHT);
+        
+        const float expectedLeftX = poleCenterX - level.getMario()->getSize().x / 2.0f - 14.0f;
+        assert(std::abs(level.getMario()->getPosition().x - expectedLeftX) < 0.01f);
+    }
 
-    const sf::Vector2f leftStart(triggerTopLeft.x - 10.0f,
-                                 triggerTopLeft.y + 8.0f);
-    leftLevel.getMario()->setPosition(leftStart);
-    leftLevel.update(0.0f);
-    assert(leftLevel.getMario()->isFlagpoleSliding());
-    // Left grab: sprite faces right, body offset -14.0f from the pole column.
-    assert(leftLevel.getMario()->getFacingDirection() == Direction::RIGHT);
-    const float expectedLeftX =
-        poleCenterX - leftLevel.getMario()->getSize().x / 2.0f - 14.0f;
-    assert(std::abs(leftLevel.getMario()->getPosition().x - expectedLeftX) < 0.01f);
+    // left Level is destroyed here before the irhgt-side case starts.
 
     // Grab from the RIGHT of the pole column.
-    Level rightLevel;
-    rightLevel.setTheme(LevelTheme::CASTLE);
-    assert(rightLevel.loadFromFile("levels/level4.txt"));
-    const sf::Vector2f rightStart(triggerTopLeft.x + 20.0f,
-                                  triggerTopLeft.y + 8.0f);
-    rightLevel.getMario()->setPosition(rightStart);
-    rightLevel.update(0.0f);
-    assert(rightLevel.getMario()->isFlagpoleSliding());
-    // Right grab: sprite flips to face left, body offset +14.0f.
-    assert(rightLevel.getMario()->getFacingDirection() == Direction::LEFT);
-    const float expectedRightX =
-        poleCenterX - rightLevel.getMario()->getSize().x / 2.0f + 14.0f;
-    assert(std::abs(rightLevel.getMario()->getPosition().x - expectedRightX) < 0.01f);
-    assert(rightLevel.getMario()->getPosition().x +
-               rightLevel.getMario()->getSize().x / 2.0f >
-           poleCenterX);
+    {
+        Level level;
+        level.setTheme(LevelTheme::OVERWORLD);
+        assert(level.loadFromFile("levels/level1.txt"));
+        
+        const auto finishes = level.getTileMap().findTiles('F');
+        assert(finishes.size() == 1);
+        
+        const sf::Vector2i finish = finishes.front();
+        const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
+        
+        const float poleCenterX = triggerTopLeft.x + TILE_SIZE / 2.0f;
+        
+        const sf::Vector2f rightStart(triggerTopLeft.x + 20.0f,
+                                      triggerTopLeft.y + 8.0f);
+        
+        level.getMario()->setPosition(rightStart);
+        level.update(0.0f);
+        
+        assert(level.getMario()->isFlagpoleSliding());
+        
+        // Right grab: Mario faces left.
+        assert(level.getMario()->getFacingDirection() == Direction::LEFT);
+        
+        const float expectedRightX = poleCenterX - level.getMario()->getSize().x / 2.0f + 14.0f;
+        assert(std::abs(level.getMario()->getPosition().x - expectedRightX) < 0.01f);
+        assert(level.getMario()->getPosition().x + level.getMario()->getSize().x / 2.0f > poleCenterX);
+    }
 
     std::cout << "[PASSED] testFlagSequenceSnapsMarioToPoleSide" << std::endl;
 }
@@ -731,7 +791,7 @@ int main() {
     testFireBallActiveLimitOfTwo();
     testThemeWiringAndLevel4Spawns();
     testFlagAnimationChangesPixelsForValidatedThemes();
-    testLevel4FlagSequencePublishesOnce();
+    testLevel4ToadSequencePublishesOnce();
     testLevel2FlagSequenceMatchesLevel1();
     testFlagWalkReachesCastleWithoutTeleporting();
     testFlagSequenceSnapsMarioToPoleSide();

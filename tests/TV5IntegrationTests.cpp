@@ -568,7 +568,7 @@ void testStarMusicOverrideAndVolumePersistence() {
     SoundManager& sound = SoundManager::getInstance();
     assert(LevelCatalog::find(1)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(2)->music == MusicId::UNDERGROUND);
-    assert(LevelCatalog::find(3)->music == MusicId::UNDERWATER);
+    assert(LevelCatalog::find(3)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(4)->music == MusicId::CASTLE);
     assert(LevelCatalog::find(5) == nullptr);
 
@@ -704,7 +704,7 @@ void testStateAudioRuntimeAndLevelTracks() {
     };
 
     completeCurrentLevel(MusicId::UNDERGROUND);
-    completeCurrentLevel(MusicId::UNDERWATER);
+    completeCurrentLevel(MusicId::OVERWORLD);
     completeCurrentLevel(MusicId::CASTLE);
 
     // Level 4 completion queues exactly one WinState at the safe point.

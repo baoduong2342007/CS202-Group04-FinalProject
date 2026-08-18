@@ -194,8 +194,7 @@ void testReleaseLevelsAreLoadable() {
 
     // S7-TV1-02 dependency evidence: every catalog entry must pass the
     // syntax/tileset loader before PlayState can ever reach Win. This check is
-    // deliberately theme-neutral: level 3's catalog metadata is Underwater,
-    // while its current map-theme correction remains a TV4-owned external gate.
+    // deliberately theme-neutral: Level 3 starts in Overworld and switches. area theme dynamically through its indexed pipe warps.
     assert(LevelCatalog::count() == 4);
     for (const LevelDefinition& definition : LevelCatalog::getAll()) {
         assert(loadReleaseLevel(definition.filePath));

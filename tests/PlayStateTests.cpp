@@ -262,7 +262,7 @@ bool testGameOverRetryRestartsFailedLevel() {
     const std::array<std::pair<int, MusicId>, 6> retryCases = {{
         {1, MusicId::OVERWORLD},
         {2, MusicId::UNDERGROUND},
-        {3, MusicId::UNDERWATER},
+        {3, MusicId::OVERWORLD},
         {4, MusicId::CASTLE},
         // PlayState owns the one-based catalog clamp for malformed progress.
         {0, MusicId::OVERWORLD},

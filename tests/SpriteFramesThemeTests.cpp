@@ -163,7 +163,7 @@ void testCanonicalTileCoordinates() {
     assert(hasPosition(TileFrames::BRICK_UNDERGROUND, 164, 16));
     assert(hasPosition(TileFrames::BRICK_VARIANT_UNDERGROUND, 181, 16));
     assert(hasPosition(TileFrames::STONE_UNDERGROUND, 147, 33));
-    assert(hasPosition(TileFrames::HARD_BLOCK_UNDERGROUND, 147, 33));
+    assert(hasPosition(TileFrames::HARD_BLOCK_UNDERGROUND, 445, 78));
 
     // Question/used blocks are in Palette 3, not beside the terrain quartet.
     assert(hasPosition(TileFrames::QUESTION, 298, 78));

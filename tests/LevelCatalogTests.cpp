@@ -46,8 +46,8 @@ bool testCatalogHasExactlyFourReleaseLevels() {
 
     assert(catalog[2].worldLabel == "1-3");
     assert(catalog[2].filePath == "levels/level3.txt");
-    assert(catalog[2].theme == LevelTheme::UNDERWATER);
-    assert(catalog[2].music == MusicId::UNDERWATER);
+    assert(catalog[2].theme == LevelTheme::OVERWORLD);
+    assert(catalog[2].music == MusicId::OVERWORLD);
     assert(catalog[2].cameraMode == CameraVerticalMode::DEAD_ZONE);
 
     assert(catalog[3].worldLabel == "1-4");

@@ -141,10 +141,23 @@ float calculateBackgroundTop(const TileMap& tileMap) {
     return groundTop - backgroundHeight;
 }
 
+constexpr float TOAD_DIALOGUE_DURATION = 2.5f;
+constexpr const char* TOAD_DIALOGUE_TEXT = "THANK YOU MARIO!\n"
+                                           "BUT OUR PRINCESS IS IN\n"
+                                           "ANOTHER CASTLE!";
+constexpr const char* TOAD_DIALOGUE_FONT = "assets/fonts/mario.ttf";
+
 } // namespace
 
 
-Level::Level() : m_textureManager(TextureManager::getInstance()) {}
+Level::Level()
+    : m_textureManager(TextureManager::getInstance()) {
+    m_toadDialogueFontLoaded = m_toadDialogueFont.openFromFile(TOAD_DIALOGUE_FONT);
+
+    if (m_toadDialogueFontLoaded) {
+        m_toadDialogueFont.setSmooth(false);
+    }
+}
 
 Level::~Level() {
     // Entity and tile bodies must be destroyed before the Box2D world.  This
@@ -218,6 +231,17 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     m_contactListener.reset();
     m_world.reset();
     m_levelCompleted = false;
+
+    m_bridgeCollapseActive = false;
+    m_bridgeCollapseTimer = 0.f;
+    m_bridgeTilesRemaining.clear();
+    m_bridgeCollapseScorer = nullptr;
+    m_bridgeCompletionDelay = 0.f;
+
+    m_castleExitReady = false;
+    m_toadDialogueActive = false;
+    m_toadDialogueTimer = 0.f;
+
     m_flagSequenceActive = false;
     m_flagWalkActive = false;
     m_flagPhase = FlagPhase::NONE;
@@ -293,11 +317,17 @@ void Level::updateBridgeCollapse(float dt) {
 
     if (m_bridgeCompletionDelay > 0.f) {
         m_bridgeCompletionDelay -= dt;
+
         if (m_bridgeCompletionDelay <= 0.f) {
+            m_bridgeCompletionDelay = 0.f;
             m_bridgeCollapseActive = false;
-            m_levelCompleted = true;
-            EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
+
+            // Bowser is gone, but Level 4 is not complete yet.
+            // Mario must reach Toad.
+            m_castleExitReady = true;
+            m_bridgeCollapseScorer = nullptr;
         }
+
         return;
     }
 
@@ -329,6 +359,69 @@ void Level::updateBridgeCollapse(float dt) {
     }
 
     m_bridgeCompletionDelay = 1.2f;
+}
+
+void Level::checkToadEnding() {
+    if (!m_castleExitReady || m_toadDialogueActive || m_levelCompleted || !m_mario) {
+        return;
+    }
+
+    for (const auto& entity : m_entities) {
+        if (!entity || !entity->isToad()) {
+            continue;
+        }
+
+        if (!m_mario->getBoundingBox().findIntersection(entity->getBoundingBox())) {
+            continue;
+        }
+
+        m_toadDialogueActive = true;
+        m_toadDialogueTimer = TOAD_DIALOGUE_DURATION;
+
+        m_mario->stopMoving();
+        m_mario->setRunIntent(false);
+        m_mario->setVelocity({0.f, 0.f});
+
+        if (m_coopMode && m_mario2) {
+            m_mario2->stopMoving();
+            m_mario2->setRunIntent(false);
+            m_mario2->setVelocity({0.f, 0.f});
+        }
+
+        return;
+    }
+}
+
+void Level::updateToadDialogue(float dt) {
+    if (!m_toadDialogueActive || m_levelCompleted) {
+        return;
+    }
+
+    if (m_mario) {
+        m_mario->stopMoving();
+        m_mario->setRunIntent(false);
+        m_mario->setVelocity({0.f, 0.f});
+        m_mario->updateVisuals(dt);
+    }
+
+    if (m_coopMode && m_mario2) {
+        m_mario2->stopMoving();
+        m_mario2->setRunIntent(false);
+        m_mario2->setVelocity({0.f, 0.f});
+        m_mario2->updateVisuals(dt);
+    }
+
+    m_toadDialogueTimer -= dt;
+
+    if (m_toadDialogueTimer > 0.f) {
+        return;
+    }
+
+    m_toadDialogueTimer = 0.f;
+    m_toadDialogueActive = false;
+    m_levelCompleted = true;
+
+    EventBus::getInstance().notify(EventType::LEVEL_COMPLETED);
 }
 
 bool Level::loadFromFile(const std::string& path,
@@ -984,6 +1077,12 @@ void Level::update(float dt) {
 
     updateFlagSequence(dt);
 
+    // Freeze gameplay while Toad delivers the Castle ending dialogue.
+    if (m_toadDialogueActive) {
+        updateToadDialogue(dt);
+        return;
+    }
+
     if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
         updatePipeWarp(dt);
         if (m_warpPlayer) {
@@ -1043,6 +1142,7 @@ void Level::update(float dt) {
 
     checkItemCollisions();
     checkFinishFlag();
+    checkToadEnding();
     updateExplosions();
     removeDeadEntities();
     processPendingStompScorePopups();
@@ -1352,6 +1452,10 @@ void Level::render(sf::RenderTarget& target) {
     
     // Draw foreground tiles (blocks, flagpoles, pipes) on top of Mario and entities
     m_tileMap.renderForeground(target);
+
+    if (m_toadDialogueActive) {
+        renderToadDialogue(target);
+    }
 }
 
 void Level::checkItemCollisions() {
@@ -1979,4 +2083,28 @@ void Level::checkPipeWarps() {
             }
         }
     }
+}
+
+void Level::renderToadDialogue(sf::RenderTarget& target) const {
+    if (!m_toadDialogueActive || !m_toadDialogueFontLoaded) {
+        return;
+    }
+
+    const sf::View& view = target.getView();
+    const sf::Vector2f center = view.getCenter();
+    const sf::Vector2f size = view.getSize();
+
+    sf::RectangleShape panel({430.f, 72.f});
+    panel.setPosition({center.x - 215.f, center.y + size.y / 2.f - 92.f});
+    panel.setFillColor(sf::Color(0, 0, 0, 220));
+    panel.setOutlineColor(sf::Color::White);
+    panel.setOutlineThickness(2.f);
+    target.draw(panel);
+
+    sf::Text text(m_toadDialogueFont, TOAD_DIALOGUE_TEXT, 10);
+
+    text.setFillColor(sf::Color::White);
+    text.setPosition({panel.getPosition().x + 18.f, panel.getPosition().y + 11.f});
+
+    target.draw(text);
 }

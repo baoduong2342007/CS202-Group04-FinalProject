@@ -84,42 +84,41 @@ inline constexpr sf::IntRect PIPE_TOP_LEFT{ {119, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT{ {136, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT{ {119, 213}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT{ {136, 213}, {16, 16} };
-
-// The round cap is stored in the tileset. The triangular flag itself is
-// stored in items_objects.png and is catalogued by SpriteFrames::Items.
-// Keep FINISH_FLAG as a compatibility alias for callers that used the old
-// name before F was moved to the objects atlas.
-inline constexpr sf::IntRect FINISH_FLAG{ {136, 230}, {16, 16} };
-
+inline constexpr sf::IntRect HORIZONTAL_PIPE{ {328, 298}, {48, 32} };
+inline constexpr sf::IntRect FINISH_FLAG{ {92, 90}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE{ {136, 247}, {16, 16} };
-
-inline constexpr sf::IntRect FINISH_POLE_TOP{ {136, 230}, {16, 16} };
-
+inline constexpr sf::IntRect FINISH_TOP{ {136, 230}, {16, 16} };
 inline constexpr sf::IntRect CASTLE{ {328, 196}, {80, 80} };
-inline constexpr sf::IntRect CASTLE_UNDERGROUND{ {419, 196}, {80, 80} };
-
-inline constexpr sf::IntRect HORIZONTAL_PIPE { {328, 298}, {48, 32} };
 
 inline constexpr sf::IntRect PIPE_TOP_LEFT_UNDERGROUND{ {283, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT_UNDERGROUND{ {300, 196}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT_UNDERGROUND{ {283, 213}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT_UNDERGROUND{ {300, 213}, {16, 16} };
-inline constexpr sf::IntRect FINISH_TOP_UNDERGROUND{ {300, 230}, {16, 16} };
+inline constexpr sf::IntRect HORIZONTAL_PIPE_UNDERGROUND{ {387, 298}, {48, 32} };
+inline constexpr sf::IntRect FINISH_FLAG_UNDERGROUND{ {92, 152}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_UNDERGROUND{ {300, 247}, {16, 16} };
+inline constexpr sf::IntRect FINISH_TOP_UNDERGROUND{ {300, 230}, {16, 16} };
+inline constexpr sf::IntRect CASTLE_UNDERGROUND{ {418, 196}, {80, 80} };
 
 inline constexpr sf::IntRect PIPE_TOP_LEFT_CASTLE{ {119, 280}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT_CASTLE{ {136, 280}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT_CASTLE{ {119, 297}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT_CASTLE{ {136, 297}, {16, 16} };
-inline constexpr sf::IntRect FINISH_TOP_CASTLE{ {136, 314}, {16, 16} };
+inline constexpr sf::IntRect HORIZONTAL_PIPE_CASTLE{ {446, 298}, {48, 32} };
+inline constexpr sf::IntRect FINISH_FLAG_CASTLE{ {92, 260}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_CASTLE{ {136, 331}, {16, 16} };
+inline constexpr sf::IntRect FINISH_TOP_CASTLE{ {136, 314}, {16, 16} };
+inline constexpr sf::IntRect CASTLE_CASTLE{ {508, 196}, {80, 80} };
 
 inline constexpr sf::IntRect PIPE_TOP_LEFT_UNDERWATER{ {283, 280}, {16, 16} };
 inline constexpr sf::IntRect PIPE_TOP_RIGHT_UNDERWATER{ {300, 280}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_LEFT_UNDERWATER{ {283, 297}, {16, 16} };
 inline constexpr sf::IntRect PIPE_BODY_RIGHT_UNDERWATER{ {300, 297}, {16, 16} };
-inline constexpr sf::IntRect FINISH_TOP_UNDERWATER{ {300, 314}, {16, 16} };
+inline constexpr sf::IntRect HORIZONTAL_PIPE_UNDERWATER{ {507, 298}, {48, 32} };
+inline constexpr sf::IntRect FINISH_FLAG_UNDERWATER{ {92, 368}, {16, 16} };
 inline constexpr sf::IntRect FINISH_POLE_UNDERWATER{ {300, 331}, {16, 16} };
+inline constexpr sf::IntRect FINISH_TOP_UNDERWATER{ {300, 314}, {16, 16} };
+inline constexpr sf::IntRect CASTLE_UNDERWATER{ {599, 196}, {80, 80} };
 
 // Liquid surface / body
 inline constexpr sf::IntRect WATER_SURFACE{ {349, 16}, {16, 16} };

@@ -186,7 +186,7 @@ void testCanonicalTileCoordinates() {
     assert(hasPosition(TileFrames::FINISH_POLE_CASTLE, 136, 331));
 
     // TV4 composite scenery stored directly in the runtime atlas.
-    assert(hasPosition(TileFrames::FINISH_POLE_TOP, 136, 230));
+    assert(hasPosition(TileFrames::FINISH_TOP, 136, 230));
 
     assert(hasPosition(TileFrames::CASTLE, 328, 196));
     assert(TileFrames::CASTLE.size.x == 80);
@@ -215,7 +215,7 @@ void testCanonicalFlagpoleCoordinates() {
            SpriteFrames::udw::Items::FLAGPOLE_FLAG.size.y == 15);
 
     // T is the round pole cap and uses the matching themed tileset palette.
-    assert(hasPosition(TileFrames::FINISH_POLE_TOP, 136, 230));
+    assert(hasPosition(TileFrames::FINISH_TOP, 136, 230));
     assert(hasPosition(TileFrames::FINISH_TOP_UNDERGROUND, 300, 230));
     assert(hasPosition(TileFrames::FINISH_TOP_CASTLE, 136, 314));
     assert(hasPosition(TileFrames::FINISH_TOP_UNDERWATER, 300, 314));

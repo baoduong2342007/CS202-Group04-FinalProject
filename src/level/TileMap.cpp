@@ -743,7 +743,7 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             // The Castle palette supplies the stone/gray cap used by the
             // finale, matching the Castle body and the rest of Level 3.
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_TOP_CASTLE;
-            return TileFrames::FINISH_POLE_TOP;
+            return TileFrames::FINISH_TOP;
 
         case '|':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_POLE_UNDERWATER;
@@ -758,6 +758,23 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
 
         default:
             return TileFrames::GROUND;
+    }
+}
+
+sf::IntRect getHorizontalPipeRect(LevelTheme theme) {
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            return TileFrames::HORIZONTAL_PIPE_UNDERGROUND;
+
+        case LevelTheme::CASTLE:
+            return TileFrames::HORIZONTAL_PIPE_CASTLE;
+
+        case LevelTheme::UNDERWATER:
+            return TileFrames::HORIZONTAL_PIPE_UNDERWATER;
+
+        case LevelTheme::OVERWORLD:
+        default:
+            return TileFrames::HORIZONTAL_PIPE;
     }
 }
 
@@ -1402,7 +1419,7 @@ void TileMap::buildVertices() {
 
             // H = bottom-left anchor of a 3x2 horizontal pipe.
             if (symbol == 'H') {
-                const sf::IntRect rect = TileFrames::HORIZONTAL_PIPE;
+                const sf::IntRect rect = getHorizontalPipeRect(m_theme);
 
                 const float left = static_cast<float>(column * TILE_SIZE);
                 const float top = static_cast<float>((static_cast<int>(row) - 1) * TILE_SIZE);

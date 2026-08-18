@@ -206,7 +206,26 @@ void Level::applyAreaTheme(LevelTheme theme) {
 
     auto& sound = SoundManager::getInstance();
 
-    const MusicId music = underwater ? MusicId::UNDERWATER : MusicId::OVERWORLD;
+    MusicId music = MusicId::OVERWORLD;
+
+    switch (theme) {
+        case LevelTheme::UNDERGROUND:
+            music = MusicId::UNDERGROUND;
+            break;
+
+        case LevelTheme::UNDERWATER:
+            music = MusicId::UNDERWATER;
+            break;
+
+        case LevelTheme::CASTLE:
+            music = MusicId::CASTLE;
+            break;
+
+        case LevelTheme::OVERWORLD:
+        default:
+            music = MusicId::OVERWORLD;
+            break;
+    }
 
     sound.setLevelMusic(music);
     sound.playMusic(music);
@@ -1937,11 +1956,22 @@ void Level::warpMarioToReturn(char warpId) {
 
     const sf::Vector2i returnPosition = *destination;
 
+    // Level 1:
+    // [1 -> R1 : Overworld -> Underground
+    // H2 -> R2 : Underground -> Overworld
+    if (m_levelPath.find("level1.txt") != std::string::npos) {
+        if (warpId == '1') {
+            applyAreaTheme(LevelTheme::UNDERGROUND);
+        } else if (warpId == '2') {
+            applyAreaTheme(LevelTheme::OVERWORLD);
+        }
+    }
+
     // Level 3 constains multiple enviromental areas:
     //
     // H1 -> R1 : Overworld -> Underwater
     // H2 -> R2 : Underwater -> Overworld
-    if (m_levelPath.find("level3.txt") != std::string::npos) {
+    else if (m_levelPath.find("level3.txt") != std::string::npos) {
         if (warpId == '1') {
             applyAreaTheme(LevelTheme::UNDERWATER);
         } else if (warpId == '2') {

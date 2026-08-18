@@ -35,6 +35,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-16 | Authentic NES Underwater Cheep Cheep Sprite Configuration | CTest 21/21 PASS | Configured `SpriteFrames_udw.h` and `Level.cpp` to use the authentic NES 1985 grey/white underwater palette (`UW_SWIM_UP {292, 164}`) for Cheep Cheeps swimming in World 1-3. |
 | 2026-08-17 | Comprehensive Game UI Redesign & Screenshot Layout Overhaul | CTest 31/31 PASS | Complete redesign of all game state screens (`MenuState`, `LevelSelectState`, `CharacterSelectState`, `CoopCharacterSelectState`, `PvpCharacterSelectState`, `PauseState`, `GameOverState`, `WinState`, `HUD`) with screenshot-verified pixel perfection, crisp outlines, side-by-side hero showcase cards, modal dialogue frames, and balanced HUD. |
 | 2026-08-18 | Sprint 7 TV3 Physics & 4-Level Manual Playthrough Audit | 31/31 MSVC, 30/31 macOS PASS | Verified underwater buoyancy/swimming cadence, Box2D contact filtering, Castle hazards (Firebar/Podoboo/Bowser), and 4-level campaign walkthrough (1-1..1-4); documented TV3 status matrix and residual P2 notes in `docs/management/S7_TV3_STATUS.md`. |
+| 2026-08-18 | Repository Cleanup: Ignore .zcode and Remove Preview Images | CTest 31/31 PASS | Untracked and removed temporary UI preview images (`level_select_preview.png`, `menu_state_preview.png`), untracked `.zcode/` directory, and added `.zcode/` and `*_preview.png` patterns to `.gitignore`. |
 
 ## 2026-08-12 remediation scope
 

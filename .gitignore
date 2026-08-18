@@ -60,5 +60,7 @@ thirdparty/*
 tmp_folder/
 agent_docs/
 .codex_workflow_hidden_resources/
+.zcode/
+*_preview.png
 AGENTS.md
 Testing/

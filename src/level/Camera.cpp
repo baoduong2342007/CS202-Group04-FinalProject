@@ -18,12 +18,6 @@ namespace {
     }
 
     /**
-     * @brief The ratio of the view width used as a horizontal deadzone.
-     * @details A value of 0.05 means 5% of the screen width on either side of the center.
-     */
-    constexpr float HORIZONTAL_DEADZONE_RATIO = 0.05f;
-
-    /**
      * @brief The minimum distance kept between the target and the view's top edge.
      * @details The camera only pans vertically once the target is closer than
      * 32 logical pixels to the top edge, preserving more of the ground view
@@ -63,9 +57,11 @@ void Camera::shake(float duration, float magnitude) {
 void Camera::update(float dt, const sf::Vector2f &targetPosition) {
   sf::Vector2f newCenter = m_stableCenter;
 
-  // Horizontal deadzone tracking (5% of screen width)
-  const float horizontalDeadzone = m_view.getSize().x * HORIZONTAL_DEADZONE_RATIO;
-  if (targetPosition.x < m_stableCenter.x - horizontalDeadzone) {
+  // Horizontal deadzone tracking
+  const float horizontalDeadzone = m_view.getSize().x * m_horizontalDeadzoneRatio;
+  if (horizontalDeadzone <= 0.0f) {
+    newCenter.x = targetPosition.x;
+  } else if (targetPosition.x < m_stableCenter.x - horizontalDeadzone) {
     newCenter.x = targetPosition.x + horizontalDeadzone;
   } else if (targetPosition.x > m_stableCenter.x + horizontalDeadzone) {
     newCenter.x = targetPosition.x - horizontalDeadzone;

@@ -231,6 +231,29 @@ bool testProductionLevelsLoad() {
     return true;
 }
 
+bool testLevel3BarrierColumn49() {
+    std::cout << "[RUNNING] testLevel3BarrierColumn49..." << std::endl;
+
+    TileMap tileMap;
+    const bool loaded = tileMap.loadFromFile("levels/level3.txt");
+    assert(loaded);
+
+    // In Level 3 (underwater), column 49 forms a solid barrier preventing leftward
+    // swimming into out-of-bounds void before R1.
+    // Column 49 must be solid across rows 1 through 14 ('S' for rows 1..12, '0' for rows 13..14).
+    for (int row = 1; row <= 14; ++row) {
+        assert(tileMap.isSolid(49, row));
+        if (row <= 12) {
+            assert(tileMap.getTileAt(49, row) == 'S');
+        } else {
+            assert(tileMap.getTileAt(49, row) == '0');
+        }
+    }
+
+    std::cout << "[PASSED] testLevel3BarrierColumn49" << std::endl;
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -238,6 +261,7 @@ int main() {
 
     const bool success = testLevelZeroFixtureLoads() &&
                          testProductionLevelsLoad() &&
+                         testLevel3BarrierColumn49() &&
                          testRejectsInconsistentWidth() &&
                          testRejectsInvalidSymbol() &&
                          testRejectsMissingMarioSpawn() &&

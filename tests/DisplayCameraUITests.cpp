@@ -16,6 +16,7 @@
 #include "level/TileFrames.h"
 #include "level/Camera.h"
 #include "level/TileMap.h"
+#include "level/Level.h"
 #include "ui/UIMenuWidget.h"
 #include "states/LevelSelectState.h"
 #include "states/MenuState.h"
@@ -199,6 +200,55 @@ void testMenuStateRenderSnapshot() {
     const bool saved = rt.getTexture().copyToImage().saveToFile("menu_state_preview.png");
     assert(saved);
 }
+
+void testLevel4SectionSnapshots() {
+    Level level;
+    level.setTheme(LevelTheme::CASTLE);
+    const bool loaded = level.loadFromFile("levels/level4.txt");
+    assert(loaded);
+
+    level.update(0.016f);
+
+    sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
+
+    // 1. Section 1 (Corridor, Firebars, Lava, Piranha Pipe at cols 31-32)
+    level.getCamera().update(1.f, {750.f, 240.f});
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec1_corridor.png"));
+
+    // 2. Section 2 (Question Blocks, Removed Pit at cols 46-48)
+    level.getCamera().update(1.f, {1500.f, 240.f});
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec2_powerup.png"));
+
+    // 3. Section 3 (Stepping platforms over lava)
+    level.getCamera().update(1.f, {2800.f, 240.f});
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec3_stepping.png"));
+
+    // 4. Section 4 (Bowser Chamber: Springboard, Elevator, Cleared ceiling, Vine, Bowser, Axe, Bridge)
+    level.getCamera().update(1.f, {4250.f, 240.f});
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec4_bowser.png"));
+
+    // 5. Section 4 with Elevator mid-flight over Bowser after 2 seconds
+    for (int i = 0; i < 120; ++i) {
+        level.update(0.016f);
+    }
+    level.getCamera().update(1.f, {4250.f, 240.f});
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec4_bowser_moving.png"));
+}
 } // namespace
 
 int main() {
@@ -208,5 +258,6 @@ int main() {
     testMenuWidgetLogicalMouseClick();
     testLevelSelectStateRenderSnapshot();
     testMenuStateRenderSnapshot();
+    testLevel4SectionSnapshots();
     return 0;
 }

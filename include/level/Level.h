@@ -149,6 +149,9 @@ private:
     /// Co-op: after a warp finished for m_warpPlayer, relocate the partner
     /// next to him so both players stay in the same area of the level.
     void teleportCoopPartner(const Mario& warpingPlayer);
+    /// Co-op: bound both players inside the active camera viewport so neither
+    /// player can wander off-screen or get separated beyond the shared view.
+    void clampCoopPlayersToCamera();
 
     bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
     void suppressPiranhaAt(const sf::Vector2i& pipePosition);

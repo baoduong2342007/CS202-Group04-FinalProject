@@ -35,6 +35,7 @@ inline constexpr sf::IntRect GROUND_CASTLE{ {0, 151}, {16, 16} };
 inline constexpr sf::IntRect BRICK_CASTLE{ {17, 100}, {16, 16} };
 inline constexpr sf::IntRect STONE_CASTLE{ {0, 151}, {16, 16} };
 inline constexpr sf::IntRect HARD_BLOCK_CASTLE{ {541, 78}, {16, 16} };
+inline constexpr sf::IntRect BRIDGE_CHAIN_CASTLE{ {0, 134}, {16, 16} };
 
 inline constexpr sf::IntRect GROUND_UNDERWATER{ {147, 134}, {16, 16} };
 inline constexpr sf::IntRect BRICK_UNDERWATER{ {164, 100}, {16, 16} };

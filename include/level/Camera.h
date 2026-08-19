@@ -58,6 +58,8 @@ public:
      */
     const sf::View& getView() const;
     CameraVerticalMode getVerticalMode() const { return m_verticalMode; }
+    void setHorizontalDeadzoneRatio(float ratio) { m_horizontalDeadzoneRatio = ratio; }
+    float getHorizontalDeadzoneRatio() const { return m_horizontalDeadzoneRatio; }
 
 private:
     // 5. Private methods
@@ -73,6 +75,7 @@ private:
     sf::Vector2f m_originalCenter{0.f, 0.f};
     sf::Vector2f m_stableCenter{0.f, 0.f};
     CameraVerticalMode m_verticalMode = CameraVerticalMode::LOCKED;
+    float m_horizontalDeadzoneRatio = 0.05f;
 
     float m_shakeTimer = 0.f;
     float m_shakeMagnitude = 0.f;

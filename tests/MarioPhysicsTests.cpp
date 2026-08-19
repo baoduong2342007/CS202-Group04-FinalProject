@@ -1018,6 +1018,34 @@ bool testClimbAnimationDirectionSelection() {
     return check(mario.currentAnimation() == "climb",
                  "flagpole sliding must retain the dedicated climb animation");
 }
+
+bool testUnderwaterCeilingClamp() {
+    b2World world({0.0f, 8.0f}); // Underwater gravity 8.0f
+    Mario mario({100.0f, 20.0f}, {28.0f, 30.0f});
+    mario.initPhysics(&world, b2_dynamicBody, {28.0f, 30.0f});
+    mario.setUnderwater(true);
+
+    // Repeated swim strokes upwards
+    for (int stroke = 0; stroke < 20; ++stroke) {
+        mario.jump();
+        mario.preparePhysics(TIME_STEP);
+        world.Step(TIME_STEP, 8, 3);
+        mario.update(TIME_STEP);
+    }
+
+    const sf::Vector2f pos = mario.getPosition();
+    const float halfHeightMeters = PhysicsEngine::pixelsToMeters(mario.getSize().y / 2.0f);
+    const float bodyY = mario.getBody()->GetPosition().y;
+
+    if (!check(pos.y >= -0.01f, "Mario visual top position must not exceed ceiling (y >= 0)")) {
+        return false;
+    }
+    if (!check(bodyY >= halfHeightMeters - 0.001f, "Mario Box2D body position must be clamped to ceiling")) {
+        return false;
+    }
+
+    return true;
+}
 } // namespace
 
 int main() {
@@ -1041,6 +1069,7 @@ int main() {
                          testCollisionManagerDefeatCausesAndSingleScore() &&
                          testUnderwaterSwimStrokeWorksInMidAir() &&
                          testVineClimbUsesVerticalVelocityAndDetachesHorizontally() &&
-                         testClimbAnimationDirectionSelection();
+                         testClimbAnimationDirectionSelection() &&
+                         testUnderwaterCeilingClamp();
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

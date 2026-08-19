@@ -28,6 +28,7 @@
 #include "level/Level.h"
 #include "level/TileMap.h"
 #include "patterns/InputState.h"
+#include "physics/PhysicsEngine.h"
 #include "states/CoopCharacterSelectState.h"
 #include "states/PlayState.h"
 #include "ui/HUD.h"
@@ -303,6 +304,72 @@ bool testHUDAggregatesSecondPlayerTotals() {
     return true;
 }
 
+bool testCoopPlayersClampedInsideCameraViewport() {
+    std::cout << "[RUNNING] testCoopPlayersClampedInsideCameraViewport..." << std::endl;
+
+    Level level;
+    if (!level.loadFromFile("levels/level1.txt", CharacterType::MARIO, CharacterType::LUIGI)) {
+        std::cerr << "Failed to load coop level1.txt" << std::endl;
+        return false;
+    }
+
+    // Co-op mode must disable horizontal deadzone to prevent camera freezing
+    assert(level.getCamera().getHorizontalDeadzoneRatio() == 0.0f);
+
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 != nullptr && p2 != nullptr);
+
+    p1->activateStarman(10.0f);
+    p2->activateStarman(10.0f);
+
+    const float initialViewCenter = level.getCamera().getView().getCenter().x;
+
+    // Run Player 1 continuously to the right while Player 2 stands still
+    for (int frame = 0; frame < 300; ++frame) {
+        p1->moveRight();
+        level.update(FRAME_DT);
+
+        // Verify camera horizontal deadzone ratio remains 0.0f in co-op
+        assert(level.getCamera().getHorizontalDeadzoneRatio() == 0.0f);
+
+        const sf::View& view = level.getCamera().getView();
+        const float viewLeft = view.getCenter().x - (view.getSize().x / 2.0f);
+        const float viewRight = view.getCenter().x + (view.getSize().x / 2.0f);
+
+        const float p1Left = p1->getPosition().x;
+        const float p1Right = p1Left + p1->getSize().x;
+        const float p2Left = p2->getPosition().x;
+        const float p2Right = p2Left + p2->getSize().x;
+
+        // Player 1 must not exceed the right edge of the screen
+        assert(p1Right <= viewRight + 1.0f);
+        // Player 1 must not fall behind the left edge of the screen
+        assert(p1Left >= viewLeft - 1.0f);
+
+        // Player 2 must not fall behind the left edge of the screen
+        assert(p2Left >= viewLeft - 1.0f);
+        // Player 2 must not exceed the right edge of the screen
+        assert(p2Right <= viewRight + 1.0f);
+
+        // Verify syncPhysics() synchronizes Box2D body coordinates to entity position
+        if (p1->getBody()) {
+            const float p1BodyX = PhysicsEngine::metersToPixels(p1->getBody()->GetPosition().x) - (p1->getSize().x / 2.0f);
+            assert(std::abs(p1->getPosition().x - p1BodyX) < 0.01f);
+        }
+        if (p2->getBody()) {
+            const float p2BodyX = PhysicsEngine::metersToPixels(p2->getBody()->GetPosition().x) - (p2->getSize().x / 2.0f);
+            assert(std::abs(p2->getPosition().x - p2BodyX) < 0.01f);
+        }
+    }
+
+    // Moving forward while players are at opposite boundaries advances the camera smoothly without freezing
+    assert(level.getCamera().getView().getCenter().x > initialViewCenter + 50.0f);
+
+    std::cout << "[PASSED] testCoopPlayersClampedInsideCameraViewport" << std::endl;
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -312,7 +379,8 @@ int main() {
                          testCoopDeathReloadsLevelWithTeamAccounting() &&
                          testCoopGameOverOnExhaustedTeamLives() &&
                          testCoopCharacterSelectSequentialPhases() &&
-                         testHUDAggregatesSecondPlayerTotals();
+                         testHUDAggregatesSecondPlayerTotals() &&
+                         testCoopPlayersClampedInsideCameraViewport();
 
     if (success) {
         std::cout << "All CoopFlow tests passed successfully!" << std::endl;

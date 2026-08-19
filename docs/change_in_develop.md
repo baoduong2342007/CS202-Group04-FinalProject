@@ -36,6 +36,10 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-17 | Comprehensive Game UI Redesign & Screenshot Layout Overhaul | CTest 31/31 PASS | Complete redesign of all game state screens (`MenuState`, `LevelSelectState`, `CharacterSelectState`, `CoopCharacterSelectState`, `PvpCharacterSelectState`, `PauseState`, `GameOverState`, `WinState`, `HUD`) with screenshot-verified pixel perfection, crisp outlines, side-by-side hero showcase cards, modal dialogue frames, and balanced HUD. |
 | 2026-08-18 | Sprint 7 TV3 Physics & 4-Level Manual Playthrough Audit | 31/31 MSVC, 30/31 macOS PASS | Verified underwater buoyancy/swimming cadence, Box2D contact filtering, Castle hazards (Firebar/Podoboo/Bowser), and 4-level campaign walkthrough (1-1..1-4); documented TV3 status matrix and residual P2 notes in `docs/management/S7_TV3_STATUS.md`. |
 | 2026-08-18 | Repository Cleanup: Ignore .zcode and Remove Preview Images | CTest 31/31 PASS | Untracked and removed temporary UI preview images (`level_select_preview.png`, `menu_state_preview.png`), untracked `.zcode/` directory, and added `.zcode/` and `*_preview.png` patterns to `.gitignore`. |
+| 2026-08-19 | Dual Mode Screen Clamp, Ceiling Boundary & Pit Hazards | CTest 31/31 PASS | Enforced camera viewport containment for both players in 2P Co-op; implemented underwater/top ceiling clamp in Mario physics; added test coverage in MarioPhysicsTests and CoopFlowTests. |
+| 2026-08-19 | World 1-4 Castle Level Refinements & Alternative Bowser Passage | CTest 31/31 PASS | Raised Castle pipe in Section 1; filled pit under Section 2 question blocks; added Springboard and aerial horizontal Elevator above Bowser in Section 4 with cleared ceiling; verified with render snapshots. |
+| 2026-08-19 | Koopa Stomp Latch Re-arm & Firebar Damage Normalization | CTest 31/31 PASS | Re-armed stomp latch in Koopa::kick() and wakeUpFromShell() to allow stopping sliding shells and restomping waking Koopas; normalized Firebar damage via queuePowerDown() instead of loseLife(); added regression unit tests in KoopaVariantTests. |
+| 2026-08-19 | Fix Co-op Boundary Character Flicker & Level 3 Left Swim Breach | CTest 31/31 PASS | Configured Camera horizontal deadzone to 0 in co-op; overrode Mario::syncPhysics() to synchronize sprite offsets (updateSpriteLayout) after body clamping; placed solid barrier at column 49 in level3.txt; added regression unit tests in CoopFlowTests and LevelValidatorTests. |
 
 ## 2026-08-12 remediation scope
 
@@ -1197,12 +1201,103 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Modified Files:**
   - `levels/level_athletic.txt`
   - `docs/change_in_develop.md`
+### 62. Dual Play Camera Screen Containment, Swimming Ceiling Boundary & Pit Hazards
+- **Date:** 2026-08-19
+- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/entities/Mario.h`
+  - `src/entities/Mario.cpp`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `levels/level4.txt`
+  - `tests/MarioPhysicsTests.cpp`
+  - `tests/CoopFlowTests.cpp`
+  - `docs/change_in_develop.md`
 - **Detailed Logic Changes:**
-  1. **Direct Commit Cherry-Pick**:
-     - Applied TV4's 2 release commits (`ab75c2e` - indexed pipe warps and level tile grammar, and `f3a76f1` - Koopa low-clearance vertical gap check) directly onto `develop` without extraneous merge commits.
-  2. **Preservation of Level Designs**:
-     - Preserved TV4's original custom Athletic Mushroom Treetop level design by archiving it as `levels/level_athletic.txt`.
-     - Verified release campaign levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) match the release catalog specifications.
-  3. **Release Gate Verification**:
-     - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).
+  1. **Dual Play (2P Co-op) Camera Viewport Containment (`Level.h`, `Level.cpp`)**:
+     - Added `Level::clampCoopPlayersToCamera()` called immediately after camera centering in `Level::updateCoop`.
+     - Dynamically computes horizontal viewport bounds (`[viewLeft + halfWidth, viewRight - halfWidth]`) and clamps both Player 1 and Player 2.
+     - When leading player rushes ahead, they are blocked at the right screen edge; when trailing player falls behind, they are carried forward by the screen's left edge.
+     - Prevents any player from ever wandering off-screen or disappearing during co-op gameplay.
+  2. **Ceiling Boundary Limit for Underwater Swimming (`Mario.h`, `Mario.cpp`)**:
+     - Implemented top ceiling clamping in `Mario::applyWorldBoundsClamp()` (`bodyPos.y >= halfHeightMeters` when `m_isUnderwater`).
+     - Cancels upward velocity (`velocity.y = 0`) when contacting the ceiling, preventing Mario/Luigi from swimming infinitely above the top of the screen in World 1-3.
+     - Checked ceiling proximity in `Mario::applyMovementPhysics()` during jump/swim input to prevent unnecessary upward impulses at the surface.
+     - Synchronized physics immediately upon clamping.
+  3. **Pit Hazard Support & Castle Level 4 Lava Fill (`levels/level4.txt`, `levels/cheep_cheep.txt`)**:
+     - Filled missing lava surface (`WW`) and leaping Podoboos (`P.`) in the entry corridor pits of Castle World 1-4 (`levels/level4.txt` cols 21-22 and 31-32), ensuring all pits have complete lava and hazard coverage.
+  4. **Regression & Contract Tests (`MarioPhysicsTests.cpp`, `CoopFlowTests.cpp`)**:
+     - Added `testUnderwaterCeilingClamp()` in `MarioPhysicsTests` verifying that repeated swim impulses do not exceed `y = 0` and upward velocity is clamped.
+     - Added `testCoopPlayersClampedInsideCameraViewport()` in `CoopFlowTests` verifying that one player running right while the other is idle keeps both players strictly within the camera view for 300+ frames.
+### 63. World 1-4 Castle Level Refinements & Alternative Bowser Passage
+- **Date:** 2026-08-19
+- **Author:** TV1 (Dương) & TV4 (Vy)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `levels/level4.txt`
+  - `include/level/TileFrames.h`
+  - `src/level/TileMap.cpp`
+  - `tests/DisplayCameraUITests.cpp`
+  - `docs/change_in_develop.md`
+- **Detailed Logic Changes:**
+  1. **Section 1 (Entry Corridor) Pipe & Piranha Plant Upgrade**:
+     - Raised Castle pipe at cols 31-32 to 3 blocks tall (`pr` at row 10, `{}` at rows 11-12, `00` ground base at rows 13-14), perfectly level with the stone corridor walls.
+     - Spawns a Castle Piranha Plant emerging between the stone walls.
+  2. **Section 2 Question Blocks Solid Platform Fill**:
+     - Replaced pit at cols 46-48 under the `?f?` question block row with continuous solid stone ground (`000` at rows 13-14), providing smooth running terrain.
+  3. **Section 4 Bowser Arena Springboard & Horizontal Elevator**:
+     - Placed Springboard (`J`) on the stone ledge at col 125, row 9 directly in front of the collapsible bridge.
+     - Cut hanging ceiling blocks (cols 120-143, rows 3-5) to provide clear headroom above Bowser.
+     - Installed a horizontal moving Elevator platform (`^` at col 122, `~` at col 139, row 5) gliding back and forth over Bowser towards the Axe (`A`), giving players an alternate aerial bypass route.
+  4. **Visual Verification & Test Suite**:
+     - Generated high-resolution section snapshots (`level4_sec1_corridor.png`, `level4_sec2_powerup.png`, `level4_sec3_stepping.png`, `level4_sec4_bowser.png`, `level4_sec4_bowser_moving.png`) verifying layout alignment.
+     - Full clean build and 31/31 CTest test suites pass 100%.
+
+### 64. Koopa Stomp Latch Re-arm & Firebar Damage Normalization
+- **Date:** 2026-08-19
+- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `src/entities/Koopa.cpp`
+  - `src/level/Level.cpp`
+  - `tests/KoopaVariantTests.cpp`
+  - `docs/change_in_develop.md`
+- **Detailed Logic Changes:**
+  1. **Koopa Stomp Latch Re-arm (`Koopa.cpp`)**:
+     - Re-armed `m_stompLatch = false` in `Koopa::kick()` and `Koopa::wakeUpFromShell()`.
+     - Allows stopping a sliding shell with a downward stomp and allows re-stomping a Koopa that has awakened from its shell into walking state.
+  2. **Firebar Damage Normalization (`Level.cpp`)**:
+     - Changed Firebar player collision resolution from instant fatal `loseLife()` to standard damage pipeline `queuePowerDown()`.
+     - Allows Super and Fire Mario/Luigi to take damage, enter invincibility grace period, and shrink instead of immediately losing a life.
+  3. **Regression Tests (`KoopaVariantTests.cpp`)**:
+     - Added `testSlidingShellStompReArm()` and `testWakingKoopaStompReArm()` validating multiple stomp cycles.
+
+### 65. Fix Co-op Boundary Character Flicker & Level 3 Left Swim Breach
+- **Date:** 2026-08-19
+- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `include/level/Camera.h`
+  - `src/level/Camera.cpp`
+  - `include/entities/Mario.h`
+  - `src/entities/Mario.cpp`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `levels/level3.txt`
+  - `tests/CoopFlowTests.cpp`
+  - `tests/LevelValidatorTests.cpp`
+  - `docs/change_in_develop.md`
+- **Detailed Logic Changes:**
+  1. **Camera Horizontal Deadzone Configuration (`Camera.h`, `Camera.cpp`, `Level.cpp`)**:
+     - Added `setHorizontalDeadzoneRatio(float ratio)` and `getHorizontalDeadzoneRatio()` to `Camera`.
+     - In 2P Co-Op mode (`Level::loadFromFile`), sets horizontal deadzone ratio to `0.0f` so leading players advancing at screen edges immediately advance the camera view without deadzone stalling.
+  2. **Sprite Layout Synchronization on Physics Sync (`Mario.h`, `Mario.cpp`)**:
+     - Overrode `Mario::syncPhysics()` to call `Entity::syncPhysics()` followed immediately by `updateSpriteLayout()`.
+     - Ensures bottom-anchored sprite offsets are always synchronized whenever player physics bodies are clamped to the camera viewport boundaries in `Level::clampCoopPlayersToCamera()`, completely eliminating single-frame visual flicker.
+  3. **Level 3 Sub-area Boundary Tile Partition (`levels/level3.txt`)**:
+     - Placed solid barrier tiles ('S' on rows 1..12 and '0' on rows 13..14) at column 49 in `levels/level3.txt` to partition the overworld pipe entry from the underwater sub-area, preventing players from swimming left into the void.
+  4. **Regression Verification Tests (`CoopFlowTests.cpp`, `LevelValidatorTests.cpp`)**:
+     - Added regression assertions in `tests/CoopFlowTests.cpp` (`testCoopPlayersClampedInsideCameraViewport()`) verifying 0.0f deadzone ratio and exact position sync.
+     - Added `testLevel3BarrierColumn49()` in `tests/LevelValidatorTests.cpp` asserting column 49 is solid across rows 1..14 with 'S' and '0' tiles.
 

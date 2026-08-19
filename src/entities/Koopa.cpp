@@ -289,6 +289,7 @@ void Koopa::wakeUpFromShell() {
     m_shellIdleTimer = 0.f;
     m_wakingTimer = 0.f;
     m_pendingWalkFixtureRestore = true;
+    allowNextStomp();
 
     playAnimation(KOOPA_WALK_ANIMATION);
     updateAnimation(0.f);
@@ -338,6 +339,7 @@ void Koopa::kick(Direction direction) {
     m_shellIdleTimer = 0.f;
     m_wakingTimer = 0.f;
     setFacingDirection(direction);
+    allowNextStomp();
 
     sf::Vector2f velocity = getVelocity();
 

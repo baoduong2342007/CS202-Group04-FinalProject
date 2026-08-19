@@ -213,6 +213,56 @@ void testFactoryTileCodes() {
     std::cout << "[PASSED] testFactoryTileCodes" << std::endl;
 }
 
+void testSlidingShellStompReArm() {
+    std::cout << "[RUNNING] testSlidingShellStompReArm..." << std::endl;
+
+    b2World world = makeWorld();
+    Mario mario;
+    mario.initPhysics(&world, b2_dynamicBody, {32.f, 32.f});
+    Koopa koopa({100.f, 100.f}, &world, LevelTheme::OVERWORLD);
+
+    // Stomp 1: Walking -> Shell Idle
+    bool firstStomp = CollisionManager::defeatEnemy(koopa, DefeatCause::STOMP, &mario);
+    assert(firstStomp);
+    assert(koopa.getState() == KoopaState::SHELL_IDLE);
+
+    // Kick: Shell Idle -> Shell Sliding
+    koopa.kick(Direction::RIGHT);
+    assert(koopa.getState() == KoopaState::SHELL_SLIDING);
+
+    // Stomp 2: Shell Sliding -> Shell Idle (Stopping the sliding shell)
+    bool secondStomp = CollisionManager::defeatEnemy(koopa, DefeatCause::STOMP, &mario);
+    assert(secondStomp);
+    assert(koopa.getState() == KoopaState::SHELL_IDLE);
+
+    std::cout << "[PASSED] testSlidingShellStompReArm" << std::endl;
+}
+
+void testWakingKoopaStompReArm() {
+    std::cout << "[RUNNING] testWakingKoopaStompReArm..." << std::endl;
+
+    b2World world = makeWorld();
+    Mario mario;
+    mario.initPhysics(&world, b2_dynamicBody, {32.f, 32.f});
+    Koopa koopa({100.f, 100.f}, &world, LevelTheme::OVERWORLD);
+
+    // Stomp 1: Walking -> Shell Idle
+    bool firstStomp = CollisionManager::defeatEnemy(koopa, DefeatCause::STOMP, &mario);
+    assert(firstStomp);
+    assert(koopa.getState() == KoopaState::SHELL_IDLE);
+
+    // Advance until Koopa wakes up into walking
+    advance(koopa, 6.5f);
+    assert(koopa.getState() == KoopaState::WALKING);
+
+    // Stomp 2: Walking -> Shell Idle again
+    bool secondStomp = CollisionManager::defeatEnemy(koopa, DefeatCause::STOMP, &mario);
+    assert(secondStomp);
+    assert(koopa.getState() == KoopaState::SHELL_IDLE);
+
+    std::cout << "[PASSED] testWakingKoopaStompReArm" << std::endl;
+}
+
 int main() {
     std::cout << "=== Running Koopa Variant Tests ===" << std::endl;
     testShellWakeUpCycle();
@@ -222,6 +272,8 @@ int main() {
     testParatroopaHopMovement();
     testParatroopaFlyVerticalMovement();
     testFactoryTileCodes();
+    testSlidingShellStompReArm();
+    testWakingKoopaStompReArm();
     std::cout << "All Koopa Variant tests PASSED successfully!" << std::endl;
     return 0;
 }

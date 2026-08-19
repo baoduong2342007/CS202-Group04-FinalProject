@@ -400,6 +400,7 @@ void Mario::updateMovementAnimations(float dt) {
 
 void Mario::applyWorldBoundsClamp() {
   constexpr float MIN_WORLD_X = 16.0f; // Half Mario's width (32/2)
+  bool clamped = false;
   if (m_body) {
     b2Vec2 bodyPos = m_body->GetPosition();
     float minXPosMeters = PhysicsEngine::pixelsToMeters(MIN_WORLD_X);
@@ -410,6 +411,27 @@ void Mario::applyWorldBoundsClamp() {
       if (vel.x < 0.0f) {
         m_body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
       }
+      clamped = true;
+    }
+
+    // Ceiling clamp: prevent Mario from swimming above the level ceiling (y <= 0)
+    if (m_isUnderwater) {
+      const float halfHeightMeters =
+          PhysicsEngine::pixelsToMeters(m_size.y / 2.0f);
+      bodyPos = m_body->GetPosition();
+      if (bodyPos.y < halfHeightMeters) {
+        m_body->SetTransform(b2Vec2(bodyPos.x, halfHeightMeters),
+                             m_body->GetAngle());
+        b2Vec2 vel = m_body->GetLinearVelocity();
+        if (vel.y < 0.0f) {
+          m_body->SetLinearVelocity(b2Vec2(vel.x, 0.0f));
+        }
+        clamped = true;
+      }
+    }
+
+    if (clamped) {
+      syncPhysics();
     }
   }
 
@@ -631,7 +653,13 @@ void Mario::applyMovementPhysics(float dt, float inputDirX, bool isRunningInput,
 
     // Swim stroke: jump key gives upward impulse
     if (jumpKeyPressed) {
-      currentVy = UNDERWATER_SWIM_IMPULSE;
+      const float halfHeightMeters =
+          PhysicsEngine::pixelsToMeters(m_size.y / 2.0f);
+      if (m_body && m_body->GetPosition().y <= halfHeightMeters + 0.01f) {
+        currentVy = 0.0f;
+      } else {
+        currentVy = UNDERWATER_SWIM_IMPULSE;
+      }
       EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
     }
 
@@ -665,6 +693,11 @@ void Mario::initPhysics(b2World *world, b2BodyType type,
                         const sf::Vector2f &size, bool isSensor) {
   Entity::initPhysics(world, type, size, isSensor);
   rebuildFixture();
+}
+
+void Mario::syncPhysics() {
+  Entity::syncPhysics();
+  updateSpriteLayout();
 }
 
 void Mario::rebuildFixture() {

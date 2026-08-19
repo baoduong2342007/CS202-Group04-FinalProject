@@ -61,6 +61,7 @@ public:
     // 2. Override methods
     void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false) override;
     void update(float dt) override;
+    void syncPhysics() override;
 
     // 3. Public methods
     void jump();

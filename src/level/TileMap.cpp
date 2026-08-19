@@ -1504,13 +1504,15 @@ void TileMap::buildVertices() {
                 continue;
             }
 
-            // V = vine tile (climbable)
+            // V = vine / chain tile (climbable)
             if (symbol == 'V') {
                 const sf::IntRect textureRect =
-                    (row == 0 || getTileAt(static_cast<int>(column), static_cast<int>(row - 1)) != 'V')
-                        ? SpriteFrames::shared::Items::VINE_TOP
-                        : ((row % 2u) == 0u ? SpriteFrames::shared::Items::VINE_STEM_1
-                                            : SpriteFrames::shared::Items::VINE_STEM_2);
+                    (m_theme == LevelTheme::CASTLE)
+                        ? TileFrames::BRIDGE_CHAIN_CASTLE
+                        : ((row == 0 || getTileAt(static_cast<int>(column), static_cast<int>(row - 1)) != 'V')
+                            ? SpriteFrames::shared::Items::VINE_TOP
+                            : ((row % 2u) == 0u ? SpriteFrames::shared::Items::VINE_STEM_1
+                                                : SpriteFrames::shared::Items::VINE_STEM_2));
                 const float left = static_cast<float>(column * TILE_SIZE);
                 const float top = static_cast<float>(row * TILE_SIZE);
                 const float right = left + static_cast<float>(TILE_SIZE);

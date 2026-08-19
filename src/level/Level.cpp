@@ -451,6 +451,7 @@ bool Level::loadFromFile(const std::string& path,
     }
 
     m_coopMode = true;
+    m_camera.setHorizontalDeadzoneRatio(0.0f);
 
     // Player two spawns beside the campaign 'M' tile so both players start
     // the level together. The adjacent free tile is preferred; the exact spot
@@ -1043,12 +1044,12 @@ void Level::updateEntities(float dt) {
         Firebar* firebar = static_cast<Firebar*>(entity.get());
         if (m_mario && !m_mario->isDead() && !m_mario->isInvincible()) {
             if (firebar->checkMarioCollision(m_mario->getBoundingBox())) {
-                m_mario->loseLife();
+                m_mario->queuePowerDown();
             }
         }
         if (m_mario2 && !m_mario2->isDead() && !m_mario2->isInvincible()) {
             if (firebar->checkMarioCollision(m_mario2->getBoundingBox())) {
-                m_mario2->loseLife();
+                m_mario2->queuePowerDown();
             }
         }
     }
@@ -1327,6 +1328,10 @@ void Level::updateCoop(float dt) {
     } else if (m_mario) {
         m_camera.update(dt, m_mario->getPosition() + m_mario->getSize() / 2.0f);
     }
+
+    // Keep both players bounded within the visible camera viewport so neither
+    // player can wander off-screen or get separated beyond the shared view.
+    clampCoopPlayersToCamera();
 }
 
 void Level::processPendingPvpHits() {
@@ -1940,6 +1945,57 @@ void Level::teleportCoopPartner(const Mario& warpingPlayer) {
         body->SetGravityScale(1.0f);
     }
     partner->playAnimation("idle");
+}
+
+void Level::clampCoopPlayersToCamera() {
+    if (!m_coopMode || !m_mario || !m_mario2) {
+        return;
+    }
+    if (m_pipeWarpPhase != PipeWarpPhase::NONE || m_flagSequenceActive) {
+        return;
+    }
+
+    const sf::View& view = m_camera.getView();
+    const float viewLeft = view.getCenter().x - (view.getSize().x / 2.0f);
+    const float viewRight = view.getCenter().x + (view.getSize().x / 2.0f);
+
+    Mario* players[2] = {m_mario.get(), m_mario2.get()};
+    for (Mario* player : players) {
+        if (!player || !player->isActive() || player->isDying()) {
+            continue;
+        }
+
+        b2Body* body = player->getBody();
+        if (!body) {
+            continue;
+        }
+
+        const float halfWidthPixels = player->getSize().x / 2.0f;
+        const float minXPixels = viewLeft + halfWidthPixels;
+        const float maxXPixels = viewRight - halfWidthPixels;
+
+        b2Vec2 pos = body->GetPosition();
+        float posXPixels = PhysicsEngine::metersToPixels(pos.x);
+        b2Vec2 vel = body->GetLinearVelocity();
+
+        if (posXPixels < minXPixels) {
+            body->SetTransform(
+                b2Vec2(PhysicsEngine::pixelsToMeters(minXPixels), pos.y),
+                body->GetAngle());
+            if (vel.x < 0.0f) {
+                body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
+            }
+            player->syncPhysics();
+        } else if (posXPixels > maxXPixels) {
+            body->SetTransform(
+                b2Vec2(PhysicsEngine::pixelsToMeters(maxXPixels), pos.y),
+                body->GetAngle());
+            if (vel.x > 0.0f) {
+                body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
+            }
+            player->syncPhysics();
+        }
+    }
 }
 
 void Level::warpMarioToReturn(char warpId) {

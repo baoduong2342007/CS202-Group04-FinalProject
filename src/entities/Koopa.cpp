@@ -149,8 +149,9 @@ void Koopa::registerKoopaAnimations(const std::vector<sf::IntRect>& walkFrames,
 }
 
 void Koopa::update(float dt) {
+    syncPhysics();
+
     if (m_isFlippedDead) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 16.f});
@@ -169,8 +170,6 @@ void Koopa::update(float dt) {
     if (m_pendingWalkFixtureRestore) {
         restoreWalkingFixture();
     }
-
-    syncPhysics();
 
     if (m_position.y > PIT_CLEANUP_Y) {
         markForRemoval();
@@ -263,9 +262,6 @@ void Koopa::onStomp() {
         m_shellIdleTimer = 0.f;
         m_wakingTimer = 0.f;
 
-        const sf::Vector2f currentVelocity = getVelocity();
-        setVelocity({0.f, currentVelocity.y});
-
         playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
         updateAnimation(0.f);
     }
@@ -276,9 +272,6 @@ void Koopa::enterShellState() {
     m_shellIdleTimer = 0.f;
     m_wakingTimer = 0.f;
     m_pendingShellFixtureRebuild = true;
-
-    const sf::Vector2f currentVelocity = getVelocity();
-    setVelocity({0.f, currentVelocity.y});
 
     playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
     updateAnimation(0.f);
@@ -341,15 +334,6 @@ void Koopa::kick(Direction direction) {
     setFacingDirection(direction);
     allowNextStomp();
 
-    sf::Vector2f velocity = getVelocity();
-
-    if (direction == Direction::LEFT) {
-        velocity.x = -KOOPA_SLIDE_SPEED;
-    } else {
-        velocity.x = KOOPA_SLIDE_SPEED;
-    }
-
-    setVelocity(velocity);
     EventBus::getInstance().notify(EventType::SHELL_KICKED);
 }
 
@@ -375,18 +359,6 @@ void Koopa::reverseDirection() {
     } else {
         setFacingDirection(Direction::LEFT);
     }
-
-    sf::Vector2f velocity = getVelocity();
-
-    if (m_state == KoopaState::SHELL_SLIDING) {
-        velocity.x = getFacingDirection() == Direction::LEFT
-                ? -KOOPA_SLIDE_SPEED : KOOPA_SLIDE_SPEED;
-    } else if (m_state == KoopaState::WALKING) {
-        velocity.x = getFacingDirection() == Direction::LEFT
-                ? -m_patrolSpeed : m_patrolSpeed;
-    }
-
-    setVelocity(velocity);
 }
 
 void Koopa::setTileMap(const TileMap* tileMap) {

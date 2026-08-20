@@ -74,10 +74,9 @@ Mushroom::Mushroom(const sf::Vector2f& position, b2World* world, MushroomType ty
 }
 
 void Mushroom::update(float dt) {
+    syncPhysics();
     updateCollectibleDelay(dt);
 
-    // Sync visual position with Box2D body first, then apply patrol velocity
-    syncPhysics();
     updateAnimation(dt);
 
     // Auto-reverse if stuck against a wall/block seam while patrolling
@@ -102,7 +101,6 @@ void Mushroom::patrol() {
 
 void Mushroom::onWallCollision() {
     m_patrolDirection = -m_patrolDirection;
-    patrol();
 }
 
 void Mushroom::onCollect(Mario& mario) {

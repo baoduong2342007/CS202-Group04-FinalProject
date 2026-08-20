@@ -72,7 +72,7 @@ bool testShippedArenaFixtureLoads() {
     assert(tileMap.loadFromFile("levels/pvp_arena.txt",
                                 TileMap::LayoutMode::PVP_ARENA));
     assert(tileMap.getWidth() == 20);
-    assert(tileMap.getHeight() == 11);
+    assert(tileMap.getHeight() == 12);
 
     assert(tileMap.findTiles('M').size() == 1);
     assert(tileMap.findTiles('m').size() == 1);
@@ -82,6 +82,7 @@ bool testShippedArenaFixtureLoads() {
     for (int column = 0; column < 20; ++column) {
         assert(tileMap.isSolid(column, 9));
         assert(tileMap.isSolid(column, 10));
+        assert(tileMap.isSolid(column, 11));
     }
 
     // Center pedestal platform with the flower tile directly above it.
@@ -95,10 +96,10 @@ bool testShippedArenaFixtureLoads() {
     // Open duel floor: the staircases are gone. Two symmetric floating
     // step blocks flank the raised pedestal as the only climb aids; the
     // whole fight band between the walls is otherwise clear air.
-    assert(tileMap.isSolid(7, 6) && tileMap.isSolid(12, 6));
+    assert(tileMap.isSolid(7, 7) && tileMap.isSolid(12, 7));
     for (int column = 1; column <= 18; ++column) {
-        for (int row = 4; row <= 8; ++row) {
-            if ((column == 7 || column == 12) && row == 6) {
+        for (int row = 6; row <= 8; ++row) {
+            if ((column == 7 || column == 12) && row == 7) {
                 continue;
             }
             assert(!tileMap.isSolid(column, row));

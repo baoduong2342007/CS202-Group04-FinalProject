@@ -80,8 +80,9 @@ HammerBro::HammerBro(const sf::Vector2f& position,
 }
 
 void HammerBro::update(float dt) {
+    syncPhysics();
+
     if (m_isFlippedDead) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 12.f});
@@ -99,8 +100,6 @@ void HammerBro::update(float dt) {
             m_rearmJump = false;
         }
     }
-
-    syncPhysics();
 
     if (m_position.y > PIT_CLEANUP_Y) {
         markForRemoval();

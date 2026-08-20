@@ -78,8 +78,9 @@ Lakitu::Lakitu(const sf::Vector2f& position,
 }
 
 void Lakitu::update(float dt) {
+    syncPhysics();
+
     if (m_isFlippedDead) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 12.f});
@@ -110,8 +111,6 @@ void Lakitu::update(float dt) {
         }
         return;
     }
-
-    syncPhysics();
 
     // Ease toward Mario's column, capped like the NES cloud glide.
     float targetX = m_position.x;

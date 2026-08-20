@@ -1,9 +1,10 @@
-# Develop Integration Log
+﻿# Develop Integration Log
 
 This file summarizes important integration checkpoints. Git history remains the authoritative record of individual commits and merges. Historical test counts are not current release evidence.
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-20 | Fix Box2D Physics Sync Order for Enemies & Items | CTest 31/31 PASS | Moved syncPhysics() to the beginning of update(dt) to prevent mid-step velocity overwrites and fix physics solver output conflicts. |
 | 2026-08-08 | Initial Sprint 6 integration | 7/7 CTest | Superseded by later implementation |
 | 2026-08-09 | Evaluation v3 integration | 12/12 CTest | Superseded by later implementation |
 | 2026-08-11 | `origin/develop` at `3047252` | 14/14 CTest | Review v4 reopened 40 tasks |
@@ -40,6 +41,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 | 2026-08-19 | World 1-4 Castle Level Refinements & Alternative Bowser Passage | CTest 31/31 PASS | Raised Castle pipe in Section 1; filled pit under Section 2 question blocks; added Springboard and aerial horizontal Elevator above Bowser in Section 4 with cleared ceiling; verified with render snapshots. |
 | 2026-08-19 | Koopa Stomp Latch Re-arm & Firebar Damage Normalization | CTest 31/31 PASS | Re-armed stomp latch in Koopa::kick() and wakeUpFromShell() to allow stopping sliding shells and restomping waking Koopas; normalized Firebar damage via queuePowerDown() instead of loseLife(); added regression unit tests in KoopaVariantTests. |
 | 2026-08-19 | Fix Co-op Boundary Character Flicker & Level 3 Left Swim Breach | CTest 31/31 PASS | Configured Camera horizontal deadzone to 0 in co-op; overrode Mario::syncPhysics() to synchronize sprite offsets (updateSpriteLayout) after body clamping; placed solid barrier at column 49 in level3.txt; added regression unit tests in CoopFlowTests and LevelValidatorTests. |
+| 2026-08-19 | PvP Arena Platform Headroom & Layout Lowering | CTest 31/31 PASS | Lowered center pedestal platform (`SSSS`) and Fire Flower pedestal (`W`) to rows 5 & 4, side step blocks to row 7, and expanded arena height to 12 rows (384px) in `levels/pvp_arena.txt` for flush floor alignment eliminating bottom blue clear gap; updated regression assertions in `PvpArenaTests.cpp`. |
 
 ## 2026-08-12 remediation scope
 
@@ -101,6 +103,13 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #48: [Bugfix & Physics] - Fix Box2D Physics Sync Order for Enemies and Items
+- **Trạng thái:** Đã hoàn thành 100%.
+- **File ảnh hưởng:** `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Blooper.cpp`, `src/entities/HammerBro.cpp`, `src/entities/Lakitu.cpp`, `src/entities/Spiny.cpp`, `src/entities/BulletBill.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `include/items/Star.h`, `src/level/Level.cpp`, `tests/PvpArenaTests.cpp`, `levels/pvp_arena.txt`.
+- **Mô tả:**
+  1. **Đồng bộ Box2D (`syncPhysics()`) đầu `update(dt)`**: Di chuyển hàm `syncPhysics()` (hoặc logic đồng bộ velocity) lên DÒNG ĐẦU TIÊN trong `update(dt)` của tất cả quái vật và vật phẩm. Đảm bảo thay đổi lực không đè mất kết quả của frame trước.
+  2. Việc này loại bỏ hoàn toàn lỗi xuyên đất, bay lơ lửng, kẹt block của quái vật và các món đồ.
 
 ### Entry #47: [Feature & Visual Polish] - Hoạt Ảnh Chui Ra Khỏi Cống (Pipe Exit / Emerging) & Đồng Bộ Hoàn Hảo Cho Luigi
 - **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
@@ -1201,6 +1210,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Modified Files:**
   - `levels/level_athletic.txt`
   - `docs/change_in_develop.md`
+
 ### 62. Dual Play Camera Screen Containment, Swimming Ceiling Boundary & Pit Hazards
 - **Date:** 2026-08-19
 - **Author:** TV1 (Dương) & TV3 (Bảo)
@@ -1300,4 +1310,28 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   4. **Regression Verification Tests (`CoopFlowTests.cpp`, `LevelValidatorTests.cpp`)**:
      - Added regression assertions in `tests/CoopFlowTests.cpp` (`testCoopPlayersClampedInsideCameraViewport()`) verifying 0.0f deadzone ratio and exact position sync.
      - Added `testLevel3BarrierColumn49()` in `tests/LevelValidatorTests.cpp` asserting column 49 is solid across rows 1..14 with 'S' and '0' tiles.
+
+
+### 66. PvP Arena Platform Headroom & Layout Lowering
+- **Date:** 2026-08-19
+- **Author:** TV1 (Dương) & TV5 (Truyền)
+- **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - `levels/pvp_arena.txt`
+  - `tests/PvpArenaTests.cpp`
+  - `docs/change_in_develop.md`
+- **Detailed Logic Changes:**
+  1. **PvP Arena Central Platform & Item Spawner Lowering (`levels/pvp_arena.txt`)**:
+     - Shifted contested center pedestal platform (`SSSS`) down by 2 rows from row 3 (Y = 96px) to row 5 (Y = 160px).
+     - Shifted Fire Flower item spawn point (`W`) down by 2 rows from row 2 (Y = 64px) to row 4 (Y = 128px).
+     - Increases vertical headroom above the center platform to 5 tiles (160px), giving ample clearance for high jumps, aerial stomps, and fireball knockbacks without colliding with the top HUD header (`P1 MARIO 0 - 0 LUIGI P2`).
+  2. **Side Step Blocks Lowering & Uniform Stepping (`levels/pvp_arena.txt`)**:
+     - Shifted symmetrical flank step blocks at columns 7 and 12 down by 1 row from row 6 (Y = 192px) to row 7 (Y = 224px).
+     - Creates a perfectly balanced, uniform 2-tile vertical stepping rhythm: Ground (row 9, Y = 288px) -> Step blocks (row 7, Y = 224px, +2 tiles) -> Center Pedestal (row 5, Y = 160px, +2 tiles).
+  3. **12-Row Map Height & Bottom Edge Floor Flush Alignment (`levels/pvp_arena.txt`)**:
+     - Added 12th row of solid ground tiles ('0') on row 11 (Y = 352..384px) to expand total arena height from 11 tiles (352px) to 12 tiles (384px).
+     - With `CameraVerticalMode::LOCKED` resting against the map floor (`center.y = 384 - 180 = 204px`), the camera view (640x360) renders exactly from Y = 24px to Y = 384px, placing the solid ground floor flush against the bottom window edge and completely eliminating the exposed blue background strip under the floor tiles.
+  4. **Regression Tests (`PvpArenaTests.cpp`)**:
+     - Updated `testShippedArenaFixtureLoads()` assertions to validate `tileMap.getHeight() == 12`, ground solidity on rows 9..11, and solid step blocks at `(7, 7)` and `(12, 7)` with clear air band across rows 6..8.
+     - 31/31 CTest test suites pass 100%.
 

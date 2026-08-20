@@ -50,10 +50,9 @@ Star::Star(const sf::Vector2f& position, b2World* world)
 }
 
 void Star::update(float dt) {
+    syncPhysics();
     updateCollectibleDelay(dt);
 
-    // Sync visual position with Box2D body first, then apply patrol velocity
-    syncPhysics();
     updateAnimation(dt);
     patrol();
 }
@@ -61,19 +60,19 @@ void Star::update(float dt) {
 void Star::patrol() {
     sf::Vector2f velocity = getVelocity();
     velocity.x = static_cast<float>(m_patrolDirection) * m_patrolSpeed;
+    if (m_needsBounce) {
+        velocity.y = m_bounceVelocity;
+        m_needsBounce = false;
+    }
     setVelocity(velocity);
 }
 
 void Star::onWallCollision() {
     m_patrolDirection = -m_patrolDirection;
-    patrol();
 }
 
 void Star::onGroundCollision() {
-    // Apply upward bounce velocity when hitting the ground
-    sf::Vector2f velocity = getVelocity();
-    velocity.y = m_bounceVelocity;
-    setVelocity(velocity);
+    m_needsBounce = true;
 }
 
 void Star::onCollect(Mario& mario) {

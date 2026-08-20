@@ -76,8 +76,9 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world, LevelTheme theme)
 }
 
 void Goomba::update(float dt) {
+    syncPhysics();
+
     if (m_isFlippedDead) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 8.f});
@@ -106,7 +107,7 @@ void Goomba::update(float dt) {
         return;
     }
 
-    syncPhysics();
+
 
     if (m_position.y > PIT_CLEANUP_Y) {
         markForRemoval();
@@ -146,7 +147,6 @@ void Goomba::onStomp() {
     m_isStomped = true;
     m_squishTimer = 0.f;
     setHealth(0);
-    setVelocity({0.f, 0.f});
 
     m_size = {32.f, 16.f};
     m_position.y = groundY - 16.f; // Align bottom edge of 16px height squish sprite to ground

@@ -279,13 +279,13 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
     
+    m_camera.setVerticalMode(m_cameraVerticalMode);
     m_camera.init(
         sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
                      static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
-    m_camera.setVerticalMode(m_cameraVerticalMode);
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
     m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
@@ -535,13 +535,13 @@ bool Level::loadPvpArena(const std::string& path,
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
 
+    m_camera.setVerticalMode(m_cameraVerticalMode);
     m_camera.init(
         sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
                      static_cast<float>(DisplayConfig::LOGICAL_HEIGHT)),
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
-    m_camera.setVerticalMode(m_cameraVerticalMode);
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
     m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
     m_contactListener = std::make_unique<ContactListener>(m_tileMap);

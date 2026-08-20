@@ -62,8 +62,9 @@ BulletBill::BulletBill(const sf::Vector2f& position,
 }
 
 void BulletBill::update(float dt) {
+    syncPhysics();
+
     if (m_isFlippedDead) {
-        syncPhysics();
         if (m_sprite) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 8.f});
@@ -74,8 +75,6 @@ void BulletBill::update(float dt) {
         }
         return;
     }
-
-    syncPhysics();
 
     // The bullet never changes course; the level-bounds cleanup removes it
     // once it flies off the far edge.

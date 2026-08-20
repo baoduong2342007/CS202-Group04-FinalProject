@@ -37,4 +37,5 @@ private:
     float m_bounceVelocity;
     /// +1 = moving right, -1 = moving left
     int m_patrolDirection;
+    bool m_needsBounce = false;
 };

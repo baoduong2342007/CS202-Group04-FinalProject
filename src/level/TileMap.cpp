@@ -747,7 +747,7 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
 
         case '|':
             if (theme == LevelTheme::UNDERWATER) return TileFrames::FINISH_POLE_UNDERWATER;
-            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERWATER;
+            if (theme == LevelTheme::UNDERGROUND) return TileFrames::FINISH_POLE_UNDERGROUND;
             if (theme == LevelTheme::CASTLE) return TileFrames::FINISH_POLE_CASTLE;
             return TileFrames::FINISH_POLE;
 

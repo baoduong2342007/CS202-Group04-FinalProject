@@ -4,6 +4,10 @@ This file summarizes important integration checkpoints. Git history remains the 
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-20 | PvP Top Ceiling Boundary Clamp & Complete HUD Realignment | CTest 31/31 PASS | Implemented top screen ceiling boundary clamp (`m_ceilingClampEnabled`, `Level::clampPvpFighters`) in PvP mode so fighters never disappear off the top frame when jumping from platforms; redesigned duel HUD into balanced 3-column screen-fixed layout (`P1` top-left, `P2` top-right, `Match Score/Round` top-center, dedicated `FIRE` badges) with clear padding from arena walls and center pedestal; added regression tests in `PvpArenaTests`. |
+| 2026-08-20 | PvP Camera Elevation & Enemy Narrow Patrol Breakout AI | CTest 31/31 PASS | Enabled `CameraVerticalMode::DEAD_ZONE` in `PvpPlayState` with dual-player elevation tracking in `Level::updatePvp`; implemented narrow patrol (<= 2-2.5 tile) breakout AI in `Enemy.h/.cpp` (Goomba, Koopa, Spiny, HammerBro) to break out towards player upon rapid turnaround oscillation; added test coverage in `PvpArenaTests` and `KoopaVariantTests`. |
+| 2026-08-20 | Area-Accurate Multi-Theme Resolution for Enemies, Blocks & Entities | CTest 31/31 PASS | Added `Level::getThemeForGridPosition(gridX)` to dynamically resolve area themes (Level 1 Underground Bonus, Level 2 Underground Stage, Level 3 Underwater Reef) during initial spawn; updated `EntityFactory::createFromTileCode`, `spawnElevatorsFromTileMap`, `spawnCheepCheepRoutesFromTileMap`, `spawnCheepCheepsFromConfig`, and `updateCheepCheepGenerators`; added `Entity::getSprite()` getter; added regression unit tests in `Gate0ContractTests`. |
+| 2026-08-20 | Fix Level 1 Sound Glitch, Level 2 Intro Theme, Finish Pole Texture & Clean Preview Images | CTest 31/31 PASS | Removed duplicate playMusic() in PlayState::onEnter(); changed Level 2 catalog initial theme to OVERWORLD matching overworld intro spawn; fixed TileMap underground finish pole texture rect; reformatted Koopa::kick(); deleted preview pngs; updated unit test assertions. |
 | 2026-08-20 | Fix Enemy Ledge Probes, Level 2 Warps/Palettes & Level 3 Theme | CTest 31/31 PASS | Fixed enemy ledge detection on question blocks using isEnemySupport; fixed Level 2 enemy symbols (k->K, q->p) and warp 4 theme transition; fixed Level 3 initial theme in LevelCatalog to OVERWORLD; stripped UTF-8 BOM. |
 | 2026-08-20 | Fix Box2D Physics Sync Order for Enemies & Items | CTest 31/31 PASS | Moved syncPhysics() to the beginning of update(dt) to prevent mid-step velocity overwrites and fix physics solver output conflicts. |
 | 2026-08-08 | Initial Sprint 6 integration | 7/7 CTest | Superseded by later implementation |
@@ -104,6 +108,24 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #53: [Feature & AI] - PvP Arena Vertical Camera Elevation & Enemy Narrow Patrol Breakout AI
+- **Trạng thái:** Đã hoàn thành 100%, 31/31 CTest passed.
+- **File ảnh hưởng:** `include/entities/Enemy.h`, `src/entities/Enemy.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Spiny.cpp`, `src/entities/HammerBro.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `src/states/PvpPlayState.cpp`, `tests/PvpArenaTests.cpp`, `tests/KoopaVariantTests.cpp`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Nâng Camera Chế độ PvP (`CameraVerticalMode::DEAD_ZONE`)**:
+     - Thiết lập `m_level->setCameraVerticalMode(CameraVerticalMode::DEAD_ZONE)` trong `PvpPlayState::onEnter()`.
+     - Trong `Level::updatePvp()`, tính toán trung điểm ngang của cả 2 đấu thủ `(center1.x + center2.x) / 2.0f` và vị trí Y cao nhất `std::min(center1.y, center2.y)`.
+     - Khi một trong 2 người chơi nhảy cao, nảy trên springboard hoặc leo lên bục trung tâm, camera tự động nâng lên theo trục Y mượt mà theo đúng deadzone chuẩn.
+     - Bổ sung unit test `testPvpCameraVerticalElevation` trong `tests/PvpArenaTests.cpp`.
+  2. **AI Quái Thoát Vùng Hẹp (1-2 ô) Về Hướng Nhân Vật (Narrow Patrol Breakout AI)**:
+     - Thêm cơ chế nhận diện dao động phạm vi hẹp trong `Enemy.h` và `Enemy.cpp`: theo dõi khoảng cách giữa 2 lần quay đầu (`notifyTurnaround()`, `updateNarrowEscapeStatus()`, `updatePlayerPosition()`).
+     - Khi quái đi bộ (Goomba, Koopa, Spiny, HammerBro) liên tục đảo chiều trong phạm vi hẹp ($\le 80\text{px}$, tương đương 1 đến 2.5 ô tile), quái kích hoạt chế độ thoát hiểm `m_isEscapingNarrowRange = true`.
+     - Quái tự động quay mặt về hướng của người chơi gần nhất (`escapeDir = (playerPos.x < pos.x) ? LEFT : RIGHT`).
+     - Bỏ qua kiểm tra mép rơi `isApproachingLedge()` theo hướng thoát hiểm để bước ra khỏi bục hẹp về phía người chơi.
+     - Khi quái đã rơi xuống hoặc vượt qua khỏi phạm vi bục hẹp (`escapedY` hoặc `escapedX`), chế độ thoát hiểm tự động hủy và quái trở lại logic tuần tra / rơi tự do thông thường.
+     - Bổ sung broadcast tọa độ nhân vật gần nhất trong `Level::updateEntities()`.
+     - Bổ sung unit test toàn diện `testNarrowPatrolBreakoutAI` trong `tests/KoopaVariantTests.cpp`.
 
 ### Entry #48: [Bugfix & Physics] - Fix Box2D Physics Sync Order for Enemies and Items
 - **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
@@ -1241,6 +1263,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   4. **Regression & Contract Tests (`MarioPhysicsTests.cpp`, `CoopFlowTests.cpp`)**:
      - Added `testUnderwaterCeilingClamp()` in `MarioPhysicsTests` verifying that repeated swim impulses do not exceed `y = 0` and upward velocity is clamped.
      - Added `testCoopPlayersClampedInsideCameraViewport()` in `CoopFlowTests` verifying that one player running right while the other is idle keeps both players strictly within the camera view for 300+ frames.
+
 ### 63. World 1-4 Castle Level Refinements & Alternative Bowser Passage
 - **Date:** 2026-08-19
 - **Author:** TV1 (DÆ°Æ¡ng) & TV4 (Vy)
@@ -1428,3 +1451,33 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   3. **Level 3 Initial Theme (LevelCatalog.h) & BOM Fix (level3.txt)**:
      - Updated Level 3 initial theme in `LevelCatalog.h` to `LevelTheme::OVERWORLD` and `MusicId::OVERWORLD` to match the starting intro overworld area before pipe warp to underwater.
      - Stripped UTF-8 BOM from `levels/level3.txt` ensuring valid map loading across all environments.
+
+### 73. PvP Top Ceiling Boundary Clamp & Complete HUD Realignment
+- **Date:** 2026-08-20
+- **Author:** TV1
+- **Status:** Completed
+- **Modified Files:**
+  - `include/entities/Mario.h`
+  - `src/entities/Mario.cpp`
+  - `include/level/Level.h`
+  - `src/level/Level.cpp`
+  - `include/states/PvpPlayState.h`
+  - `src/states/PvpPlayState.cpp`
+  - `tests/PvpArenaTests.cpp`
+- **Detailed Logic Changes:**
+  1. **Top Screen Ceiling Boundary Containment (`Mario.h/.cpp`, `Level.h/.cpp`)**:
+     - Added `m_ceilingClampEnabled` and `setCeilingClampEnabled(bool)` to `Mario` so any entity can enable a top world ceiling clamp.
+     - Updated `Mario::applyWorldBoundsClamp()` to clamp body position to the top ceiling (`bodyPos.y >= halfHeightMeters`) and cancel upward velocity (`vel.y = 0`) when `m_ceilingClampEnabled` is active.
+     - Enabled ceiling clamp on both PvP fighters during `Level::loadPvpArena()`.
+     - Implemented `Level::clampPvpFighters()` called on every update in `Level::updatePvp()` to enforce 4-way viewport containment (left, right, and top ceiling), ensuring fighters can never jump or get bounced off the top of the frame or leave the arena viewport.
+  2. **Duel HUD Realignment & Screen-Fixed Multi-Column Layout (`PvpPlayState.h/.cpp`)**:
+     - Replaced the single-line jammed HUD with a balanced 3-column layout anchored in fixed logical screen space (`target.getDefaultView()`):
+       - **Left Column ($X = 40\text{px}$)**: `P1 <NAME>` header, `WINS: X` counter, and dedicated `FIRE X.Xs` badge below P1 status when active.
+       - **Right Column ($X = 600\text{px}$)**: `<NAME> P2` header, `WINS: Y` counter, and dedicated `FIRE Y.Ys` badge below P2 status when active.
+       - **Top Center ($X = 320\text{px}$)**: Match score badge (`X  -  Y`) and round indicator (`ROUND N` / `FINAL ROUND`).
+       - **Center Screen Banners ($Y = 85\text{px}, 112\text{px}$)**: Repositioned intro/round/match banners to float above the center pedestal with clean clearance.
+       - **Overhead Tags (`P1`/`P2`)**: Dynamically clamped above fighter heads so they never clip beyond the top of the camera viewport.
+  3. **Automated Unit & Render Tests (`PvpArenaTests.cpp`)**:
+     - Added `testPvpCeilingClampAndContainment` verifying that extreme upward impulses from the center pedestal cannot breach $Y < 0$.
+     - Added `testPvpPlayStateHudRenderSnapshot` rendering and verifying pixel-perfect HUD presentation and dedicated Fire Flower timer badge snapshots.
+     - Verified all 31/31 CTest suites pass with 100% success rate.

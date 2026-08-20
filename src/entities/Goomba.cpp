@@ -116,6 +116,8 @@ void Goomba::update(float dt) {
         return;
     }
 
+    updateNarrowEscapeStatus();
+
     if (!isDead()) {
         patrol();
     }
@@ -200,6 +202,7 @@ void Goomba::reverseDirection() {
     } else {
         setFacingDirection(Direction::LEFT);
     }
+    notifyTurnaround();
 }
 
 bool Goomba::isStomped() const {
@@ -211,6 +214,10 @@ void Goomba::setTileMap(const TileMap* tileMap) {
 }
 
 bool Goomba::isApproachingLedge() const {
+    if (isEscapingNarrowRange()) {
+        return false;
+    }
+
     if (!m_tileMap) {
         return false;
     }

@@ -567,7 +567,7 @@ void testInputBindingsAndSuppression() {
 void testStarMusicOverrideAndVolumePersistence() {
     SoundManager& sound = SoundManager::getInstance();
     assert(LevelCatalog::find(1)->music == MusicId::OVERWORLD);
-    assert(LevelCatalog::find(2)->music == MusicId::UNDERGROUND);
+    assert(LevelCatalog::find(2)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(3)->music == MusicId::OVERWORLD);
     assert(LevelCatalog::find(4)->music == MusicId::CASTLE);
     assert(LevelCatalog::find(5) == nullptr);
@@ -703,7 +703,7 @@ void testStateAudioRuntimeAndLevelTracks() {
         game.update(0.6f); // fade in complete
     };
 
-    completeCurrentLevel(MusicId::UNDERGROUND);
+    completeCurrentLevel(MusicId::OVERWORLD);
     completeCurrentLevel(MusicId::OVERWORLD);
     completeCurrentLevel(MusicId::CASTLE);
 

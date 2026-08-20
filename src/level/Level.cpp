@@ -231,6 +231,28 @@ void Level::applyAreaTheme(LevelTheme theme) {
     sound.playMusic(music);
 }
 
+LevelTheme Level::getThemeForGridPosition(int gridX) const {
+    if (m_levelPath.find("level1.txt") != std::string::npos) {
+        if (gridX >= 216 && gridX <= 245) {
+            return LevelTheme::UNDERGROUND;
+        }
+        return LevelTheme::OVERWORLD;
+    }
+    if (m_levelPath.find("level2.txt") != std::string::npos) {
+        if (gridX >= 50 && gridX < 275) {
+            return LevelTheme::UNDERGROUND;
+        }
+        return LevelTheme::OVERWORLD;
+    }
+    if (m_levelPath.find("level3.txt") != std::string::npos) {
+        if (gridX >= 50 && gridX < 255) {
+            return LevelTheme::UNDERWATER;
+        }
+        return LevelTheme::OVERWORLD;
+    }
+    return m_theme;
+}
+
 void Level::setCameraVerticalMode(CameraVerticalMode mode) {
     m_cameraVerticalMode = mode;
     m_camera.setVerticalMode(mode);
@@ -563,6 +585,7 @@ bool Level::loadPvpArena(const std::string& path,
     m_mario->setPitThreshold(levelHeight + 64.f);
     m_mario->setTextureManager(m_textureManager);
     m_mario->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
+    m_mario->setCeilingClampEnabled(true);
 
     // Player two spawns from 'm'. A distinct negative collision group makes
     // his own fireballs pass through him while reaching the opponent.
@@ -574,6 +597,7 @@ bool Level::loadPvpArena(const std::string& path,
     m_mario2->setTextureManager(m_textureManager);
     m_mario2->initPhysics(m_world.get(), b2_dynamicBody, sf::Vector2f(32.f, 32.f));
     m_mario2->setFixtureCollisionGroup(PVP_PLAYER_TWO_COLLISION_GROUP);
+    m_mario2->setCeilingClampEnabled(true);
 
     // A duel arena spawns no enemies, items, elevators, or generators.
 
@@ -621,8 +645,9 @@ void Level::spawnEntitiesFromTileMap() {
         for (const auto& gridPos : positions) {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
+            const LevelTheme spawnTheme = getThemeForGridPosition(gridPos.x);
             auto entity =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), m_theme);
+                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), spawnTheme);
             if (entity) {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
@@ -653,6 +678,7 @@ void Level::spawnElevatorsFromTileMap() {
     for (const auto& route : m_tileMap.getElevatorRoutes()) {
         const sf::Vector2f start = elevatorPositionFromMarker(route.start);
         const sf::Vector2f end = elevatorPositionFromMarker(route.end);
+        const LevelTheme elevatorTheme = getThemeForGridPosition(route.start.x);
 
         auto elevator = std::make_unique<Elevator>(
             start,
@@ -660,7 +686,7 @@ void Level::spawnElevatorsFromTileMap() {
             Elevator::DEFAULT_SPEED,
             route.vertical ? Elevator::Axis::VERTICAL : Elevator::Axis::HORIZONTAL,
             Elevator::DEFAULT_PAUSE,
-            m_theme);
+            elevatorTheme);
 
         // Wire TextureManager so the elevator sprite can load
         elevator->setTextureManager(m_textureManager);
@@ -697,6 +723,7 @@ void Level::spawnElevatorsFromTileMap() {
         const sf::Vector2f start = elevatorPositionFromMarker(route.start);
         const sf::Vector2f end = elevatorPositionFromMarker(route.end);
         const bool vertical = (route.start.x == route.end.x);
+        const LevelTheme elevatorTheme = getThemeForGridPosition(route.start.x);
 
         auto elevator = std::make_unique<Elevator>(
             start,
@@ -704,7 +731,7 @@ void Level::spawnElevatorsFromTileMap() {
             route.speedPixelsPerSecond,
             vertical ? Elevator::Axis::VERTICAL : Elevator::Axis::HORIZONTAL,
             route.pauseSeconds,
-            m_theme);
+            elevatorTheme);
 
         elevator->setTextureManager(m_textureManager);
         elevator->initPhysics(m_world.get(), b2_kinematicBody, elevator->getSize());
@@ -716,10 +743,11 @@ void Level::spawnCheepCheepRoutesFromTileMap() {
     for (const auto& route : m_tileMap.getCheepCheepRoutes()) {
         const sf::Vector2f startPos = TileMap::gridToWorldPosition(route.start);
         const sf::Vector2f endPos = TileMap::gridToWorldPosition(route.end);
+        const LevelTheme cheepTheme = getThemeForGridPosition(route.start.x);
         auto cheep = std::make_unique<CheepCheep>(
             startPos,
             m_world.get(),
-            m_theme,
+            cheepTheme,
             CheepCheepBehavior::SWIMMING,
             CheepCheepColor::GREEN
         );
@@ -733,10 +761,11 @@ void Level::spawnCheepCheepRoutesFromTileMap() {
 void Level::spawnCheepCheepsFromConfig() {
     for (const auto& spawn : CheepCheepConfig::spawnsFor(m_levelPath)) {
         const sf::Vector2f worldPos = TileMap::gridToWorldPosition(spawn.gridPosition);
+        const LevelTheme cheepTheme = getThemeForGridPosition(spawn.gridPosition.x);
         auto cheep = std::make_unique<CheepCheep>(
             worldPos,
             m_world.get(),
-            m_theme,
+            cheepTheme,
             spawn.behavior,
             spawn.color
         );
@@ -749,10 +778,11 @@ void Level::spawnCheepCheepsFromConfig() {
     for (const auto& route : CheepCheepConfig::routesFor(m_levelPath)) {
         const sf::Vector2f startPos = TileMap::gridToWorldPosition(route.start);
         const sf::Vector2f endPos = TileMap::gridToWorldPosition(route.end);
+        const LevelTheme cheepTheme = getThemeForGridPosition(route.start.x);
         auto cheep = std::make_unique<CheepCheep>(
             startPos,
             m_world.get(),
-            m_theme,
+            cheepTheme,
             CheepCheepBehavior::SWIMMING,
             route.color
         );
@@ -811,10 +841,11 @@ void Level::updateCheepCheepGenerators(float dt) {
             const float vx = distVx(rng);
             const float vy = distVy(rng);
 
+            const LevelTheme genTheme = getThemeForGridPosition(gen.startColumn);
             auto cheep = std::make_unique<CheepCheep>(
                 sf::Vector2f(spawnX, spawnY),
                 m_world.get(),
-                m_theme,
+                genTheme,
                 CheepCheepBehavior::JUMPING,
                 gen.color,
                 sf::Vector2f(vx, vy)
@@ -959,10 +990,7 @@ void Level::updateEntities(float dt) {
             enemy->activate();
         }
 
-        if ((enemy->isPiranhaPlant() || enemy->isBlooper() || enemy->isLakitu() ||
-             enemy->isHammerBro() || enemy->isBowser()) && m_mario) {
-            // These enemies react to the closest player so they do not
-            // misbehave around a co-op partner.
+        if (m_mario) {
             sf::Vector2f nearestPos = m_mario->getPosition();
             if (m_coopMode && m_mario2) {
                 const float playerOneDistance =
@@ -973,6 +1001,9 @@ void Level::updateEntities(float dt) {
                     nearestPos = m_mario2->getPosition();
                 }
             }
+
+            enemy->updatePlayerPosition(nearestPos);
+
             if (enemy->isPiranhaPlant()) {
                 static_cast<PiranhaPlant*>(enemy)->updateMarioProximity(nearestPos);
             } else if (enemy->isBlooper()) {
@@ -981,7 +1012,7 @@ void Level::updateEntities(float dt) {
                 static_cast<Lakitu*>(enemy)->updateMarioPosition(nearestPos);
             } else if (enemy->isHammerBro()) {
                 static_cast<HammerBro*>(enemy)->updateMarioPosition(nearestPos);
-            } else {
+            } else if (enemy->isBowser()) {
                 static_cast<Bowser*>(enemy)->updateMarioPosition(nearestPos);
             }
         }
@@ -1232,11 +1263,22 @@ void Level::updatePvp(float dt) {
         }
     }
 
-    // The arena is smaller than the logical view, so the camera stays pinned
-    // to the arena center; the update still runs to decay shake effects.
-    if (m_mario) {
+    // In PvP mode, the camera tracks the midpoint of both fighters horizontally
+    // and follows the highest fighter vertically so that jumping or climbing the
+    // pedestal elevates the view (DEAD_ZONE mode).
+    if (m_mario && m_mario2) {
+        const sf::Vector2f center1 = m_mario->getPosition() + m_mario->getSize() / 2.0f;
+        const sf::Vector2f center2 = m_mario2->getPosition() + m_mario2->getSize() / 2.0f;
+        const float targetX = (center1.x + center2.x) / 2.0f;
+        const float targetY = std::min(center1.y, center2.y);
+        m_camera.update(dt, sf::Vector2f(targetX, targetY));
+    } else if (m_mario) {
         m_camera.update(dt, m_mario->getPosition() + m_mario->getSize() / 2.0f);
+    } else if (m_mario2) {
+        m_camera.update(dt, m_mario2->getPosition() + m_mario2->getSize() / 2.0f);
     }
+
+    clampPvpFighters();
 }
 
 void Level::updateCoop(float dt) {
@@ -1994,6 +2036,64 @@ void Level::clampCoopPlayersToCamera() {
                 body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
             }
             player->syncPhysics();
+        }
+    }
+}
+
+void Level::clampPvpFighters() {
+    if (!m_pvpMode || !m_mario || !m_mario2) {
+        return;
+    }
+
+    const sf::View& view = m_camera.getView();
+    const float viewLeft = view.getCenter().x - (view.getSize().x / 2.0f);
+    const float viewRight = view.getCenter().x + (view.getSize().x / 2.0f);
+    const float viewTop = view.getCenter().y - (view.getSize().y / 2.0f);
+
+    Mario* fighters[2] = {m_mario.get(), m_mario2.get()};
+    for (Mario* fighter : fighters) {
+        if (!fighter || !fighter->isActive() || fighter->isDying()) {
+            continue;
+        }
+
+        b2Body* body = fighter->getBody();
+        if (!body) {
+            continue;
+        }
+
+        const float halfWidthPixels = fighter->getSize().x / 2.0f;
+        const float halfHeightPixels = fighter->getSize().y / 2.0f;
+        const float minXPixels = viewLeft + halfWidthPixels;
+        const float maxXPixels = viewRight - halfWidthPixels;
+        // Top boundary: player cannot jump above top of arena (y=0) or top of camera view
+        const float minYPixels = std::max(0.0f, viewTop) + halfHeightPixels;
+
+        b2Vec2 pos = body->GetPosition();
+        float posXPixels = PhysicsEngine::metersToPixels(pos.x);
+        float posYPixels = PhysicsEngine::metersToPixels(pos.y);
+        b2Vec2 vel = body->GetLinearVelocity();
+
+        bool clamped = false;
+        if (posXPixels < minXPixels) {
+            pos.x = PhysicsEngine::pixelsToMeters(minXPixels);
+            if (vel.x < 0.0f) vel.x = 0.0f;
+            clamped = true;
+        } else if (posXPixels > maxXPixels) {
+            pos.x = PhysicsEngine::pixelsToMeters(maxXPixels);
+            if (vel.x > 0.0f) vel.x = 0.0f;
+            clamped = true;
+        }
+
+        if (posYPixels < minYPixels) {
+            pos.y = PhysicsEngine::pixelsToMeters(minYPixels);
+            if (vel.y < 0.0f) vel.y = 0.0f;
+            clamped = true;
+        }
+
+        if (clamped) {
+            body->SetTransform(pos, body->GetAngle());
+            body->SetLinearVelocity(vel);
+            fighter->syncPhysics();
         }
     }
 }

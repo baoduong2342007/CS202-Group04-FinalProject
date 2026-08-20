@@ -62,6 +62,7 @@ public:
     sf::Vector2f getPosition() const;
     sf::Vector2f getSize() const { return m_size; }
     sf::Vector2f getVelocity() const;
+    const std::optional<sf::Sprite>& getSprite() const { return m_sprite; }
     bool shouldRemove() const;
 
     /// Enum for fast constant-time type identification (eliminates dynamic_cast RTTI overhead)

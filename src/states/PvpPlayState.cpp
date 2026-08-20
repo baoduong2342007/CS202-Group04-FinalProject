@@ -80,7 +80,7 @@ void PvpPlayState::onEnter() {
 
     m_level = std::make_unique<Level>();
     m_level->setTheme(LevelTheme::OVERWORLD);
-    m_level->setCameraVerticalMode(CameraVerticalMode::LOCKED);
+    m_level->setCameraVerticalMode(CameraVerticalMode::DEAD_ZONE);
     if (!m_level->loadPvpArena(PVP_ARENA_PATH, m_playerTypes[0],
                                m_playerTypes[1])) {
         std::cerr << "[PvpPlayState] Failed to load the PvP arena '"
@@ -513,35 +513,86 @@ void PvpPlayState::resetMatch() {
     resetRound();
 }
 
+namespace {
+void alignLeft(sf::Text& text, const sf::Vector2f& pos) {
+    const sf::FloatRect bounds = text.getLocalBounds();
+    text.setOrigin({bounds.position.x, bounds.position.y});
+    text.setPosition(pos);
+}
+
+void alignRight(sf::Text& text, const sf::Vector2f& pos) {
+    const sf::FloatRect bounds = text.getLocalBounds();
+    text.setOrigin({bounds.position.x + bounds.size.x, bounds.position.y});
+    text.setPosition(pos);
+}
+
+void alignCenter(sf::Text& text, const sf::Vector2f& pos) {
+    const sf::FloatRect bounds = text.getLocalBounds();
+    text.setOrigin({bounds.position.x + bounds.size.x / 2.f, bounds.position.y});
+    text.setPosition(pos);
+}
+} // namespace
+
 void PvpPlayState::initHud() {
     if (!m_fontLoaded) {
         return;
     }
 
-    m_scoreText.emplace(m_font, "", SCORE_FONT_SIZE);
-    m_scoreText->setFillColor(BODY_COLOR);
-    m_scoreText->setOutlineColor(sf::Color::Black);
-    m_scoreText->setOutlineThickness(1.f);
-    UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, 6.f});
+    // P1 (Left Column)
+    m_p1Header.emplace(m_font, "", 11);
+    m_p1Header->setFillColor(P1_COLOR);
+    m_p1Header->setOutlineColor(sf::Color::Black);
+    m_p1Header->setOutlineThickness(1.2f);
 
-    m_fireText.emplace(m_font, "", FIRE_FONT_SIZE);
-    m_fireText->setFillColor(FIRE_COLOR);
-    m_fireText->setOutlineColor(sf::Color::Black);
-    m_fireText->setOutlineThickness(1.f);
-    UILayoutHelper::setPosition(*m_fireText, UIAnchor::TopCenter, {0.f, 22.f});
+    m_p1WinsText.emplace(m_font, "", 9);
+    m_p1WinsText->setFillColor(BODY_COLOR);
+    m_p1WinsText->setOutlineColor(sf::Color::Black);
+    m_p1WinsText->setOutlineThickness(1.0f);
 
+    m_p1FireText.emplace(m_font, "", 9);
+    m_p1FireText->setFillColor(FIRE_COLOR);
+    m_p1FireText->setOutlineColor(sf::Color::Black);
+    m_p1FireText->setOutlineThickness(1.0f);
+
+    // P2 (Right Column)
+    m_p2Header.emplace(m_font, "", 11);
+    m_p2Header->setFillColor(P2_COLOR);
+    m_p2Header->setOutlineColor(sf::Color::Black);
+    m_p2Header->setOutlineThickness(1.2f);
+
+    m_p2WinsText.emplace(m_font, "", 9);
+    m_p2WinsText->setFillColor(BODY_COLOR);
+    m_p2WinsText->setOutlineColor(sf::Color::Black);
+    m_p2WinsText->setOutlineThickness(1.0f);
+
+    m_p2FireText.emplace(m_font, "", 9);
+    m_p2FireText->setFillColor(FIRE_COLOR);
+    m_p2FireText->setOutlineColor(sf::Color::Black);
+    m_p2FireText->setOutlineThickness(1.0f);
+
+    // Center Column (Match score & round)
+    m_matchScoreText.emplace(m_font, "", 13);
+    m_matchScoreText->setFillColor(GOLD_COLOR);
+    m_matchScoreText->setOutlineColor(sf::Color::Black);
+    m_matchScoreText->setOutlineThickness(1.5f);
+
+    m_matchRoundText.emplace(m_font, "", 8);
+    m_matchRoundText->setFillColor(BODY_COLOR);
+    m_matchRoundText->setOutlineColor(sf::Color::Black);
+    m_matchRoundText->setOutlineThickness(1.0f);
+
+    // Banners
     m_bannerText.emplace(m_font, "", BANNER_FONT_SIZE);
     m_bannerText->setFillColor(GOLD_COLOR);
     m_bannerText->setOutlineColor(sf::Color::Black);
     m_bannerText->setOutlineThickness(2.f);
-    UILayoutHelper::setPosition(*m_bannerText, UIAnchor::Center, {0.f, -40.f});
 
     m_bannerSubText.emplace(m_font, "", BANNER_SUB_FONT_SIZE);
     m_bannerSubText->setFillColor(BODY_COLOR);
     m_bannerSubText->setOutlineColor(sf::Color::Black);
     m_bannerSubText->setOutlineThickness(1.f);
-    UILayoutHelper::setPosition(*m_bannerSubText, UIAnchor::Center, {0.f, -14.f});
 
+    // Overhead tags
     m_p1Label.emplace(m_font, "P1", LABEL_FONT_SIZE);
     m_p1Label->setFillColor(P1_COLOR);
     m_p1Label->setOutlineColor(sf::Color::Black);
@@ -558,42 +609,72 @@ void PvpPlayState::refreshHudTexts() {
         return;
     }
 
-    if (m_scoreText) {
-        std::string score = "P1 ";
-        score += characterName(m_playerTypes[0]);
-        score += "  ";
-        score += std::to_string(m_roundWins[0]);
-        score += " - ";
-        score += std::to_string(m_roundWins[1]);
-        score += "  ";
-        score += characterName(m_playerTypes[1]);
-        score += " P2";
-        m_scoreText->setString(score);
-        // Re-anchor after every string change: the origin was centered against
-        // the initial empty bounds, so stale origins shift text off-center.
-        UILayoutHelper::setPosition(*m_scoreText, UIAnchor::TopCenter, {0.f, 6.f});
+    // P1 Column (Top-Left, X = 40px clear of side wall)
+    if (m_p1Header) {
+        std::string p1Name = "P1 ";
+        p1Name += characterName(m_playerTypes[0]);
+        m_p1Header->setString(p1Name);
+        alignLeft(*m_p1Header, {40.f, 8.f});
     }
-
-    if (m_fireText) {
-        std::string fire;
-        for (int i = 0; i < 2; ++i) {
-            if (m_fireTimer[i] > 0.f) {
-                fire += (i == 0 ? "P1" : "P2");
-                fire += " FIRE ";
-                char buffer[16];
-                std::snprintf(buffer, sizeof(buffer), "%.1f",
-                              m_fireTimer[i]);
-                fire += buffer;
-            }
+    if (m_p1WinsText) {
+        std::string p1Wins = "WINS: " + std::to_string(m_roundWins[0]);
+        m_p1WinsText->setString(p1Wins);
+        alignLeft(*m_p1WinsText, {40.f, 22.f});
+    }
+    if (m_p1FireText) {
+        if (m_fireTimer[0] > 0.f) {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "FIRE %.1fs", m_fireTimer[0]);
+            m_p1FireText->setString(buf);
+            m_p1FireText->setFillColor(m_fireTimer[0] <= 1.0f ? GOLD_COLOR : FIRE_COLOR);
+            alignLeft(*m_p1FireText, {40.f, 35.f});
+        } else {
+            m_p1FireText->setString("");
         }
-        m_fireText->setString(fire);
-        m_fireText->setFillColor(
-            (m_fireTimer[0] > 0.f ? m_fireTimer[0] : m_fireTimer[1]) <= 1.0f
-                ? GOLD_COLOR
-                : FIRE_COLOR);
-        UILayoutHelper::setPosition(*m_fireText, UIAnchor::TopCenter, {0.f, 22.f});
     }
 
+    // P2 Column (Top-Right, X = 600px clear of side wall)
+    if (m_p2Header) {
+        std::string p2Name = characterName(m_playerTypes[1]);
+        p2Name += " P2";
+        m_p2Header->setString(p2Name);
+        alignRight(*m_p2Header, {600.f, 8.f});
+    }
+    if (m_p2WinsText) {
+        std::string p2Wins = "WINS: " + std::to_string(m_roundWins[1]);
+        m_p2WinsText->setString(p2Wins);
+        alignRight(*m_p2WinsText, {600.f, 22.f});
+    }
+    if (m_p2FireText) {
+        if (m_fireTimer[1] > 0.f) {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "FIRE %.1fs", m_fireTimer[1]);
+            m_p2FireText->setString(buf);
+            m_p2FireText->setFillColor(m_fireTimer[1] <= 1.0f ? GOLD_COLOR : FIRE_COLOR);
+            alignRight(*m_p2FireText, {600.f, 35.f});
+        } else {
+            m_p2FireText->setString("");
+        }
+    }
+
+    // Center Column (Top-Center, X = 320px)
+    if (m_matchScoreText) {
+        std::string score = std::to_string(m_roundWins[0]) + "  -  " + std::to_string(m_roundWins[1]);
+        m_matchScoreText->setString(score);
+        alignCenter(*m_matchScoreText, {320.f, 8.f});
+    }
+    if (m_matchRoundText) {
+        std::string roundStr;
+        if (m_roundWins[0] == 1 && m_roundWins[1] == 1) {
+            roundStr = "FINAL ROUND";
+        } else {
+            roundStr = "ROUND " + std::to_string(m_roundNumber);
+        }
+        m_matchRoundText->setString(roundStr);
+        alignCenter(*m_matchRoundText, {320.f, 24.f});
+    }
+
+    // Banners (Center-Screen, Y = 85px / 112px clear of pedestal)
     if (m_bannerText && m_bannerSubText) {
         std::string banner;
         std::string sub;
@@ -629,8 +710,8 @@ void PvpPlayState::refreshHudTexts() {
 
         m_bannerText->setString(banner);
         m_bannerSubText->setString(sub);
-        UILayoutHelper::setPosition(*m_bannerText, UIAnchor::Center, {0.f, -40.f});
-        UILayoutHelper::setPosition(*m_bannerSubText, UIAnchor::Center, {0.f, -14.f});
+        alignCenter(*m_bannerText, {320.f, 85.f});
+        alignCenter(*m_bannerSubText, {320.f, 112.f});
     }
 }
 
@@ -639,11 +720,13 @@ void PvpPlayState::drawWorldLabels(sf::RenderTarget& target) {
         return;
     }
 
-    target.setView(m_level->getCamera().getView());
+    const sf::View& view = m_level->getCamera().getView();
+    target.setView(view);
+    const float viewTop = view.getCenter().y - (view.getSize().y / 2.0f);
 
-    const auto drawLabel = [&target](std::optional<sf::Text>& label,
-                                     const Mario* player, float blinkTimer,
-                                     bool stunned) {
+    const auto drawLabel = [&target, viewTop](std::optional<sf::Text>& label,
+                                              const Mario* player, float blinkTimer,
+                                              bool stunned) {
         if (!label || !player || player->isDying()) {
             return;
         }
@@ -655,8 +738,9 @@ void PvpPlayState::drawWorldLabels(sf::RenderTarget& target) {
         const sf::FloatRect bounds = label->getLocalBounds();
         label->setOrigin({bounds.position.x + bounds.size.x / 2.f,
                           bounds.size.y});
+        const float targetY = std::max(viewTop + 8.f, player->getPosition().y - 2.f);
         label->setPosition({player->getPosition().x + player->getSize().x / 2.f,
-                            player->getPosition().y - 2.f});
+                            targetY});
         target.draw(*label);
     };
 
@@ -669,18 +753,23 @@ void PvpPlayState::drawHud(sf::RenderTarget& target) {
         return;
     }
 
-    if (m_scoreText && !m_scoreText->getString().isEmpty()) {
-        target.draw(*m_scoreText);
-    }
-    if (m_fireText && !m_fireText->getString().isEmpty()) {
-        target.draw(*m_fireText);
-    }
-    if (m_bannerText && !m_bannerText->getString().isEmpty()) {
-        target.draw(*m_bannerText);
-    }
-    if (m_bannerSubText && !m_bannerSubText->getString().isEmpty()) {
-        target.draw(*m_bannerSubText);
-    }
+    // Player 1
+    if (m_p1Header && !m_p1Header->getString().isEmpty()) target.draw(*m_p1Header);
+    if (m_p1WinsText && !m_p1WinsText->getString().isEmpty()) target.draw(*m_p1WinsText);
+    if (m_p1FireText && !m_p1FireText->getString().isEmpty()) target.draw(*m_p1FireText);
+
+    // Player 2
+    if (m_p2Header && !m_p2Header->getString().isEmpty()) target.draw(*m_p2Header);
+    if (m_p2WinsText && !m_p2WinsText->getString().isEmpty()) target.draw(*m_p2WinsText);
+    if (m_p2FireText && !m_p2FireText->getString().isEmpty()) target.draw(*m_p2FireText);
+
+    // Match info
+    if (m_matchScoreText && !m_matchScoreText->getString().isEmpty()) target.draw(*m_matchScoreText);
+    if (m_matchRoundText && !m_matchRoundText->getString().isEmpty()) target.draw(*m_matchRoundText);
+
+    // Center banners
+    if (m_bannerText && !m_bannerText->getString().isEmpty()) target.draw(*m_bannerText);
+    if (m_bannerSubText && !m_bannerSubText->getString().isEmpty()) target.draw(*m_bannerSubText);
 }
 
 void PvpPlayState::render(sf::RenderTarget& target) {

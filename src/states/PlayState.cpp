@@ -242,7 +242,8 @@ void PlayState::onEnter() {
 
     restoreProgress(); // no-op for default progress on a brand-new Level 1
     rebindCommands();
-    SoundManager::getInstance().playMusic();
+    // Music is already started by loadLevel() -> playMusic(def->music).
+    // A second playMusic() here would restart the stream from the beginning.
     EventBus::getInstance().notify(EventType::LEVEL_STARTED);
 }
 

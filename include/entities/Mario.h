@@ -176,6 +176,10 @@ public:
     void setUnderwater(bool underwater) { m_isUnderwater = underwater; }
     bool isUnderwater() const { return m_isUnderwater; }
 
+    /// Top ceiling boundary clamp mode (e.g. for enclosed arenas / PvP)
+    void setCeilingClampEnabled(bool enabled) { m_ceilingClampEnabled = enabled; }
+    bool isCeilingClampEnabled() const { return m_ceilingClampEnabled; }
+
     void updateSpriteLayout();
     void updateVisuals(float dt) {
         updateAnimation(dt);
@@ -241,6 +245,7 @@ protected:
 
     // Underwater swimming mode
     bool m_isUnderwater = false;
+    bool m_ceilingClampEnabled = false;
     bool m_isClimbing = false;
     bool m_isFlagpoleSliding = false;
     float m_flagpoleTargetTopY = 0.0f;

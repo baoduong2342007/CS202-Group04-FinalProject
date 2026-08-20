@@ -775,6 +775,46 @@ void testFlagCompletionGatedOnFullFlagDrop() {
     std::cout << "[PASSED] testFlagCompletionGatedOnFullFlagDrop" << std::endl;
 }
 
+void testLevelAreaThemeSpawns() {
+    std::cout << "[RUNNING] testLevelAreaThemeSpawns..." << std::endl;
+
+    // Level 2: starts with OVERWORLD theme in catalog definition, but underground section entities must spawn with UNDERGROUND theme
+    Level level2;
+    level2.setTheme(LevelTheme::OVERWORLD);
+    assert(level2.loadFromFile("levels/level2.txt"));
+
+    int verifiedUndergroundGoombas = 0;
+    int verifiedUndergroundKoopas = 0;
+    int verifiedUndergroundBeetles = 0;
+
+    for (const auto& entity : level2.getEntities()) {
+        if (!entity) continue;
+        const float x = entity->getPosition().x;
+        if (x >= 50.f * 32.f && x < 275.f * 32.f && entity->isEnemy()) {
+            if (entity->getSprite().has_value()) {
+                const sf::IntRect rect = entity->getSprite()->getTextureRect();
+                // Overworld frames have x == 0 for Goomba, Koopa, BuzzyBeetle.
+                // Underground frames have x == 146 for Goomba & Koopa, and x == 74 for BuzzyBeetle.
+                if (rect.size.x == 16 && rect.size.y == 16 && rect.position.y == 16) {
+                    assert(rect.position.x == 74); // Underground Goomba
+                    ++verifiedUndergroundGoombas;
+                } else if (rect.size.x == 16 && rect.size.y == 24 && rect.position.y == 112) {
+                    assert(rect.position.x == 146); // Underground Koopa
+                    ++verifiedUndergroundKoopas;
+                } else if (rect.size.x == 16 && rect.size.y == 16 && rect.position.y == 34) {
+                    assert(rect.position.x == 74); // Underground Buzzy Beetle
+                    ++verifiedUndergroundBeetles;
+                }
+            }
+        }
+    }
+    assert(verifiedUndergroundGoombas > 0);
+    assert(verifiedUndergroundKoopas > 0);
+    assert(verifiedUndergroundBeetles > 0);
+
+    std::cout << "[PASSED] testLevelAreaThemeSpawns" << std::endl;
+}
+
 } // namespace
 
 int main() {
@@ -795,6 +835,7 @@ int main() {
     testFlagWalkReachesCastleWithoutTeleporting();
     testFlagSequenceSnapsMarioToPoleSide();
     testFlagCompletionGatedOnFullFlagDrop();
+    testLevelAreaThemeSpawns();
 
     std::cout << "All Gate0 contract tests passed successfully!" << std::endl;
     return 0;

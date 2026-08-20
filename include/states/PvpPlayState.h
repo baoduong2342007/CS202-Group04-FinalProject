@@ -116,8 +116,14 @@ private:
     // HUD
     sf::Font m_font;
     bool m_fontLoaded = false;
-    std::optional<sf::Text> m_scoreText;
-    std::optional<sf::Text> m_fireText;
+    std::optional<sf::Text> m_p1Header;
+    std::optional<sf::Text> m_p1WinsText;
+    std::optional<sf::Text> m_p1FireText;
+    std::optional<sf::Text> m_p2Header;
+    std::optional<sf::Text> m_p2WinsText;
+    std::optional<sf::Text> m_p2FireText;
+    std::optional<sf::Text> m_matchScoreText;
+    std::optional<sf::Text> m_matchRoundText;
     std::optional<sf::Text> m_bannerText;
     std::optional<sf::Text> m_bannerSubText;
     std::optional<sf::Text> m_p1Label;

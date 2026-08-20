@@ -385,6 +385,152 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     std::cout << "[PASSED] testEnemySupportTileCoverageAndLedgeProbing" << std::endl;
 }
 
+void testNarrowPatrolBreakoutAI() {
+    std::cout << "[RUNNING] testNarrowPatrolBreakoutAI..." << std::endl;
+
+    std::error_code ec;
+    const std::filesystem::path tempDir =
+        std::filesystem::temp_directory_path() / "super_mario_narrow_patrol_tests";
+    std::filesystem::create_directories(tempDir, ec);
+
+    // Create a level with an isolated 2-tile platform at row 3 (col 2, 3)
+    // and empty air on col 0, 1, 4, 5, 6. Col 7 has the finish pole ending on ground.
+    // Below row 3 is air (row 4) and ground (row 5).
+    std::filesystem::path levelFile = tempDir / "narrow_level.txt";
+    const std::vector<std::string> rows = {
+        ".......T",
+        ".M.....F",
+        ".......|",
+        "..00...0",
+        ".......0",
+        "00000000"
+    };
+    {
+        std::ofstream out(levelFile, std::ios::trunc);
+        for (const auto& r : rows) {
+            out << r << "\n";
+        }
+    }
+    TileMap map;
+    assert(map.loadFromFile(levelFile.string()));
+
+    // 1. Test Goomba on 2-tile platform with Mario approaching from the LEFT (x = 0)
+    {
+        b2World world = makeWorld();
+        TileMap map;
+        assert(map.loadFromFile(levelFile.string()));
+        map.createPhysicsBodies(&world);
+
+        Goomba goomba({90.f, 64.f}, &world, LevelTheme::OVERWORLD);
+        goomba.setTileMap(&map);
+        goomba.updatePlayerPosition({0.f, 64.f}); // Mario is to the left
+
+        // Move right until it hits right ledge and turns LEFT
+        goomba.setFacingDirection(Direction::RIGHT);
+        for (int i = 0; i < 100 && goomba.getFacingDirection() == Direction::RIGHT; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            goomba.update(1.f / 60.f);
+        }
+        assert(goomba.getFacingDirection() == Direction::LEFT);
+
+        // Move left until it hits left ledge and triggers breakout AI facing LEFT
+        for (int i = 0; i < 100 && !goomba.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            goomba.update(1.f / 60.f);
+        }
+        assert(goomba.isEscapingNarrowRange());
+        assert(goomba.getFacingDirection() == Direction::LEFT);
+
+        // While escaping, Goomba ignores the left ledge and steps off the platform (drops down).
+        for (int i = 0; i < 100 && goomba.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            goomba.update(1.f / 60.f);
+        }
+        // Once Goomba is clear of the narrow platform, isEscapingNarrowRange resets to false
+        assert(!goomba.isEscapingNarrowRange());
+
+        // Step simulation for gravity to land Goomba on the bottom ground (row 5)
+        for (int i = 0; i < 60; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            goomba.update(1.f / 60.f);
+        }
+        assert(goomba.getPosition().y > 80.f); // Has fallen down from the 2-tile platform
+
+        map.destroyPhysicsBodies();
+    }
+
+    // 2. Test Koopa on 2-tile platform with Mario approaching from the RIGHT (x = 300)
+    {
+        b2World world = makeWorld();
+        TileMap map;
+        assert(map.loadFromFile(levelFile.string()));
+        map.createPhysicsBodies(&world);
+
+        Koopa koopa({70.f, 48.f}, &world, LevelTheme::OVERWORLD);
+        koopa.setTileMap(&map);
+        koopa.updatePlayerPosition({300.f, 64.f}); // Mario is to the right
+
+        // Move left until it hits left ledge and turns RIGHT
+        koopa.setFacingDirection(Direction::LEFT);
+        for (int i = 0; i < 100 && koopa.getFacingDirection() == Direction::LEFT; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            koopa.update(1.f / 60.f);
+        }
+        assert(koopa.getFacingDirection() == Direction::RIGHT);
+
+        // Move right until it hits right ledge and triggers escape mode facing RIGHT
+        for (int i = 0; i < 100 && !koopa.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            koopa.update(1.f / 60.f);
+        }
+        assert(koopa.isEscapingNarrowRange());
+        assert(koopa.getFacingDirection() == Direction::RIGHT);
+
+        map.destroyPhysicsBodies();
+    }
+
+    // 3. Test Goomba on wide platform (5 tiles) - should NOT trigger narrow breakout
+    {
+        b2World world = makeWorld();
+        std::filesystem::path wideFile = tempDir / "wide_level.txt";
+        const std::vector<std::string> wideRows = {
+            ".......T",
+            ".M.....F",
+            ".......|",
+            ".00000.0",
+            ".......0",
+            "00000000"
+        };
+        {
+            std::ofstream out(wideFile, std::ios::trunc);
+            for (const auto& r : wideRows) {
+                out << r << "\n";
+            }
+        }
+        TileMap wideMap;
+        assert(wideMap.loadFromFile(wideFile.string()));
+        wideMap.createPhysicsBodies(&world);
+
+        Goomba wideGoomba({40.f, 64.f}, &world, LevelTheme::OVERWORLD);
+        wideGoomba.setTileMap(&wideMap);
+        wideGoomba.updatePlayerPosition({0.f, 64.f});
+
+        // Patrol along the 5-tile platform (width = 160px > 80px threshold)
+        wideGoomba.setFacingDirection(Direction::RIGHT);
+        for (int i = 0; i < 120; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            wideGoomba.update(1.f / 60.f);
+        }
+        // Does not enter escape mode on wide platform
+        assert(!wideGoomba.isEscapingNarrowRange());
+
+        wideMap.destroyPhysicsBodies();
+    }
+
+    std::filesystem::remove_all(tempDir, ec);
+    std::cout << "[PASSED] testNarrowPatrolBreakoutAI" << std::endl;
+}
+
 int main() {
     std::cout << "=== Running Koopa Variant Tests ===" << std::endl;
     testShellWakeUpCycle();
@@ -397,6 +543,7 @@ int main() {
     testSlidingShellStompReArm();
     testWakingKoopaStompReArm();
     testEnemySupportTileCoverageAndLedgeProbing();
+    testNarrowPatrolBreakoutAI();
     std::cout << "All Koopa Variant tests PASSED successfully!" << std::endl;
     return 0;
 }

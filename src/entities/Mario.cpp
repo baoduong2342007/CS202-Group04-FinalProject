@@ -414,8 +414,8 @@ void Mario::applyWorldBoundsClamp() {
       clamped = true;
     }
 
-    // Ceiling clamp: prevent Mario from swimming above the level ceiling (y <= 0)
-    if (m_isUnderwater) {
+    // Ceiling clamp: prevent Mario from jumping/swimming above the level ceiling (y <= 0)
+    if (m_isUnderwater || m_ceilingClampEnabled) {
       const float halfHeightMeters =
           PhysicsEngine::pixelsToMeters(m_size.y / 2.0f);
       bodyPos = m_body->GetPosition();

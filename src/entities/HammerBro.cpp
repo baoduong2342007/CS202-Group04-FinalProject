@@ -160,6 +160,8 @@ void HammerBro::update(float dt) {
         }
     }
 
+    updateNarrowEscapeStatus();
+
     updateAnimation(dt);
     syncSpriteToFeet();
 }
@@ -202,6 +204,7 @@ void HammerBro::setTileMap(const TileMap* tileMap) {
 void HammerBro::updateMarioPosition(const sf::Vector2f& marioPos) {
     m_marioPosition = marioPos;
     m_marioKnown = true;
+    updatePlayerPosition(marioPos);
 }
 
 std::vector<std::unique_ptr<Entity>> HammerBro::takePendingSpawns() {
@@ -213,9 +216,14 @@ std::vector<std::unique_ptr<Entity>> HammerBro::takePendingSpawns() {
 void HammerBro::reverseDirection() {
     setFacingDirection(getFacingDirection() == Direction::LEFT ? Direction::RIGHT
                                                                : Direction::LEFT);
+    notifyTurnaround();
 }
 
 bool HammerBro::isApproachingLedge() const {
+    if (isEscapingNarrowRange()) {
+        return false;
+    }
+
     if (!m_tileMap) {
         return false;
     }

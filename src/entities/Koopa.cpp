@@ -182,6 +182,8 @@ void Koopa::update(float dt) {
         return;
     }
 
+    updateNarrowEscapeStatus();
+
     if (m_state == KoopaState::WALKING) {
         patrol();
     } else if (m_state == KoopaState::SHELL_IDLE) {
@@ -337,7 +339,15 @@ void Koopa::kick(Direction direction) {
     setFacingDirection(direction);
     allowNextStomp();
 
-    sf::Vector2f velocity = getVelocity(); if (direction == Direction::LEFT) { velocity.x = -KOOPA_SLIDE_SPEED; } else { velocity.x = KOOPA_SLIDE_SPEED; } setVelocity(velocity); EventBus::getInstance().notify(EventType::SHELL_KICKED);
+    sf::Vector2f velocity = getVelocity();
+    if (direction == Direction::LEFT) {
+        velocity.x = -KOOPA_SLIDE_SPEED;
+    } else {
+        velocity.x = KOOPA_SLIDE_SPEED;
+    }
+    setVelocity(velocity);
+
+    EventBus::getInstance().notify(EventType::SHELL_KICKED);
 }
 
 bool Koopa::isInShell() const {
@@ -372,6 +382,8 @@ void Koopa::reverseDirection() {
                 ? -m_patrolSpeed : m_patrolSpeed;
     }
     setVelocity(velocity);
+
+    notifyTurnaround();
 }
 
 void Koopa::setTileMap(const TileMap* tileMap) {
@@ -379,6 +391,10 @@ void Koopa::setTileMap(const TileMap* tileMap) {
 }
 
 bool Koopa::isApproachingLedge() const {
+    if (isEscapingNarrowRange()) {
+        return false;
+    }
+
     if (!m_tileMap) {
         return false;
     }

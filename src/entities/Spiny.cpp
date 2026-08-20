@@ -66,6 +66,8 @@ void Spiny::update(float dt) {
         return;
     }
 
+    updateNarrowEscapeStatus();
+
     if (!isDead()) {
         patrol();
     }
@@ -121,9 +123,14 @@ void Spiny::setTileMap(const TileMap* tileMap) {
 void Spiny::reverseDirection() {
     setFacingDirection(getFacingDirection() == Direction::LEFT ? Direction::RIGHT
                                                                : Direction::LEFT);
+    notifyTurnaround();
 }
 
 bool Spiny::isApproachingLedge() const {
+    if (isEscapingNarrowRange()) {
+        return false;
+    }
+
     if (!m_tileMap) {
         return false;
     }

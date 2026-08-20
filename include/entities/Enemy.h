@@ -90,6 +90,18 @@ public:
         return 0;
     }
 
+    /// Updates nearest player position for breakout AI and player awareness.
+    virtual void updatePlayerPosition(const sf::Vector2f& playerPos);
+
+    /// Whether this enemy is currently breaking out of a narrow 1-2 tile patrol pocket towards the player.
+    bool isEscapingNarrowRange() const;
+
+    /// Called when the enemy turns around (wall collision or ledge) to detect oscillation in 1-2 tile range.
+    void notifyTurnaround();
+
+    /// Updates narrow escape status and resets to normal logic once clear of the trapped bounds.
+    void updateNarrowEscapeStatus();
+
     /// Claim the one shared defeat transaction for this victim.
     /// CollisionManager owns the transaction; the latch only prevents a
     /// second fixture/contact from applying damage, score, or SFX again.
@@ -106,8 +118,18 @@ protected:
     /// transition.
     void allowNextStomp();
 
+    sf::Vector2f m_playerPos{0.f, 0.f};
+    bool m_hasPlayerPos = false;
+
 private:
     bool m_activated = false;
     bool m_defeatCommitted = false;
     bool m_stompCommitted = false;
+
+    float m_lastTurnX = -99999.f;
+    int m_narrowTurnCount = 0;
+    bool m_isEscapingNarrowRange = false;
+    float m_trappedMinX = 0.f;
+    float m_trappedMaxX = 0.f;
+    float m_trappedY = 0.f;
 };

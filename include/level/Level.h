@@ -152,6 +152,9 @@ private:
     /// Co-op: bound both players inside the active camera viewport so neither
     /// player can wander off-screen or get separated beyond the shared view.
     void clampCoopPlayersToCamera();
+    /// PvP: bound both fighters inside the arena viewport & ceiling so neither
+    /// player can jump off the top of the frame or leave the duel boundaries.
+    void clampPvpFighters();
 
     bool isPiranhaAliveAt(const sf::Vector2i& pipePosition) const;
     void suppressPiranhaAt(const sf::Vector2i& pipePosition);
@@ -165,6 +168,7 @@ private:
     void renderToadDialogue(sf::RenderTarget& target) const;
     
     void applyAreaTheme(LevelTheme theme);
+    LevelTheme getThemeForGridPosition(int gridX) const;
 
     // 6. Private members
     std::unique_ptr<b2World> m_world;

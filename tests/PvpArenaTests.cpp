@@ -13,9 +13,11 @@
 #include <string>
 #include <vector>
 
+#include "core/DisplayConfig.h"
 #include "entities/Mario.h"
 #include "level/Level.h"
 #include "level/TileMap.h"
+#include "states/PvpPlayState.h"
 
 namespace {
 
@@ -237,6 +239,133 @@ bool testFireFlowerLifecycle() {
     return true;
 }
 
+bool testPvpCameraVerticalElevation() {
+    std::cout << "[RUNNING] testPvpCameraVerticalElevation..." << std::endl;
+
+    Level level;
+    level.setTheme(LevelTheme::OVERWORLD);
+    level.setCameraVerticalMode(CameraVerticalMode::DEAD_ZONE);
+    assert(level.loadPvpArena("levels/pvp_arena.txt",
+                              CharacterType::MARIO, CharacterType::LUIGI));
+
+    assert(level.getCamera().getVerticalMode() == CameraVerticalMode::DEAD_ZONE);
+
+    // Initial camera center rests at the bottom of the arena
+    level.update(0.016f);
+    const float restingY = level.getCamera().getView().getCenter().y;
+
+    // Simulate Player Two jumping high (Y near top of arena, e.g. 30.f)
+    if (Mario* p2 = level.getMario2()) {
+        p2->setPosition({320.f, 30.f});
+    }
+
+    level.update(0.016f);
+    const float elevatedY = level.getCamera().getView().getCenter().y;
+    assert(elevatedY < restingY); // Camera elevated upwards!
+
+    // When Player Two descends back to the ground, camera returns to resting position
+    if (Mario* p2 = level.getMario2()) {
+        p2->setPosition({320.f, 250.f});
+    }
+    level.update(0.016f);
+    const float returnedY = level.getCamera().getView().getCenter().y;
+    assert(std::abs(returnedY - restingY) < 1.0f);
+
+    std::cout << "[PASSED] testPvpCameraVerticalElevation" << std::endl;
+    return true;
+}
+
+bool testPvpCeilingClampAndContainment() {
+    std::cout << "[RUNNING] testPvpCeilingClampAndContainment..." << std::endl;
+
+    Level level;
+    level.setTheme(LevelTheme::OVERWORLD);
+    level.setCameraVerticalMode(CameraVerticalMode::DEAD_ZONE);
+    assert(level.loadPvpArena("levels/pvp_arena.txt",
+                              CharacterType::MARIO, CharacterType::LUIGI));
+
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 && p2);
+    assert(p1->isCeilingClampEnabled());
+    assert(p2->isCeilingClampEnabled());
+
+    // 1. Simulate Player Two launching upward with high jump velocity from pedestal (row 5)
+    p2->setPosition({320.f, 160.f});
+    p2->setVelocity({0.f, -800.f}); // Extreme upward impulse
+
+    // Step physics & PvP update
+    for (int frame = 0; frame < 30; ++frame) {
+        level.update(1.f / 60.f);
+        // Player Two top edge (Y position) must NEVER cross above Y = 0 (top of screen / arena)
+        assert(p2->getPosition().y >= 0.0f);
+    }
+
+    // 2. Test horizontal screen containment
+    p1->setPosition({-50.f, 200.f});
+    p1->setVelocity({-300.f, 0.f});
+    level.update(1.f / 60.f);
+    // Player One clamped inside left boundary
+    assert(p1->getPosition().x >= 0.0f);
+
+    p1->setPosition({700.f, 200.f});
+    p1->setVelocity({300.f, 0.f});
+    level.update(1.f / 60.f);
+    // Player One clamped inside right boundary
+    assert(p1->getPosition().x <= 640.f);
+
+    std::cout << "[PASSED] testPvpCeilingClampAndContainment" << std::endl;
+    return true;
+}
+
+bool testPvpPlayStateHudRenderSnapshot() {
+    std::cout << "[RUNNING] testPvpPlayStateHudRenderSnapshot..." << std::endl;
+
+    PvpPlayState state(CharacterType::MARIO, CharacterType::LUIGI);
+    state.onEnter();
+
+    // Advance 10 frames to settle intro/HUD
+    for (int i = 0; i < 10; ++i) {
+        state.update(1.f / 60.f);
+    }
+
+    sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
+    rt.clear(sf::Color::Black);
+    state.render(rt);
+    rt.display();
+
+    bool saved = rt.getTexture().copyToImage().saveToFile("pvp_hud_preview.png");
+    assert(saved);
+
+    // Fast forward into FIGHT phase and give P1 a fire flower
+    for (int i = 0; i < 150; ++i) {
+        state.update(1.f / 60.f);
+    }
+    state.setNextFlowerCountdown(0.f);
+    state.update(1.f / 60.f);
+
+    Level* level = state.getLevel();
+    if (level && level->getMario()) {
+        const auto pedestal = level->getTileMap().findTiles('W');
+        if (!pedestal.empty()) {
+            level->getMario()->setPosition(TileMap::gridToWorldPosition(pedestal.front()));
+            for (int i = 0; i < 5; ++i) {
+                state.update(1.f / 60.f);
+            }
+        }
+    }
+
+    rt.clear(sf::Color::Black);
+    state.render(rt);
+    rt.display();
+
+    saved = rt.getTexture().copyToImage().saveToFile("pvp_hud_fire_preview.png");
+    assert(saved);
+
+    std::cout << "[PASSED] testPvpPlayStateHudRenderSnapshot" << std::endl;
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -246,7 +375,10 @@ int main() {
                          testCampaignModeStillValidates() &&
                          testPvpMarkerValidation() &&
                          testLevelLoadPvpArena() &&
-                         testFireFlowerLifecycle();
+                         testFireFlowerLifecycle() &&
+                         testPvpCameraVerticalElevation() &&
+                         testPvpCeilingClampAndContainment() &&
+                         testPvpPlayStateHudRenderSnapshot();
 
     std::error_code errorCode;
     std::filesystem::remove_all(TEST_DIRECTORY, errorCode);

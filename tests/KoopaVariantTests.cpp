@@ -6,6 +6,8 @@
 
 #include <cassert>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <box2d/box2d.h>
@@ -13,7 +15,11 @@
 #include "entities/Koopa.h"
 #include "entities/RedKoopa.h"
 #include "entities/Paratroopa.h"
+#include "entities/Goomba.h"
+#include "entities/Spiny.h"
+#include "entities/HammerBro.h"
 #include "entities/Mario.h"
+#include "level/TileMap.h"
 #include "patterns/EntityFactory.h"
 #include "physics/CollisionManager.h"
 
@@ -263,6 +269,122 @@ void testWakingKoopaStompReArm() {
     std::cout << "[PASSED] testWakingKoopaStompReArm" << std::endl;
 }
 
+void testEnemySupportTileCoverageAndLedgeProbing() {
+    std::cout << "[RUNNING] testEnemySupportTileCoverageAndLedgeProbing..." << std::endl;
+
+    // 1. Validate TileMap::isEnemySupport() for all supported and non-supported tile types
+    const std::filesystem::path tempDir = std::filesystem::temp_directory_path() / "test_enemy_support_tiles";
+    std::error_code ec;
+    std::filesystem::remove_all(tempDir, ec);
+    std::filesystem::create_directories(tempDir, ec);
+    const std::filesystem::path levelFile = tempDir / "support_level.txt";
+
+    const std::vector<std::string> rows = {
+        ".......T",
+        ".M.....F",
+        ".......|",
+        "0B?Ufho0",
+        "00000000"
+    };
+    {
+        std::ofstream out(levelFile, std::ios::trunc);
+        for (const auto& r : rows) {
+            out << r << "\n";
+        }
+    }
+
+    TileMap tileMap;
+    assert(tileMap.loadFromFile(levelFile.string()));
+
+    // Row 3: '0' (col 0), 'B' (col 1), '?' (col 2), 'U' (col 3), 'f' (col 4), 'h' (col 5), 'o' (col 6), '0' (col 7)
+    assert(tileMap.isEnemySupport(0, 3)); // '0' standard ground
+    assert(tileMap.isEnemySupport(1, 3)); // 'B' breakable brick
+    assert(tileMap.isEnemySupport(2, 3)); // '?' question block
+    assert(tileMap.isEnemySupport(3, 3)); // 'U' 1-up mushroom block
+    assert(tileMap.isEnemySupport(4, 3)); // 'f' fire flower block
+    assert(tileMap.isEnemySupport(5, 3)); // 'h' hidden/flower block
+    assert(tileMap.isEnemySupport(6, 3)); // 'o' star block
+    assert(!tileMap.isEnemySupport(0, 0)); // '.' empty air
+
+    // 2. Test behavioral ledge probing on Question Blocks vs Air for Goomba, Koopa, Spiny, HammerBro
+    b2World world = makeWorld();
+
+    // Create a level where col 1 is '?' and col 2 is '?', col 3 is '.' (ledge)
+    std::filesystem::path ledgeFile = tempDir / "ledge_level.txt";
+    const std::vector<std::string> ledgeRows = {
+        ".......T",
+        ".M.....F",
+        ".......|",
+        "0??....0",
+        "00000000"
+    };
+    {
+        std::ofstream out(ledgeFile, std::ios::trunc);
+        for (const auto& r : ledgeRows) {
+            out << r << "\n";
+        }
+    }
+    TileMap ledgeMap;
+    assert(ledgeMap.loadFromFile(ledgeFile.string()));
+
+    // Koopa (32x48): tile at Y = 64 (row 2) aligns foot to row 3 (Y = 96).
+    // Facing RIGHT at col 1 (x = 32): front probe lands in col 2 ('?'), which is enemy support -> does not reverse.
+    Koopa koopa1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    koopa1.setTileMap(&ledgeMap);
+    koopa1.setFacingDirection(Direction::RIGHT);
+    advance(koopa1, 0.1f);
+    assert(koopa1.getFacingDirection() == Direction::RIGHT);
+
+    // Koopa facing RIGHT at col 2 (x = 64): front probe lands in col 3 ('.'), which is air -> reverses to LEFT.
+    Koopa koopa2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    koopa2.setTileMap(&ledgeMap);
+    koopa2.setFacingDirection(Direction::RIGHT);
+    advance(koopa2, 0.1f);
+    assert(koopa2.getFacingDirection() == Direction::LEFT);
+
+    // Goomba (32x32): foot on row 3 -> position.y = 96 - 32 = 64.
+    Goomba goomba1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    goomba1.setTileMap(&ledgeMap);
+    goomba1.setFacingDirection(Direction::RIGHT);
+    advance(goomba1, 0.1f);
+    assert(goomba1.getFacingDirection() == Direction::RIGHT);
+
+    Goomba goomba2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    goomba2.setTileMap(&ledgeMap);
+    goomba2.setFacingDirection(Direction::RIGHT);
+    advance(goomba2, 0.1f);
+    assert(goomba2.getFacingDirection() == Direction::LEFT);
+
+    // Spiny (32x32): foot on row 3 -> position.y = 96 - 32 = 64.
+    Spiny spiny1({32.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
+    spiny1.setTileMap(&ledgeMap);
+    advance(spiny1, 0.1f);
+    assert(spiny1.getFacingDirection() == Direction::RIGHT);
+
+    Spiny spiny2({64.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
+    spiny2.setTileMap(&ledgeMap);
+    advance(spiny2, 0.1f);
+    assert(spiny2.getFacingDirection() == Direction::LEFT);
+
+    // HammerBro (32x48): foot on row 3 -> position.y = 96 - 48 = 48.
+    HammerBro bro1({32.f, 48.f}, &world, LevelTheme::OVERWORLD);
+    bro1.setTileMap(&ledgeMap);
+    bro1.setFacingDirection(Direction::RIGHT);
+    advance(bro1, 0.1f);
+    assert(bro1.getFacingDirection() == Direction::RIGHT);
+
+    HammerBro bro2({64.f, 48.f}, &world, LevelTheme::OVERWORLD);
+    bro2.setTileMap(&ledgeMap);
+    bro2.setFacingDirection(Direction::RIGHT);
+    advance(bro2, 0.1f);
+    assert(bro2.getFacingDirection() == Direction::LEFT);
+
+    // Clean up temporary directory
+    std::filesystem::remove_all(tempDir, ec);
+
+    std::cout << "[PASSED] testEnemySupportTileCoverageAndLedgeProbing" << std::endl;
+}
+
 int main() {
     std::cout << "=== Running Koopa Variant Tests ===" << std::endl;
     testShellWakeUpCycle();
@@ -274,6 +396,7 @@ int main() {
     testFactoryTileCodes();
     testSlidingShellStompReArm();
     testWakingKoopaStompReArm();
+    testEnemySupportTileCoverageAndLedgeProbing();
     std::cout << "All Koopa Variant tests PASSED successfully!" << std::endl;
     return 0;
 }

@@ -2022,8 +2022,17 @@ void Level::warpMarioToReturn(char warpId) {
             applyAreaTheme(LevelTheme::OVERWORLD);
         }
     }
-
-    // Level 3 constains multiple enviromental areas:
+    // Level 2:
+    // H1 -> R1 : Intro Overworld -> Underground
+    // H4 -> R4 : Underground -> Flagpole Overworld
+    else if (m_levelPath.find("level2.txt") != std::string::npos) {
+        if (warpId == '1') {
+            applyAreaTheme(LevelTheme::UNDERGROUND);
+        } else if (warpId == '4') {
+            applyAreaTheme(LevelTheme::OVERWORLD);
+        }
+    }
+    // Level 3 contains multiple environmental areas:
     //
     // H1 -> R1 : Overworld -> Underwater
     // H2 -> R2 : Underwater -> Overworld

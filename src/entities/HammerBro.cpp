@@ -230,8 +230,8 @@ bool HammerBro::isApproachingLedge() const {
     const int currentColumn = static_cast<int>(std::floor(currentX / TILE_SIZE));
     const int frontColumn = static_cast<int>(std::floor(frontX / TILE_SIZE));
 
-    const bool hasCurrentGround = m_tileMap->isSolid(currentColumn, row);
-    const bool hasFrontGround = m_tileMap->isSolid(frontColumn, row);
+    const bool hasCurrentGround = m_tileMap->isEnemySupport(currentColumn, row);
+    const bool hasFrontGround = m_tileMap->isEnemySupport(frontColumn, row);
 
     return hasCurrentGround && !hasFrontGround;
 }

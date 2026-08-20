@@ -1,9 +1,10 @@
-﻿# Develop Integration Log
+# Develop Integration Log
 
 This file summarizes important integration checkpoints. Git history remains the authoritative record of individual commits and merges. Historical test counts are not current release evidence.
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-20 | Fix Enemy Ledge Probes, Level 2 Warps/Palettes & Level 3 Theme | CTest 31/31 PASS | Fixed enemy ledge detection on question blocks using isEnemySupport; fixed Level 2 enemy symbols (k->K, q->p) and warp 4 theme transition; fixed Level 3 initial theme in LevelCatalog to OVERWORLD; stripped UTF-8 BOM. |
 | 2026-08-20 | Fix Box2D Physics Sync Order for Enemies & Items | CTest 31/31 PASS | Moved syncPhysics() to the beginning of update(dt) to prevent mid-step velocity overwrites and fix physics solver output conflicts. |
 | 2026-08-08 | Initial Sprint 6 integration | 7/7 CTest | Superseded by later implementation |
 | 2026-08-09 | Evaluation v3 integration | 12/12 CTest | Superseded by later implementation |
@@ -67,184 +68,184 @@ The active status is maintained in:
 A working-tree result may support review, but release sign-off requires one immutable commit hash shared by clean builds and every manual evidence record.
 ---
 
-## 3. MODIFIED FILES LOG (Chi tiết các file đã sửa)
+## 3. MODIFIED FILES LOG (Chi tiáº¿t cÃ¡c file Ä‘Ã£ sá»­a)
 
 - **[Mario.cpp](../src/entities/Mario.cpp)**:
-  - `Dòng 230`: Bổ sung lời gọi `updateInvincibility(dt)` trong hàm `update(float dt)`.
+  - `DÃ²ng 230`: Bá»• sung lá»i gá»i `updateInvincibility(dt)` trong hÃ m `update(float dt)`.
 - **[EntityFactory.cpp](../src/patterns/EntityFactory.cpp)**:
-  - Khởi tạo mã tile `?` cố định thành `QuestionBlockContent::SUPER_MUSHROOM` (chắc chắn luôn ra Nấm Super Mushroom khi đập).
+  - Khá»Ÿi táº¡o mÃ£ tile `?` cá»‘ Ä‘á»‹nh thÃ nh `QuestionBlockContent::SUPER_MUSHROOM` (cháº¯c cháº¯n luÃ´n ra Náº¥m Super Mushroom khi Ä‘áº­p).
 - **[QuestionBlock.h](../include/entities/QuestionBlock.h)**:
-  - Thêm enum `BlockTheme` và cập nhật constructor nhận tham số `BlockTheme theme = BlockTheme::OVERWORLD`.
+  - ThÃªm enum `BlockTheme` vÃ  cáº­p nháº­t constructor nháº­n tham sá»‘ `BlockTheme theme = BlockTheme::OVERWORLD`.
 - **[QuestionBlock.cpp](../src/entities/QuestionBlock.cpp)**:
-  - Nạp chuỗi animation `idle` và sprite `empty` linh hoạt theo `BlockTheme` từ `SpriteFrames::Blocks`.
+  - Náº¡p chuá»—i animation `idle` vÃ  sprite `empty` linh hoáº¡t theo `BlockTheme` tá»« `SpriteFrames::Blocks`.
 - **[TileMap.cpp](../src/level/TileMap.cpp)**:
-  - Cập nhật hàm `TileMap::hitTile()` truyền `TextureManager` và gắn 4 sub-rect mảnh vỡ gạch 4 góc (`DEBRIS_TOP_LEFT`, `DEBRIS_TOP_RIGHT`, `DEBRIS_BOTTOM_LEFT`, `DEBRIS_BOTTOM_RIGHT`) trực tiếp vào 4 đối tượng `BlockDebris` khi Mario to húc vỡ gạch Brick Block.
+  - Cáº­p nháº­t hÃ m `TileMap::hitTile()` truyá»n `TextureManager` vÃ  gáº¯n 4 sub-rect máº£nh vá»¡ gáº¡ch 4 gÃ³c (`DEBRIS_TOP_LEFT`, `DEBRIS_TOP_RIGHT`, `DEBRIS_BOTTOM_LEFT`, `DEBRIS_BOTTOM_RIGHT`) trá»±c tiáº¿p vÃ o 4 Ä‘á»‘i tÆ°á»£ng `BlockDebris` khi Mario to hÃºc vá»¡ gáº¡ch Brick Block.
 - **[SpriteFrames.h](../include/core/SpriteFrames.h)**:
-  - Cập nhật namespace `SpriteFrames::Blocks` với đầy đủ tọa độ chuẩn của 120 ô khối gạch (`items_blocks.png`) qua 4 bảng màu NES (Overworld, Underground, Castle, Underwater). Bổ sung 4 sub-rect 8×8 px (`DEBRIS_TOP_LEFT`, `DEBRIS_TOP_RIGHT`, `DEBRIS_BOTTOM_LEFT`, `DEBRIS_BOTTOM_RIGHT`) và các hàm animation helper `ugQuestionBlockFrames()`, `castleQuestionBlockFrames()`, `uwQuestionBlockFrames()`.
+  - Cáº­p nháº­t namespace `SpriteFrames::Blocks` vá»›i Ä‘áº§y Ä‘á»§ tá»a Ä‘á»™ chuáº©n cá»§a 120 Ã´ khá»‘i gáº¡ch (`items_blocks.png`) qua 4 báº£ng mÃ u NES (Overworld, Underground, Castle, Underwater). Bá»• sung 4 sub-rect 8Ã—8 px (`DEBRIS_TOP_LEFT`, `DEBRIS_TOP_RIGHT`, `DEBRIS_BOTTOM_LEFT`, `DEBRIS_BOTTOM_RIGHT`) vÃ  cÃ¡c hÃ m animation helper `ugQuestionBlockFrames()`, `castleQuestionBlockFrames()`, `uwQuestionBlockFrames()`.
 - **[BlockDebris.h](../include/entities/BlockDebris.h)**:
-  - Cập nhật constructor nhận tham số `sf::IntRect frame` tùy chọn.
+  - Cáº­p nháº­t constructor nháº­n tham sá»‘ `sf::IntRect frame` tÃ¹y chá»n.
 - **[BlockDebris.cpp](../src/entities/BlockDebris.cpp)**:
-  - Đổi rect mặc định của `BlockDebris` sang `SpriteFrames::Blocks::DEBRIS_TOP_LEFT`, bổ sung `updateAnimation(dt)` và thiết lập tâm xoay `origin` + tỉ lệ phóng `scale 2.0x` cho hạt mảnh vỡ.
+  - Äá»•i rect máº·c Ä‘á»‹nh cá»§a `BlockDebris` sang `SpriteFrames::Blocks::DEBRIS_TOP_LEFT`, bá»• sung `updateAnimation(dt)` vÃ  thiáº¿t láº­p tÃ¢m xoay `origin` + tá»‰ lá»‡ phÃ³ng `scale 2.0x` cho háº¡t máº£nh vá»¡.
 - **[blocks_coordinate.md](blocks_coordinate.md)**:
-  - Phân tích toàn bộ 120 ô khối gạch & hộp quà nghi vấn `?` (Brick Blocks, Question Blocks, Brick Debris) trích xuất trực tiếp từ tệp hình ảnh gốc **`assets/textures/items/items_blocks.png`** (kích thước 448×256 px). Bổ sung hướng dẫn kỹ thuật tách 4 sub-rect 8×8 px cho 16 ô mảnh vỡ gạch (`BlockDebris`).
+  - PhÃ¢n tÃ­ch toÃ n bá»™ 120 Ã´ khá»‘i gáº¡ch & há»™p quÃ  nghi váº¥n `?` (Brick Blocks, Question Blocks, Brick Debris) trÃ­ch xuáº¥t trá»±c tiáº¿p tá»« tá»‡p hÃ¬nh áº£nh gá»‘c **`assets/textures/items/items_blocks.png`** (kÃ­ch thÆ°á»›c 448Ã—256 px). Bá»• sung hÆ°á»›ng dáº«n ká»¹ thuáº­t tÃ¡ch 4 sub-rect 8Ã—8 px cho 16 Ã´ máº£nh vá»¡ gáº¡ch (`BlockDebris`).
 - **[level3.txt](../levels/level3.txt)**:
-  - Khắc phục cấu trúc cột cờ về đích (`F` và `|` cột cờ) bị thiếu nối xuống ô đất `1`, làm hàm `TileMap::loadFromFile()` ném lỗi validation và thoát về Menu thay vì vào màn Level 3 / YOU WIN.
+  - Kháº¯c phá»¥c cáº¥u trÃºc cá»™t cá» vá» Ä‘Ã­ch (`F` vÃ  `|` cá»™t cá») bá»‹ thiáº¿u ná»‘i xuá»‘ng Ã´ Ä‘áº¥t `1`, lÃ m hÃ m `TileMap::loadFromFile()` nÃ©m lá»—i validation vÃ  thoÃ¡t vá» Menu thay vÃ¬ vÃ o mÃ n Level 3 / YOU WIN.
 - **[blocks_all_components_atlas_full.png](assets/reference/blocks_all_components_atlas_full.png)**:
-  - Tệp ảnh Atlas minh họa trực quan (880×1050 px) hiển thị 120 ô khối được trích xuất và gán nhãn chỉ số #1–#120 trực tiếp từ tệp **`assets/textures/items/items_blocks.png`**.
+  - Tá»‡p áº£nh Atlas minh há»a trá»±c quan (880Ã—1050 px) hiá»ƒn thá»‹ 120 Ã´ khá»‘i Ä‘Æ°á»£c trÃ­ch xuáº¥t vÃ  gÃ¡n nhÃ£n chá»‰ sá»‘ #1â€“#120 trá»±c tiáº¿p tá»« tá»‡p **`assets/textures/items/items_blocks.png`**.
 - **[Mario.h](../include/entities/Mario.h)**:
-  - Thêm enum `CharacterType` (`MARIO`, `LUIGI`), thiết lập nhân vật mặc định là `CharacterType::LUIGI`, bổ sung `getCharacterType()` và `setCharacterType()`.
+  - ThÃªm enum `CharacterType` (`MARIO`, `LUIGI`), thiáº¿t láº­p nhÃ¢n váº­t máº·c Ä‘á»‹nh lÃ  `CharacterType::LUIGI`, bá»• sung `getCharacterType()` vÃ  `setCharacterType()`.
 - **[Mario.cpp](../src/entities/Mario.cpp)**:
-  - Cập nhật `setupAnimationsForState` hỗ trợ nạp bộ clip animation của Luigi (`SmallLuigi`, `BigLuigi`) khi `charType == CharacterType::LUIGI`. Trạng thái Lửa `MarioState::FIRE` dùng chung bộ frame `SpriteFrames::FireBigMario`.
-  - Cập nhật các constructors, `powerUp()`, `respawn()`, `setMarioState()`, và hàm `setCharacterType()`.
-  - Khắc phục chuỗi animation `transform` trong `applyStateTransition()` cho các biến đổi cùng thể lực (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`).
-  - Bảo lưu clip animation `"action"` trong `update()` khi vừa di chuyển vừa ném đạn lửa.
-  - Sửa chu kỳ màu Sao bất tử trong `updateInvincibility()` tránh tràn số âm và đồng bộ màu nhấp nháy với `m_isTransforming`.
+  - Cáº­p nháº­t `setupAnimationsForState` há»— trá»£ náº¡p bá»™ clip animation cá»§a Luigi (`SmallLuigi`, `BigLuigi`) khi `charType == CharacterType::LUIGI`. Tráº¡ng thÃ¡i Lá»­a `MarioState::FIRE` dÃ¹ng chung bá»™ frame `SpriteFrames::FireBigMario`.
+  - Cáº­p nháº­t cÃ¡c constructors, `powerUp()`, `respawn()`, `setMarioState()`, vÃ  hÃ m `setCharacterType()`.
+  - Kháº¯c phá»¥c chuá»—i animation `transform` trong `applyStateTransition()` cho cÃ¡c biáº¿n Ä‘á»•i cÃ¹ng thá»ƒ lá»±c (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`).
+  - Báº£o lÆ°u clip animation `"action"` trong `update()` khi vá»«a di chuyá»ƒn vá»«a nÃ©m Ä‘áº¡n lá»­a.
+  - Sá»­a chu ká»³ mÃ u Sao báº¥t tá»­ trong `updateInvincibility()` trÃ¡nh trÃ n sá»‘ Ã¢m vÃ  Ä‘á»“ng bá»™ mÃ u nháº¥p nhÃ¡y vá»›i `m_isTransforming`.
 
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
 
 ### Entry #48: [Bugfix & Physics] - Fix Box2D Physics Sync Order for Enemies and Items
-- **Trạng thái:** Đã hoàn thành 100%.
-- **File ảnh hưởng:** `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Blooper.cpp`, `src/entities/HammerBro.cpp`, `src/entities/Lakitu.cpp`, `src/entities/Spiny.cpp`, `src/entities/BulletBill.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `include/items/Star.h`, `src/level/Level.cpp`, `tests/PvpArenaTests.cpp`, `levels/pvp_arena.txt`.
-- **Mô tả:**
-  1. **Đồng bộ Box2D (`syncPhysics()`) đầu `update(dt)`**: Di chuyển hàm `syncPhysics()` (hoặc logic đồng bộ velocity) lên DÒNG ĐẦU TIÊN trong `update(dt)` của tất cả quái vật và vật phẩm. Đảm bảo thay đổi lực không đè mất kết quả của frame trước.
-  2. Việc này loại bỏ hoàn toàn lỗi xuyên đất, bay lơ lửng, kẹt block của quái vật và các món đồ.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
+- **File áº£nh hÆ°á»Ÿng:** `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Blooper.cpp`, `src/entities/HammerBro.cpp`, `src/entities/Lakitu.cpp`, `src/entities/Spiny.cpp`, `src/entities/BulletBill.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `include/items/Star.h`, `src/level/Level.cpp`, `tests/PvpArenaTests.cpp`, `levels/pvp_arena.txt`.
+- **MÃ´ táº£:**
+  1. **Äá»“ng bá»™ Box2D (`syncPhysics()`) Ä‘áº§u `update(dt)`**: Di chuyá»ƒn hÃ m `syncPhysics()` (hoáº·c logic Ä‘á»“ng bá»™ velocity) lÃªn DÃ’NG Äáº¦U TIÃŠN trong `update(dt)` cá»§a táº¥t cáº£ quÃ¡i váº­t vÃ  váº­t pháº©m. Äáº£m báº£o thay Ä‘á»•i lá»±c khÃ´ng Ä‘Ã¨ máº¥t káº¿t quáº£ cá»§a frame trÆ°á»›c.
+  2. Viá»‡c nÃ y loáº¡i bá» hoÃ n toÃ n lá»—i xuyÃªn Ä‘áº¥t, bay lÆ¡ lá»­ng, káº¹t block cá»§a quÃ¡i váº­t vÃ  cÃ¡c mÃ³n Ä‘á»“.
 
-### Entry #47: [Feature & Visual Polish] - Hoạt Ảnh Chui Ra Khỏi Cống (Pipe Exit / Emerging) & Đồng Bộ Hoàn Hảo Cho Luigi
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Bổ sung pha diễn hoạt Chui Ra Khỏi Cống (`PipeWarpPhase::EXITING_VERTICAL`)**:
-     - Khi điểm đến (`R`) nằm trên miệng ống nước (tile phía dưới là `[` / `]` / `p` / `r` / `{` / `}`):
-       * Nhân vật khởi tạo ở vị trí ngập sâu bên trong ống nước (`target.y + marioSize.y`).
-       * Kích hoạt âm thanh chui cống (`pipepowerdown.wav`).
-       * Nhân vật trượt từ từ vươn lên (`rising UP`) với tốc độ $48\text{ px/s}$ trong $0.45\text{s}$ cho đến khi hai chân đặt vững chắc trên mép miệng cống.
-       * Khi hoàn tất, hệ thống tự động hoàn trả trọng lực và trao lại quyền điều khiển mượt mà cho người chơi.
-     - Khi điểm đến là phòng trống/trần nhà (như bonus underground room `R1`): Nhân vật xuất hiện tại vị trí và rơi tự do theo trọng lực bình thường.
-  2. **Đồng bộ toàn diện cho Luigi**:
-     - Luigi thừa hưởng trọn vẹn toàn bộ chuỗi animation chui cống / ra cống:
-       * Cúi khom người (`SpriteFrames::shared::BigLuigi::CROUCH` / `FireBigMario::CROUCH`) khi trượt vào cống đứng thể lớn.
-       * Bước đi (`SmallLuigi` / `BigLuigi` / `FireMario`) với nhịp chân cập nhật theo thời gian thực khi vào cống ngang.
-       * Trượt vươn lên mượt mà khi chui ra khỏi cống ở điểm đến.
+### Entry #47: [Feature & Visual Polish] - Hoáº¡t áº¢nh Chui Ra Khá»i Cá»‘ng (Pipe Exit / Emerging) & Äá»“ng Bá»™ HoÃ n Háº£o Cho Luigi
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **Bá»• sung pha diá»…n hoáº¡t Chui Ra Khá»i Cá»‘ng (`PipeWarpPhase::EXITING_VERTICAL`)**:
+     - Khi Ä‘iá»ƒm Ä‘áº¿n (`R`) náº±m trÃªn miá»‡ng á»‘ng nÆ°á»›c (tile phÃ­a dÆ°á»›i lÃ  `[` / `]` / `p` / `r` / `{` / `}`):
+       * NhÃ¢n váº­t khá»Ÿi táº¡o á»Ÿ vá»‹ trÃ­ ngáº­p sÃ¢u bÃªn trong á»‘ng nÆ°á»›c (`target.y + marioSize.y`).
+       * KÃ­ch hoáº¡t Ã¢m thanh chui cá»‘ng (`pipepowerdown.wav`).
+       * NhÃ¢n váº­t trÆ°á»£t tá»« tá»« vÆ°Æ¡n lÃªn (`rising UP`) vá»›i tá»‘c Ä‘á»™ $48\text{ px/s}$ trong $0.45\text{s}$ cho Ä‘áº¿n khi hai chÃ¢n Ä‘áº·t vá»¯ng cháº¯c trÃªn mÃ©p miá»‡ng cá»‘ng.
+       * Khi hoÃ n táº¥t, há»‡ thá»‘ng tá»± Ä‘á»™ng hoÃ n tráº£ trá»ng lá»±c vÃ  trao láº¡i quyá»n Ä‘iá»u khiá»ƒn mÆ°á»£t mÃ  cho ngÆ°á»i chÆ¡i.
+     - Khi Ä‘iá»ƒm Ä‘áº¿n lÃ  phÃ²ng trá»‘ng/tráº§n nhÃ  (nhÆ° bonus underground room `R1`): NhÃ¢n váº­t xuáº¥t hiá»‡n táº¡i vá»‹ trÃ­ vÃ  rÆ¡i tá»± do theo trá»ng lá»±c bÃ¬nh thÆ°á»ng.
+  2. **Äá»“ng bá»™ toÃ n diá»‡n cho Luigi**:
+     - Luigi thá»«a hÆ°á»Ÿng trá»n váº¹n toÃ n bá»™ chuá»—i animation chui cá»‘ng / ra cá»‘ng:
+       * CÃºi khom ngÆ°á»i (`SpriteFrames::shared::BigLuigi::CROUCH` / `FireBigMario::CROUCH`) khi trÆ°á»£t vÃ o cá»‘ng Ä‘á»©ng thá»ƒ lá»›n.
+       * BÆ°á»›c Ä‘i (`SmallLuigi` / `BigLuigi` / `FireMario`) vá»›i nhá»‹p chÃ¢n cáº­p nháº­t theo thá»i gian thá»±c khi vÃ o cá»‘ng ngang.
+       * TrÆ°á»£t vÆ°Æ¡n lÃªn mÆ°á»£t mÃ  khi chui ra khá»i cá»‘ng á»Ÿ Ä‘iá»ƒm Ä‘áº¿n.
 
-### Entry #46: [Bugfix & Visual Polish] - Sửa Động Tác Bắn Đạn Lửa (Throwing Pose) & Tinh Chỉnh Hoạt Ảnh Chui Cống (Crouch / Walk Animation)
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Khắc phục lỗi nhân vật biến thành đốm lửa khi ném đạn (`setupAnimationsForState`)**:
-     - Thay thế các frame nhầm lẫn tọa độ đạn lửa/đốm nổ `SMALL_SHOOT1..3` và `BIG_SHOOT` bằng các tư thế ném đạn chính thống của Mario/Luigi:
-       * `FIRE_SUPER`: Dùng `SpriteFrames::shared::FireBigMario::ACTION` (Frame 14, `{264, 139}, {16, 32}`) - tư thế vung tay ném cầu lửa chuẩn NES.
-       * `FIRE_SMALL`: Dùng `SpriteFrames::shared::FireSmallMario::WALK3` (Frame 3, `{56, 116}, {16, 16}`) - tư thế đưa tay ra trước ném đạn.
-     - Cập nhật kiểm thử `testLuigiFireBodyUsesLuigiRows` trong `tests/MarioPhysicsTests.cpp`.
-  2. **Bổ sung tư thế cúi ngồi (`crouch`) cho Mario & Luigi**:
-     - Nạp animation `"crouch"` với các frame `BigMario::CROUCH`, `BigLuigi::CROUCH` và `FireBigMario::CROUCH`.
-     - Kích hoạt `"crouch"` khi người chơi giữ phím Xuống trên mặt đất ở thể Lớn/Lửa trong `Mario::update`.
-  3. **Nâng cấp hoạt ảnh chui cống sống động, tự nhiên**:
-     - Khi chui vào cống ngang (`H`): Mario bước đi liên tục (`"walk"` với các frame chân chuyển động theo thời gian thực nhờ `updateVisuals(dt)`).
-     - Khi chui xuống cống đứng (`[` / `p`): Mario thể lớn tự động cúi người (`"crouch"`), Mario thể nhỏ bước/đứng tự nhiên, vị trí ngang được nội suy mượt mà vào tâm miệng cống thay vì dịch chuyển giật cục.
-     - Diễn hoạt liên tục cập nhật sprite frames trong suốt quá trình chui cống.
+### Entry #46: [Bugfix & Visual Polish] - Sá»­a Äá»™ng TÃ¡c Báº¯n Äáº¡n Lá»­a (Throwing Pose) & Tinh Chá»‰nh Hoáº¡t áº¢nh Chui Cá»‘ng (Crouch / Walk Animation)
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **Kháº¯c phá»¥c lá»—i nhÃ¢n váº­t biáº¿n thÃ nh Ä‘á»‘m lá»­a khi nÃ©m Ä‘áº¡n (`setupAnimationsForState`)**:
+     - Thay tháº¿ cÃ¡c frame nháº§m láº«n tá»a Ä‘á»™ Ä‘áº¡n lá»­a/Ä‘á»‘m ná»• `SMALL_SHOOT1..3` vÃ  `BIG_SHOOT` báº±ng cÃ¡c tÆ° tháº¿ nÃ©m Ä‘áº¡n chÃ­nh thá»‘ng cá»§a Mario/Luigi:
+       * `FIRE_SUPER`: DÃ¹ng `SpriteFrames::shared::FireBigMario::ACTION` (Frame 14, `{264, 139}, {16, 32}`) - tÆ° tháº¿ vung tay nÃ©m cáº§u lá»­a chuáº©n NES.
+       * `FIRE_SMALL`: DÃ¹ng `SpriteFrames::shared::FireSmallMario::WALK3` (Frame 3, `{56, 116}, {16, 16}`) - tÆ° tháº¿ Ä‘Æ°a tay ra trÆ°á»›c nÃ©m Ä‘áº¡n.
+     - Cáº­p nháº­t kiá»ƒm thá»­ `testLuigiFireBodyUsesLuigiRows` trong `tests/MarioPhysicsTests.cpp`.
+  2. **Bá»• sung tÆ° tháº¿ cÃºi ngá»“i (`crouch`) cho Mario & Luigi**:
+     - Náº¡p animation `"crouch"` vá»›i cÃ¡c frame `BigMario::CROUCH`, `BigLuigi::CROUCH` vÃ  `FireBigMario::CROUCH`.
+     - KÃ­ch hoáº¡t `"crouch"` khi ngÆ°á»i chÆ¡i giá»¯ phÃ­m Xuá»‘ng trÃªn máº·t Ä‘áº¥t á»Ÿ thá»ƒ Lá»›n/Lá»­a trong `Mario::update`.
+  3. **NÃ¢ng cáº¥p hoáº¡t áº£nh chui cá»‘ng sá»‘ng Ä‘á»™ng, tá»± nhiÃªn**:
+     - Khi chui vÃ o cá»‘ng ngang (`H`): Mario bÆ°á»›c Ä‘i liÃªn tá»¥c (`"walk"` vá»›i cÃ¡c frame chÃ¢n chuyá»ƒn Ä‘á»™ng theo thá»i gian thá»±c nhá» `updateVisuals(dt)`).
+     - Khi chui xuá»‘ng cá»‘ng Ä‘á»©ng (`[` / `p`): Mario thá»ƒ lá»›n tá»± Ä‘á»™ng cÃºi ngÆ°á»i (`"crouch"`), Mario thá»ƒ nhá» bÆ°á»›c/Ä‘á»©ng tá»± nhiÃªn, vá»‹ trÃ­ ngang Ä‘Æ°á»£c ná»™i suy mÆ°á»£t mÃ  vÃ o tÃ¢m miá»‡ng cá»‘ng thay vÃ¬ dá»‹ch chuyá»ƒn giáº­t cá»¥c.
+     - Diá»…n hoáº¡t liÃªn tá»¥c cáº­p nháº­t sprite frames trong suá»‘t quÃ¡ trÃ¬nh chui cá»‘ng.
 
-### Entry #45: [Feature & Visual Polish] - Hoạt Ảnh Chui Cống Mượt Mà, Âm Thanh & Độ Trễ Chuyển Cảnh Khi Warp
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Bổ sung State Machine Chui Cống (`PipeWarpPhase`)**: Thiết kế các pha chuyển tiếp cống `ENTERING_VERTICAL`, `ENTERING_HORIZONTAL` và `WARPING_DELAY`.
-  2. **Hoạt ảnh thụt vào cống mượt mà (`startPipeWarp` & `updatePipeWarp`)**:
-     - Cống thẳng đứng (`[` / `p`): Khi đứng trên miệng cống và nhấn phím Xuống, Mario được căn giữa miệng cống, phát âm thanh chui cống kinh điển (`pipepowerdown.wav`), và trượt dần xuống miệng cống với tốc độ $48\text{ px/s}$ trong $0.5\text{s}$ (ẩn dần phía sau lớp foreground tile của cống).
-     - Cống nằm ngang (`H`): Khi đi sang phải chạm miệng cống ngang, Mario chơi hoạt ảnh bước đi và trượt dần vào trong lòng cống trong $0.5\text{s}$.
-  3. **Độ trễ chuyển cảnh tự nhiên (`WARPING_DELAY`)**: Sau khi chui vào cống, game tạo khoảng delay $0.35\text{s}$ để camera và vị trí dịch chuyển tới điểm đến (`R`), loại bỏ hoàn toàn cảm giác giật dịch chuyển tức thời. Tổng thời gian diễn hoạt chuyển cống là $\approx 0.85\text{s}$ chuẩn mực theo phong cách NES SMB1.
-  4. **Bảo toàn tương tác vật lý & va chạm**: Khóa di chuyển vật lý và miễn nhiễm sát thương trong suốt thời gian diễn hoạt chui cống, tự động phục hồi trọng lực và quyền điều khiển ngay khi kết thúc warp.
+### Entry #45: [Feature & Visual Polish] - Hoáº¡t áº¢nh Chui Cá»‘ng MÆ°á»£t MÃ , Ã‚m Thanh & Äá»™ Trá»… Chuyá»ƒn Cáº£nh Khi Warp
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/level/Level.h`, `src/level/Level.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **Bá»• sung State Machine Chui Cá»‘ng (`PipeWarpPhase`)**: Thiáº¿t káº¿ cÃ¡c pha chuyá»ƒn tiáº¿p cá»‘ng `ENTERING_VERTICAL`, `ENTERING_HORIZONTAL` vÃ  `WARPING_DELAY`.
+  2. **Hoáº¡t áº£nh thá»¥t vÃ o cá»‘ng mÆ°á»£t mÃ  (`startPipeWarp` & `updatePipeWarp`)**:
+     - Cá»‘ng tháº³ng Ä‘á»©ng (`[` / `p`): Khi Ä‘á»©ng trÃªn miá»‡ng cá»‘ng vÃ  nháº¥n phÃ­m Xuá»‘ng, Mario Ä‘Æ°á»£c cÄƒn giá»¯a miá»‡ng cá»‘ng, phÃ¡t Ã¢m thanh chui cá»‘ng kinh Ä‘iá»ƒn (`pipepowerdown.wav`), vÃ  trÆ°á»£t dáº§n xuá»‘ng miá»‡ng cá»‘ng vá»›i tá»‘c Ä‘á»™ $48\text{ px/s}$ trong $0.5\text{s}$ (áº©n dáº§n phÃ­a sau lá»›p foreground tile cá»§a cá»‘ng).
+     - Cá»‘ng náº±m ngang (`H`): Khi Ä‘i sang pháº£i cháº¡m miá»‡ng cá»‘ng ngang, Mario chÆ¡i hoáº¡t áº£nh bÆ°á»›c Ä‘i vÃ  trÆ°á»£t dáº§n vÃ o trong lÃ²ng cá»‘ng trong $0.5\text{s}$.
+  3. **Äá»™ trá»… chuyá»ƒn cáº£nh tá»± nhiÃªn (`WARPING_DELAY`)**: Sau khi chui vÃ o cá»‘ng, game táº¡o khoáº£ng delay $0.35\text{s}$ Ä‘á»ƒ camera vÃ  vá»‹ trÃ­ dá»‹ch chuyá»ƒn tá»›i Ä‘iá»ƒm Ä‘áº¿n (`R`), loáº¡i bá» hoÃ n toÃ n cáº£m giÃ¡c giáº­t dá»‹ch chuyá»ƒn tá»©c thá»i. Tá»•ng thá»i gian diá»…n hoáº¡t chuyá»ƒn cá»‘ng lÃ  $\approx 0.85\text{s}$ chuáº©n má»±c theo phong cÃ¡ch NES SMB1.
+  4. **Báº£o toÃ n tÆ°Æ¡ng tÃ¡c váº­t lÃ½ & va cháº¡m**: KhÃ³a di chuyá»ƒn váº­t lÃ½ vÃ  miá»…n nhiá»…m sÃ¡t thÆ°Æ¡ng trong suá»‘t thá»i gian diá»…n hoáº¡t chui cá»‘ng, tá»± Ä‘á»™ng phá»¥c há»“i trá»ng lá»±c vÃ  quyá»n Ä‘iá»u khiá»ƒn ngay khi káº¿t thÃºc warp.
 
-### Entry #44: [Bugfix & Visual Polish] - Sửa Lỗi Hoạt Ảnh Biến Hình Hoa Lửa (Giữ Đúng Cỡ Thân) & Đồng Bộ Dạng Lửa (Fire Form) Cho Luigi
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `include/core/SpriteFrames_shared.h`, `src/entities/Mario.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Đồng bộ hóa bộ Sprite Dạng Lửa (`MarioState::FIRE_SMALL`, `MarioState::FIRE_SUPER`)**: Quy chuẩn Luigi và Mario dùng chung bộ sprite form Lửa (`SpriteFrames::FireSmallMario` và `SpriteFrames::FireBigMario`). Khắc phục lỗi Luigi khi ở trạng thái Lửa lại dùng frame `SmallLuigi`/`BigLuigi` màu xanh lá thông thường.
-  2. **Tách chuỗi biến hình Lửa theo cấp thân (`smallFireSequence` & `bigFireSequence`)**: Bổ sung các chuỗi chớp nháy màu lửa đồng cấp kích thước trong `SpriteFrames_shared.h` (dùng các frame màu thay thế `ALT1`, `ALT2`):
-     - `smallFireSequence()`: Chuỗi frame 16x16 `{SMALL, SMALL_ALT1, SMALL_ALT2, ...}` cho thể nhỏ.
-     - `bigFireSequence()`: Chuỗi frame 16x32 `{BIG, BIG_ALT1, BIG_ALT2, ...}` cho thể lớn.
-  3. **Khắc phục lỗi "Khổng Lồ Hóa" khi ăn Hoa Lửa (`Mario::applyStateTransition`)**: Tách biệt rõ ràng điều kiện Fire Transition (`isFireUpgrade` / `isFireDowngrade`) với Body Growth (`isGrowth` / `isShrink`). Khi Mario/Luigi ở thể nhỏ ăn Hoa Lửa, game kích hoạt đúng `smallFireSequence()` giữ nguyên chiều cao 16px và chỉ chớp màu lửa, triệt tiêu hoàn toàn hiện tượng bị phóng to lên Big/Medium rồi mới thu nhỏ về.
-  4. **Cập nhật Unit Test kiểm thử (`tests/MarioPhysicsTests.cpp`)**: Điều chỉnh `testLuigiFireBodyUsesLuigiRows` kiểm tra chính xác các frame Lửa (`FireSmallMario`, `FireBigMario`) và khả năng bắn đạn lửa cho Luigi. 100% test suite (20/20 CTest) vượt qua thành công.
+### Entry #44: [Bugfix & Visual Polish] - Sá»­a Lá»—i Hoáº¡t áº¢nh Biáº¿n HÃ¬nh Hoa Lá»­a (Giá»¯ ÄÃºng Cá»¡ ThÃ¢n) & Äá»“ng Bá»™ Dáº¡ng Lá»­a (Fire Form) Cho Luigi
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/core/SpriteFrames_shared.h`, `src/entities/Mario.cpp`, `tests/MarioPhysicsTests.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **Äá»“ng bá»™ hÃ³a bá»™ Sprite Dáº¡ng Lá»­a (`MarioState::FIRE_SMALL`, `MarioState::FIRE_SUPER`)**: Quy chuáº©n Luigi vÃ  Mario dÃ¹ng chung bá»™ sprite form Lá»­a (`SpriteFrames::FireSmallMario` vÃ  `SpriteFrames::FireBigMario`). Kháº¯c phá»¥c lá»—i Luigi khi á»Ÿ tráº¡ng thÃ¡i Lá»­a láº¡i dÃ¹ng frame `SmallLuigi`/`BigLuigi` mÃ u xanh lÃ¡ thÃ´ng thÆ°á»ng.
+  2. **TÃ¡ch chuá»—i biáº¿n hÃ¬nh Lá»­a theo cáº¥p thÃ¢n (`smallFireSequence` & `bigFireSequence`)**: Bá»• sung cÃ¡c chuá»—i chá»›p nhÃ¡y mÃ u lá»­a Ä‘á»“ng cáº¥p kÃ­ch thÆ°á»›c trong `SpriteFrames_shared.h` (dÃ¹ng cÃ¡c frame mÃ u thay tháº¿ `ALT1`, `ALT2`):
+     - `smallFireSequence()`: Chuá»—i frame 16x16 `{SMALL, SMALL_ALT1, SMALL_ALT2, ...}` cho thá»ƒ nhá».
+     - `bigFireSequence()`: Chuá»—i frame 16x32 `{BIG, BIG_ALT1, BIG_ALT2, ...}` cho thá»ƒ lá»›n.
+  3. **Kháº¯c phá»¥c lá»—i "Khá»•ng Lá»“ HÃ³a" khi Äƒn Hoa Lá»­a (`Mario::applyStateTransition`)**: TÃ¡ch biá»‡t rÃµ rÃ ng Ä‘iá»u kiá»‡n Fire Transition (`isFireUpgrade` / `isFireDowngrade`) vá»›i Body Growth (`isGrowth` / `isShrink`). Khi Mario/Luigi á»Ÿ thá»ƒ nhá» Äƒn Hoa Lá»­a, game kÃ­ch hoáº¡t Ä‘Ãºng `smallFireSequence()` giá»¯ nguyÃªn chiá»u cao 16px vÃ  chá»‰ chá»›p mÃ u lá»­a, triá»‡t tiÃªu hoÃ n toÃ n hiá»‡n tÆ°á»£ng bá»‹ phÃ³ng to lÃªn Big/Medium rá»“i má»›i thu nhá» vá».
+  4. **Cáº­p nháº­t Unit Test kiá»ƒm thá»­ (`tests/MarioPhysicsTests.cpp`)**: Äiá»u chá»‰nh `testLuigiFireBodyUsesLuigiRows` kiá»ƒm tra chÃ­nh xÃ¡c cÃ¡c frame Lá»­a (`FireSmallMario`, `FireBigMario`) vÃ  kháº£ nÄƒng báº¯n Ä‘áº¡n lá»­a cho Luigi. 100% test suite (20/20 CTest) vÆ°á»£t qua thÃ nh cÃ´ng.
 
-### Entry #43: [Bugfix & Visual Polish] - Khắc Phục Hoạt Ảnh Biến Hình Cùng Thể Thân, Động Tác Ném Lửa & Logic Bất Tử Cho Mario / Luigi
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `src/entities/Mario.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Hoạt ảnh biến hình khi ăn hoa lửa (`Mario::applyStateTransition`)**: Bổ sung xử lý `isFireUpgrade` và `isFireDowngrade` khi chuyển trạng thái giữa các dạng cùng thể lực (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`). Đảm bảo animation `transform` luôn được nạp chuỗi `growSequence()` / `shrinkSequence()` tương ứng thay vì bị bỏ qua làm nhân vật bị đơ cứng ở thế đứng `idle`.
-  2. **Bảo toàn động tác ném đạn lửa (`Mario::update`)**: Trong thang ưu tiên animation của `update()`, bảo lưu clip `"action"` (ném lửa) khi `!m_animationSystem->isFinished()`. Khắc phục lỗi khi Mario/Luigi vừa chạy/nhảy vừa bắn đạn thì clip ném lửa bị frame `walk`/`jump` ghi đè ngay ở frame kế tiếp.
-  3. **Sửa lỗi tính chu kỳ màu Sao Bất Tử (`Mario::updateInvincibility`)**: Thay thế phép tính hardcode `(10.f - m_starInvincibilityTimer)` bằng công thức modulo dương `(static_cast<int>(m_starInvincibilityTimer * 15.f) % 6 + 6) % 6`. Loại bỏ hoàn toàn lỗi tràn số âm khiến nhân vật bị kẹt cứng ở màu đỏ khi thời gian sao $>10$s.
-  4. **Đồng bộ nhấp nháy Biến hình và Bất tử do sát thương**: Bổ sung guard khi kết thúc biến hình (`m_transformTimer <= 0.f`), chỉ reset màu về `White` nếu nhân vật không còn trong thời gian bất tử `isInvincible` / `isStarInvincible`.
-  5. Cập nhật và đồng bộ tọa độ kiểm thử `ElevatorTests.cpp` và `CheepCheepTests.cpp`, đảm bảo toàn bộ 20/20 bài kiểm thử CTest đạt 100%.
+### Entry #43: [Bugfix & Visual Polish] - Kháº¯c Phá»¥c Hoáº¡t áº¢nh Biáº¿n HÃ¬nh CÃ¹ng Thá»ƒ ThÃ¢n, Äá»™ng TÃ¡c NÃ©m Lá»­a & Logic Báº¥t Tá»­ Cho Mario / Luigi
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `src/entities/Mario.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **Hoáº¡t áº£nh biáº¿n hÃ¬nh khi Äƒn hoa lá»­a (`Mario::applyStateTransition`)**: Bá»• sung xá»­ lÃ½ `isFireUpgrade` vÃ  `isFireDowngrade` khi chuyá»ƒn tráº¡ng thÃ¡i giá»¯a cÃ¡c dáº¡ng cÃ¹ng thá»ƒ lá»±c (`SMALL <-> FIRE_SMALL`, `SUPER <-> FIRE_SUPER`). Äáº£m báº£o animation `transform` luÃ´n Ä‘Æ°á»£c náº¡p chuá»—i `growSequence()` / `shrinkSequence()` tÆ°Æ¡ng á»©ng thay vÃ¬ bá»‹ bá» qua lÃ m nhÃ¢n váº­t bá»‹ Ä‘Æ¡ cá»©ng á»Ÿ tháº¿ Ä‘á»©ng `idle`.
+  2. **Báº£o toÃ n Ä‘á»™ng tÃ¡c nÃ©m Ä‘áº¡n lá»­a (`Mario::update`)**: Trong thang Æ°u tiÃªn animation cá»§a `update()`, báº£o lÆ°u clip `"action"` (nÃ©m lá»­a) khi `!m_animationSystem->isFinished()`. Kháº¯c phá»¥c lá»—i khi Mario/Luigi vá»«a cháº¡y/nháº£y vá»«a báº¯n Ä‘áº¡n thÃ¬ clip nÃ©m lá»­a bá»‹ frame `walk`/`jump` ghi Ä‘Ã¨ ngay á»Ÿ frame káº¿ tiáº¿p.
+  3. **Sá»­a lá»—i tÃ­nh chu ká»³ mÃ u Sao Báº¥t Tá»­ (`Mario::updateInvincibility`)**: Thay tháº¿ phÃ©p tÃ­nh hardcode `(10.f - m_starInvincibilityTimer)` báº±ng cÃ´ng thá»©c modulo dÆ°Æ¡ng `(static_cast<int>(m_starInvincibilityTimer * 15.f) % 6 + 6) % 6`. Loáº¡i bá» hoÃ n toÃ n lá»—i trÃ n sá»‘ Ã¢m khiáº¿n nhÃ¢n váº­t bá»‹ káº¹t cá»©ng á»Ÿ mÃ u Ä‘á» khi thá»i gian sao $>10$s.
+  4. **Äá»“ng bá»™ nháº¥p nhÃ¡y Biáº¿n hÃ¬nh vÃ  Báº¥t tá»­ do sÃ¡t thÆ°Æ¡ng**: Bá»• sung guard khi káº¿t thÃºc biáº¿n hÃ¬nh (`m_transformTimer <= 0.f`), chá»‰ reset mÃ u vá» `White` náº¿u nhÃ¢n váº­t khÃ´ng cÃ²n trong thá»i gian báº¥t tá»­ `isInvincible` / `isStarInvincible`.
+  5. Cáº­p nháº­t vÃ  Ä‘á»“ng bá»™ tá»a Ä‘á»™ kiá»ƒm thá»­ `ElevatorTests.cpp` vÃ  `CheepCheepTests.cpp`, Ä‘áº£m báº£o toÃ n bá»™ 20/20 bÃ i kiá»ƒm thá»­ CTest Ä‘áº¡t 100%.
 
-### Entry #42: [Feature & Map Layout] - Tinh Chỉnh Cụm Elevator, Bổ Sung Tuyến Cheep Cheep Thứ 2 & Tăng Tốc Độ Chim Bay
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `levels/level2.txt`, `src/level/Level.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
-- **Mô tả:**
-  1. **Lùi cụm thang máy trước sang phải:** Dịch chuyển Elevator 1 sang cột `191` (Start `(191, 13)`, End `(191, 7)`) và Cheep Cheep 1 sang cột `189` (Start `(189, 13)`, End `(189, 7)`), tạo khoảng cách nhảy cách đều và thẩm mỹ ở hố vực thứ nhất.
-  2. **Bổ sung cụm Cheep Cheep thứ 2 trước thang máy sau:** Đặt Cheep Cheep 2 tại cột `203` (Start `(203, 13)`, End `(203, 4)`) ngay trước Elevator 2 (cột `205`, Start `(205, 12)`, End `(205, 4)`), tạo nhịp thử thách đồng bộ và đối xứng cho người chơi khi vượt qua 2 cụm vực sâu liên tiếp trong Level 2.
-  3. **Tăng tốc độ bay cho Cheep Cheep:** Trong `Level::spawnCheepCheepRoutesFromTileMap()` (`src/level/Level.cpp`), tăng tốc độ route của Cheep Cheep từ $40\text{ px/s}$ lên $75\text{ px/s}$ (nhanh hơn tốc độ mặc định $60\text{ px/s}$ của Elevator), giúp cá bay lượn linh hoạt và tạo độ nhịp điệu cao hơn thang máy.
-  4. Cập nhật các bộ kiểm thử `tests/ElevatorTests.cpp` và `tests/CheepCheepTests.cpp`, đồng bộ file map và kiểm thử toàn diện đạt 100% (20/20 CTest passed).
+### Entry #42: [Feature & Map Layout] - Tinh Chá»‰nh Cá»¥m Elevator, Bá»• Sung Tuyáº¿n Cheep Cheep Thá»© 2 & TÄƒng Tá»‘c Äá»™ Chim Bay
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `levels/level2.txt`, `src/level/Level.cpp`, `tests/ElevatorTests.cpp`, `tests/CheepCheepTests.cpp`, `docs/change_in_develop.md`.
+- **MÃ´ táº£:**
+  1. **LÃ¹i cá»¥m thang mÃ¡y trÆ°á»›c sang pháº£i:** Dá»‹ch chuyá»ƒn Elevator 1 sang cá»™t `191` (Start `(191, 13)`, End `(191, 7)`) vÃ  Cheep Cheep 1 sang cá»™t `189` (Start `(189, 13)`, End `(189, 7)`), táº¡o khoáº£ng cÃ¡ch nháº£y cÃ¡ch Ä‘á»u vÃ  tháº©m má»¹ á»Ÿ há»‘ vá»±c thá»© nháº¥t.
+  2. **Bá»• sung cá»¥m Cheep Cheep thá»© 2 trÆ°á»›c thang mÃ¡y sau:** Äáº·t Cheep Cheep 2 táº¡i cá»™t `203` (Start `(203, 13)`, End `(203, 4)`) ngay trÆ°á»›c Elevator 2 (cá»™t `205`, Start `(205, 12)`, End `(205, 4)`), táº¡o nhá»‹p thá»­ thÃ¡ch Ä‘á»“ng bá»™ vÃ  Ä‘á»‘i xá»©ng cho ngÆ°á»i chÆ¡i khi vÆ°á»£t qua 2 cá»¥m vá»±c sÃ¢u liÃªn tiáº¿p trong Level 2.
+  3. **TÄƒng tá»‘c Ä‘á»™ bay cho Cheep Cheep:** Trong `Level::spawnCheepCheepRoutesFromTileMap()` (`src/level/Level.cpp`), tÄƒng tá»‘c Ä‘á»™ route cá»§a Cheep Cheep tá»« $40\text{ px/s}$ lÃªn $75\text{ px/s}$ (nhanh hÆ¡n tá»‘c Ä‘á»™ máº·c Ä‘á»‹nh $60\text{ px/s}$ cá»§a Elevator), giÃºp cÃ¡ bay lÆ°á»£n linh hoáº¡t vÃ  táº¡o Ä‘á»™ nhá»‹p Ä‘iá»‡u cao hÆ¡n thang mÃ¡y.
+  4. Cáº­p nháº­t cÃ¡c bá»™ kiá»ƒm thá»­ `tests/ElevatorTests.cpp` vÃ  `tests/CheepCheepTests.cpp`, Ä‘á»“ng bá»™ file map vÃ  kiá»ƒm thá»­ toÃ n diá»‡n Ä‘áº¡t 100% (20/20 CTest passed).
 
-### Entry #41: [Feature & State Flow] - Tích Hợp Luồng Chọn Nhân Vật Mario / Luigi & Đặc Tính Vật Lý Riêng Biệt
-- **Trạng thái:** Đã hoàn thành 100%, 20/20 CTest passed.
-- **File ảnh hưởng:** `include/states/CharacterSelectState.h`, `src/states/CharacterSelectState.cpp`, `include/core/GameProgress.h`, `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `include/states/GameOverState.h`, `src/states/GameOverState.cpp`, `include/states/MenuState.h`, `src/states/MenuState.cpp`, `include/states/PlayState.h`, `src/states/PlayState.cpp`, `CMakeLists.txt`, `tests/CharacterFlowTests.cpp`, `tests/Gate0ContractTests.cpp`, `tests/LevelCatalogTests.cpp`, `tests/MarioPhysicsTests.cpp`.
-- **Mô tả:**
-  1. Thêm màn hình `CharacterSelectState` cho phép người chơi chọn Mario hoặc Luigi từ Main Menu trước khi vào `PlayState`.
-  2. Bổ sung profile vật lý riêng biệt `CharacterProfile` cho Mario và Luigi:
-     - **Mario:** Chạy nhanh hơn (walk: 175 px/s, run: 280 px/s), lực nhảy tiêu chuẩn (460).
-     - **Luigi:** Nhảy cao hơn (+10.8% lực nhảy: 510), chạy chậm hơn (~ -10% tốc độ: walk 160 px/s, run 250 px/s), tốc độ dưới nước cũng được scale tương ứng.
-  3. Cập nhật Sprite atlas cho Luigi: nạp đúng chuỗi biến hình Grow/Shrink từ `SpriteFrames::shared::GrowShrink::Luigi`, các animation Lửa (`FIRE_SMALL`, `FIRE_SUPER`) giữ thân Luigi và nạp động tác bắn lửa `SpriteFrames::shared::FireShooting::Luigi`.
-  4. Lưu trữ danh tính `CharacterType` trong `GameProgress`, tự động duy trì qua các màn (Level 1..4), khi respawn và khi nhấn **RETRY** ở màn `GameOverState`.
-  5. Thêm cờ chống double-transition (`m_transitioning`) trong các UI States để tránh lỗi duplicate state khi spam phím/chuột.
-  6. Bổ sung bộ test `character_flow_tests` và mở rộng các test contract, kiểm thử đạt 100% (20/20 CTest suites).
+### Entry #41: [Feature & State Flow] - TÃ­ch Há»£p Luá»“ng Chá»n NhÃ¢n Váº­t Mario / Luigi & Äáº·c TÃ­nh Váº­t LÃ½ RiÃªng Biá»‡t
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 20/20 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/states/CharacterSelectState.h`, `src/states/CharacterSelectState.cpp`, `include/core/GameProgress.h`, `include/entities/Mario.h`, `src/entities/Mario.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `include/states/GameOverState.h`, `src/states/GameOverState.cpp`, `include/states/MenuState.h`, `src/states/MenuState.cpp`, `include/states/PlayState.h`, `src/states/PlayState.cpp`, `CMakeLists.txt`, `tests/CharacterFlowTests.cpp`, `tests/Gate0ContractTests.cpp`, `tests/LevelCatalogTests.cpp`, `tests/MarioPhysicsTests.cpp`.
+- **MÃ´ táº£:**
+  1. ThÃªm mÃ n hÃ¬nh `CharacterSelectState` cho phÃ©p ngÆ°á»i chÆ¡i chá»n Mario hoáº·c Luigi tá»« Main Menu trÆ°á»›c khi vÃ o `PlayState`.
+  2. Bá»• sung profile váº­t lÃ½ riÃªng biá»‡t `CharacterProfile` cho Mario vÃ  Luigi:
+     - **Mario:** Cháº¡y nhanh hÆ¡n (walk: 175 px/s, run: 280 px/s), lá»±c nháº£y tiÃªu chuáº©n (460).
+     - **Luigi:** Nháº£y cao hÆ¡n (+10.8% lá»±c nháº£y: 510), cháº¡y cháº­m hÆ¡n (~ -10% tá»‘c Ä‘á»™: walk 160 px/s, run 250 px/s), tá»‘c Ä‘á»™ dÆ°á»›i nÆ°á»›c cÅ©ng Ä‘Æ°á»£c scale tÆ°Æ¡ng á»©ng.
+  3. Cáº­p nháº­t Sprite atlas cho Luigi: náº¡p Ä‘Ãºng chuá»—i biáº¿n hÃ¬nh Grow/Shrink tá»« `SpriteFrames::shared::GrowShrink::Luigi`, cÃ¡c animation Lá»­a (`FIRE_SMALL`, `FIRE_SUPER`) giá»¯ thÃ¢n Luigi vÃ  náº¡p Ä‘á»™ng tÃ¡c báº¯n lá»­a `SpriteFrames::shared::FireShooting::Luigi`.
+  4. LÆ°u trá»¯ danh tÃ­nh `CharacterType` trong `GameProgress`, tá»± Ä‘á»™ng duy trÃ¬ qua cÃ¡c mÃ n (Level 1..4), khi respawn vÃ  khi nháº¥n **RETRY** á»Ÿ mÃ n `GameOverState`.
+  5. ThÃªm cá» chá»‘ng double-transition (`m_transitioning`) trong cÃ¡c UI States Ä‘á»ƒ trÃ¡nh lá»—i duplicate state khi spam phÃ­m/chuá»™t.
+  6. Bá»• sung bá»™ test `character_flow_tests` vÃ  má»Ÿ rá»™ng cÃ¡c test contract, kiá»ƒm thá»­ Ä‘áº¡t 100% (20/20 CTest suites).
 
-### Entry #40: [Feature] - Triển Khai Quái Cheep Cheep (Swimming & Jumping) & Cơ Chế Spawn Ngoài Không Đổi Map
-- **Trạng thái:** Đã hoàn thành 100%, 19/19 CTest passed.
-- **File ảnh hưởng:** `include/entities/CheepCheep.h`, `src/entities/CheepCheep.cpp`, `include/level/CheepCheepConfig.h`, `src/level/CheepCheepConfig.cpp`, `levels/cheep_cheep.txt`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_udw.h`, `include/entities/Entity.h`, `include/patterns/EntityFactory.h`, `src/patterns/EntityFactory.cpp`, `src/physics/CollisionManager.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/CheepCheepTests.cpp`, `CMakeLists.txt`.
-- **Mô tả:**
-  1. Thêm lớp `CheepCheep` kế thừa từ `Enemy` hỗ trợ 2 hành vi chuẩn NES canon:
-     - `SWIMMING`: Bơi ngang dưới nước (vận tốc đều cho cá xanh, vận tốc sóng sin $y(t) = y_0 + A\sin(\omega t)$ cho cá đỏ), không thể giẫm (chạm vào gây sát thương cho Mario), tiêu diệt được bằng FireBall và Starman.
-     - `JUMPING`: Nhảy vọt từ đáy viewport camera lên theo parabol trọng lực, Mario có thể giẫm (`onStomp`) để nảy lên và cộng 200 điểm, hoặc bắn FireBall.
-  2. Bổ sung hỗ trợ cặp ký hiệu tuyến đường bay trực tiếp trong bản đồ map `.txt` (như thang máy `^`/`~`): dùng `'c'` làm điểm bắt đầu (Start) và `'x'` làm điểm kết thúc (End). Nếu cùng cột sẽ tự động bay lên $\leftrightarrow$ xuống tuần hoàn; nếu cùng hàng sẽ bơi/bay ngang qua $\leftrightarrow$ lại tuần hoàn với tốc độ vừa phải ($40\text{ px/s}$). Nếu đứng đơn lẻ `'c'` sẽ là cá bơi tự do, `'H'` là cá nhảy từ đáy vực.
-  3. Cập nhật `TileMap.h`, `TileMap.cpp` (`VALID_TILE_SYMBOLS`, `parseAndNormalizeCheepCheeps`), `Level.h`, `Level.cpp` và các file tài liệu (`FILE_STRUCTURE.md`, `CODING_RULES.md`, `.agents/rules/filestructure.md`, `levels/cheep_cheep.txt`).
-  4. Chuẩn hóa bộ palette sprite theme cho Cheep Cheep: tự động lấy đúng màu xám xanh Underground `(146, 164)` khi ở màn 2/Underground, màu đỏ/xanh lá ở Overworld, và màu Underwater khi ở môi trường nước.
-  5. Sửa lỗi xung đột ký tự `'H'`: xóa `'H'` khỏi `SPAWN_CODES` để bảo toàn tuyệt đối các cửa cống chuyển cảnh ngang (`H1`, `H3`, `H4`) trong Level 2, tránh hiện tượng sinh quái nhầm ở đầu cống.
-  6. Mở rộng bộ unit test `cheep_cheep_tests` kiểm thử toàn diện cả tuyến đường (routes) từ file map & file config, vận tốc, va chạm và vượt qua 100% (19/19 tests).
+### Entry #40: [Feature] - Triá»ƒn Khai QuÃ¡i Cheep Cheep (Swimming & Jumping) & CÆ¡ Cháº¿ Spawn NgoÃ i KhÃ´ng Äá»•i Map
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 19/19 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/entities/CheepCheep.h`, `src/entities/CheepCheep.cpp`, `include/level/CheepCheepConfig.h`, `src/level/CheepCheepConfig.cpp`, `levels/cheep_cheep.txt`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_udw.h`, `include/entities/Entity.h`, `include/patterns/EntityFactory.h`, `src/patterns/EntityFactory.cpp`, `src/physics/CollisionManager.cpp`, `include/level/Level.h`, `src/level/Level.cpp`, `tests/CheepCheepTests.cpp`, `CMakeLists.txt`.
+- **MÃ´ táº£:**
+  1. ThÃªm lá»›p `CheepCheep` káº¿ thá»«a tá»« `Enemy` há»— trá»£ 2 hÃ nh vi chuáº©n NES canon:
+     - `SWIMMING`: BÆ¡i ngang dÆ°á»›i nÆ°á»›c (váº­n tá»‘c Ä‘á»u cho cÃ¡ xanh, váº­n tá»‘c sÃ³ng sin $y(t) = y_0 + A\sin(\omega t)$ cho cÃ¡ Ä‘á»), khÃ´ng thá»ƒ giáº«m (cháº¡m vÃ o gÃ¢y sÃ¡t thÆ°Æ¡ng cho Mario), tiÃªu diá»‡t Ä‘Æ°á»£c báº±ng FireBall vÃ  Starman.
+     - `JUMPING`: Nháº£y vá»t tá»« Ä‘Ã¡y viewport camera lÃªn theo parabol trá»ng lá»±c, Mario cÃ³ thá»ƒ giáº«m (`onStomp`) Ä‘á»ƒ náº£y lÃªn vÃ  cá»™ng 200 Ä‘iá»ƒm, hoáº·c báº¯n FireBall.
+  2. Bá»• sung há»— trá»£ cáº·p kÃ½ hiá»‡u tuyáº¿n Ä‘Æ°á»ng bay trá»±c tiáº¿p trong báº£n Ä‘á»“ map `.txt` (nhÆ° thang mÃ¡y `^`/`~`): dÃ¹ng `'c'` lÃ m Ä‘iá»ƒm báº¯t Ä‘áº§u (Start) vÃ  `'x'` lÃ m Ä‘iá»ƒm káº¿t thÃºc (End). Náº¿u cÃ¹ng cá»™t sáº½ tá»± Ä‘á»™ng bay lÃªn $\leftrightarrow$ xuá»‘ng tuáº§n hoÃ n; náº¿u cÃ¹ng hÃ ng sáº½ bÆ¡i/bay ngang qua $\leftrightarrow$ láº¡i tuáº§n hoÃ n vá»›i tá»‘c Ä‘á»™ vá»«a pháº£i ($40\text{ px/s}$). Náº¿u Ä‘á»©ng Ä‘Æ¡n láº» `'c'` sáº½ lÃ  cÃ¡ bÆ¡i tá»± do, `'H'` lÃ  cÃ¡ nháº£y tá»« Ä‘Ã¡y vá»±c.
+  3. Cáº­p nháº­t `TileMap.h`, `TileMap.cpp` (`VALID_TILE_SYMBOLS`, `parseAndNormalizeCheepCheeps`), `Level.h`, `Level.cpp` vÃ  cÃ¡c file tÃ i liá»‡u (`FILE_STRUCTURE.md`, `CODING_RULES.md`, `.agents/rules/filestructure.md`, `levels/cheep_cheep.txt`).
+  4. Chuáº©n hÃ³a bá»™ palette sprite theme cho Cheep Cheep: tá»± Ä‘á»™ng láº¥y Ä‘Ãºng mÃ u xÃ¡m xanh Underground `(146, 164)` khi á»Ÿ mÃ n 2/Underground, mÃ u Ä‘á»/xanh lÃ¡ á»Ÿ Overworld, vÃ  mÃ u Underwater khi á»Ÿ mÃ´i trÆ°á»ng nÆ°á»›c.
+  5. Sá»­a lá»—i xung Ä‘á»™t kÃ½ tá»± `'H'`: xÃ³a `'H'` khá»i `SPAWN_CODES` Ä‘á»ƒ báº£o toÃ n tuyá»‡t Ä‘á»‘i cÃ¡c cá»­a cá»‘ng chuyá»ƒn cáº£nh ngang (`H1`, `H3`, `H4`) trong Level 2, trÃ¡nh hiá»‡n tÆ°á»£ng sinh quÃ¡i nháº§m á»Ÿ Ä‘áº§u cá»‘ng.
+  6. Má»Ÿ rá»™ng bá»™ unit test `cheep_cheep_tests` kiá»ƒm thá»­ toÃ n diá»‡n cáº£ tuyáº¿n Ä‘Æ°á»ng (routes) tá»« file map & file config, váº­n tá»‘c, va cháº¡m vÃ  vÆ°á»£t qua 100% (19/19 tests).
 
-### Entry #39: [Feature & Asset Tuning] - Bổ Sung Sprite Lâu Đài Underground (`CASTLE_UNDERGROUND`) Cho Level 2
-- **Trạng thái:** Đã hoàn thành 100%, 17/17 CTest passed.
-- **File ảnh hưởng:** `include/level/TileFrames.h`, `src/level/TileMap.cpp`
-- **Mô tả:**
-  1. Thêm định nghĩa `TileFrames::CASTLE_UNDERGROUND` với sub-rect `(419, 196, 80, 80)` trong `TileFrames.h`.
-  2. Cập nhật logic vẽ ký tự `'L'` trong `TileMap.cpp`: kiểm tra nếu `m_theme == LevelTheme::UNDERGROUND` (như Level 2) thì sử dụng sprite lâu đài màu xanh xám `CASTLE_UNDERGROUND`, các level khác vẫn giữ nguyên lâu đài `CASTLE` màu cam đỏ truyền thống.
-  3. Biên dịch thành công và vượt qua 100% bộ kiểm thử tự động 17/17 CTest.
+### Entry #39: [Feature & Asset Tuning] - Bá»• Sung Sprite LÃ¢u ÄÃ i Underground (`CASTLE_UNDERGROUND`) Cho Level 2
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 17/17 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `include/level/TileFrames.h`, `src/level/TileMap.cpp`
+- **MÃ´ táº£:**
+  1. ThÃªm Ä‘á»‹nh nghÄ©a `TileFrames::CASTLE_UNDERGROUND` vá»›i sub-rect `(419, 196, 80, 80)` trong `TileFrames.h`.
+  2. Cáº­p nháº­t logic váº½ kÃ½ tá»± `'L'` trong `TileMap.cpp`: kiá»ƒm tra náº¿u `m_theme == LevelTheme::UNDERGROUND` (nhÆ° Level 2) thÃ¬ sá»­ dá»¥ng sprite lÃ¢u Ä‘Ã i mÃ u xanh xÃ¡m `CASTLE_UNDERGROUND`, cÃ¡c level khÃ¡c váº«n giá»¯ nguyÃªn lÃ¢u Ä‘Ã i `CASTLE` mÃ u cam Ä‘á» truyá»n thá»‘ng.
+  3. BiÃªn dá»‹ch thÃ nh cÃ´ng vÃ  vÆ°á»£t qua 100% bá»™ kiá»ƒm thá»­ tá»± Ä‘á»™ng 17/17 CTest.
 
-### Entry #38: [Branch Merge] - Merge Branch `feature/sound-input` Vào `develop`
-- **Trạng thái:** Đã hoàn thành 100%.
+### Entry #38: [Branch Merge] - Merge Branch `feature/sound-input` VÃ o `develop`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
 - **Commit hash:** `b9622fb`
-- **Mô tả:**
-  1. Cập nhật nhánh địa phương `feature/sound-input` bằng cách kéo (pull) 19 commits mới nhất từ `origin/feature/sound-input`.
-  2. Thực hiện fast-forward merge thành công branch `feature/sound-input` vào branch `develop`.
-  3. Cập nhật toàn bộ các thay đổi về camera, tilemaps, level design, physics và audio integration từ `feature/sound-input` vào `develop`.
+- **MÃ´ táº£:**
+  1. Cáº­p nháº­t nhÃ¡nh Ä‘á»‹a phÆ°Æ¡ng `feature/sound-input` báº±ng cÃ¡ch kÃ©o (pull) 19 commits má»›i nháº¥t tá»« `origin/feature/sound-input`.
+  2. Thá»±c hiá»‡n fast-forward merge thÃ nh cÃ´ng branch `feature/sound-input` vÃ o branch `develop`.
+  3. Cáº­p nháº­t toÃ n bá»™ cÃ¡c thay Ä‘á»•i vá» camera, tilemaps, level design, physics vÃ  audio integration tá»« `feature/sound-input` vÃ o `develop`.
 
-### Entry #37: [Branch Merge & Test Sync] - Merge Branch `feature/sound-input` Vào `develop`
-- **Trạng thái:** Đã hoàn thành 100%, 14/14 CTest passed.
-- **File ảnh hưởng:** `tests/MarioPhysicsTests.cpp`, và các file từ `feature/sound-input` branch merge.
-- **Mô tả:**
-  1. Fast-forward merge thành công branch `feature/sound-input` vào branch `develop`.
-  2. Cập nhật `tests/MarioPhysicsTests.cpp` để khởi tạo thứ tự state `SUPER` trước `initPhysics` với kích thước `SUPER_MARIO_SIZE` (28x60) trong test `testSuperMarioTraversesTwoBlockPassage`, đồng thời đồng bộ physics foot Y calculation trong test `testGrowthFootAnchorAndClearance`.
-  3. Biên dịch 100% không cảnh báo/lỗi và vượt qua toàn bộ 14/14 unit test ctest suite.
+### Entry #37: [Branch Merge & Test Sync] - Merge Branch `feature/sound-input` VÃ o `develop`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 14/14 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `tests/MarioPhysicsTests.cpp`, vÃ  cÃ¡c file tá»« `feature/sound-input` branch merge.
+- **MÃ´ táº£:**
+  1. Fast-forward merge thÃ nh cÃ´ng branch `feature/sound-input` vÃ o branch `develop`.
+  2. Cáº­p nháº­t `tests/MarioPhysicsTests.cpp` Ä‘á»ƒ khá»Ÿi táº¡o thá»© tá»± state `SUPER` trÆ°á»›c `initPhysics` vá»›i kÃ­ch thÆ°á»›c `SUPER_MARIO_SIZE` (28x60) trong test `testSuperMarioTraversesTwoBlockPassage`, Ä‘á»“ng thá»i Ä‘á»“ng bá»™ physics foot Y calculation trong test `testGrowthFootAnchorAndClearance`.
+  3. BiÃªn dá»‹ch 100% khÃ´ng cáº£nh bÃ¡o/lá»—i vÃ  vÆ°á»£t qua toÃ n bá»™ 14/14 unit test ctest suite.
 
-### Entry #36: [Asset & Transparency Fix] - Tách Nền Trong Suốt Cho Vùng Mushroom & Sheet Backdrop (Bảo Tồn Tile Underwater)
-- **Trạng thái:** Đã hoàn thành 100%, 13/13 CTest passed.
-- **File ảnh hưởng:** `assets/textures/enemies/enemies.png`, `assets/textures/items/items_objects.png`, `assets/textures/mario/MarioLuigi.png`, `assets/textures/tiles/tileset.png`
-- **Mô tả:**
-  1. Loại bỏ toàn bộ nền xanh đậm `RGB(12, 69, 176)` và lề `RGB(0, 0, 168)`, `RGB(0, 41, 140)` trong khu vực Mushroom Platforms (`X: 0..323, Y: 356..440`) của `tileset.png`, đưa 14,093 pixel nền về `(0, 0, 0, 0)`.
-  2. **Bảo tồn 100% các tile nội dung**: Giữ nguyên toàn bộ đồ họa nấm, thân nấm, đồi núi cũng như khu vực Underwater (san hô, đồi nước, ống nước dưới nước).
-  3. Biên dịch và kiểm thử tự động thành công 100% (13/13 CTest passed).
+### Entry #36: [Asset & Transparency Fix] - TÃ¡ch Ná»n Trong Suá»‘t Cho VÃ¹ng Mushroom & Sheet Backdrop (Báº£o Tá»“n Tile Underwater)
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%, 13/13 CTest passed.
+- **File áº£nh hÆ°á»Ÿng:** `assets/textures/enemies/enemies.png`, `assets/textures/items/items_objects.png`, `assets/textures/mario/MarioLuigi.png`, `assets/textures/tiles/tileset.png`
+- **MÃ´ táº£:**
+  1. Loáº¡i bá» toÃ n bá»™ ná»n xanh Ä‘áº­m `RGB(12, 69, 176)` vÃ  lá» `RGB(0, 0, 168)`, `RGB(0, 41, 140)` trong khu vá»±c Mushroom Platforms (`X: 0..323, Y: 356..440`) cá»§a `tileset.png`, Ä‘Æ°a 14,093 pixel ná»n vá» `(0, 0, 0, 0)`.
+  2. **Báº£o tá»“n 100% cÃ¡c tile ná»™i dung**: Giá»¯ nguyÃªn toÃ n bá»™ Ä‘á»“ há»a náº¥m, thÃ¢n náº¥m, Ä‘á»“i nÃºi cÅ©ng nhÆ° khu vá»±c Underwater (san hÃ´, Ä‘á»“i nÆ°á»›c, á»‘ng nÆ°á»›c dÆ°á»›i nÆ°á»›c).
+  3. BiÃªn dá»‹ch vÃ  kiá»ƒm thá»­ tá»± Ä‘á»™ng thÃ nh cÃ´ng 100% (13/13 CTest passed).
 
-### Superseding audit — Tileset coordinates and assembled scenery (2026-08-10)
+### Superseding audit â€” Tileset coordinates and assembled scenery (2026-08-10)
 
 Entry #35 below is historical and is superseded by the current audit in
 [`docs/tileset_coordinate.md`](tileset_coordinate.md). The current contract
@@ -254,300 +255,300 @@ and records assembled bboxes for the full pole, tall pipes, and small/large
 castles. `TileMap` chroma-keys only the two known sheet backdrop colors before
 uploading the tileset; it does not remove gameplay colors such as castle holes.
 
-### Entry #35: [Doc & Asset Sync] - Rà Soát Tọa Độ Tileset Bàn Đồ (`tileset_coordinate.md`) & Khắc Phục Nhãn Sai
-- **Trạng thái:** Đã hoàn thành 100%.
-- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
-- **Mô tả:**
-  1. Tiến hành rà soát trực quan toàn bộ 340 object của `tileset.png` ($680 \times 776 \text{ px}$) đối soát với `TileFrames.h` trong C++ engine.
-  2. Phát hiện và sửa lỗi nhãn sai trong `tileset_coordinate.md` đối với nhóm STT #1–#4 (vốn bị ghi nhầm là 4 khối Ground cho 4 môi trường, thực tế là 4 khối Overworld: Ground, Brick, Stone, Hard) và nhóm STT #9–#12 (khối Underground: Ground Teal, Brick Teal, Stone, Used Block).
-  3. Khẳng định code C++ (`TileFrames.h`) đã chọn chuẩn xác $100\%$ tọa độ của toàn bộ các tile (Ground, Brick, Question Block, Castle Window/Door, Pipes, Finish Pole).
-  4. Đã dọn dẹp các script Python phụ trợ.
+### Entry #35: [Doc & Asset Sync] - RÃ  SoÃ¡t Tá»a Äá»™ Tileset BÃ n Äá»“ (`tileset_coordinate.md`) & Kháº¯c Phá»¥c NhÃ£n Sai
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
+- **File áº£nh hÆ°á»Ÿng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
+- **MÃ´ táº£:**
+  1. Tiáº¿n hÃ nh rÃ  soÃ¡t trá»±c quan toÃ n bá»™ 340 object cá»§a `tileset.png` ($680 \times 776 \text{ px}$) Ä‘á»‘i soÃ¡t vá»›i `TileFrames.h` trong C++ engine.
+  2. PhÃ¡t hiá»‡n vÃ  sá»­a lá»—i nhÃ£n sai trong `tileset_coordinate.md` Ä‘á»‘i vá»›i nhÃ³m STT #1â€“#4 (vá»‘n bá»‹ ghi nháº§m lÃ  4 khá»‘i Ground cho 4 mÃ´i trÆ°á»ng, thá»±c táº¿ lÃ  4 khá»‘i Overworld: Ground, Brick, Stone, Hard) vÃ  nhÃ³m STT #9â€“#12 (khá»‘i Underground: Ground Teal, Brick Teal, Stone, Used Block).
+  3. Kháº³ng Ä‘á»‹nh code C++ (`TileFrames.h`) Ä‘Ã£ chá»n chuáº©n xÃ¡c $100\%$ tá»a Ä‘á»™ cá»§a toÃ n bá»™ cÃ¡c tile (Ground, Brick, Question Block, Castle Window/Door, Pipes, Finish Pole).
+  4. ÄÃ£ dá»n dáº¹p cÃ¡c script Python phá»¥ trá»£.
 
-### Entry #34: [Asset & Doc Sync] - Khôi Phục Đủ 157 Khung Ảnh Quái Vật & Đồng Bộ Tọa Độ Chuẩn
-- **Trạng thái:** Đã hoàn thành 100%.
-- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `include/core/SpriteFrames_shared.h`, `docs/assets/enemies/enemy_001.png` -> `enemy_157.png`
-- **Mô tả:**
-  1. Xác minh lại tệp ảnh atlas gốc `enemies.png`: Dòng Y=24 thực tế chứa đầy đủ **4 khung Goomba bị giẫm bẹp** (`STOMPED`) ứng với 4 môi trường NES (Overworld, Underground, Castle, Underwater) với giá trị kênh Alpha opaque 255.
-  2. Khôi phục lại danh sách chuẩn xác **157 thành phần quái vật** (`enemy_001.png` đến `enemy_157.png`) trong `docs/enemies_coordinate.md`.
-  3. Đồng bộ chính xác tọa độ Koopa Xanh dưới nước (`UW_WALK1`/`UW_WALK2` và `UW_PARATROOPA_FLY1`/`UW_PARATROOPA_FLY2`) và vỏ Buzzy Beetle trong `SpriteFrames_shared.h`.
-  4. Đã tự động dọn dẹp toàn bộ các script Python phụ trợ.
-### Entry #1: [Bugfix] - Khắc Phục Lỗi Đồng Hồ Bất Tử 10s Bị Đóng Băng & Quy Tắc Trùng Lặp Hiệu Ứng NES
-- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
-- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp)
-- **Vấn đề cũ (Before):** Hàm `updateInvincibility(dt)` không được gọi trong `Mario::update()`, dẫn đến việc biến `m_starInvincibilityTimer` không bao giờ giảm và Mario bị bất tử vĩnh viễn.
-- **Phương pháp áp dụng (Methodology):** Thêm `updateInvincibility(dt)` vào vòng lặp `Mario::update()`, đồng thời áp dụng quy tắc nạp hiệu ứng chuẩn NES gốc (reset 10s khi ăn tiếp Ngôi Sao, giữ nguyên dạng Mario To / Fire Mario).
-- **Kết quả hiện tại (Impact):** Bất tử Ngôi Sao chạy chuẩn 10 giây, đổi màu Cầu Vồng sắc nét và hết giờ đúng thời hạn.
+### Entry #34: [Asset & Doc Sync] - KhÃ´i Phá»¥c Äá»§ 157 Khung áº¢nh QuÃ¡i Váº­t & Äá»“ng Bá»™ Tá»a Äá»™ Chuáº©n
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
+- **File áº£nh hÆ°á»Ÿng:** `docs/enemies_coordinate.md`, `include/core/SpriteFrames_shared.h`, `docs/assets/enemies/enemy_001.png` -> `enemy_157.png`
+- **MÃ´ táº£:**
+  1. XÃ¡c minh láº¡i tá»‡p áº£nh atlas gá»‘c `enemies.png`: DÃ²ng Y=24 thá»±c táº¿ chá»©a Ä‘áº§y Ä‘á»§ **4 khung Goomba bá»‹ giáº«m báº¹p** (`STOMPED`) á»©ng vá»›i 4 mÃ´i trÆ°á»ng NES (Overworld, Underground, Castle, Underwater) vá»›i giÃ¡ trá»‹ kÃªnh Alpha opaque 255.
+  2. KhÃ´i phá»¥c láº¡i danh sÃ¡ch chuáº©n xÃ¡c **157 thÃ nh pháº§n quÃ¡i váº­t** (`enemy_001.png` Ä‘áº¿n `enemy_157.png`) trong `docs/enemies_coordinate.md`.
+  3. Äá»“ng bá»™ chÃ­nh xÃ¡c tá»a Ä‘á»™ Koopa Xanh dÆ°á»›i nÆ°á»›c (`UW_WALK1`/`UW_WALK2` vÃ  `UW_PARATROOPA_FLY1`/`UW_PARATROOPA_FLY2`) vÃ  vá» Buzzy Beetle trong `SpriteFrames_shared.h`.
+  4. ÄÃ£ tá»± Ä‘á»™ng dá»n dáº¹p toÃ n bá»™ cÃ¡c script Python phá»¥ trá»£.
+### Entry #1: [Bugfix] - Kháº¯c Phá»¥c Lá»—i Äá»“ng Há»“ Báº¥t Tá»­ 10s Bá»‹ ÄÃ³ng BÄƒng & Quy Táº¯c TrÃ¹ng Láº·p Hiá»‡u á»¨ng NES
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp)
+- **Váº¥n Ä‘á» cÅ© (Before):** HÃ m `updateInvincibility(dt)` khÃ´ng Ä‘Æ°á»£c gá»i trong `Mario::update()`, dáº«n Ä‘áº¿n viá»‡c biáº¿n `m_starInvincibilityTimer` khÃ´ng bao giá» giáº£m vÃ  Mario bá»‹ báº¥t tá»­ vÄ©nh viá»…n.
+- **PhÆ°Æ¡ng phÃ¡p Ã¡p dá»¥ng (Methodology):** ThÃªm `updateInvincibility(dt)` vÃ o vÃ²ng láº·p `Mario::update()`, Ä‘á»“ng thá»i Ã¡p dá»¥ng quy táº¯c náº¡p hiá»‡u á»©ng chuáº©n NES gá»‘c (reset 10s khi Äƒn tiáº¿p NgÃ´i Sao, giá»¯ nguyÃªn dáº¡ng Mario To / Fire Mario).
+- **Káº¿t quáº£ hiá»‡n táº¡i (Impact):** Báº¥t tá»­ NgÃ´i Sao cháº¡y chuáº©n 10 giÃ¢y, Ä‘á»•i mÃ u Cáº§u Vá»“ng sáº¯c nÃ©t vÃ  háº¿t giá» Ä‘Ãºng thá»i háº¡n.
 
-### Entry #2: [Refactoring & Particle Rendering Fix] - Nâng Cấp Multi-Theme Cho `QuestionBlock` & Khắc Phục Lỗi Hiển Thị Mảnh Vỡ `BlockDebris`
-- **Trạng thái:** Đã hoàn thành, build pass 100%.
-- **File ảnh hưởng:** [SpriteFrames.h](../include/core/SpriteFrames.h), [QuestionBlock.h](../include/entities/QuestionBlock.h), [QuestionBlock.cpp](../src/entities/QuestionBlock.cpp), [BlockDebris.h](../include/entities/BlockDebris.h), [BlockDebris.cpp](../src/entities/BlockDebris.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [blocks_coordinate.md](blocks_coordinate.md)
-- **Mô tả:** 
-  1. **Khắc phục lỗi hiển thị `BlockDebris`**: Do `TileMap::hitTile()` khi sinh 4 mảnh vỡ không gọi `setTextureManager(*textureManager)`, dẫn tới `m_sprite` bị rỗng (`nullopt`) và hạt vỡ gạch không hiển thị trên màn hình. Đã bổ sung gắn `TextureManager`, gọi `updateAnimation(dt)` và thiết lập tâm xoay origin + scale 2.0x cho hạt mảnh vỡ.
-  2. **Đồng bộ `SpriteFrames::Blocks`**: Đồng bộ 120 ô khối trong `items_blocks.png` từ `blocks_coordinate.md` vào `SpriteFrames::Blocks` hỗ trợ cả 4 môi trường NES.
-  3. **Nâng cấp `QuestionBlock`**: Thêm enum `BlockTheme` tự động đổi bộ 3-frame animation chớp nháy và sprite ô phẳng `empty` phù hợp môi trường.
+### Entry #2: [Refactoring & Particle Rendering Fix] - NÃ¢ng Cáº¥p Multi-Theme Cho `QuestionBlock` & Kháº¯c Phá»¥c Lá»—i Hiá»ƒn Thá»‹ Máº£nh Vá»¡ `BlockDebris`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** [SpriteFrames.h](../include/core/SpriteFrames.h), [QuestionBlock.h](../include/entities/QuestionBlock.h), [QuestionBlock.cpp](../src/entities/QuestionBlock.cpp), [BlockDebris.h](../include/entities/BlockDebris.h), [BlockDebris.cpp](../src/entities/BlockDebris.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [blocks_coordinate.md](blocks_coordinate.md)
+- **MÃ´ táº£:** 
+  1. **Kháº¯c phá»¥c lá»—i hiá»ƒn thá»‹ `BlockDebris`**: Do `TileMap::hitTile()` khi sinh 4 máº£nh vá»¡ khÃ´ng gá»i `setTextureManager(*textureManager)`, dáº«n tá»›i `m_sprite` bá»‹ rá»—ng (`nullopt`) vÃ  háº¡t vá»¡ gáº¡ch khÃ´ng hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh. ÄÃ£ bá»• sung gáº¯n `TextureManager`, gá»i `updateAnimation(dt)` vÃ  thiáº¿t láº­p tÃ¢m xoay origin + scale 2.0x cho háº¡t máº£nh vá»¡.
+  2. **Äá»“ng bá»™ `SpriteFrames::Blocks`**: Äá»“ng bá»™ 120 Ã´ khá»‘i trong `items_blocks.png` tá»« `blocks_coordinate.md` vÃ o `SpriteFrames::Blocks` há»— trá»£ cáº£ 4 mÃ´i trÆ°á»ng NES.
+  3. **NÃ¢ng cáº¥p `QuestionBlock`**: ThÃªm enum `BlockTheme` tá»± Ä‘á»™ng Ä‘á»•i bá»™ 3-frame animation chá»›p nhÃ¡y vÃ  sprite Ã´ pháº³ng `empty` phÃ¹ há»£p mÃ´i trÆ°á»ng.
 
-### Entry #3: [Feature & Testing] - Mặc Định Nhân Vật Luigi (Luigi Character Skin Support)
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [Mario.h](../include/entities/Mario.h), [Mario.cpp](../src/entities/Mario.cpp)
-- **Mô tả:** Đã thiết lập nhân vật mặc định là Luigi (`CharacterType::LUIGI`) theo yêu cầu chạy thử nghiệm. Tự động nạp bộ frame set của Luigi (Small Luigi, Big Luigi) từ spritesheet `MarioLuigi.png`. Trạng thái Fire (`MarioState::FIRE`) được dùng chung bộ frame `SpriteFrames::FireBigMario` và bảng màu Lửa NES (tint da cam) chuẩn xác cho cả Mario và Luigi, giữ file `SpriteFrames.h` vô cùng gọn sạch.
+### Entry #3: [Feature & Testing] - Máº·c Äá»‹nh NhÃ¢n Váº­t Luigi (Luigi Character Skin Support)
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Mario.h](../include/entities/Mario.h), [Mario.cpp](../src/entities/Mario.cpp)
+- **MÃ´ táº£:** ÄÃ£ thiáº¿t láº­p nhÃ¢n váº­t máº·c Ä‘á»‹nh lÃ  Luigi (`CharacterType::LUIGI`) theo yÃªu cáº§u cháº¡y thá»­ nghiá»‡m. Tá»± Ä‘á»™ng náº¡p bá»™ frame set cá»§a Luigi (Small Luigi, Big Luigi) tá»« spritesheet `MarioLuigi.png`. Tráº¡ng thÃ¡i Fire (`MarioState::FIRE`) Ä‘Æ°á»£c dÃ¹ng chung bá»™ frame `SpriteFrames::FireBigMario` vÃ  báº£ng mÃ u Lá»­a NES (tint da cam) chuáº©n xÃ¡c cho cáº£ Mario vÃ  Luigi, giá»¯ file `SpriteFrames.h` vÃ´ cÃ¹ng gá»n sáº¡ch.
 
 
-### Entry #4: [Documentation & Asset Analysis] - Phân Tích & Bóc Tách 282 Objects Trong `items_objects.png`
-- **Trạng thái:** Đã hoàn thành 100%.
-- **File ảnh hưởng:** [items_objects_coordinate.md](items_objects_coordinate.md), [items_objects_all_components_atlas_full.png](assets/reference/items_objects_all_components_atlas_full.png)
-- **Mô tả:** 
-  1. **Bóc tách 282 Objects trong `items_objects.png`**: Phân tích toàn bộ 282 vật thể/vật phẩm nằm trong vùng khung tím thuộc 4 môi trường bảng màu NES (Overworld, Underground, Castle, Underwater).
-  2. **Tạo tài liệu `items_objects_coordinate.md`**: Cập nhật đầy đủ tọa độ Loang, kích thước Loang, tọa độ Grid Khung, kích thước Khung, số Pixel, Palette môi trường và mô tả ý nghĩa chi tiết (Super/1-Up Mushroom, Fire Flower, Super Star, Spinning Coin, Fireball, Firework Explosion, Spring/Trampoline, Moving Platform, Flagpole Flag, Castle/Star Flag, Beanstalk Vine).
-  3. **Tạo ảnh Atlas minh họa `items_objects_atlas.png`**: Gen ảnh Atlas dạng lưới 8 cột (chuẩn phong cách `blocks_all_components_atlas.png`), ghi nhãn STT kèm tọa độ Khung và vẽ bounding box màu xanh lơ ôm sát từng vật thể.
+### Entry #4: [Documentation & Asset Analysis] - PhÃ¢n TÃ­ch & BÃ³c TÃ¡ch 282 Objects Trong `items_objects.png`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh 100%.
+- **File áº£nh hÆ°á»Ÿng:** [items_objects_coordinate.md](items_objects_coordinate.md), [items_objects_all_components_atlas_full.png](assets/reference/items_objects_all_components_atlas_full.png)
+- **MÃ´ táº£:** 
+  1. **BÃ³c tÃ¡ch 282 Objects trong `items_objects.png`**: PhÃ¢n tÃ­ch toÃ n bá»™ 282 váº­t thá»ƒ/váº­t pháº©m náº±m trong vÃ¹ng khung tÃ­m thuá»™c 4 mÃ´i trÆ°á»ng báº£ng mÃ u NES (Overworld, Underground, Castle, Underwater).
+  2. **Táº¡o tÃ i liá»‡u `items_objects_coordinate.md`**: Cáº­p nháº­t Ä‘áº§y Ä‘á»§ tá»a Ä‘á»™ Loang, kÃ­ch thÆ°á»›c Loang, tá»a Ä‘á»™ Grid Khung, kÃ­ch thÆ°á»›c Khung, sá»‘ Pixel, Palette mÃ´i trÆ°á»ng vÃ  mÃ´ táº£ Ã½ nghÄ©a chi tiáº¿t (Super/1-Up Mushroom, Fire Flower, Super Star, Spinning Coin, Fireball, Firework Explosion, Spring/Trampoline, Moving Platform, Flagpole Flag, Castle/Star Flag, Beanstalk Vine).
+  3. **Táº¡o áº£nh Atlas minh há»a `items_objects_atlas.png`**: Gen áº£nh Atlas dáº¡ng lÆ°á»›i 8 cá»™t (chuáº©n phong cÃ¡ch `blocks_all_components_atlas.png`), ghi nhÃ£n STT kÃ¨m tá»a Ä‘á»™ Khung vÃ  váº½ bounding box mÃ u xanh lÆ¡ Ã´m sÃ¡t tá»«ng váº­t thá»ƒ.
 
-### Entry #5: [Bugfix & Code Sync] - Bổ Sung Inline Vector Functions Cho `SpriteFrames::Items` & Sửa Lỗi Biên Dịch Build
-- **Trạng thái:** Đã hoàn thành, build pass 100%.
-- **File ảnh hưởng:** [SpriteFrames.h](../include/core/SpriteFrames.h), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Khắc phục lỗi biên dịch `Coin.cpp`, `FireFlower.cpp`, `Star.cpp`**: Do `SpriteFrames::Items` trước đó khai báo biến dạng vector tĩnh (`spinningCoinFrames`, `superStarFrames`, `fireFlowerFrames`), trong khi code `Coin.cpp`, `FireFlower.cpp`, `Star.cpp` gọi dưới dạng hàm (`coinFrames()`, `starFrames()`, `fireFlowerFrames()`).
-  2. **Bổ sung các hàm helper `inline const std::vector<sf::IntRect>&`**: Thêm các hàm `coinFrames()`, `spinningCoinFrames()`, `starFrames()`, `superStarFrames()`, `fireFlowerFrames()`, `fireballFrames()`, `fireballExplosionFrames()` trong namespace `SpriteFrames::Items` tuân thủ đúng chuẩn của các namespace khác trong `SpriteFrames.h`.
-  3. **Xác nhận tọa độ**: Xác nhận 100% tọa độ `IntRect` của toàn bộ item trong `SpriteFrames::Items` trùng khớp hoàn toàn với bảng tọa độ chuẩn `docs/items_objects_coordinate.md`.
-### Entry #6: [Bugfix & Rendering Sync] - Sửa Lỗi Hiển Thị Sprite Khi Chết & Loại Bỏ Delay Load Nhân Vật Đặc Biệt
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp), [PlayState.cpp](../src/states/PlayState.cpp)
-- **Mô tả:** 
-  1. **Sửa lỗi hiển thị sprite khi chết (`Mario::loseLife()`)**: Khi ở dạng Fire Mario/Big Mario bị chết, hàm `loseLife()` lập tức chuyển trạng thái về `SMALL`, gọi `setupAnimationsForState()` để nạp đúng sprite animation chết của Luigi/Mario mặc định (`DEATH`), đồng thời reset màu sprite về `sf::Color::White` ngắt màu tint da cam.
-  2. **Triệt tiêu độ trễ 1-frame khi load nhân vật đặc biệt (`PlayState::restoreProgress()`)**: Thêm `m_level->update(0.f)` ngay trong `restoreProgress()` sau khi phục hồi trạng thái `FIRE` / `SUPER`, giúp vị trí, tỉ lệ phóng 2x và camera đồng bộ ngay lập tức trước khi Render frame 0.
+### Entry #5: [Bugfix & Code Sync] - Bá»• Sung Inline Vector Functions Cho `SpriteFrames::Items` & Sá»­a Lá»—i BiÃªn Dá»‹ch Build
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** [SpriteFrames.h](../include/core/SpriteFrames.h), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Kháº¯c phá»¥c lá»—i biÃªn dá»‹ch `Coin.cpp`, `FireFlower.cpp`, `Star.cpp`**: Do `SpriteFrames::Items` trÆ°á»›c Ä‘Ã³ khai bÃ¡o biáº¿n dáº¡ng vector tÄ©nh (`spinningCoinFrames`, `superStarFrames`, `fireFlowerFrames`), trong khi code `Coin.cpp`, `FireFlower.cpp`, `Star.cpp` gá»i dÆ°á»›i dáº¡ng hÃ m (`coinFrames()`, `starFrames()`, `fireFlowerFrames()`).
+  2. **Bá»• sung cÃ¡c hÃ m helper `inline const std::vector<sf::IntRect>&`**: ThÃªm cÃ¡c hÃ m `coinFrames()`, `spinningCoinFrames()`, `starFrames()`, `superStarFrames()`, `fireFlowerFrames()`, `fireballFrames()`, `fireballExplosionFrames()` trong namespace `SpriteFrames::Items` tuÃ¢n thá»§ Ä‘Ãºng chuáº©n cá»§a cÃ¡c namespace khÃ¡c trong `SpriteFrames.h`.
+  3. **XÃ¡c nháº­n tá»a Ä‘á»™**: XÃ¡c nháº­n 100% tá»a Ä‘á»™ `IntRect` cá»§a toÃ n bá»™ item trong `SpriteFrames::Items` trÃ¹ng khá»›p hoÃ n toÃ n vá»›i báº£ng tá»a Ä‘á»™ chuáº©n `docs/items_objects_coordinate.md`.
+### Entry #6: [Bugfix & Rendering Sync] - Sá»­a Lá»—i Hiá»ƒn Thá»‹ Sprite Khi Cháº¿t & Loáº¡i Bá» Delay Load NhÃ¢n Váº­t Äáº·c Biá»‡t
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp), [PlayState.cpp](../src/states/PlayState.cpp)
+- **MÃ´ táº£:** 
+  1. **Sá»­a lá»—i hiá»ƒn thá»‹ sprite khi cháº¿t (`Mario::loseLife()`)**: Khi á»Ÿ dáº¡ng Fire Mario/Big Mario bá»‹ cháº¿t, hÃ m `loseLife()` láº­p tá»©c chuyá»ƒn tráº¡ng thÃ¡i vá» `SMALL`, gá»i `setupAnimationsForState()` Ä‘á»ƒ náº¡p Ä‘Ãºng sprite animation cháº¿t cá»§a Luigi/Mario máº·c Ä‘á»‹nh (`DEATH`), Ä‘á»“ng thá»i reset mÃ u sprite vá» `sf::Color::White` ngáº¯t mÃ u tint da cam.
+  2. **Triá»‡t tiÃªu Ä‘á»™ trá»… 1-frame khi load nhÃ¢n váº­t Ä‘áº·c biá»‡t (`PlayState::restoreProgress()`)**: ThÃªm `m_level->update(0.f)` ngay trong `restoreProgress()` sau khi phá»¥c há»“i tráº¡ng thÃ¡i `FIRE` / `SUPER`, giÃºp vá»‹ trÃ­, tá»‰ lá»‡ phÃ³ng 2x vÃ  camera Ä‘á»“ng bá»™ ngay láº­p tá»©c trÆ°á»›c khi Render frame 0.
 
-### Entry #7: [Feature & Keybinding] - Kích Hoạt Chiêu Bắn Đạn Lửa (Fireball Shooting) Cho Fire Mario
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [Level.h](../include/level/Level.h), [Level.cpp](../src/level/Level.cpp), [PlayState.cpp](../src/states/PlayState.cpp), [FireBall.cpp](../src/entities/FireBall.cpp)
-- **Mô tả:** 
-  1. **Tích hợp `Level::shootFireBall()`**: Gọi `Mario::shootFireBall(b2World*)` sinh ra `FireBall` projectile, gắn `TextureManager`, thêm vào `m_entities` và phát âm thanh `fireball.wav` qua `SoundManager`.
-  2. **Gán phím bắn đạn lửa (`ShootCommand`)**: Phím **`Shift`** (Cả Left Shift & Right Shift), **`J`**, **`F`**, **`X`**, **`Left Control`** được gán lệnh bắn đạn lửa qua `InputHandler` trong `PlayState::rebindCommands()`.
-  3. **Hoàn thiện Animation & Rendering `FireBall`**: Thêm animation `spin` (4-frame xoay tròn đạn lửa 8×8), tự động nạp scale 2.0x và va chạm nảy tâng tâng khi chạm đất, tiêu diệt quái Goomba/Koopa khi trúng đích.
+### Entry #7: [Feature & Keybinding] - KÃ­ch Hoáº¡t ChiÃªu Báº¯n Äáº¡n Lá»­a (Fireball Shooting) Cho Fire Mario
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Level.h](../include/level/Level.h), [Level.cpp](../src/level/Level.cpp), [PlayState.cpp](../src/states/PlayState.cpp), [FireBall.cpp](../src/entities/FireBall.cpp)
+- **MÃ´ táº£:** 
+  1. **TÃ­ch há»£p `Level::shootFireBall()`**: Gá»i `Mario::shootFireBall(b2World*)` sinh ra `FireBall` projectile, gáº¯n `TextureManager`, thÃªm vÃ o `m_entities` vÃ  phÃ¡t Ã¢m thanh `fireball.wav` qua `SoundManager`.
+  2. **GÃ¡n phÃ­m báº¯n Ä‘áº¡n lá»­a (`ShootCommand`)**: PhÃ­m **`Shift`** (Cáº£ Left Shift & Right Shift), **`J`**, **`F`**, **`X`**, **`Left Control`** Ä‘Æ°á»£c gÃ¡n lá»‡nh báº¯n Ä‘áº¡n lá»­a qua `InputHandler` trong `PlayState::rebindCommands()`.
+  3. **HoÃ n thiá»‡n Animation & Rendering `FireBall`**: ThÃªm animation `spin` (4-frame xoay trÃ²n Ä‘áº¡n lá»­a 8Ã—8), tá»± Ä‘á»™ng náº¡p scale 2.0x vÃ  va cháº¡m náº£y tÃ¢ng tÃ¢ng khi cháº¡m Ä‘áº¥t, tiÃªu diá»‡t quÃ¡i Goomba/Koopa khi trÃºng Ä‘Ã­ch.
 
-### Entry #8: [Bugfix & Animation] - Tiêu Diệt Quái Khi Trúng Đạn Lửa & Đồng Bộ Dáng Ném Đạn Lửa Cho Cả 2 Nhân Vật
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [Mario.cpp](../src/entities/Mario.cpp)
-- **Mô tả:** 
-  1. **Xử lý tiêu diệt quái tức thì (`CollisionManager::resolve()`)**: Thêm `enemy->markForRemoval()` và thông báo `EventType::ENEMY_STOMPED` khi `FireBall` va chạm với Quái (`isEnemy()`), giúp quái biến mất và cộng điểm ngay lập tức khi dính đạn lửa.
-  2. **Dáng ném đạn lửa đồng bộ (`setupAnimationsForState()`)**: Bổ sung clip animation `action` (dáng giơ tay ném đạn lửa `ACTION` frame từ `SpriteFrames::FireBigMario`) cho cả Mario và Luigi khi ở trạng thái `FIRE`. Tự động kích hoạt khi nhấn phím bắn.
+### Entry #8: [Bugfix & Animation] - TiÃªu Diá»‡t QuÃ¡i Khi TrÃºng Äáº¡n Lá»­a & Äá»“ng Bá»™ DÃ¡ng NÃ©m Äáº¡n Lá»­a Cho Cáº£ 2 NhÃ¢n Váº­t
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [Mario.cpp](../src/entities/Mario.cpp)
+- **MÃ´ táº£:** 
+  1. **Xá»­ lÃ½ tiÃªu diá»‡t quÃ¡i tá»©c thÃ¬ (`CollisionManager::resolve()`)**: ThÃªm `enemy->markForRemoval()` vÃ  thÃ´ng bÃ¡o `EventType::ENEMY_STOMPED` khi `FireBall` va cháº¡m vá»›i QuÃ¡i (`isEnemy()`), giÃºp quÃ¡i biáº¿n máº¥t vÃ  cá»™ng Ä‘iá»ƒm ngay láº­p tá»©c khi dÃ­nh Ä‘áº¡n lá»­a.
+  2. **DÃ¡ng nÃ©m Ä‘áº¡n lá»­a Ä‘á»“ng bá»™ (`setupAnimationsForState()`)**: Bá»• sung clip animation `action` (dÃ¡ng giÆ¡ tay nÃ©m Ä‘áº¡n lá»­a `ACTION` frame tá»« `SpriteFrames::FireBigMario`) cho cáº£ Mario vÃ  Luigi khi á»Ÿ tráº¡ng thÃ¡i `FIRE`. Tá»± Ä‘á»™ng kÃ­ch hoáº¡t khi nháº¥n phÃ­m báº¯n.
 
-### Entry #9: [Architecture & Fix] - Xử Lý Hàng Đợi Bắn Đạn Lửa Tránh Trùng Lặp Khóa Vật Lý Box2D (World Locked Fix)
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [Level.h](../include/level/Level.h), [Level.cpp](../src/level/Level.cpp)
-- **Mô tả:** 
-  1. **Giải quyết triệt để thông báo `PhysicsEngine world null or locked!`**: Khi bấm phím bắn đạn lửa trùng đúng thời điểm Box2D đang tính toán va chạm (`m_world->IsLocked()`), `Level::shootFireBall()` sẽ lưu yêu cầu vào hàng đợi `m_pendingFireBallRequests`.
-  2. **Tạo vật thể đạn lửa an toàn (`processPendingFireballs()`)**: Ngay khi Box2D kết thúc bước tính toán (`PhysicsEngine::update()`), hàm `processPendingFireballs()` sẽ khởi tạo thân vật lý đạn lửa khi thế giới ở trạng thái an toàn (!IsLocked). Đảm bảo 100% các phím nhấn bắn đạn đều thành công và không bao giờ bị nốt bỏ.
+### Entry #9: [Architecture & Fix] - Xá»­ LÃ½ HÃ ng Äá»£i Báº¯n Äáº¡n Lá»­a TrÃ¡nh TrÃ¹ng Láº·p KhÃ³a Váº­t LÃ½ Box2D (World Locked Fix)
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Level.h](../include/level/Level.h), [Level.cpp](../src/level/Level.cpp)
+- **MÃ´ táº£:** 
+  1. **Giáº£i quyáº¿t triá»‡t Ä‘á»ƒ thÃ´ng bÃ¡o `PhysicsEngine world null or locked!`**: Khi báº¥m phÃ­m báº¯n Ä‘áº¡n lá»­a trÃ¹ng Ä‘Ãºng thá»i Ä‘iá»ƒm Box2D Ä‘ang tÃ­nh toÃ¡n va cháº¡m (`m_world->IsLocked()`), `Level::shootFireBall()` sáº½ lÆ°u yÃªu cáº§u vÃ o hÃ ng Ä‘á»£i `m_pendingFireBallRequests`.
+  2. **Táº¡o váº­t thá»ƒ Ä‘áº¡n lá»­a an toÃ n (`processPendingFireballs()`)**: Ngay khi Box2D káº¿t thÃºc bÆ°á»›c tÃ­nh toÃ¡n (`PhysicsEngine::update()`), hÃ m `processPendingFireballs()` sáº½ khá»Ÿi táº¡o thÃ¢n váº­t lÃ½ Ä‘áº¡n lá»­a khi tháº¿ giá»›i á»Ÿ tráº¡ng thÃ¡i an toÃ n (!IsLocked). Äáº£m báº£o 100% cÃ¡c phÃ­m nháº¥n báº¯n Ä‘áº¡n Ä‘á»u thÃ nh cÃ´ng vÃ  khÃ´ng bao giá» bá»‹ ná»‘t bá».
 
-### Entry #10: [Feature & Visual Fix] - Hiệu Ứng Lật Bụng Khi Bị Bắn Đạn Lửa & Hỗ Trợ Dạng Lửa Nhỏ (Fire Small Mario)
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [Enemy.h](../include/entities/Enemy.h), [Enemy.cpp](../src/entities/Enemy.cpp), [Goomba.h](../include/entities/Goomba.h), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.h](../include/entities/Koopa.h), [Koopa.cpp](../src/entities/Koopa.cpp), [FireFlower.cpp](../src/items/FireFlower.cpp), [Mario.h](../include/entities/Mario.h), [Mario.cpp](../src/entities/Mario.cpp), [HUD.cpp](../src/ui/HUD.cpp)
-- **Mô tả:** 
-  1. **Hiệu ứng quái lật bụng (`onFireHit()`)**: Khi Goomba hoặc Koopa dính đạn lửa, quái sẽ **lật ngược bụng lên trên** (`setScale(2.f, -2.f)`), nảy nhẹ lên trên rồi nảy văng rơi tự do xuống dưới màn hình kèm âm thanh `kickkill.wav` đúng chuẩn NES gốc.
-  2. **Contract hiện tại:** FireFlower luôn đưa Mario về state `FIRE`; không có state thử nghiệm riêng trong release.
+### Entry #10: [Feature & Visual Fix] - Hiá»‡u á»¨ng Láº­t Bá»¥ng Khi Bá»‹ Báº¯n Äáº¡n Lá»­a & Há»— Trá»£ Dáº¡ng Lá»­a Nhá» (Fire Small Mario)
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Enemy.h](../include/entities/Enemy.h), [Enemy.cpp](../src/entities/Enemy.cpp), [Goomba.h](../include/entities/Goomba.h), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.h](../include/entities/Koopa.h), [Koopa.cpp](../src/entities/Koopa.cpp), [FireFlower.cpp](../src/items/FireFlower.cpp), [Mario.h](../include/entities/Mario.h), [Mario.cpp](../src/entities/Mario.cpp), [HUD.cpp](../src/ui/HUD.cpp)
+- **MÃ´ táº£:** 
+  1. **Hiá»‡u á»©ng quÃ¡i láº­t bá»¥ng (`onFireHit()`)**: Khi Goomba hoáº·c Koopa dÃ­nh Ä‘áº¡n lá»­a, quÃ¡i sáº½ **láº­t ngÆ°á»£c bá»¥ng lÃªn trÃªn** (`setScale(2.f, -2.f)`), náº£y nháº¹ lÃªn trÃªn rá»“i náº£y vÄƒng rÆ¡i tá»± do xuá»‘ng dÆ°á»›i mÃ n hÃ¬nh kÃ¨m Ã¢m thanh `kickkill.wav` Ä‘Ãºng chuáº©n NES gá»‘c.
+  2. **Contract hiá»‡n táº¡i:** FireFlower luÃ´n Ä‘Æ°a Mario vá» state `FIRE`; khÃ´ng cÃ³ state thá»­ nghiá»‡m riÃªng trong release.
 
 ### Entry #11: [LEGACY] FireBall capability theo Mario state
-- **Trạng thái:** LEGACY — đã được thay bằng release contract `SMALL/SUPER/FIRE`.
-- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp)
-- **Mô tả:** Release chỉ cho phép `canShootFireBall()` khi `m_marioState == MarioState::FIRE`.
+- **Tráº¡ng thÃ¡i:** LEGACY â€” Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng release contract `SMALL/SUPER/FIRE`.
+- **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp)
+- **MÃ´ táº£:** Release chá»‰ cho phÃ©p `canShootFireBall()` khi `m_marioState == MarioState::FIRE`.
 
-### Entry #12: [Clean Log & Physics] - Triệt Tiêu Log Cảnh Báo Giả `PhysicsEngine world null or locked!`
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [FireBall.cpp](../src/entities/FireBall.cpp), [Entity.cpp](../src/entities/Entity.cpp)
-- **Mô tả:** 
-  1. **[LEGACY] FireBall constructor claim**: Entry lịch sử này từng mô tả một thay đổi ở constructor mặc định; nội dung đã được supersede và không phải bằng chứng cho release contract TV5. FireBall/physics contract thuộc owner TV3.
-  2. **[LEGACY] Physics logging claim**: Mô tả logging cũ không được dùng để kết luận DoD hiện tại; FireBall/physics contract thuộc owner TV3.
+### Entry #12: [Clean Log & Physics] - Triá»‡t TiÃªu Log Cáº£nh BÃ¡o Giáº£ `PhysicsEngine world null or locked!`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [FireBall.cpp](../src/entities/FireBall.cpp), [Entity.cpp](../src/entities/Entity.cpp)
+- **MÃ´ táº£:** 
+  1. **[LEGACY] FireBall constructor claim**: Entry lá»‹ch sá»­ nÃ y tá»«ng mÃ´ táº£ má»™t thay Ä‘á»•i á»Ÿ constructor máº·c Ä‘á»‹nh; ná»™i dung Ä‘Ã£ Ä‘Æ°á»£c supersede vÃ  khÃ´ng pháº£i báº±ng chá»©ng cho release contract TV5. FireBall/physics contract thuá»™c owner TV3.
+  2. **[LEGACY] Physics logging claim**: MÃ´ táº£ logging cÅ© khÃ´ng Ä‘Æ°á»£c dÃ¹ng Ä‘á»ƒ káº¿t luáº­n DoD hiá»‡n táº¡i; FireBall/physics contract thuá»™c owner TV3.
 
-### Entry #13: [LEGACY] Giới hạn FireBall thử nghiệm
-- **Trạng thái:** LEGACY — con số trong entry cũ không phải release contract.
-- **File ảnh hưởng:** [Level.cpp](../src/level/Level.cpp)
-- **Mô tả:** Release contract FireBall được khóa riêng trong tài liệu Sprint 6; entry cũ không được dùng làm bằng chứng DoD.
+### Entry #13: [LEGACY] Giá»›i háº¡n FireBall thá»­ nghiá»‡m
+- **Tráº¡ng thÃ¡i:** LEGACY â€” con sá»‘ trong entry cÅ© khÃ´ng pháº£i release contract.
+- **File áº£nh hÆ°á»Ÿng:** [Level.cpp](../src/level/Level.cpp)
+- **MÃ´ táº£:** Release contract FireBall Ä‘Æ°á»£c khÃ³a riÃªng trong tÃ i liá»‡u Sprint 6; entry cÅ© khÃ´ng Ä‘Æ°á»£c dÃ¹ng lÃ m báº±ng chá»©ng DoD.
 
-### Entry #14: [Fix Spawn Clipping & Grace Period] - Nâng Độ Cao Spawn Đạn Lửa & Tạo Khoảng Đệm 50ms Tránh Nổ Tức Thì
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (6/6 ctest passed).
-- **File ảnh hưởng:** [FireBall.h](../include/entities/FireBall.h), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [Mario.cpp](../src/entities/Mario.cpp), [Level.cpp](../src/level/Level.cpp)
-- **Mô tả:** 
-  1. **Tăng độ cao vị trí sinh đạn lửa (`spawnY = m_position.y + 4.f`)**: Phóng đạn từ vị trí bàn tay Mario (ngay trên ngực), giúp viên đạn sinh ra lơ lửng cách mặt đất 10px thay vì bị dính vào mép gạch dưới chân.
-  2. **Tạo khoảng đệm an toàn 50ms (`getLifetime() > 0.05f`)**: Bỏ qua va chạm với thân Mario (`target->isMario()`) và yêu cầu đạn tồn tại ít nhất 50ms trước khi chấp nhận va chạm hủy đạn vào tường đứng. Giúp đạn lửa bay ra mượt mà 100% ở bất kỳ ngóc ngách hay khu vực gạch nào.
+### Entry #14: [Fix Spawn Clipping & Grace Period] - NÃ¢ng Äá»™ Cao Spawn Äáº¡n Lá»­a & Táº¡o Khoáº£ng Äá»‡m 50ms TrÃ¡nh Ná»• Tá»©c ThÃ¬
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (6/6 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [FireBall.h](../include/entities/FireBall.h), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [Mario.cpp](../src/entities/Mario.cpp), [Level.cpp](../src/level/Level.cpp)
+- **MÃ´ táº£:** 
+  1. **TÄƒng Ä‘á»™ cao vá»‹ trÃ­ sinh Ä‘áº¡n lá»­a (`spawnY = m_position.y + 4.f`)**: PhÃ³ng Ä‘áº¡n tá»« vá»‹ trÃ­ bÃ n tay Mario (ngay trÃªn ngá»±c), giÃºp viÃªn Ä‘áº¡n sinh ra lÆ¡ lá»­ng cÃ¡ch máº·t Ä‘áº¥t 10px thay vÃ¬ bá»‹ dÃ­nh vÃ o mÃ©p gáº¡ch dÆ°á»›i chÃ¢n.
+  2. **Táº¡o khoáº£ng Ä‘á»‡m an toÃ n 50ms (`getLifetime() > 0.05f`)**: Bá» qua va cháº¡m vá»›i thÃ¢n Mario (`target->isMario()`) vÃ  yÃªu cáº§u Ä‘áº¡n tá»“n táº¡i Ã­t nháº¥t 50ms trÆ°á»›c khi cháº¥p nháº­n va cháº¡m há»§y Ä‘áº¡n vÃ o tÆ°á»ng Ä‘á»©ng. GiÃºp Ä‘áº¡n lá»­a bay ra mÆ°á»£t mÃ  100% á»Ÿ báº¥t ká»³ ngÃ³c ngÃ¡ch hay khu vá»±c gáº¡ch nÃ o.
 
 
 
-### Entry #15: [LEGACY] Merge TV5 branch và assertion cũ
-- **Trạng thái:** LEGACY — assertion cũ đã được thay bằng một state `FIRE` duy nhất.
-- **File ảnh hưởng:** [develop branch], [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Merge nhánh TV5**: Chuyển sang nhánh `develop` và merge phiên bản mới nhất từ `origin/feature/sound-input` của TV5 (bao gồm SoundManager, HUD, Audio/SFX Pool, ScoreRules và bộ test tích hợp TV5).
-  2. **Cập nhật assertion test tích hợp:** test hiện yêu cầu đúng `MarioState::FIRE` sau FireFlower.
+### Entry #15: [LEGACY] Merge TV5 branch vÃ  assertion cÅ©
+- **Tráº¡ng thÃ¡i:** LEGACY â€” assertion cÅ© Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng má»™t state `FIRE` duy nháº¥t.
+- **File áº£nh hÆ°á»Ÿng:** [develop branch], [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Merge nhÃ¡nh TV5**: Chuyá»ƒn sang nhÃ¡nh `develop` vÃ  merge phiÃªn báº£n má»›i nháº¥t tá»« `origin/feature/sound-input` cá»§a TV5 (bao gá»“m SoundManager, HUD, Audio/SFX Pool, ScoreRules vÃ  bá»™ test tÃ­ch há»£p TV5).
+  2. **Cáº­p nháº­t assertion test tÃ­ch há»£p:** test hiá»‡n yÃªu cáº§u Ä‘Ãºng `MarioState::FIRE` sau FireFlower.
 
-### Entry #16: [Merge & Save System] - Merge Branch TV4 (`feature/level-and-enemy`) Về `develop`, Bảo Tồn SpriteFrames & Giải Quyết 9 Conflicts
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [CMakeLists.txt](../CMakeLists.txt), [SaveManager.h](../include/core/SaveManager.h), [SaveManager.cpp](../src/core/SaveManager.cpp), [SaveManagerTests.cpp](../tests/SaveManagerTests.cpp), [TileFrames.h](../include/level/TileFrames.h), [Enemy.h](../include/entities/Enemy.h), [Enemy.cpp](../src/entities/Enemy.cpp), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.cpp](../src/entities/Koopa.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [level1.txt](../levels/level1.txt), [level3.txt](../levels/level3.txt), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Bảo tồn 100% `SpriteFrames.h`**: Giữ nguyên toàn bộ định nghĩa sprite animation mới nhất trên `develop` (SuperStar, FireBall, Score Text, Block Debris), không làm mất bất kỳ dòng code nào.
-  2. **Tích hợp hệ thống lưu game (`SaveManager`)**: Nạp module `SaveManager` ghi file an toàn nguyên tử (atomic write `.tmp`), lưu high score tăng đơn điệu, lưu cài đặt âm thanh volume và bổ sung bộ test `SaveManagerTests` (gồm 6 bài test regression).
-  3. **Tối ưu hóa tầm kích hoạt quái (`Enemy Activation Zone`)**: Quái vật chỉ kích hoạt khi camera tiến tới gần (256px) và dọn dẹp khi trôi xa phía sau (512px).
-  4. **Fix Koopa Stomp State & Double-Hit**: Sửa logic va chạm giẫm Koopa lần 1 chỉ chuyển về `SHELL_IDLE`, không bị vừa biến thành vỏ vừa bị đá bay trong cùng 1 frame.
-  5. **[LEGACY] Level 3 layout claim**: Đây là claim lịch sử của merge log, không phải bằng chứng Level 3 hiện tại hợp lệ; dùng `level_validator_tests` và log của owner TV4 để kết luận.
-  6. **Giải quyết xung đột 9 file**: Xử lý mượt mà toàn bộ 9 file conflict và thêm block Header Comment cho `TileFrames.h` cùng sửa include order cho `Goomba.cpp`.
-  7. **Biên dịch & CTest 9/9 Pass**: Dự án biên dịch sạch sẽ 100%, vượt qua toàn bộ 9/9 bài test CTest tự động.
+### Entry #16: [Merge & Save System] - Merge Branch TV4 (`feature/level-and-enemy`) Vá» `develop`, Báº£o Tá»“n SpriteFrames & Giáº£i Quyáº¿t 9 Conflicts
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [CMakeLists.txt](../CMakeLists.txt), [SaveManager.h](../include/core/SaveManager.h), [SaveManager.cpp](../src/core/SaveManager.cpp), [SaveManagerTests.cpp](../tests/SaveManagerTests.cpp), [TileFrames.h](../include/level/TileFrames.h), [Enemy.h](../include/entities/Enemy.h), [Enemy.cpp](../src/entities/Enemy.cpp), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.cpp](../src/entities/Koopa.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [level1.txt](../levels/level1.txt), [level3.txt](../levels/level3.txt), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Báº£o tá»“n 100% `SpriteFrames.h`**: Giá»¯ nguyÃªn toÃ n bá»™ Ä‘á»‹nh nghÄ©a sprite animation má»›i nháº¥t trÃªn `develop` (SuperStar, FireBall, Score Text, Block Debris), khÃ´ng lÃ m máº¥t báº¥t ká»³ dÃ²ng code nÃ o.
+  2. **TÃ­ch há»£p há»‡ thá»‘ng lÆ°u game (`SaveManager`)**: Náº¡p module `SaveManager` ghi file an toÃ n nguyÃªn tá»­ (atomic write `.tmp`), lÆ°u high score tÄƒng Ä‘Æ¡n Ä‘iá»‡u, lÆ°u cÃ i Ä‘áº·t Ã¢m thanh volume vÃ  bá»• sung bá»™ test `SaveManagerTests` (gá»“m 6 bÃ i test regression).
+  3. **Tá»‘i Æ°u hÃ³a táº§m kÃ­ch hoáº¡t quÃ¡i (`Enemy Activation Zone`)**: QuÃ¡i váº­t chá»‰ kÃ­ch hoáº¡t khi camera tiáº¿n tá»›i gáº§n (256px) vÃ  dá»n dáº¹p khi trÃ´i xa phÃ­a sau (512px).
+  4. **Fix Koopa Stomp State & Double-Hit**: Sá»­a logic va cháº¡m giáº«m Koopa láº§n 1 chá»‰ chuyá»ƒn vá» `SHELL_IDLE`, khÃ´ng bá»‹ vá»«a biáº¿n thÃ nh vá» vá»«a bá»‹ Ä‘Ã¡ bay trong cÃ¹ng 1 frame.
+  5. **[LEGACY] Level 3 layout claim**: ÄÃ¢y lÃ  claim lá»‹ch sá»­ cá»§a merge log, khÃ´ng pháº£i báº±ng chá»©ng Level 3 hiá»‡n táº¡i há»£p lá»‡; dÃ¹ng `level_validator_tests` vÃ  log cá»§a owner TV4 Ä‘á»ƒ káº¿t luáº­n.
+  6. **Giáº£i quyáº¿t xung Ä‘á»™t 9 file**: Xá»­ lÃ½ mÆ°á»£t mÃ  toÃ n bá»™ 9 file conflict vÃ  thÃªm block Header Comment cho `TileFrames.h` cÃ¹ng sá»­a include order cho `Goomba.cpp`.
+  7. **BiÃªn dá»‹ch & CTest 9/9 Pass**: Dá»± Ã¡n biÃªn dá»‹ch sáº¡ch sáº½ 100%, vÆ°á»£t qua toÃ n bá»™ 9/9 bÃ i test CTest tá»± Ä‘á»™ng.
 
-### Entry #17: [Merge Engine Core Systems & Clean Code] - Merge Branch TV2 (`origin/feature/engine-core-systems`) Về `develop` & Sửa Warning `Koopa.cpp`
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Koopa.cpp](../src/entities/Koopa.cpp), [UILayoutHelper.h](../include/ui/UILayoutHelper.h), [UILayoutHelper.cpp](../src/ui/UILayoutHelper.cpp), [UIMenuWidget.h](../include/ui/UIMenuWidget.h), [UIMenuWidget.cpp](../src/ui/UIMenuWidget.cpp), [Game.cpp](../src/core/Game.cpp), [PhysicsEngine.h](../include/physics/PhysicsEngine.h), [PhysicsEngine.cpp](../src/physics/PhysicsEngine.cpp), [TileMap.h](../include/level/TileMap.h), [TileMap.cpp](../src/level/TileMap.cpp), [Level.cpp](../src/level/Level.cpp), [Mario.cpp](../src/entities/Mario.cpp), [PauseState.h](../include/states/PauseState.h), [PauseState.cpp](../src/states/PauseState.cpp), [GameOverState.h](../include/states/GameOverState.h), [GameOverState.cpp](../src/states/GameOverState.cpp), [WinState.h](../include/states/WinState.h), [WinState.cpp](../src/states/WinState.cpp)
-- **Mô tả:** 
-  1. **Sửa warning IDE `Koopa.cpp`**: Loại bỏ `#include "core/SpriteFrames.h"` không sử dụng trực tiếp trong `src/entities/Koopa.cpp`.
-  2. **Tích hợp bộ helper giao diện UI (`UILayoutHelper` & `UIMenuWidget`)**: Thêm module định vị UI theo điểm neo (`UIAnchor`) và widget menu tương tác hỗ trợ phím mũi tên (`Up`/`Down`/`W`/`S`) + `Enter`.
-  3. **Tối ưu hóa game loop (`Game.cpp`)**: Bổ sung `MAX_DELTA_TIME` clamping (0.1s), xử lý an toàn khi đóng cửa sổ (`m_window.close(); return;`), và bắt buộc khóa tỉ lệ màn hình 16:9 khi resize window.
-  4. **Tách lớp Render Foreground (`TileMap` & `Level`)**: Bổ sung `renderForeground()` vẽ khối gạch, ống nước, cờ đè lên entity và Mario theo đúng chuẩn NES.
-  5. **Giới hạn Substep Physics (`PhysicsEngine`)**: Thêm giới hạn `MAX_SUBSTEPS = 8` để ngăn ngừa lặp vô hạn catch-up lag khi giật khung hình.
-  6. **Giải quyết xung đột 5 file**: Xử lý mượt mà conflict ở `PauseState.h/.cpp`, `GameOverState.cpp`, `WinState.cpp`, `TileMap.cpp`. Kết hợp menu `UIMenuWidget` với chức năng chỉnh âm lượng Music/SFX bằng phím Trái/Phải.
-  7. **Biên dịch & CTest 9/9 Pass**: Biên dịch Debug/Release thành công 100%, tất cả 9/9 bài test CTest đều vượt qua.
+### Entry #17: [Merge Engine Core Systems & Clean Code] - Merge Branch TV2 (`origin/feature/engine-core-systems`) Vá» `develop` & Sá»­a Warning `Koopa.cpp`
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Koopa.cpp](../src/entities/Koopa.cpp), [UILayoutHelper.h](../include/ui/UILayoutHelper.h), [UILayoutHelper.cpp](../src/ui/UILayoutHelper.cpp), [UIMenuWidget.h](../include/ui/UIMenuWidget.h), [UIMenuWidget.cpp](../src/ui/UIMenuWidget.cpp), [Game.cpp](../src/core/Game.cpp), [PhysicsEngine.h](../include/physics/PhysicsEngine.h), [PhysicsEngine.cpp](../src/physics/PhysicsEngine.cpp), [TileMap.h](../include/level/TileMap.h), [TileMap.cpp](../src/level/TileMap.cpp), [Level.cpp](../src/level/Level.cpp), [Mario.cpp](../src/entities/Mario.cpp), [PauseState.h](../include/states/PauseState.h), [PauseState.cpp](../src/states/PauseState.cpp), [GameOverState.h](../include/states/GameOverState.h), [GameOverState.cpp](../src/states/GameOverState.cpp), [WinState.h](../include/states/WinState.h), [WinState.cpp](../src/states/WinState.cpp)
+- **MÃ´ táº£:** 
+  1. **Sá»­a warning IDE `Koopa.cpp`**: Loáº¡i bá» `#include "core/SpriteFrames.h"` khÃ´ng sá»­ dá»¥ng trá»±c tiáº¿p trong `src/entities/Koopa.cpp`.
+  2. **TÃ­ch há»£p bá»™ helper giao diá»‡n UI (`UILayoutHelper` & `UIMenuWidget`)**: ThÃªm module Ä‘á»‹nh vá»‹ UI theo Ä‘iá»ƒm neo (`UIAnchor`) vÃ  widget menu tÆ°Æ¡ng tÃ¡c há»— trá»£ phÃ­m mÅ©i tÃªn (`Up`/`Down`/`W`/`S`) + `Enter`.
+  3. **Tá»‘i Æ°u hÃ³a game loop (`Game.cpp`)**: Bá»• sung `MAX_DELTA_TIME` clamping (0.1s), xá»­ lÃ½ an toÃ n khi Ä‘Ã³ng cá»­a sá»• (`m_window.close(); return;`), vÃ  báº¯t buá»™c khÃ³a tá»‰ lá»‡ mÃ n hÃ¬nh 16:9 khi resize window.
+  4. **TÃ¡ch lá»›p Render Foreground (`TileMap` & `Level`)**: Bá»• sung `renderForeground()` váº½ khá»‘i gáº¡ch, á»‘ng nÆ°á»›c, cá» Ä‘Ã¨ lÃªn entity vÃ  Mario theo Ä‘Ãºng chuáº©n NES.
+  5. **Giá»›i háº¡n Substep Physics (`PhysicsEngine`)**: ThÃªm giá»›i háº¡n `MAX_SUBSTEPS = 8` Ä‘á»ƒ ngÄƒn ngá»«a láº·p vÃ´ háº¡n catch-up lag khi giáº­t khung hÃ¬nh.
+  6. **Giáº£i quyáº¿t xung Ä‘á»™t 5 file**: Xá»­ lÃ½ mÆ°á»£t mÃ  conflict á»Ÿ `PauseState.h/.cpp`, `GameOverState.cpp`, `WinState.cpp`, `TileMap.cpp`. Káº¿t há»£p menu `UIMenuWidget` vá»›i chá»©c nÄƒng chá»‰nh Ã¢m lÆ°á»£ng Music/SFX báº±ng phÃ­m TrÃ¡i/Pháº£i.
+  7. **BiÃªn dá»‹ch & CTest 9/9 Pass**: BiÃªn dá»‹ch Debug/Release thÃ nh cÃ´ng 100%, táº¥t cáº£ 9/9 bÃ i test CTest Ä‘á»u vÆ°á»£t qua.
 
-### Entry #18: [Clean Code & Warnings Fix] - Loại Bỏ `#include "core/DisplayConfig.h"` Thừa Trong Các State UI
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [GameOverState.cpp](../src/states/GameOverState.cpp), [PauseState.cpp](../src/states/PauseState.cpp), [WinState.cpp](../src/states/WinState.cpp)
-- **Mô tả:** Loại bỏ các câu lệnh `#include "core/DisplayConfig.h"` thừa không được sử dụng trực tiếp trong `GameOverState.cpp`, `PauseState.cpp`, và `WinState.cpp`, dọn sạch cảnh báo IDE và tối ưu hóa biên dịch.
+### Entry #18: [Clean Code & Warnings Fix] - Loáº¡i Bá» `#include "core/DisplayConfig.h"` Thá»«a Trong CÃ¡c State UI
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [GameOverState.cpp](../src/states/GameOverState.cpp), [PauseState.cpp](../src/states/PauseState.cpp), [WinState.cpp](../src/states/WinState.cpp)
+- **MÃ´ táº£:** Loáº¡i bá» cÃ¡c cÃ¢u lá»‡nh `#include "core/DisplayConfig.h"` thá»«a khÃ´ng Ä‘Æ°á»£c sá»­ dá»¥ng trá»±c tiáº¿p trong `GameOverState.cpp`, `PauseState.cpp`, vÃ  `WinState.cpp`, dá»n sáº¡ch cáº£nh bÃ¡o IDE vÃ  tá»‘i Æ°u hÃ³a biÃªn dá»‹ch.
 
 ### Entry #19: [LEGACY] Clean code cho HUD state label
-- **Trạng thái:** LEGACY — HUD hiện chỉ switch qua các state release.
-- **File ảnh hưởng:** [HUD.cpp](../src/ui/HUD.cpp)
-- **Mô tả:** HUD hiện hiển thị `SMALL`, `SUPER`, `FIRE` và overlay `STAR`; không có nhánh state ngoài contract.
+- **Tráº¡ng thÃ¡i:** LEGACY â€” HUD hiá»‡n chá»‰ switch qua cÃ¡c state release.
+- **File áº£nh hÆ°á»Ÿng:** [HUD.cpp](../src/ui/HUD.cpp)
+- **MÃ´ táº£:** HUD hiá»‡n hiá»ƒn thá»‹ `SMALL`, `SUPER`, `FIRE` vÃ  overlay `STAR`; khÃ´ng cÃ³ nhÃ¡nh state ngoÃ i contract.
 
 
 ### Entry #20: [Gate 0 Contract Compliance] - Purge legacy extra state, Fix PLAYER_LOST_LIFE & Integrate SaveManager
-- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
-- **File ảnh hưởng:** `Mario.h`, `Mario.cpp`, `HUD.cpp`, `PlayState.cpp`, `FireFlower.cpp`, `Mushroom.cpp`, `GameManager.h`, `GameManager.cpp`, `MenuState.cpp`, `GameOverState.cpp`, `WinState.cpp`, `CMakeLists.txt`
-- **Mô tả:** 
-  1. **Purge legacy extra state**: Khi nhặt FireFlower ở trạng thái `SMALL`, Mario chuyển trực tiếp sang `FIRE`.
-  2. **Remove PLAYER_LOST_LIFE**: Xóa `PLAYER_LOST_LIFE` event để tránh race condition, thay vào đó `HUD` dùng callback timeout trỏ thẳng tới `Mario::loseLife()`, và `PlayState` xử lý mạng trong loop.
-  3. **SaveManager Integration**: Đưa `SaveManager` vào trong `GameManager` singleton. Mọi truy cập vào save data đều thông qua `GameManager::getInstance().getSaveManager()`. `MenuState` hiển thị High Score, `WinState`/`GameOverState` cập nhật High Score.
-  4. **Rename target**: Đổi tên target từ `main` sang `SuperMario` trong `CMakeLists.txt`.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** `Mario.h`, `Mario.cpp`, `HUD.cpp`, `PlayState.cpp`, `FireFlower.cpp`, `Mushroom.cpp`, `GameManager.h`, `GameManager.cpp`, `MenuState.cpp`, `GameOverState.cpp`, `WinState.cpp`, `CMakeLists.txt`
+- **MÃ´ táº£:** 
+  1. **Purge legacy extra state**: Khi nháº·t FireFlower á»Ÿ tráº¡ng thÃ¡i `SMALL`, Mario chuyá»ƒn trá»±c tiáº¿p sang `FIRE`.
+  2. **Remove PLAYER_LOST_LIFE**: XÃ³a `PLAYER_LOST_LIFE` event Ä‘á»ƒ trÃ¡nh race condition, thay vÃ o Ä‘Ã³ `HUD` dÃ¹ng callback timeout trá» tháº³ng tá»›i `Mario::loseLife()`, vÃ  `PlayState` xá»­ lÃ½ máº¡ng trong loop.
+  3. **SaveManager Integration**: ÄÆ°a `SaveManager` vÃ o trong `GameManager` singleton. Má»i truy cáº­p vÃ o save data Ä‘á»u thÃ´ng qua `GameManager::getInstance().getSaveManager()`. `MenuState` hiá»ƒn thá»‹ High Score, `WinState`/`GameOverState` cáº­p nháº­t High Score.
+  4. **Rename target**: Äá»•i tÃªn target tá»« `main` sang `SuperMario` trong `CMakeLists.txt`.
 
-### Entry #21: [Fix HUD & Character State Desync] - Đồng Bộ Trạng Thái Nhân Vật Với HUD Góc Trên Bên Trái
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [HUD.cpp](../src/ui/HUD.cpp), [PlayState.cpp](../src/states/PlayState.cpp), [Mario.h](../include/entities/Mario.h), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Khắc phục lỗi tồn đọng cờ Star Power (`m_starPowerActive`)**: Đăng ký `HUD` lắng nghe sự kiện `PLAYER_POWER_DOWN`. Tự động reset `m_starPowerActive = false` khi nhận sự kiện `PLAYER_DIED`, `PLAYER_POWER_DOWN`, hoặc `LEVEL_STARTED`. Giúp loại bỏ hoàn toàn lỗi góc trái hiển thị `POWER STAR` sau khi nhân vật qua đời / mất mạng / giảm trạng thái.
-  2. **Đồng bộ HUD khi restore progress (`PlayState::restoreProgress`)**: Thêm lời gọi `m_hud->update()` ngay sau khi gán lại điểm, xu, mạng và `MarioState` trong `restoreProgress()`, đảm bảo HUD hiển thị đúng ngay tại frame 0.
-  3. **Đồng bộ default initializer `m_characterType`**: Đưa giá trị mặc định của `m_characterType` trong `Mario.h` về `CharacterType::MARIO` khớp chuẩn xác với các constructor trong `Mario.cpp`.
-  4. **Bổ sung regression unit tests (`TV5IntegrationTests.cpp`)**: Thêm assertion kiểm thử tự động xác nhận `PLAYER_DIED` và `PLAYER_POWER_DOWN` reset nhãn `POWER` về đúng `SMALL`. Toàn bộ 9/9 bộ test CTest đều vượt qua.
+### Entry #21: [Fix HUD & Character State Desync] - Äá»“ng Bá»™ Tráº¡ng ThÃ¡i NhÃ¢n Váº­t Vá»›i HUD GÃ³c TrÃªn BÃªn TrÃ¡i
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [HUD.cpp](../src/ui/HUD.cpp), [PlayState.cpp](../src/states/PlayState.cpp), [Mario.h](../include/entities/Mario.h), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Kháº¯c phá»¥c lá»—i tá»“n Ä‘á»ng cá» Star Power (`m_starPowerActive`)**: ÄÄƒng kÃ½ `HUD` láº¯ng nghe sá»± kiá»‡n `PLAYER_POWER_DOWN`. Tá»± Ä‘á»™ng reset `m_starPowerActive = false` khi nháº­n sá»± kiá»‡n `PLAYER_DIED`, `PLAYER_POWER_DOWN`, hoáº·c `LEVEL_STARTED`. GiÃºp loáº¡i bá» hoÃ n toÃ n lá»—i gÃ³c trÃ¡i hiá»ƒn thá»‹ `POWER STAR` sau khi nhÃ¢n váº­t qua Ä‘á»i / máº¥t máº¡ng / giáº£m tráº¡ng thÃ¡i.
+  2. **Äá»“ng bá»™ HUD khi restore progress (`PlayState::restoreProgress`)**: ThÃªm lá»i gá»i `m_hud->update()` ngay sau khi gÃ¡n láº¡i Ä‘iá»ƒm, xu, máº¡ng vÃ  `MarioState` trong `restoreProgress()`, Ä‘áº£m báº£o HUD hiá»ƒn thá»‹ Ä‘Ãºng ngay táº¡i frame 0.
+  3. **Äá»“ng bá»™ default initializer `m_characterType`**: ÄÆ°a giÃ¡ trá»‹ máº·c Ä‘á»‹nh cá»§a `m_characterType` trong `Mario.h` vá» `CharacterType::MARIO` khá»›p chuáº©n xÃ¡c vá»›i cÃ¡c constructor trong `Mario.cpp`.
+  4. **Bá»• sung regression unit tests (`TV5IntegrationTests.cpp`)**: ThÃªm assertion kiá»ƒm thá»­ tá»± Ä‘á»™ng xÃ¡c nháº­n `PLAYER_DIED` vÃ  `PLAYER_POWER_DOWN` reset nhÃ£n `POWER` vá» Ä‘Ãºng `SMALL`. ToÃ n bá»™ 9/9 bá»™ test CTest Ä‘á»u vÆ°á»£t qua.
 
-### Entry #22: [Fix Dead Enemy Collision] - Bỏ Qua Va Chạm & Gây Sát Thương Khi Quái Đã Chết/Đang Rơi
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Enemy.h](../include/entities/Enemy.h), [Goomba.h](../include/entities/Goomba.h), [Koopa.h](../include/entities/Koopa.h), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Thêm giao diện `Enemy::isDying()`**: Khai báo `virtual bool isDying() const` ở `Enemy.h` và override ở `Goomba.h` (`m_isStomped || m_isFlippedDead || isDead() || !isActive()`) cũng như `Koopa.h` (`m_isFlippedDead || isDead() || !isActive()`).
-  2. **Tắt va chạm vật lý Box2D (`CollisionManager::preSolve`)**: Gọi `contact->SetEnabled(false)` khi một trong hai entity va chạm là quái đang dying/dead, giúp Mario và các vật thể khác đi qua quái đang lơ lửng/rơi tự do mà không bị đẩy hay nảy.
-  3. **Bỏ qua gây sát thương cho Mario (`CollisionManager::handleMarioCollision`)**: Thêm kiểm tra `if (enemy->isDying()) return;` ngay đầu luồng xử lý va chạm Mario-quái. Mario không còn bị mất mạng hay bị trừ máu khi chạm trúng quái đã bị đạp bẹp hoặc quái đang ngửa bụng lơ lửng rơi xuống vực.
+### Entry #22: [Fix Dead Enemy Collision] - Bá» Qua Va Cháº¡m & GÃ¢y SÃ¡t ThÆ°Æ¡ng Khi QuÃ¡i ÄÃ£ Cháº¿t/Äang RÆ¡i
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Enemy.h](../include/entities/Enemy.h), [Goomba.h](../include/entities/Goomba.h), [Koopa.h](../include/entities/Koopa.h), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **ThÃªm giao diá»‡n `Enemy::isDying()`**: Khai bÃ¡o `virtual bool isDying() const` á»Ÿ `Enemy.h` vÃ  override á»Ÿ `Goomba.h` (`m_isStomped || m_isFlippedDead || isDead() || !isActive()`) cÅ©ng nhÆ° `Koopa.h` (`m_isFlippedDead || isDead() || !isActive()`).
+  2. **Táº¯t va cháº¡m váº­t lÃ½ Box2D (`CollisionManager::preSolve`)**: Gá»i `contact->SetEnabled(false)` khi má»™t trong hai entity va cháº¡m lÃ  quÃ¡i Ä‘ang dying/dead, giÃºp Mario vÃ  cÃ¡c váº­t thá»ƒ khÃ¡c Ä‘i qua quÃ¡i Ä‘ang lÆ¡ lá»­ng/rÆ¡i tá»± do mÃ  khÃ´ng bá»‹ Ä‘áº©y hay náº£y.
+  3. **Bá» qua gÃ¢y sÃ¡t thÆ°Æ¡ng cho Mario (`CollisionManager::handleMarioCollision`)**: ThÃªm kiá»ƒm tra `if (enemy->isDying()) return;` ngay Ä‘áº§u luá»“ng xá»­ lÃ½ va cháº¡m Mario-quÃ¡i. Mario khÃ´ng cÃ²n bá»‹ máº¥t máº¡ng hay bá»‹ trá»« mÃ¡u khi cháº¡m trÃºng quÃ¡i Ä‘Ã£ bá»‹ Ä‘áº¡p báº¹p hoáº·c quÃ¡i Ä‘ang ngá»­a bá»¥ng lÆ¡ lá»­ng rÆ¡i xuá»‘ng vá»±c.
 
-### Entry #23: [Fix Goomba Squished Sprite Position] - Sửa Lỗi Lệch Vị Trí Frame Bẹp Của Goomba
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Goomba.cpp](../src/entities/Goomba.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Sửa tính toán chân Sprite Goomba (`syncSpriteToFeet`)**: Đổi tính toán vị trí đáy sprite từ `m_position.y + GOOMBA_SIZE.y` (32px cố định) thành `m_position.y + m_size.y` (16px khi bị đạp).
-  2. **Kết quả**: Loại bỏ hoàn toàn hiện tượng sprite Goomba bị dậm bẹp bị chìm 16px sâu bên dưới mặt đất/gạch. Sprite squished phẳng lì nằm chuẩn xác ngay trên mặt sàn.
+### Entry #23: [Fix Goomba Squished Sprite Position] - Sá»­a Lá»—i Lá»‡ch Vá»‹ TrÃ­ Frame Báº¹p Cá»§a Goomba
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Goomba.cpp](../src/entities/Goomba.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Sá»­a tÃ­nh toÃ¡n chÃ¢n Sprite Goomba (`syncSpriteToFeet`)**: Äá»•i tÃ­nh toÃ¡n vá»‹ trÃ­ Ä‘Ã¡y sprite tá»« `m_position.y + GOOMBA_SIZE.y` (32px cá»‘ Ä‘á»‹nh) thÃ nh `m_position.y + m_size.y` (16px khi bá»‹ Ä‘áº¡p).
+  2. **Káº¿t quáº£**: Loáº¡i bá» hoÃ n toÃ n hiá»‡n tÆ°á»£ng sprite Goomba bá»‹ dáº­m báº¹p bá»‹ chÃ¬m 16px sÃ¢u bÃªn dÆ°á»›i máº·t Ä‘áº¥t/gáº¡ch. Sprite squished pháº³ng lÃ¬ náº±m chuáº©n xÃ¡c ngay trÃªn máº·t sÃ n.
 
-### Entry #24: [Fix Enemy Sprite Orientation] - Lật Sprite Hướng Mặt Quái Theo Hướng Di Chuyển
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Koopa.cpp](../src/entities/Koopa.cpp), [Goomba.cpp](../src/entities/Goomba.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Lật tỉ lệ scale & origin theo hướng di chuyển (`syncSpriteToFeet`)**: Khi `getFacingDirection() == Direction::RIGHT`, thiết lập `m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE})` và `setOrigin({rect.size.x, 0.f})`. Khi hướng `LEFT`, giữ `setScale({SPRITE_SCALE, SPRITE_SCALE})` và `setOrigin({0.f, 0.f})`.
-  2. **Kết quả**: Loại bỏ hoàn toàn lỗi Koopa / Goomba bị đi giật lùi (moonwalk) khi di chuyển sang phải. Quái luôn quay mặt về đúng hướng di chuyển 100%.
+### Entry #24: [Fix Enemy Sprite Orientation] - Láº­t Sprite HÆ°á»›ng Máº·t QuÃ¡i Theo HÆ°á»›ng Di Chuyá»ƒn
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Koopa.cpp](../src/entities/Koopa.cpp), [Goomba.cpp](../src/entities/Goomba.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Láº­t tá»‰ lá»‡ scale & origin theo hÆ°á»›ng di chuyá»ƒn (`syncSpriteToFeet`)**: Khi `getFacingDirection() == Direction::RIGHT`, thiáº¿t láº­p `m_sprite->setScale({-SPRITE_SCALE, SPRITE_SCALE})` vÃ  `setOrigin({rect.size.x, 0.f})`. Khi hÆ°á»›ng `LEFT`, giá»¯ `setScale({SPRITE_SCALE, SPRITE_SCALE})` vÃ  `setOrigin({0.f, 0.f})`.
+  2. **Káº¿t quáº£**: Loáº¡i bá» hoÃ n toÃ n lá»—i Koopa / Goomba bá»‹ Ä‘i giáº­t lÃ¹i (moonwalk) khi di chuyá»ƒn sang pháº£i. QuÃ¡i luÃ´n quay máº·t vá» Ä‘Ãºng hÆ°á»›ng di chuyá»ƒn 100%.
 
-### Entry #25: [Fix Star Invincibility Expiration Event] - Phát Sự Kiện PLAYER_INVINCIBILITY_EXPIRED Khi Hết Hạn Ngôi Sao
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp), [HUD.cpp](../src/ui/HUD.cpp), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Bổ sung phát sự kiện hết hạn tàng hình Sao (`Mario::updateInvincibility`)**: Thêm `EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED)` khi bộ đếm 10 giây Starman (`m_starInvincibilityTimer`) đếm về 0.
-  2. **Ràng buộc kiểm tra hai lớp ở HUD (`HUD::getPowerLabel`)**: Đổi điều kiện nhãn `STAR` thành `m_starPowerActive && m_mario.isStarInvincible()`.
-  3. **Kết quả**: Khi hiệu ứng Sao 10 giây kết thúc, HUD tự động chuyển nhãn `POWER STAR` về lại trạng thái chuẩn (`POWER SMALL` / `POWER SUPER` / `POWER FIRE`) ngay tức thì, loại bỏ dứt điểm hiện tượng treo nhãn `POWER STAR` vĩnh viễn.
+### Entry #25: [Fix Star Invincibility Expiration Event] - PhÃ¡t Sá»± Kiá»‡n PLAYER_INVINCIBILITY_EXPIRED Khi Háº¿t Háº¡n NgÃ´i Sao
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp), [HUD.cpp](../src/ui/HUD.cpp), [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Bá»• sung phÃ¡t sá»± kiá»‡n háº¿t háº¡n tÃ ng hÃ¬nh Sao (`Mario::updateInvincibility`)**: ThÃªm `EventBus::getInstance().notify(EventType::PLAYER_INVINCIBILITY_EXPIRED)` khi bá»™ Ä‘áº¿m 10 giÃ¢y Starman (`m_starInvincibilityTimer`) Ä‘áº¿m vá» 0.
+  2. **RÃ ng buá»™c kiá»ƒm tra hai lá»›p á»Ÿ HUD (`HUD::getPowerLabel`)**: Äá»•i Ä‘iá»u kiá»‡n nhÃ£n `STAR` thÃ nh `m_starPowerActive && m_mario.isStarInvincible()`.
+  3. **Káº¿t quáº£**: Khi hiá»‡u á»©ng Sao 10 giÃ¢y káº¿t thÃºc, HUD tá»± Ä‘á»™ng chuyá»ƒn nhÃ£n `POWER STAR` vá» láº¡i tráº¡ng thÃ¡i chuáº©n (`POWER SMALL` / `POWER SUPER` / `POWER FIRE`) ngay tá»©c thÃ¬, loáº¡i bá» dá»©t Ä‘iá»ƒm hiá»‡n tÆ°á»£ng treo nhÃ£n `POWER STAR` vÄ©nh viá»…n.
 
-### Entry #26: [Tune Mario Skid Duration] - Tăng Thời Gian Hiệu Ứng Phanh Lại Khi Chạy Nhanh
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (9/9 ctest passed).
-- **File ảnh hưởng:** [Mario.cpp](../src/entities/Mario.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
-- **Mô tả:** 
-  1. **Điều chỉnh ma sát phanh (`SKID_FRICTION`)**: Đổi hằng số `SKID_FRICTION` từ `2200.f` về `1200.f` trong `Mario.cpp`.
-  2. **Kết quả**: Khi Mario đang chạy nhanh (tốc độ tối đa 340 px/s) và bấm phím ngược hướng để phanh lại, thời gian trượt phanh và hiển thị animation `skid` kéo dài từ ~0.15s lên ~0.28s, mang lại cảm giác phanh trượt mượt mà và đúng chuẩn game Mario gốc.
+### Entry #26: [Tune Mario Skid Duration] - TÄƒng Thá»i Gian Hiá»‡u á»¨ng Phanh Láº¡i Khi Cháº¡y Nhanh
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (9/9 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
+- **MÃ´ táº£:** 
+  1. **Äiá»u chá»‰nh ma sÃ¡t phanh (`SKID_FRICTION`)**: Äá»•i háº±ng sá»‘ `SKID_FRICTION` tá»« `2200.f` vá» `1200.f` trong `Mario.cpp`.
+  2. **Káº¿t quáº£**: Khi Mario Ä‘ang cháº¡y nhanh (tá»‘c Ä‘á»™ tá»‘i Ä‘a 340 px/s) vÃ  báº¥m phÃ­m ngÆ°á»£c hÆ°á»›ng Ä‘á»ƒ phanh láº¡i, thá»i gian trÆ°á»£t phanh vÃ  hiá»ƒn thá»‹ animation `skid` kÃ©o dÃ i tá»« ~0.15s lÃªn ~0.28s, mang láº¡i cáº£m giÃ¡c phanh trÆ°á»£t mÆ°á»£t mÃ  vÃ  Ä‘Ãºng chuáº©n game Mario gá»‘c.
 
 ### Entry #27: [Merge TV4 Branch & Finalize Level/Enemy System] - Integrated feature/level-and-enemy into develop
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (10/10 ctest passed).
-- **File ảnh hưởng:** `CMakeLists.txt`, `docs/management/TV4_CHANGES_SUMMARY.md`, [TileMap.h](../include/level/TileMap.h), [CollisionManager.h](../include/physics/CollisionManager.h), [level0.txt](../levels/level0.txt), [level1.txt](../levels/level1.txt), [level2.txt](../levels/level2.txt), [level3.txt](../levels/level3.txt), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.cpp](../src/entities/Koopa.cpp), [Level.cpp](../src/level/Level.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [ContactListener.cpp](../src/physics/ContactListener.cpp), [LevelValidatorTests.cpp](../tests/LevelValidatorTests.cpp)
-- **Mô tả:** 
-  1. **Level File Validation**: Bổ sung cơ chế validate nghiêm ngặt file level trong `TileMap::loadFromFile()` (đúng 1 Mario spawn `M`, 1 finish point `F`, cột cờ `|` liên tục kết thúc ở ô solid, và cùng chiều rộng hàng). Thêm bộ test `LevelValidatorTests.cpp` với 8 bài unit test tự động (100% pass).
-  2. **Release Level Normalization**: Chuẩn hóa cấu trúc và layout 3 màn chơi chính Level 1 (183×12), Level 2 (250×12), Level 3 (281×12) và fixture Level 0. Bổ sung các cụm pipe traversal và phần thưởng Fire Flower ở giữa Level 2.
-  3. **Cải tiến Tile & Physics Collision Pipeline**: Tinh chỉnh AI quái Goomba/Koopa với ledge detection và bỏ qua va chạm mép gạch (`isWalkableSupportSeam`). Dependency injection truyền `TileMap&` qua `ContactListener` và `CollisionManager`. Chuẩn hóa `QuestionBlock` làm Single Source of Truth cho tile hits. Mở rộng finish trigger bao phủ toàn bộ chiều cao cột cờ.
-  4. **Merge & Giải Quyết Xung Đột**: Hợp nhất thành công nhánh `feature/level-and-enemy` vào `develop`. Giải quyết xung đột merge tại `Koopa.cpp` và `CollisionManager.cpp`, giữ nguyên cả logic bỏ qua va chạm quái dying/dead lẫn logic seam check. Xóa `#include "entities/FireBall.h"` bị lặp trong `Level.cpp`. Toàn bộ 10/10 ctest đều vượt qua.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (10/10 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** `CMakeLists.txt`, `docs/management/TV4_CHANGES_SUMMARY.md`, [TileMap.h](../include/level/TileMap.h), [CollisionManager.h](../include/physics/CollisionManager.h), [level0.txt](../levels/level0.txt), [level1.txt](../levels/level1.txt), [level2.txt](../levels/level2.txt), [level3.txt](../levels/level3.txt), [Goomba.cpp](../src/entities/Goomba.cpp), [Koopa.cpp](../src/entities/Koopa.cpp), [Level.cpp](../src/level/Level.cpp), [TileMap.cpp](../src/level/TileMap.cpp), [CollisionManager.cpp](../src/physics/CollisionManager.cpp), [ContactListener.cpp](../src/physics/ContactListener.cpp), [LevelValidatorTests.cpp](../tests/LevelValidatorTests.cpp)
+- **MÃ´ táº£:** 
+  1. **Level File Validation**: Bá»• sung cÆ¡ cháº¿ validate nghiÃªm ngáº·t file level trong `TileMap::loadFromFile()` (Ä‘Ãºng 1 Mario spawn `M`, 1 finish point `F`, cá»™t cá» `|` liÃªn tá»¥c káº¿t thÃºc á»Ÿ Ã´ solid, vÃ  cÃ¹ng chiá»u rá»™ng hÃ ng). ThÃªm bá»™ test `LevelValidatorTests.cpp` vá»›i 8 bÃ i unit test tá»± Ä‘á»™ng (100% pass).
+  2. **Release Level Normalization**: Chuáº©n hÃ³a cáº¥u trÃºc vÃ  layout 3 mÃ n chÆ¡i chÃ­nh Level 1 (183Ã—12), Level 2 (250Ã—12), Level 3 (281Ã—12) vÃ  fixture Level 0. Bá»• sung cÃ¡c cá»¥m pipe traversal vÃ  pháº§n thÆ°á»Ÿng Fire Flower á»Ÿ giá»¯a Level 2.
+  3. **Cáº£i tiáº¿n Tile & Physics Collision Pipeline**: Tinh chá»‰nh AI quÃ¡i Goomba/Koopa vá»›i ledge detection vÃ  bá» qua va cháº¡m mÃ©p gáº¡ch (`isWalkableSupportSeam`). Dependency injection truyá»n `TileMap&` qua `ContactListener` vÃ  `CollisionManager`. Chuáº©n hÃ³a `QuestionBlock` lÃ m Single Source of Truth cho tile hits. Má»Ÿ rá»™ng finish trigger bao phá»§ toÃ n bá»™ chiá»u cao cá»™t cá».
+  4. **Merge & Giáº£i Quyáº¿t Xung Äá»™t**: Há»£p nháº¥t thÃ nh cÃ´ng nhÃ¡nh `feature/level-and-enemy` vÃ o `develop`. Giáº£i quyáº¿t xung Ä‘á»™t merge táº¡i `Koopa.cpp` vÃ  `CollisionManager.cpp`, giá»¯ nguyÃªn cáº£ logic bá» qua va cháº¡m quÃ¡i dying/dead láº«n logic seam check. XÃ³a `#include "entities/FireBall.h"` bá»‹ láº·p trong `Level.cpp`. ToÃ n bá»™ 10/10 ctest Ä‘á»u vÆ°á»£t qua.
 
 ### Entry #28: [Merge TV5 Sound & Visual Enhancements] - Integrated feature/sound-input into develop
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (10/10 ctest passed).
-- **File ảnh hưởng:** [ASSETS_LIST.md](../assets/ASSETS_LIST.md), `assets/ui/bg_world.png`, `docs/management/s6_plan.md`, `docs/management/s7_plan.md`, [DisplayConfig.h](../include/core/DisplayConfig.h), [SpriteFrames.h](../include/core/SpriteFrames.h), [Camera.cpp](../src/level/Camera.cpp), [Level.cpp](../src/level/Level.cpp)
-- **Mô tả:** 
-  1. **Background Pixel-Art Mới (`bg_world.png`)**: Bổ sung hình nền pixel-art thế giới Overworld sinh động (`assets/ui/bg_world.png`, 1857×847 px) và khai báo hằng số `WORLD_PATH` trong `SpriteFrames::Backgrounds`.
-  2. **Căn Chỉnh Background & Camera**: Điều chỉnh thuật toán `calculateBackgroundTop` dựa trên hàng mặt đất `findGroundSurfaceRow` trong `Level.cpp`, render các dải nền đan xen lật gương (`mirrored scale`) phủ kín chiều rộng level. Cập nhật `BOTTOM_TILE_PADDING` trong `Camera.cpp` về `0.0f` để mép dưới camera vừa khít mặt map.
-  3. **Màu Nền Trời Tươi Sáng**: Cập nhật `BACKGROUND_COLOR` trong `DisplayConfig.h` từ CornflowerBlue `(100, 149, 237)` thành Sky Blue `(69, 197, 250)`.
-  4. **Merge Tự Động**: Merge hoàn toàn tự động không xung đột (`ort strategy`) nhánh `feature/sound-input` của TV5 vào `develop`. Biên dịch thành công 100%, tất cả 10/10 bộ ctest đều passed.
-### Entry #29: [Round 2 — Gate 0 Contract Tests + Docs Sync] - TV1 evidences the release contract and refreshes stale management docs
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
-- **Task liên quan:** S6-TV1-01/02/03/14/18/19/28/30/31/32/33/35 + Gate 0 test contract.
-- **File ảnh hưởng:** `CMakeLists.txt`, `tests/Gate0ContractTests.cpp` (mới), `tests/PlayStateTests.cpp` (mở rộng), `tests/SaveSessionTests.cpp` (mới), `README.md`, `FILE_STRUCTURE.md`, `docs/class_diagram.md`, `docs/management/S6_AUDIT_TRACKER.md`, `docs/management/S6_BUG_REGISTER.md`
-- **Mô tả:**
-  1. **Gate 0 test contract (`gate0_contract_tests`)**: `static_assert` khóa `MarioState = {SMALL, SUPER, FIRE}` (FIRE_SMALL tái xuất ⇒ build fail); FireFlower luôn cho `FIRE` từ cả SMALL và SUPER; Mushroom không downgrade (SUPER/FIRE giữ nguyên); `CharacterType` mặc định `MARIO`; cả 3 release level load được qua validator + tileset, đúng 1 `M` và 1 `F`. Lưu ý: guard giới hạn FireBall = 2 chờ TV3-19 (dòng NOTE trong file).
-  2. **PlayState death/Win regression (`play_state_tests`)**: một death phát đúng 1 `PLAYER_DIED` và trừ đúng 1 life; death thứ hai khi đang dying bị chặn; respawn re-arm death chain; Win-decision (Level 3 → hết level → Win) đi đúng một đường (`m_transitionIsWin`). Playthrough full-loop chờ TV4 (S6-TV4-40).
-  3. **Save restart-session validation (`save_session_tests`)**: hai phiên SaveManager độc lập trên cùng file tạm — mọi field (high score, unlock, hai volume) còn đúng sau "restart"; monotonic score/unlock giữ sau restart; `GameManager::getSaveManager()` luôn trả về cùng một instance (composition root).
-  4. **Docs sync**: README controls đúng `Shift = Run`, `X = Shoot` và đủ 12 test suite; FILE_STRUCTURE bỏ file phantom (`implementation_plan_sprint5_error.md`, `docs/PLAN_TV1.md`, `ui/Button.*`) và khớp cây file thật; class_diagram bổ sung `GameManager::getSaveManager()`/`m_saveManager`, `SaveManager` API thật, default character MARIO; tracker/bug register cập nhật bằng chứng thật (12/12, target `SuperMario`, SaveManager REVIEW).
-  5. **S6-TV1-33**: Sprint 5 error plan không tồn tại trong repo — đã gỡ mọi link/claim (FILE_STRUCTURE) và ghi lý do vào tracker, không bịa file/banner.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (10/10 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** [ASSETS_LIST.md](../assets/ASSETS_LIST.md), `assets/ui/bg_world.png`, `docs/management/s6_plan.md`, `docs/management/s7_plan.md`, [DisplayConfig.h](../include/core/DisplayConfig.h), [SpriteFrames.h](../include/core/SpriteFrames.h), [Camera.cpp](../src/level/Camera.cpp), [Level.cpp](../src/level/Level.cpp)
+- **MÃ´ táº£:** 
+  1. **Background Pixel-Art Má»›i (`bg_world.png`)**: Bá»• sung hÃ¬nh ná»n pixel-art tháº¿ giá»›i Overworld sinh Ä‘á»™ng (`assets/ui/bg_world.png`, 1857Ã—847 px) vÃ  khai bÃ¡o háº±ng sá»‘ `WORLD_PATH` trong `SpriteFrames::Backgrounds`.
+  2. **CÄƒn Chá»‰nh Background & Camera**: Äiá»u chá»‰nh thuáº­t toÃ¡n `calculateBackgroundTop` dá»±a trÃªn hÃ ng máº·t Ä‘áº¥t `findGroundSurfaceRow` trong `Level.cpp`, render cÃ¡c dáº£i ná»n Ä‘an xen láº­t gÆ°Æ¡ng (`mirrored scale`) phá»§ kÃ­n chiá»u rá»™ng level. Cáº­p nháº­t `BOTTOM_TILE_PADDING` trong `Camera.cpp` vá» `0.0f` Ä‘á»ƒ mÃ©p dÆ°á»›i camera vá»«a khÃ­t máº·t map.
+  3. **MÃ u Ná»n Trá»i TÆ°Æ¡i SÃ¡ng**: Cáº­p nháº­t `BACKGROUND_COLOR` trong `DisplayConfig.h` tá»« CornflowerBlue `(100, 149, 237)` thÃ nh Sky Blue `(69, 197, 250)`.
+  4. **Merge Tá»± Äá»™ng**: Merge hoÃ n toÃ n tá»± Ä‘á»™ng khÃ´ng xung Ä‘á»™t (`ort strategy`) nhÃ¡nh `feature/sound-input` cá»§a TV5 vÃ o `develop`. BiÃªn dá»‹ch thÃ nh cÃ´ng 100%, táº¥t cáº£ 10/10 bá»™ ctest Ä‘á»u passed.
+### Entry #29: [Round 2 â€” Gate 0 Contract Tests + Docs Sync] - TV1 evidences the release contract and refreshes stale management docs
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
+- **Task liÃªn quan:** S6-TV1-01/02/03/14/18/19/28/30/31/32/33/35 + Gate 0 test contract.
+- **File áº£nh hÆ°á»Ÿng:** `CMakeLists.txt`, `tests/Gate0ContractTests.cpp` (má»›i), `tests/PlayStateTests.cpp` (má»Ÿ rá»™ng), `tests/SaveSessionTests.cpp` (má»›i), `README.md`, `FILE_STRUCTURE.md`, `docs/class_diagram.md`, `docs/management/S6_AUDIT_TRACKER.md`, `docs/management/S6_BUG_REGISTER.md`
+- **MÃ´ táº£:**
+  1. **Gate 0 test contract (`gate0_contract_tests`)**: `static_assert` khÃ³a `MarioState = {SMALL, SUPER, FIRE}` (FIRE_SMALL tÃ¡i xuáº¥t â‡’ build fail); FireFlower luÃ´n cho `FIRE` tá»« cáº£ SMALL vÃ  SUPER; Mushroom khÃ´ng downgrade (SUPER/FIRE giá»¯ nguyÃªn); `CharacterType` máº·c Ä‘á»‹nh `MARIO`; cáº£ 3 release level load Ä‘Æ°á»£c qua validator + tileset, Ä‘Ãºng 1 `M` vÃ  1 `F`. LÆ°u Ã½: guard giá»›i háº¡n FireBall = 2 chá» TV3-19 (dÃ²ng NOTE trong file).
+  2. **PlayState death/Win regression (`play_state_tests`)**: má»™t death phÃ¡t Ä‘Ãºng 1 `PLAYER_DIED` vÃ  trá»« Ä‘Ãºng 1 life; death thá»© hai khi Ä‘ang dying bá»‹ cháº·n; respawn re-arm death chain; Win-decision (Level 3 â†’ háº¿t level â†’ Win) Ä‘i Ä‘Ãºng má»™t Ä‘Æ°á»ng (`m_transitionIsWin`). Playthrough full-loop chá» TV4 (S6-TV4-40).
+  3. **Save restart-session validation (`save_session_tests`)**: hai phiÃªn SaveManager Ä‘á»™c láº­p trÃªn cÃ¹ng file táº¡m â€” má»i field (high score, unlock, hai volume) cÃ²n Ä‘Ãºng sau "restart"; monotonic score/unlock giá»¯ sau restart; `GameManager::getSaveManager()` luÃ´n tráº£ vá» cÃ¹ng má»™t instance (composition root).
+  4. **Docs sync**: README controls Ä‘Ãºng `Shift = Run`, `X = Shoot` vÃ  Ä‘á»§ 12 test suite; FILE_STRUCTURE bá» file phantom (`implementation_plan_sprint5_error.md`, `docs/PLAN_TV1.md`, `ui/Button.*`) vÃ  khá»›p cÃ¢y file tháº­t; class_diagram bá»• sung `GameManager::getSaveManager()`/`m_saveManager`, `SaveManager` API tháº­t, default character MARIO; tracker/bug register cáº­p nháº­t báº±ng chá»©ng tháº­t (12/12, target `SuperMario`, SaveManager REVIEW).
+  5. **S6-TV1-33**: Sprint 5 error plan khÃ´ng tá»“n táº¡i trong repo â€” Ä‘Ã£ gá»¡ má»i link/claim (FILE_STRUCTURE) vÃ  ghi lÃ½ do vÃ o tracker, khÃ´ng bá»‹a file/banner.
 
 ### Entry #30: [Fix Death & Completion High Score Persistence + Save Logging] - Save high score immediately on death/completion (BUG-027 / S6-TV1-19)
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
-- **Task liên quan:** S6-TV1-19 / BUG-027.
-- **File ảnh hưởng:** [PlayState.cpp](../src/states/PlayState.cpp), [SaveManager.cpp](../src/core/SaveManager.cpp), [GameManager.cpp](../src/core/GameManager.cpp), [SaveSessionTests.cpp](../tests/SaveSessionTests.cpp), [S6_AUDIT_TRACKER.md](management/S6_AUDIT_TRACKER.md), [S6_BUG_REGISTER.md](management/S6_BUG_REGISTER.md)
-- **Mô tả:**
-  1. **Fix 1 (Lưu high score khi chết)**: Trong `PlayState::onNotify(PLAYER_DIED)`, gọi `GameManager::getInstance().getSaveManager().updateHighScore(m_level->getMario()->getScore())` ngay khi sự kiện chết xảy ra. Mario chết dù còn mạng vẫn được lưu lại điểm cao vào đĩa đòn bẩy.
-  2. **Fix 2 (Lưu high score khi xong level)**: Trong `PlayState::onNotify(LEVEL_COMPLETED)`, gọi `GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score)` để đảm bảo điểm số màn vừa qua không bị rơi mất nếu thoát game trước khi vào GameOver/Win.
-  3. **Fix 3 (Save error & CWD load logging)**: Gỡ bỏ `#ifdef DEBUG` quanh thông báo `std::cerr` khi `replaceSaveFile` hoặc `writeSaveFile` thất bại trong `SaveManager.cpp`. Bổ sung log CWD path và data đã load ở constructor `GameManager.cpp` trong chế độ Debug.
-  4. **Regression test (`save_session_tests`)**: Bổ sung unit test `testMidSessionDeathSavesHighScore` mô phỏng người chơi chết còn mạng -> thoát game -> restart executable -> load lại đĩa save kiểm tra điểm cao vẫn được bảo toàn (100% pass, 12/12 CTest pass).
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
+- **Task liÃªn quan:** S6-TV1-19 / BUG-027.
+- **File áº£nh hÆ°á»Ÿng:** [PlayState.cpp](../src/states/PlayState.cpp), [SaveManager.cpp](../src/core/SaveManager.cpp), [GameManager.cpp](../src/core/GameManager.cpp), [SaveSessionTests.cpp](../tests/SaveSessionTests.cpp), [S6_AUDIT_TRACKER.md](management/S6_AUDIT_TRACKER.md), [S6_BUG_REGISTER.md](management/S6_BUG_REGISTER.md)
+- **MÃ´ táº£:**
+  1. **Fix 1 (LÆ°u high score khi cháº¿t)**: Trong `PlayState::onNotify(PLAYER_DIED)`, gá»i `GameManager::getInstance().getSaveManager().updateHighScore(m_level->getMario()->getScore())` ngay khi sá»± kiá»‡n cháº¿t xáº£y ra. Mario cháº¿t dÃ¹ cÃ²n máº¡ng váº«n Ä‘Æ°á»£c lÆ°u láº¡i Ä‘iá»ƒm cao vÃ o Ä‘Ä©a Ä‘Ã²n báº©y.
+  2. **Fix 2 (LÆ°u high score khi xong level)**: Trong `PlayState::onNotify(LEVEL_COMPLETED)`, gá»i `GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score)` Ä‘á»ƒ Ä‘áº£m báº£o Ä‘iá»ƒm sá»‘ mÃ n vá»«a qua khÃ´ng bá»‹ rÆ¡i máº¥t náº¿u thoÃ¡t game trÆ°á»›c khi vÃ o GameOver/Win.
+  3. **Fix 3 (Save error & CWD load logging)**: Gá»¡ bá» `#ifdef DEBUG` quanh thÃ´ng bÃ¡o `std::cerr` khi `replaceSaveFile` hoáº·c `writeSaveFile` tháº¥t báº¡i trong `SaveManager.cpp`. Bá»• sung log CWD path vÃ  data Ä‘Ã£ load á»Ÿ constructor `GameManager.cpp` trong cháº¿ Ä‘á»™ Debug.
+  4. **Regression test (`save_session_tests`)**: Bá»• sung unit test `testMidSessionDeathSavesHighScore` mÃ´ phá»ng ngÆ°á»i chÆ¡i cháº¿t cÃ²n máº¡ng -> thoÃ¡t game -> restart executable -> load láº¡i Ä‘Ä©a save kiá»ƒm tra Ä‘iá»ƒm cao váº«n Ä‘Æ°á»£c báº£o toÃ n (100% pass, 12/12 CTest pass).
 
 ### Entry #31: [Merge TV5 Sound & Input Enhancements Branch] - Merged feature/sound-input into develop
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
-- **File ảnh hưởng:** `ASSETS_LIST.md`, `FILE_STRUCTURE.md`, `README.md`, `docs/blocks_coordinate.md`, `docs/items_objects_coordinate.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `src/core/ScoreRules.cpp`, `include/core/SoundManager.h`, `src/core/SoundManager.cpp`, `include/patterns/InputHandler.h`, `src/patterns/InputHandler.cpp`, `include/ui/HUD.h`, `src/ui/HUD.cpp`, `src/core/Game.cpp`, `src/entities/Mario.cpp`, `src/items/Coin.cpp`, `src/patterns/EntityFactory.cpp`, `src/states/PauseState.cpp`, `tests/TV5IntegrationTests.cpp`
-- **Mô tả:**
-  1. Hợp nhất nhánh `feature/sound-input` của TV5 vào `develop`.
-  2. Bổ sung hệ thống quản lý âm thanh `SoundManager`, voice pool cho SFX, named tracks cho Music, và khôi phục nhạc level sau khi Star expired.
-  3. Cập nhật `InputHandler` với cờ suppression `gameplayEnabled`, khóa phím `Shift` chỉ chạy và `X` chỉ bắn.
-  4. Chuẩn hóa `HUD` với timer callbacks, font degrade control, và nhãn `POWER` đồng bộ.
-  5. Chuyển toàn bộ reference atlases từ `assets/` ra `docs/assets/reference/` để tối ưu hóa dung lượng gói release.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** `ASSETS_LIST.md`, `FILE_STRUCTURE.md`, `README.md`, `docs/blocks_coordinate.md`, `docs/items_objects_coordinate.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `src/core/ScoreRules.cpp`, `include/core/SoundManager.h`, `src/core/SoundManager.cpp`, `include/patterns/InputHandler.h`, `src/patterns/InputHandler.cpp`, `include/ui/HUD.h`, `src/ui/HUD.cpp`, `src/core/Game.cpp`, `src/entities/Mario.cpp`, `src/items/Coin.cpp`, `src/patterns/EntityFactory.cpp`, `src/states/PauseState.cpp`, `tests/TV5IntegrationTests.cpp`
+- **MÃ´ táº£:**
+  1. Há»£p nháº¥t nhÃ¡nh `feature/sound-input` cá»§a TV5 vÃ o `develop`.
+  2. Bá»• sung há»‡ thá»‘ng quáº£n lÃ½ Ã¢m thanh `SoundManager`, voice pool cho SFX, named tracks cho Music, vÃ  khÃ´i phá»¥c nháº¡c level sau khi Star expired.
+  3. Cáº­p nháº­t `InputHandler` vá»›i cá» suppression `gameplayEnabled`, khÃ³a phÃ­m `Shift` chá»‰ cháº¡y vÃ  `X` chá»‰ báº¯n.
+  4. Chuáº©n hÃ³a `HUD` vá»›i timer callbacks, font degrade control, vÃ  nhÃ£n `POWER` Ä‘á»“ng bá»™.
+  5. Chuyá»ƒn toÃ n bá»™ reference atlases tá»« `assets/` ra `docs/assets/reference/` Ä‘á»ƒ tá»‘i Æ°u hÃ³a dung lÆ°á»£ng gÃ³i release.
 
 ### Entry #32: [Merge TV5 Feature Branch - Audio Cues, Defeat Centralization & Integration Tests] - Merged feature/sound-input into develop
-- **Trạng thái:** Đã hoàn thành, build & test pass 100% (12/12 ctest passed).
-- **File ảnh hưởng:** `assets/ASSETS_LIST.md`, `docs/management/TV5_AUDIO_HUD_ITEM_CHECKLIST.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `include/core/SpriteFrames.h`, `include/entities/Enemy.h`, `include/entities/Koopa.h`, `include/patterns/EventType.h`, `include/physics/CollisionManager.h`, `src/core/ScoreRules.cpp`, `src/core/SoundManager.cpp`, `src/entities/Enemy.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/physics/CollisionManager.cpp`, `src/states/PlayState.cpp`, `tests/TV5IntegrationTests.cpp`
-- **Mô tả:**
-  1. Hợp nhất nhánh `origin/feature/sound-input` của TV5 vào `develop` theo yêu cầu của Architect (TV1).
-  2. Tập trung xử lý tiêu diệt kẻ địch và tính điểm trong `CollisionManager` với các sự kiện per-cause (`STOMP`, `SHELL`, `FIREBALL`, `STAR`).
-  3. Bổ sung âm thanh SFX đặc thù theo nguyên nhân tiêu diệt (shell kill, fireball hit, star kill) và xử lý phát nhạc khi resume game từ PauseState.
-  4. Mở rộng `TV5IntegrationTests` với kiểm thử cho runtime defeat paths, state audio switching, và asset manifest verification.
-  5. Toàn bộ 12 test suite đều thông qua (100% pass) trên `develop`.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
+- **File áº£nh hÆ°á»Ÿng:** `assets/ASSETS_LIST.md`, `docs/management/TV5_AUDIO_HUD_ITEM_CHECKLIST.md`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/ScoreRules.h`, `include/core/SpriteFrames.h`, `include/entities/Enemy.h`, `include/entities/Koopa.h`, `include/patterns/EventType.h`, `include/physics/CollisionManager.h`, `src/core/ScoreRules.cpp`, `src/core/SoundManager.cpp`, `src/entities/Enemy.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/physics/CollisionManager.cpp`, `src/states/PlayState.cpp`, `tests/TV5IntegrationTests.cpp`
+- **MÃ´ táº£:**
+  1. Há»£p nháº¥t nhÃ¡nh `origin/feature/sound-input` cá»§a TV5 vÃ o `develop` theo yÃªu cáº§u cá»§a Architect (TV1).
+  2. Táº­p trung xá»­ lÃ½ tiÃªu diá»‡t káº» Ä‘á»‹ch vÃ  tÃ­nh Ä‘iá»ƒm trong `CollisionManager` vá»›i cÃ¡c sá»± kiá»‡n per-cause (`STOMP`, `SHELL`, `FIREBALL`, `STAR`).
+  3. Bá»• sung Ã¢m thanh SFX Ä‘áº·c thÃ¹ theo nguyÃªn nhÃ¢n tiÃªu diá»‡t (shell kill, fireball hit, star kill) vÃ  xá»­ lÃ½ phÃ¡t nháº¡c khi resume game tá»« PauseState.
+  4. Má»Ÿ rá»™ng `TV5IntegrationTests` vá»›i kiá»ƒm thá»­ cho runtime defeat paths, state audio switching, vÃ  asset manifest verification.
+  5. ToÃ n bá»™ 12 test suite Ä‘á»u thÃ´ng qua (100% pass) trÃªn `develop`.
 
 ### Entry #33: [Assets & Core] - Tileset & TileMap Multi-Theme Support Integration
-- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
-- **File ảnh hưởng:** `docs/tileset_coordinate.md`, `include/core/SpriteFrames.h`, `include/level/TileFrames.h`, `include/level/Level.h`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/states/PlayState.cpp`
-- **Mô tả:**
-  1. **Tọa độ Tileset Hoàn Chỉnh (`tileset_coordinate.md`)**: Phân tích toàn bộ 345 object từ `assets/textures/tiles/tileset.png`. Cập nhật tọa độ chuẩn vào `TileFrames.h` cho gạch nền (Ground, Brick, Question Block, Coin...) theo 3 môi trường: Overworld, Underground, Castle. 
-  2. **Tọa độ SpriteFrames Bổ Sung**: Tích hợp tọa độ Map Coins tĩnh, Trampoline, Castle Axe, Bridge Chain và Elevator Pulley vào `SpriteFrames::LevelEntities` ở cuối `SpriteFrames.h`. Cắt bỏ tệp Python dư thừa.
-  3. **TileMap Multi-Theme Engine (`TileMap.cpp`)**: Thay đổi kiến trúc render gạch nền từ hardcode Overworld sang Dynamic Multi-Theme. TileMap giờ đây đọc `LevelTheme` (được truyền vào qua `Level::setTheme()` từ `PlayState`) để render chính xác màu sắc khối gạch (Background, Brick, Question) theo từng màn chơi.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** `docs/tileset_coordinate.md`, `include/core/SpriteFrames.h`, `include/level/TileFrames.h`, `include/level/Level.h`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/states/PlayState.cpp`
+- **MÃ´ táº£:**
+  1. **Tá»a Ä‘á»™ Tileset HoÃ n Chá»‰nh (`tileset_coordinate.md`)**: PhÃ¢n tÃ­ch toÃ n bá»™ 345 object tá»« `assets/textures/tiles/tileset.png`. Cáº­p nháº­t tá»a Ä‘á»™ chuáº©n vÃ o `TileFrames.h` cho gáº¡ch ná»n (Ground, Brick, Question Block, Coin...) theo 3 mÃ´i trÆ°á»ng: Overworld, Underground, Castle. 
+  2. **Tá»a Ä‘á»™ SpriteFrames Bá»• Sung**: TÃ­ch há»£p tá»a Ä‘á»™ Map Coins tÄ©nh, Trampoline, Castle Axe, Bridge Chain vÃ  Elevator Pulley vÃ o `SpriteFrames::LevelEntities` á»Ÿ cuá»‘i `SpriteFrames.h`. Cáº¯t bá» tá»‡p Python dÆ° thá»«a.
+  3. **TileMap Multi-Theme Engine (`TileMap.cpp`)**: Thay Ä‘á»•i kiáº¿n trÃºc render gáº¡ch ná»n tá»« hardcode Overworld sang Dynamic Multi-Theme. TileMap giá» Ä‘Ã¢y Ä‘á»c `LevelTheme` (Ä‘Æ°á»£c truyá»n vÃ o qua `Level::setTheme()` tá»« `PlayState`) Ä‘á»ƒ render chÃ­nh xÃ¡c mÃ u sáº¯c khá»‘i gáº¡ch (Background, Brick, Question) theo tá»«ng mÃ n chÆ¡i.
 
 ### Entry #34: [Merge TV5 Sound-Input & SpriteFrames Theme Refactoring] - Merged feature/sound-input into develop
-- **Trạng thái:** Đã hoàn thành, build & test pass 100%.
-- **File ảnh hưởng:** `CMakeLists.txt`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/SpriteFrames.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_shared.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_udw.h`, `include/entities/BlockDebris.h`, `include/entities/Goomba.h`, `include/entities/Koopa.h`, `include/level/Level.h`, `include/level/TileFrames.h`, `include/level/TileMap.h`, `include/patterns/EntityFactory.h`, `src/entities/FireBall.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/entities/QuestionBlock.cpp`, `src/items/Coin.cpp`, `src/items/FireFlower.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/patterns/EntityFactory.cpp`, `tests/SpriteFramesThemeTests.cpp`
-- **Mô tả:**
-  1. Hợp nhất thành công nhánh `feature/sound-input` mới nhất (commit `2099602`) vào nhánh `develop`.
-  2. **Refactor SpriteFrames theo Theme Catalog**: Tách tệp header `SpriteFrames.h` thành các catalog riêng biệt theo môi trường (`SpriteFrames_shared.h`, `SpriteFrames_ovw.h`, `SpriteFrames_udg.h`, `SpriteFrames_castle.h`, `SpriteFrames_udw.h`), đồng thời giữ `SpriteFrames.h` làm aggregator thống nhất.
-  3. **Lan truyền LevelTheme**: Truyền `LevelTheme` từ `Level` tới `TileMap`, `EntityFactory` và các thực thể game (`Goomba`, `Koopa`, `QuestionBlock`, `BlockDebris`...) giúp tự động render đúng bảng màu sprite tương ứng.
-  4. **Bổ sung Theme Unit Tests**: Thêm bộ test `SpriteFramesThemeTests.cpp` kiểm thử tính chính xác của các thuộc tính và tọa độ frame theo từng chủ đề màn chơi.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100%.
+- **File áº£nh hÆ°á»Ÿng:** `CMakeLists.txt`, `docs/management/TV5_CHANGES_SUMMARY.md`, `include/core/SpriteFrames.h`, `include/core/SpriteFrames_castle.h`, `include/core/SpriteFrames_ovw.h`, `include/core/SpriteFrames_shared.h`, `include/core/SpriteFrames_udg.h`, `include/core/SpriteFrames_udw.h`, `include/entities/BlockDebris.h`, `include/entities/Goomba.h`, `include/entities/Koopa.h`, `include/level/Level.h`, `include/level/TileFrames.h`, `include/level/TileMap.h`, `include/patterns/EntityFactory.h`, `src/entities/FireBall.cpp`, `src/entities/Goomba.cpp`, `src/entities/Koopa.cpp`, `src/entities/Mario.cpp`, `src/entities/QuestionBlock.cpp`, `src/items/Coin.cpp`, `src/items/FireFlower.cpp`, `src/items/Mushroom.cpp`, `src/items/Star.cpp`, `src/level/Level.cpp`, `src/level/TileMap.cpp`, `src/patterns/EntityFactory.cpp`, `tests/SpriteFramesThemeTests.cpp`
+- **MÃ´ táº£:**
+  1. Há»£p nháº¥t thÃ nh cÃ´ng nhÃ¡nh `feature/sound-input` má»›i nháº¥t (commit `2099602`) vÃ o nhÃ¡nh `develop`.
+  2. **Refactor SpriteFrames theo Theme Catalog**: TÃ¡ch tá»‡p header `SpriteFrames.h` thÃ nh cÃ¡c catalog riÃªng biá»‡t theo mÃ´i trÆ°á»ng (`SpriteFrames_shared.h`, `SpriteFrames_ovw.h`, `SpriteFrames_udg.h`, `SpriteFrames_castle.h`, `SpriteFrames_udw.h`), Ä‘á»“ng thá»i giá»¯ `SpriteFrames.h` lÃ m aggregator thá»‘ng nháº¥t.
+  3. **Lan truyá»n LevelTheme**: Truyá»n `LevelTheme` tá»« `Level` tá»›i `TileMap`, `EntityFactory` vÃ  cÃ¡c thá»±c thá»ƒ game (`Goomba`, `Koopa`, `QuestionBlock`, `BlockDebris`...) giÃºp tá»± Ä‘á»™ng render Ä‘Ãºng báº£ng mÃ u sprite tÆ°Æ¡ng á»©ng.
+  4. **Bá»• sung Theme Unit Tests**: ThÃªm bá»™ test `SpriteFramesThemeTests.cpp` kiá»ƒm thá»­ tÃ­nh chÃ­nh xÃ¡c cá»§a cÃ¡c thuá»™c tÃ­nh vÃ  tá»a Ä‘á»™ frame theo tá»«ng chá»§ Ä‘á» mÃ n chÆ¡i.
 
 ### Entry #35: [Documentation & Assets] - Export Enemy PNG Sprites & Update Enemies Coordinate Documentation
-- **Trạng thái:** Đã hoàn thành, 157/157 PNG frames exported & documented.
-- **File ảnh hưởng:** `docs/enemies_coordinate.md`, `docs/assets/reference/enemies_all_components_atlas.png`, `docs/assets/reference/enemies_all_components_atlas_full.png`, `docs/assets/enemies/enemy_001.png`...`enemy_157.png`, `docs/assets/enemies_loang/enemy_001_loang.png`...`enemy_157_loang.png`, `scripts/export_enemy_pngs.py`, `scripts/update_enemies_md.py`
-- **Mô tả:**
-  1. **Xuất tệp PNG riêng cho từng khung hình quái vật (`docs/assets/enemies/`)**: Trích xuất toàn bộ 157 thành phần quái vật theo tọa độ Grid khung chuẩn (16×16, 16×24, 32×32, v.v.) từ tệp gốc `assets/textures/enemies/enemies.png`, tự động khử màu nền xanh NES `(0, 41, 140)` và `(146, 144, 255)` sang nền trong suốt Alpha.
-  2. **Cập nhật Bảng Tọa Độ & Hình Ảnh (`enemies_coordinate.md`)**: Bổ sung cột `Ảnh PNG` nhúng trực tiếp hình ảnh xem trước (integer scaled) cho tất cả 157 khung hình quái vật từ `#1` đến `#157`.
-  3. **Tạo mới Ảnh minh họa Atlas Tổng hợp (`docs/assets/reference/`)**: Tải lại và tổng hợp tệp Atlas `enemies_all_components_atlas.png` và `enemies_all_components_atlas_full.png` với nét vẽ bounding box và đánh nhãn số STT trực quan.
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, 157/157 PNG frames exported & documented.
+- **File áº£nh hÆ°á»Ÿng:** `docs/enemies_coordinate.md`, `docs/assets/reference/enemies_all_components_atlas.png`, `docs/assets/reference/enemies_all_components_atlas_full.png`, `docs/assets/enemies/enemy_001.png`...`enemy_157.png`, `docs/assets/enemies_loang/enemy_001_loang.png`...`enemy_157_loang.png`, `scripts/export_enemy_pngs.py`, `scripts/update_enemies_md.py`
+- **MÃ´ táº£:**
+  1. **Xuáº¥t tá»‡p PNG riÃªng cho tá»«ng khung hÃ¬nh quÃ¡i váº­t (`docs/assets/enemies/`)**: TrÃ­ch xuáº¥t toÃ n bá»™ 157 thÃ nh pháº§n quÃ¡i váº­t theo tá»a Ä‘á»™ Grid khung chuáº©n (16Ã—16, 16Ã—24, 32Ã—32, v.v.) tá»« tá»‡p gá»‘c `assets/textures/enemies/enemies.png`, tá»± Ä‘á»™ng khá»­ mÃ u ná»n xanh NES `(0, 41, 140)` vÃ  `(146, 144, 255)` sang ná»n trong suá»‘t Alpha.
+  2. **Cáº­p nháº­t Báº£ng Tá»a Äá»™ & HÃ¬nh áº¢nh (`enemies_coordinate.md`)**: Bá»• sung cá»™t `áº¢nh PNG` nhÃºng trá»±c tiáº¿p hÃ¬nh áº£nh xem trÆ°á»›c (integer scaled) cho táº¥t cáº£ 157 khung hÃ¬nh quÃ¡i váº­t tá»« `#1` Ä‘áº¿n `#157`.
+  3. **Táº¡o má»›i áº¢nh minh há»a Atlas Tá»•ng há»£p (`docs/assets/reference/`)**: Táº£i láº¡i vÃ  tá»•ng há»£p tá»‡p Atlas `enemies_all_components_atlas.png` vÃ  `enemies_all_components_atlas_full.png` vá»›i nÃ©t váº½ bounding box vÃ  Ä‘Ã¡nh nhÃ£n sá»‘ STT trá»±c quan.
 
 
 
@@ -573,7 +574,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ## Entry 36: Fixed TileFrames.h Coordinates & TileMap Texture Bleeding
 
-- **Author**: TV1 (Dương)
+- **Author**: TV1 (DÆ°Æ¡ng)
 - **Modified Files**:
   - `include/level/TileFrames.h`
   - `src/level/TileMap.cpp`
@@ -581,7 +582,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - Corrected `STONE` in `TileFrames.h` from `{0, 33}` (which was erroneously pointing to Castle Battlement) to `{34, 16}` (Object #3 - Stone / Solid Stair Block).
   - Standardized `QUESTION` to `{85, 16}` (Object #6 - Row 1 Question Block) and `USED_BLOCK` to `{51, 16}` (Object #4 - Row 1 Used Block).
   - Fixed `CASTLE_WALL` from `{102, 33}` (Solid Black Filler) to `{34, 33}` (Object #39 - Castle Brick Wall).
-  - Added `STONE_UNDERGROUND` (`{198, 16}` - Object #12, Khối đá vuông 4 đinh Teal) definition in `TileFrames.h` and updated `TileMap.cpp` (`getTilesetRect`) so symbol `'S'` correctly renders Underground Teal Stone in Level 2 instead of Overworld Brown Stone or Teal Brick.
+  - Added `STONE_UNDERGROUND` (`{198, 16}` - Object #12, Khá»‘i Ä‘Ã¡ vuÃ´ng 4 Ä‘inh Teal) definition in `TileFrames.h` and updated `TileMap.cpp` (`getTilesetRect`) so symbol `'S'` correctly renders Underground Teal Stone in Level 2 instead of Overworld Brown Stone or Teal Brick.
   - Added a `0.02f` pixel UV inset in `TileMap::buildVertices` to completely eliminate 1-pixel border texture bleeding caused by subpixel camera position sampling.
   - Verified full build clean success and 13/13 ctest pass.
 
@@ -694,15 +695,15 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
   2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
 
-> Entries 43–46 below are dated implementation snapshots. Their 20/20 and
+> Entries 43â€“46 below are dated implementation snapshots. Their 20/20 and
 > four-level-completion statements are historical and are not current RC
 > evidence; the current 21/21 Debug result and remaining gates are recorded in
 > Entry 47.
 
 ### 43. Sprint 7 TV1 4-Level Release Contract & Test Synchronization (`S7-TV1-01`..`04`)
 - **Date:** 2026-08-15
-- **Author:** TV1 (Dương)
-- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Author:** TV1 (DÆ°Æ¡ng)
+- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/core/LevelCatalog.h`
   - `levels/level4.txt`
@@ -720,8 +721,8 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 44. Level / Stage Select UI & Navigation Integration (`LevelSelectState`)
 - **Date:** 2026-08-15
-- **Author:** TV1 (Dương)
-- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Author:** TV1 (DÆ°Æ¡ng)
+- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -729,8 +730,8 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - `src/states/CharacterSelectState.cpp`
 ### 45. Stage Select UI Polish: Clean Snapshot Previews & Streamlined Layout
 - **Date:** 2026-08-15
-- **Author:** TV1 (Dương)
-- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Author:** TV1 (DÆ°Æ¡ng)
+- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -749,8 +750,8 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 46. Code Review Remediation for Commit `cc80466` (P0/P1/P2 Quality & Performance Fixes)
 - **Date:** 2026-08-15
-- **Author:** TV1 (Dương)
-- **Status:** Historical snapshot — completed then; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate). Not current RC evidence.
+- **Author:** TV1 (DÆ°Æ¡ng)
+- **Status:** Historical snapshot â€” completed then; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate). Not current RC evidence.
 - **Modified Files:**
   - `include/items/Item.h`
   - `include/items/Coin.h`
@@ -766,24 +767,24 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - `tests/LevelValidatorTests.cpp`
   - `docs/change_in_develop.md`
 - **Logic Changes:**
-  1. **P0/P1 — Dynamic Cast Elimination in Hot Loop (`Level.cpp`)**:
+  1. **P0/P1 â€” Dynamic Cast Elimination in Hot Loop (`Level.cpp`)**:
      - Added `virtual bool isCoin() const { return false; }` in `include/items/Item.h`.
      - Overrode `bool isCoin() const override { return true; }` in `include/items/Coin.h`.
      - Replaced `dynamic_cast<const Coin*>` inside `Level::checkItemCollisions()` with `item->isCoin()` virtual check and safe `static_cast<const Coin*>`, completely removing RTTI overhead in the hot collision loop (adhering to `AGENTS.md` Rule #5).
-  2. **P0/P1 — Mario Update Function Length & Physics Sync Order (`Mario.cpp`)**:
+  2. **P0/P1 â€” Mario Update Function Length & Physics Sync Order (`Mario.cpp`)**:
      - Moved `syncPhysics()` unconditionally to line 1 of `Mario::update(float dt)`, ensuring Box2D physics solver state is always synchronized before any movement logic runs (adhering to `AGENTS.md` Rule #3).
      - Decomposed the ~176-line `Mario::update()` into 5 clean, focused helper methods: `handleDeathPhase(dt)`, `handleTransformPhase(dt)`, `handleSpawnPhase(dt)`, `updateMovementAnimations(dt)`, and `applyWorldBoundsClamp()`.
      - Reduced `Mario::update()` to ~40 lines, strictly complying with the 40-50 line convention.
-  3. **P0/P1 — Level Update Function Length Deconstruction (`Level.cpp`)**:
+  3. **P0/P1 â€” Level Update Function Length Deconstruction (`Level.cpp`)**:
      - Decomposed the ~235-line `Level::update()` by extracting `updateFlagSequence(dt)`, `updateEntities(dt)`, and `updateExplosions()`.
      - Reduced `Level::update()` to ~45 lines.
-  4. **P2 — Decomposed `onEnter()` in Select States (`LevelSelectState.cpp`, `CharacterSelectState.cpp`)**:
+  4. **P2 â€” Decomposed `onEnter()` in Select States (`LevelSelectState.cpp`, `CharacterSelectState.cpp`)**:
      - Split `LevelSelectState::onEnter()` into `initStageTextures()`, `initBackdropPanel()`, `initTextLabels()`, and `initStageCards()`.
      - Split `CharacterSelectState::onEnter()` into `initBackdropPanel()`, `initCards()`, `initAvatars()`, `initTextLabels()`, and `initMenu()`.
      - Silenced nodiscard compiler warning for image loading in fallback preview path.
-  5. **P2 — Cleaned Trailing Empty Lines in `levels/level4.txt`**:
+  5. **P2 â€” Cleaned Trailing Empty Lines in `levels/level4.txt`**:
      - Removed trailing empty lines 26-27 so `level4.txt` conforms cleanly to rectangular map bounds.
-  6. **P2 — Extended `LevelValidatorTests.cpp` Coverage**:
+  6. **P2 â€” Extended `LevelValidatorTests.cpp` Coverage**:
      - Added `testProductionLevelsLoad()` ensuring all 4 release levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) are validated for valid non-zero dimensions, single Mario spawn (`M`), single Flagpole (`F`/`T`), and valid parsing.
   7. **Release Gate Verification**:
      - Ran full CTest suite: all 20/20 test suites passed in 8.79s with 0 failures at that historical snapshot; this is not current RC evidence.
@@ -818,7 +819,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 48. Fix Fire State Growth/Shrink Transformation Animation Selection
 - **Date:** 2026-08-16
-- **Author:** TV1 (Dương)
+- **Author:** TV1 (DÆ°Æ¡ng)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `src/entities/Mario.cpp`
@@ -836,7 +837,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 49. Fix Defeat Score Popups (Fireball, Shell, Star, Block Bump) & Implement Shell Kill Streak
 - **Date:** 2026-08-16
-- **Author:** TV3 (Bảo) & TV1 (Dương)
+- **Author:** TV3 (Báº£o) & TV1 (DÆ°Æ¡ng)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/entities/Mario.h`
@@ -867,7 +868,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 50. Item/Enemy Theme Support, Pixel Sharpness & Title Screen Redesign
 - **Date:** 2026-08-16
-- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Author:** TV1 (DÆ°Æ¡ng), TV2 (Nháº­t), TV5 (Truyá»n)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/items/Coin.h`
@@ -916,7 +917,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 51. Fix Score Popup Texture Rect Mapping in Shared Atlas
 - **Date:** 2026-08-16
-- **Author:** TV5 (Truyền) & TV1 (Dương)
+- **Author:** TV5 (Truyá»n) & TV1 (DÆ°Æ¡ng)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/core/SpriteFrames_shared.h`
@@ -943,7 +944,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 52. Multi-Theme Score Popups & Title Screen Layout Fine-tuning
 - **Date:** 2026-08-16
-- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Author:** TV1 (DÆ°Æ¡ng), TV2 (Nháº­t), TV5 (Truyá»n)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/entities/ScorePopup.h`
@@ -975,7 +976,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 53. Title Cover Screen Branding & Clutter Cleanup
 - **Date:** 2026-08-16
-- **Author:** TV1 (Dương) & TV2 (Nhật)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV2 (Nháº­t)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/states/MenuState.h`
@@ -995,7 +996,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 54. Title Screen Pipe Symmetry & Title Punctuation Cleanup
 - **Date:** 2026-08-16
-- **Author:** TV1 (Dương) & TV2 (Nhật)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV2 (Nháº­t)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `src/states/MenuState.cpp`
@@ -1013,7 +1014,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 55. Authentic NES Underwater Cheep Cheep Sprite Configuration
 - **Date:** 2026-08-16
-- **Author:** TV4 (Vy) & TV1 (Dương)
+- **Author:** TV4 (Vy) & TV1 (DÆ°Æ¡ng)
 - **Status:** Completed; clean build and 21/21 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/core/SpriteFrames_udw.h`
@@ -1029,7 +1030,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 56. Comprehensive Game UI Redesign & Screenshot Layout Overhaul
 - **Date:** 2026-08-17
-- **Author:** TV1 (Dương), TV2 (Nhật), TV5 (Truyền)
+- **Author:** TV1 (DÆ°Æ¡ng), TV2 (Nháº­t), TV5 (Truyá»n)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/states/MenuState.h` & `src/states/MenuState.cpp`
@@ -1085,9 +1086,9 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Removed all temporary screen capture artifacts (`screenshots_output/`, `level_select_preview.png`, `menu_state_preview.png`, `tests/CaptureScreenshots.cpp`) ensuring a pristine repository state.
 
 
-### 57. Enemy Visual Effects Overhaul & Aesthetic Polish ("Hết Nhựa")
+### 57. Enemy Visual Effects Overhaul & Aesthetic Polish ("Háº¿t Nhá»±a")
 - **Date:** 2026-08-17
-- **Author:** TV1 (Dương), TV4 (Vy), TV5 (Truyền)
+- **Author:** TV1 (DÆ°Æ¡ng), TV4 (Vy), TV5 (Truyá»n)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `assets/textures/enemies/hammer.png`
@@ -1117,7 +1118,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 58. Fix Enemy Facing Directions, Horizontal Sprite Flipping, and Ledge Turning
 - **Date:** 2026-08-17
-- **Author:** TV1 (Dương), TV4 (Vy)
+- **Author:** TV1 (DÆ°Æ¡ng), TV4 (Vy)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `src/entities/Bowser.cpp`
@@ -1138,7 +1139,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 59. Bowser Boss Mechanics, Fire-Breathing Animations, SFX, and Combat Overhaul
 - **Date:** 2026-08-17
-- **Author:** TV1 (Dương), TV4 (Vy)
+- **Author:** TV1 (DÆ°Æ¡ng), TV4 (Vy)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/entities/Bowser.h`
@@ -1170,7 +1171,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 60. World 1-4 Authentic NES Castle Remake & Rotating Firebar Entity Integration
 - **Date:** 2026-08-17
-- **Author:** TV1 (Dương), TV4 (Vy)
+- **Author:** TV1 (DÆ°Æ¡ng), TV4 (Vy)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/entities/Entity.h`
@@ -1193,19 +1194,19 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Integrated `Firebar` damage overlap loops in `Level::updateEntities` for both Player 1 (`m_mario`) and Player 2 (`m_mario2`).
   3. **Authentic NES World 1-4 Map Recreation (`levels/level4.txt`)**:
      - Rebuilt the full 168x16 Castle World 1-4 layout matching Ian Albert's verified NES level map:
-       - **Section 1 (Cols 0–17)**: Low ceiling entry chamber, downward stone staircase, lava pit with leaping Podoboo (`P`), and post-pit platform.
-       - **Section 2 (Cols 18–36)**: High chamber, Question block (`?`), ceiling Firebar (`e`), double lava pits with Podoboos, and central stone island with Firebar mount.
-       - **Section 3 (Cols 37–74)**: Long stone corridor with alternating ceiling and floor Firebars (`e`), patrolling Koopa (`K`), and Fire Flower block (`f`).
-       - **Section 4 (Cols 75–110)**: Stepping stone platforms (`B`) over double lava pits with leaping Podoboos, 1-Up Mushroom (`U`), Starman (`O`), and springboard (`J`).
-       - **Section 5 (Cols 111–125)**: Low ceiling narrow entryway to the boss arena.
-       - **Section 6 (Cols 126–153)**: High-vaulted Bowser Boss Chamber with wide lava pit, authentic 11-tile suspended collapsible bridge (`===========`), Bowser boss (`X`), and Bowser Axe (`A`).
-       - **Section 7 (Cols 154–168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
+       - **Section 1 (Cols 0â€“17)**: Low ceiling entry chamber, downward stone staircase, lava pit with leaping Podoboo (`P`), and post-pit platform.
+       - **Section 2 (Cols 18â€“36)**: High chamber, Question block (`?`), ceiling Firebar (`e`), double lava pits with Podoboos, and central stone island with Firebar mount.
+       - **Section 3 (Cols 37â€“74)**: Long stone corridor with alternating ceiling and floor Firebars (`e`), patrolling Koopa (`K`), and Fire Flower block (`f`).
+       - **Section 4 (Cols 75â€“110)**: Stepping stone platforms (`B`) over double lava pits with leaping Podoboos, 1-Up Mushroom (`U`), Starman (`O`), and springboard (`J`).
+       - **Section 5 (Cols 111â€“125)**: Low ceiling narrow entryway to the boss arena.
+       - **Section 6 (Cols 126â€“153)**: High-vaulted Bowser Boss Chamber with wide lava pit, authentic 11-tile suspended collapsible bridge (`===========`), Bowser boss (`X`), and Bowser Axe (`A`).
+       - **Section 7 (Cols 154â€“168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
   4. **Release Gate Verification**:
      - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).
 
 ### 61. Integrate TV4 Commits (`ab75c2e` & `f3a76f1`) via Cherry-Pick
 - **Date:** 2026-08-17
-- **Author:** TV4 (Vy), TV1 (Dương)
+- **Author:** TV4 (Vy), TV1 (DÆ°Æ¡ng)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `levels/level_athletic.txt`
@@ -1213,7 +1214,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 62. Dual Play Camera Screen Containment, Swimming Ceiling Boundary & Pit Hazards
 - **Date:** 2026-08-19
-- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV3 (Báº£o)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/entities/Mario.h`
@@ -1242,7 +1243,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Added `testCoopPlayersClampedInsideCameraViewport()` in `CoopFlowTests` verifying that one player running right while the other is idle keeps both players strictly within the camera view for 300+ frames.
 ### 63. World 1-4 Castle Level Refinements & Alternative Bowser Passage
 - **Date:** 2026-08-19
-- **Author:** TV1 (Dương) & TV4 (Vy)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV4 (Vy)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `levels/level4.txt`
@@ -1266,7 +1267,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 64. Koopa Stomp Latch Re-arm & Firebar Damage Normalization
 - **Date:** 2026-08-19
-- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV3 (Báº£o)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `src/entities/Koopa.cpp`
@@ -1285,7 +1286,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 65. Fix Co-op Boundary Character Flicker & Level 3 Left Swim Breach
 - **Date:** 2026-08-19
-- **Author:** TV1 (Dương) & TV3 (Bảo)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV3 (Báº£o)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `include/level/Camera.h`
@@ -1314,7 +1315,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 ### 66. PvP Arena Platform Headroom & Layout Lowering
 - **Date:** 2026-08-19
-- **Author:** TV1 (Dương) & TV5 (Truyền)
+- **Author:** TV1 (DÆ°Æ¡ng) & TV5 (Truyá»n)
 - **Status:** Completed; 31/31 CTest suites passed (100% pass rate).
 - **Modified Files:**
   - `levels/pvp_arena.txt`
@@ -1335,23 +1336,95 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Updated `testShippedArenaFixtureLoads()` assertions to validate `tileMap.getHeight() == 12`, ground solidity on rows 9..11, and solid step blocks at `(7, 7)` and `(12, 7)` with clear air band across rows 6..8.
      - 31/31 CTest test suites pass 100%.
 
- 
- ### Entry #25: [Bugfix] - Sửa Lỗi Goomba Nổi Trên Trời Khi Bị Giẫm
-- **Trạng thái:** Đã hoàn thành, chờ test.
-- **File ảnh hưởng:** [Goomba.cpp](../src/entities/Goomba.cpp)
-- **Mô tả:** 
-  1. **Sửa lỗi Goomba nổi lên 8px khi bị giẫm:** Thay vì chỉ cập nhật m_position.y bằng phép tính thủ công trong onStomp(), hệ thống giờ gọi trực tiếp setPosition() để đồng bộ vị trí y mới với Box2D transform. Việc này ngăn syncPhysics() ở frame tiếp theo sử dụng lại tâm (center) cũ của Box2D, từ đó tính toán sai đẩy sprite nổi lên trời 8 pixel sau khi m_size bị giảm từ 32 xuống 16.
-# # #   6 7 .   F i x   B o x 2 D   I s L o c k e d   A s s e r t i o n   C r a s h   &   S h e l l   V e l o c i t y  
- -   * * D a t e : * *   2 0 2 6 - 0 8 - 2 0  
- -   * * A u t h o r : * *   A g e n t  
- -   * * S t a t u s : * *   C o m p l e t e d ;   3 1 / 3 1   C T e s t   s u i t e s   p a s s e d .  
- -   * * M o d i f i e d   F i l e s : * *  
-     -   \ s r c / e n t i t i e s / G o o m b a . c p p \ "   > >   d o c s / c h a n g e _ i n _ d e v e l o p . m d 
- e c h o    
- -  
- \ s r c / e n t i t i e s / K o o p a . c p p \ "  
- -   * * D e t a i l e d   L o g i c   C h a n g e s : * *  
-     1 .   * * F i x   I s L o c k e d   B o x 2 D   A s s e r t i o n * * :   C h a n g e d   G o o m b a : : o n S t o m p ( )   t o   u p d a t e   \ m _ p o s i t i o n \   d i r e c t l y   w i t h o u t   c a l l i n g   \ s e t P o s i t i o n ( ) \   i n s i d e   t h e   B o x 2 D   c o l l i s i o n   c a l l b a c k .   T h i s   p r e v e n t s   m o d i f y i n g   B o x 2 D   t r a n s f o r m s   w h i l e   t h e   w o r l d   i s   l o c k e d   d u r i n g   S t e p ( ) ,   f i x i n g   t h e   1 0 0 %   c r a s h   r a t e   i n   t e s t s   l i k e   \ 	 v 5 _ i n t e g r a t i o n _ t e s t s \ .  
-     2 .   * * F i x   K o o p a / B u z z y   B e e t l e   S h e l l   V e l o c i t y * * :   R e s t o r e d   \ s e t V e l o c i t y ( ) \   l o g i c   i n s i d e   K o o p a : : k i c k ( )   a n d   r e v e r s e D i r e c t i o n ( ) .   T h e   e a r l i e r   p h y s i c s   r e f a c t o r   h a d   a c c i d e n t a l l y   s t r i p p e d   o u t   s h e l l   s l i d e   s p e e d s ,   c a u s i n g   k i c k e d   s h e l l s   t o   s t a n d   c o m p l e t e l y   s t i l l   i n s t e a d   o f   s l i d i n g   a c r o s s   t h e   s c r e e n .  
-  
+
  
+ ### Entry #25: [Bugfix] - Sá»­a Lá»—i Goomba Ná»•i TrÃªn Trá»i Khi Bá»‹ Giáº«m
+- **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, chá» test.
+- **File áº£nh hÆ°á»Ÿng:** [Goomba.cpp](../src/entities/Goomba.cpp)
+- **MÃ´ táº£:** 
+  1. **Sá»­a lá»—i Goomba ná»•i lÃªn 8px khi bá»‹ giáº«m:** Thay vÃ¬ chá»‰ cáº­p nháº­t m_position.y báº±ng phÃ©p tÃ­nh thá»§ cÃ´ng trong onStomp(), há»‡ thá»‘ng giá» gá»i trá»±c tiáº¿p setPosition() Ä‘á»ƒ Ä‘á»“ng bá»™ vá»‹ trÃ­ y má»›i vá»›i Box2D transform. Viá»‡c nÃ y ngÄƒn syncPhysics() á»Ÿ frame tiáº¿p theo sá»­ dá»¥ng láº¡i tÃ¢m (center) cÅ© cá»§a Box2D, tá»« Ä‘Ã³ tÃ­nh toÃ¡n sai Ä‘áº©y sprite ná»•i lÃªn trá»i 8 pixel sau khi m_size bá»‹ giáº£m tá»« 32 xuá»‘ng 16.
+# # #   6 7 .   F i x   B o x 2 D   I s L o c k e d   A s s e r t i o n   C r a s h   &   S h e l l   V e l o c i t y 
+ 
+ -   * * D a t e : * *   2 0 2 6 - 0 8 - 2 0 
+ 
+ -   * * A u t h o r : * *   A g e n t 
+ 
+ -   * * S t a t u s : * *   C o m p l e t e d ;   3 1 / 3 1   C T e s t   s u i t e s   p a s s e d . 
+ 
+ -   * * M o d i f i e d   F i l e s : * * 
+ 
+     -   \ s r c / e n t i t i e s / G o o m b a . c p p \ "   > >   d o c s / c h a n g e _ i n _ d e v e l o p . m d 
+ e c h o   
+ 
+ - 
+ 
+ \ s r c / e n t i t i e s / K o o p a . c p p \ " 
+ 
+ -   * * D e t a i l e d   L o g i c   C h a n g e s : * * 
+ 
+     1 .   * * F i x   I s L o c k e d   B o x 2 D   A s s e r t i o n * * :   C h a n g e d   G o o m b a : : o n S t o m p ( )   t o   u p d a t e   \ m _ p o s i t i o n \   d i r e c t l y   w i t h o u t   c a l l i n g   \ s e t P o s i t i o n ( ) \   i n s i d e   t h e   B o x 2 D   c o l l i s i o n   c a l l b a c k .   T h i s   p r e v e n t s   m o d i f y i n g   B o x 2 D   t r a n s f o r m s   w h i l e   t h e   w o r l d   i s   l o c k e d   d u r i n g   S t e p ( ) ,   f i x i n g   t h e   1 0 0 %   c r a s h   r a t e   i n   t e s t s   l i k e   \ 	 v 5 _ i n t e g r a t i o n _ t e s t s \ . 
+ 
+     2 .   * * F i x   K o o p a / B u z z y   B e e t l e   S h e l l   V e l o c i t y * * :   R e s t o r e d   \ s e t V e l o c i t y ( ) \   l o g i c   i n s i d e   K o o p a : : k i c k ( )   a n d   r e v e r s e D i r e c t i o n ( ) .   T h e   e a r l i e r   p h y s i c s   r e f a c t o r   h a d   a c c i d e n t a l l y   s t r i p p e d   o u t   s h e l l   s l i d e   s p e e d s ,   c a u s i n g   k i c k e d   s h e l l s   t o   s t a n d   c o m p l e t e l y   s t i l l   i n s t e a d   o f   s l i d i n g   a c r o s s   t h e   s c r e e n . 
+ 
+ 
+ 
+ 
+### 68. Map Geometries and Theme Sync (Level 3 & 4)
+- **Date:** 2026-08-20
+- **Author:** TV4
+- **Status:** Completed
+- **Modified Files:**
+  - include/core/LevelCatalog.h
+  - levels/level3.txt
+  - levels/level4.txt
+- **Detailed Logic Changes:**
+  1. **Level 3 Theme Sync (LevelCatalog.h)**:
+     - Changed LevelTheme::OVERWORLD and MusicId::OVERWORLD to UNDERWATER so the deep blue sea background and music correctly load for Level 3.
+  2. **Level 3 Map Geometry Fix (level3.txt)**:
+     - Blocked an infinite leftward swimming escape route above spawn R1 by extending the S wall tiles upward at column 49 to close the gap at the top of the map.
+  3. **Level 4 Castle Authenticity (level4.txt)**:
+     - Removed out-of-theme floating coins and replaced bright Overworld-style ? question blocks with castle-appropriate Brick blocks B.
+  4. **Level 4 Missing Floor and Springboard Fix (level4.txt)**:
+     - Added Piranha Plant Pipes (pr, {}) in the non-lethal bottomless pits between the initial platforms to correctly punish missed jumps.
+     - Removed the ceiling blocks directly above the springboard J so Mario can gain enough height to reach the upper elevator path without hitting his head.
+
+### 69. Add Piranha Pipe to Level 4 Late Gap
+- **Date:** 2026-08-20
+- **Author:** TV4
+- **Status:** Completed
+- **Modified Files:**
+  - levels/level4.txt
+- **Detailed Logic Changes:**
+  1. **Add Pipe to Final Gap**: Added a Piranha plant pipe (pr, {}) to the 2-tile wide gap (cols 116-117) immediately preceding the long 10-tile solid ground stretch. This fulfills the player's request to place a pipe exactly at the rightmost bottomless pit shown in their screenshot.
+
+### 70. Make Runtime Asset Sync Automatic on Every Build
+- **Date:** 2026-08-20
+- **Author:** TV1
+- **Status:** Completed
+- **Modified Files:**
+  - CMakeLists.txt
+- **Detailed Logic Changes:**
+  1. **Decoupled Copy Commands**: Moved the copy_if_different POST_BUILD steps for assets and levels away from the SuperMario target and into a standalone `add_custom_target(CopyRuntimeAssets ALL)`.
+  2. **Hot-reload Support**: Now, when users modify levelX.txt (or image files) and hit Build, CMake will execute the copy commands and update the `build/` directory immediately without needing to pointlessly re-link the C++ executable.
+
+### 71. Fix Enemy Ledge Detection, Level 2 Palette/Warps & Level 3 Theme
+- **Date:** 2026-08-20
+- **Author:** TV4
+- **Status:** Completed
+- **Modified Files:**
+  - src/entities/Spiny.cpp
+  - src/entities/Goomba.cpp
+  - src/entities/HammerBro.cpp
+  - levels/level2.txt
+  - src/level/Level.cpp
+  - include/core/LevelCatalog.h
+  - levels/level3.txt
+- **Detailed Logic Changes:**
+  1. **Enemy Ledge Probe Fix (Spiny.cpp, Goomba.cpp, HammerBro.cpp)**:
+     - Replaced `m_tileMap->isSolid(...)` with `m_tileMap->isEnemySupport(...)` in `isApproachingLedge()` across Spiny, Goomba, and Hammer Bro so that Question Blocks, pipes, and other enemy-supporting surfaces are recognized as valid ground, preventing enemies from getting stuck or prematurely reversing.
+  2. **Level 2 Palette & Theme Transitions (level2.txt, Level.cpp)**:
+     - Replaced non-themed enemy symbols `'q]'` with `'p]'` and `'k'` with `'K'` in `levels/level2.txt` so theme-responsive underground enemy palettes are properly loaded.
+     - Added area theme transition handling in `Level::warpMarioToReturn()` for `level2.txt` (warp 1 -> Underground, warp 4 -> Overworld).
+  3. **Level 3 Initial Theme (LevelCatalog.h) & BOM Fix (level3.txt)**:
+     - Updated Level 3 initial theme in `LevelCatalog.h` to `LevelTheme::OVERWORLD` and `MusicId::OVERWORLD` to match the starting intro overworld area before pipe warp to underwater.
+     - Stripped UTF-8 BOM from `levels/level3.txt` ensuring valid map loading across all environments.

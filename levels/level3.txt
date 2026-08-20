@@ -1,4 +1,4 @@
-﻿# Level 3 - Underwater Reef (World 7-2)
+# Level 3 - Underwater Reef (World 7-2)
 # Width: 310 tiles
 # Height: 15 tiles
 # . = empty (air)

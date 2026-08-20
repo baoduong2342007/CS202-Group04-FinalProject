@@ -522,6 +522,8 @@ set(SUPERMARIO_RUNTIME_LEVELS
 # generators (e.g. the Debug subdirectory under Visual Studio/Xcode).
 set(SUPERMARIO_PACKAGE_ROOT "$<TARGET_FILE_DIR:SuperMario>")
 
+add_custom_target(CopyRuntimeAssets ALL)
+
 foreach(RUNTIME_ASSET_REL IN LISTS SUPERMARIO_RUNTIME_ASSETS)
     set(RUNTIME_ASSET_SOURCE "${CMAKE_SOURCE_DIR}/assets/${RUNTIME_ASSET_REL}")
     if(NOT EXISTS "${RUNTIME_ASSET_SOURCE}" OR IS_DIRECTORY "${RUNTIME_ASSET_SOURCE}")
@@ -530,7 +532,7 @@ foreach(RUNTIME_ASSET_REL IN LISTS SUPERMARIO_RUNTIME_ASSETS)
         )
     endif()
     get_filename_component(RUNTIME_ASSET_DIR "${RUNTIME_ASSET_REL}" DIRECTORY)
-    add_custom_command(TARGET SuperMario POST_BUILD
+    add_custom_command(TARGET CopyRuntimeAssets POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "${SUPERMARIO_PACKAGE_ROOT}/assets/${RUNTIME_ASSET_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -548,7 +550,7 @@ foreach(RUNTIME_LEVEL_REL IN LISTS SUPERMARIO_RUNTIME_LEVELS)
         )
     endif()
     get_filename_component(RUNTIME_LEVEL_DIR "${RUNTIME_LEVEL_REL}" DIRECTORY)
-    add_custom_command(TARGET SuperMario POST_BUILD
+    add_custom_command(TARGET CopyRuntimeAssets POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "${SUPERMARIO_PACKAGE_ROOT}/levels/${RUNTIME_LEVEL_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

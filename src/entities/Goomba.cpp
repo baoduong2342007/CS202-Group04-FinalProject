@@ -76,7 +76,9 @@ Goomba::Goomba(const sf::Vector2f& position, b2World* world, LevelTheme theme)
 }
 
 void Goomba::update(float dt) {
-    syncPhysics();
+    if (!m_isStomped) {
+        syncPhysics();
+    }
 
     if (m_isFlippedDead) {
         if (m_sprite) {
@@ -149,7 +151,7 @@ void Goomba::onStomp() {
     setHealth(0);
 
     m_size = {32.f, 16.f};
-    m_position.y = groundY - 16.f; // Align bottom edge of 16px height squish sprite to ground
+    m_position = {m_position.x, groundY - 16.f}; // Update visually only; skip Box2D transform to avoid IsLocked crash
 
     b2Body* body = getBody();
 

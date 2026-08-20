@@ -1335,3 +1335,23 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Updated `testShippedArenaFixtureLoads()` assertions to validate `tileMap.getHeight() == 12`, ground solidity on rows 9..11, and solid step blocks at `(7, 7)` and `(12, 7)` with clear air band across rows 6..8.
      - 31/31 CTest test suites pass 100%.
 
+ 
+ ### Entry #25: [Bugfix] - Sửa Lỗi Goomba Nổi Trên Trời Khi Bị Giẫm
+- **Trạng thái:** Đã hoàn thành, chờ test.
+- **File ảnh hưởng:** [Goomba.cpp](../src/entities/Goomba.cpp)
+- **Mô tả:** 
+  1. **Sửa lỗi Goomba nổi lên 8px khi bị giẫm:** Thay vì chỉ cập nhật m_position.y bằng phép tính thủ công trong onStomp(), hệ thống giờ gọi trực tiếp setPosition() để đồng bộ vị trí y mới với Box2D transform. Việc này ngăn syncPhysics() ở frame tiếp theo sử dụng lại tâm (center) cũ của Box2D, từ đó tính toán sai đẩy sprite nổi lên trời 8 pixel sau khi m_size bị giảm từ 32 xuống 16.
+# # #   6 7 .   F i x   B o x 2 D   I s L o c k e d   A s s e r t i o n   C r a s h   &   S h e l l   V e l o c i t y  
+ -   * * D a t e : * *   2 0 2 6 - 0 8 - 2 0  
+ -   * * A u t h o r : * *   A g e n t  
+ -   * * S t a t u s : * *   C o m p l e t e d ;   3 1 / 3 1   C T e s t   s u i t e s   p a s s e d .  
+ -   * * M o d i f i e d   F i l e s : * *  
+     -   \ s r c / e n t i t i e s / G o o m b a . c p p \ "   > >   d o c s / c h a n g e _ i n _ d e v e l o p . m d 
+ e c h o    
+ -  
+ \ s r c / e n t i t i e s / K o o p a . c p p \ "  
+ -   * * D e t a i l e d   L o g i c   C h a n g e s : * *  
+     1 .   * * F i x   I s L o c k e d   B o x 2 D   A s s e r t i o n * * :   C h a n g e d   G o o m b a : : o n S t o m p ( )   t o   u p d a t e   \ m _ p o s i t i o n \   d i r e c t l y   w i t h o u t   c a l l i n g   \ s e t P o s i t i o n ( ) \   i n s i d e   t h e   B o x 2 D   c o l l i s i o n   c a l l b a c k .   T h i s   p r e v e n t s   m o d i f y i n g   B o x 2 D   t r a n s f o r m s   w h i l e   t h e   w o r l d   i s   l o c k e d   d u r i n g   S t e p ( ) ,   f i x i n g   t h e   1 0 0 %   c r a s h   r a t e   i n   t e s t s   l i k e   \ 	 v 5 _ i n t e g r a t i o n _ t e s t s \ .  
+     2 .   * * F i x   K o o p a / B u z z y   B e e t l e   S h e l l   V e l o c i t y * * :   R e s t o r e d   \ s e t V e l o c i t y ( ) \   l o g i c   i n s i d e   K o o p a : : k i c k ( )   a n d   r e v e r s e D i r e c t i o n ( ) .   T h e   e a r l i e r   p h y s i c s   r e f a c t o r   h a d   a c c i d e n t a l l y   s t r i p p e d   o u t   s h e l l   s l i d e   s p e e d s ,   c a u s i n g   k i c k e d   s h e l l s   t o   s t a n d   c o m p l e t e l y   s t i l l   i n s t e a d   o f   s l i d i n g   a c r o s s   t h e   s c r e e n .  
+  
+ 

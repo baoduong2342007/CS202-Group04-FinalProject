@@ -273,6 +273,9 @@ void Koopa::enterShellState() {
     m_wakingTimer = 0.f;
     m_pendingShellFixtureRebuild = true;
 
+    const sf::Vector2f currentVelocity = getVelocity();
+    setVelocity({0.f, currentVelocity.y});
+
     playAnimation(KOOPA_SHELL_IDLE_ANIMATION);
     updateAnimation(0.f);
 }
@@ -334,7 +337,7 @@ void Koopa::kick(Direction direction) {
     setFacingDirection(direction);
     allowNextStomp();
 
-    EventBus::getInstance().notify(EventType::SHELL_KICKED);
+    sf::Vector2f velocity = getVelocity(); if (direction == Direction::LEFT) { velocity.x = -KOOPA_SLIDE_SPEED; } else { velocity.x = KOOPA_SLIDE_SPEED; } setVelocity(velocity); EventBus::getInstance().notify(EventType::SHELL_KICKED);
 }
 
 bool Koopa::isInShell() const {
@@ -359,6 +362,16 @@ void Koopa::reverseDirection() {
     } else {
         setFacingDirection(Direction::LEFT);
     }
+
+    sf::Vector2f velocity = getVelocity();
+    if (m_state == KoopaState::SHELL_SLIDING) {
+        velocity.x = getFacingDirection() == Direction::LEFT
+                ? -KOOPA_SLIDE_SPEED : KOOPA_SLIDE_SPEED;
+    } else if (m_state == KoopaState::WALKING) {
+        velocity.x = getFacingDirection() == Direction::LEFT
+                ? -m_patrolSpeed : m_patrolSpeed;
+    }
+    setVelocity(velocity);
 }
 
 void Koopa::setTileMap(const TileMap* tileMap) {

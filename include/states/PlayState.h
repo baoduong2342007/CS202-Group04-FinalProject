@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "states/IGameState.h"
 #include "level/Level.h"
 #include "patterns/InputHandler.h"
@@ -16,6 +18,7 @@
 #include "patterns/IObserver.h"
 #include "core/GameProgress.h"
 #include "core/LevelCatalog.h"
+#include "patterns/Subscription.h"
 
 class PlayState : public IGameState, public IObserver {
 public:
@@ -38,7 +41,7 @@ public:
     void update(float dt) override;
     void render(sf::RenderTarget& target) override;
 
-    void onNotify(EventType event) override;
+    void onNotify(const GameEvent& event) override;
 
     // 4. Introspection (tests)
     Level* getLevel() { return m_level.get(); }
@@ -99,4 +102,6 @@ private:
     int m_transitionTargetLevel = 0;
     bool m_transitionIsWin = false;
     bool m_skipNextDelta = false; ///< S6-TV2-21: ignore dt spike after loading
+
+    std::vector<Subscription> m_eventSubscriptions;
 };

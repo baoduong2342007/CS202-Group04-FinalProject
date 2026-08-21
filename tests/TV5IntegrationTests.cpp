@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <box2d/box2d.h>
 
@@ -54,30 +55,31 @@ namespace {
 class EventCounter final : public IObserver {
 public:
     EventCounter() {
-        EventBus::getInstance().subscribe(EventType::PLAYER_POWER_UP, this);
-        EventBus::getInstance().subscribe(EventType::ONE_UP_COLLECTED, this);
-        EventBus::getInstance().subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-        EventBus::getInstance().subscribe(EventType::ENEMY_STOMPED, this);
-        EventBus::getInstance().subscribe(EventType::SHELL_KICKED, this);
-        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
-        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
-        EventBus::getInstance().subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
-        EventBus::getInstance().subscribe(EventType::COIN_COLLECTED, this);
+        EventBus& bus = EventBus::getInstance();
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::PLAYER_POWER_UP, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::ONE_UP_COLLECTED, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::ENEMY_STOMPED, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::SHELL_KICKED, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this));
+        m_subscriptions.emplace_back(
+            bus.subscribe(EventType::COIN_COLLECTED, this));
     }
 
-    ~EventCounter() override {
-        EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_UP, this);
-        EventBus::getInstance().unsubscribe(EventType::ONE_UP_COLLECTED, this);
-        EventBus::getInstance().unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-        EventBus::getInstance().unsubscribe(EventType::ENEMY_STOMPED, this);
-        EventBus::getInstance().unsubscribe(EventType::SHELL_KICKED, this);
-        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
-        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
-        EventBus::getInstance().unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
-        EventBus::getInstance().unsubscribe(EventType::COIN_COLLECTED, this);
-    }
+    ~EventCounter() override = default;
 
-    void onNotify(EventType event) override {
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::PLAYER_POWER_UP) {
             ++powerUpEvents;
         } else if (event == EventType::ONE_UP_COLLECTED) {
@@ -108,6 +110,8 @@ public:
     int fireballDefeatEvents = 0;
     int starDefeatEvents = 0;
     int coinCollectedEvents = 0;
+private:
+    std::vector<Subscription> m_subscriptions;
 };
 
 sf::Event keyPressed(sf::Keyboard::Key key) {
@@ -187,6 +191,33 @@ void testScoreCatalogAndCoinThreshold() {
     assert(mario.getLives() == initialLives + 1);
     assert(events.oneUpEvents == 1);
 
+}
+
+void testCoinSubtypeOverlapAndIdempotence() {
+    EventCounter events;
+    Mario mario;
+    Coin coin;
+    Item& item = coin;
+    coin.setPosition(mario.getPosition());
+
+    assert(coin.getSubtype() == Entity::EntitySubtype::COIN);
+    assert(item.isCoin());
+    assert(item.checkOverlap(mario));
+
+    item.onCollect(mario);
+    assert(mario.getCoinCount() == 1);
+    assert(mario.getScore() ==
+           ScoreRules::pointsFor(ScoreEvent::COIN_COLLECTED));
+    assert(events.coinCollectedEvents == 1);
+    assert(!item.checkOverlap(mario));
+
+    // Both collision delivery and the Level overlap fallback can observe the
+    // same item; the public collection contract must award it only once.
+    item.onCollect(mario);
+    assert(mario.getCoinCount() == 1);
+    assert(mario.getScore() ==
+           ScoreRules::pointsFor(ScoreEvent::COIN_COLLECTED));
+    assert(events.coinCollectedEvents == 1);
 }
 
 void stepContactWorld(b2World& world) {
@@ -798,6 +829,7 @@ void testVolumeClampAndAssetManifest() {
 
 int main() {
     testScoreCatalogAndCoinThreshold();
+    testCoinSubtypeOverlapAndIdempotence();
     testDefeatScoreAndShellEventsThroughCollisionRuntime();
     testPowerUpAndOneUpEvents();
     testAdaptiveQuestionBlockAndFireFlowerContract();

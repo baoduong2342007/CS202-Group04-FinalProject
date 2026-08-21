@@ -188,12 +188,12 @@ void PauseState::adjustVolume(int itemIndex, float delta) {
         // Music volume
         const float newVol = std::clamp(sound.getMusicVolume() + delta, 0.f, 100.f);
         sound.setMusicVolume(newVol);
-        sound.playSound("bump");
+        sound.playSound(SoundId::BUMP);
     } else if (itemIndex == 1) {
         // SFX volume
         const float newVol = std::clamp(sound.getSoundVolume() + delta, 0.f, 100.f);
         sound.setSoundVolume(newVol);
-        sound.playSound("coin");
+        sound.playSound(SoundId::COIN);
     }
 
     GameManager::getInstance().getSaveManager().updateAudioSettings(
@@ -208,11 +208,11 @@ void PauseState::executeSelection(int index) {
         adjustVolume(1, 10.f);
     } else if (index == 2) {
         // Resume Game
-        SoundManager::getInstance().playSound("pause");
+        SoundManager::getInstance().playSound(SoundId::PAUSE);
         GameManager::getInstance().popState();
     } else if (index == 3) {
         // Quit to Menu
-        SoundManager::getInstance().playSound("pipepowerdown");
+        SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
         GameManager::getInstance().changeState(std::make_unique<MenuState>());
     }
 }
@@ -237,7 +237,7 @@ void PauseState::processEvents(const sf::Event& event) {
             if (itemRect.contains(pos)) {
                 if (m_selectedIndex != i) {
                     m_selectedIndex = i;
-                    SoundManager::getInstance().playSound("bump");
+                    SoundManager::getInstance().playSound(SoundId::BUMP);
                     refreshVolumeDisplay();
                 }
                 break;
@@ -275,7 +275,7 @@ void PauseState::processEvents(const sf::Event& event) {
 
 void PauseState::processInput(const InputState& inputState) {
     if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
-        SoundManager::getInstance().playSound("pause");
+        SoundManager::getInstance().playSound(SoundId::PAUSE);
         GameManager::getInstance().popState();
         return;
     }
@@ -284,12 +284,12 @@ void PauseState::processInput(const InputState& inputState) {
     if (inputState.wasPressed(sf::Keyboard::Key::Up) ||
         inputState.wasPressed(sf::Keyboard::Key::W)) {
         m_selectedIndex = (m_selectedIndex + 3) % 4;
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
         refreshVolumeDisplay();
     } else if (inputState.wasPressed(sf::Keyboard::Key::Down) ||
                inputState.wasPressed(sf::Keyboard::Key::S)) {
         m_selectedIndex = (m_selectedIndex + 1) % 4;
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
         refreshVolumeDisplay();
     }
 

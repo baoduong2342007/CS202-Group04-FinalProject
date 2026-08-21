@@ -56,10 +56,7 @@ PlayState::PlayState(int startLevel, CharacterType playerOne, CharacterType play
 }
 
 PlayState::~PlayState() {
-    EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
-    EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
-    EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
-    EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
+    m_eventSubscriptions.clear();
 }
 
 void PlayState::rebindCommands() {
@@ -225,10 +222,19 @@ void PlayState::rebindCoopCommands() {
 }
 
 void PlayState::onEnter() {
-    EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
-    EventBus::getInstance().subscribe(EventType::PLAYER_POWER_DOWN, this);
-    EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
-    EventBus::getInstance().subscribe(EventType::GAME_PAUSED, this);
+    // onEnter may be called more than once by a state harness.  Releasing the
+    // previous tokens first prevents duplicate logical registrations.
+    m_eventSubscriptions.clear();
+    EventBus& bus = EventBus::getInstance();
+    m_eventSubscriptions.reserve(4);
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_DIED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_POWER_DOWN, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::LEVEL_COMPLETED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::GAME_PAUSED, this));
 
     // S6-TV1-11: load the initial level here, not in the constructor, so a failure
     // can propagate a Menu transition in the correct order. On success we emit
@@ -244,14 +250,12 @@ void PlayState::onEnter() {
     rebindCommands();
     // Music is already started by loadLevel() -> playMusic(def->music).
     // A second playMusic() here would restart the stream from the beginning.
-    EventBus::getInstance().notify(EventType::LEVEL_STARTED);
+    bus.notify(GameEvent{EventType::LEVEL_STARTED,
+                         LevelEventContext{m_progress.currentLevel}});
 }
 
 void PlayState::onExit() {
-    EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
-    EventBus::getInstance().unsubscribe(EventType::PLAYER_POWER_DOWN, this);
-    EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
-    EventBus::getInstance().unsubscribe(EventType::GAME_PAUSED, this);
+    m_eventSubscriptions.clear();
     SoundManager::getInstance().stopMusic();
 }
 
@@ -265,7 +269,8 @@ void PlayState::onResume() {
     EventBus::getInstance().notify(EventType::GAME_RESUMED);
 }
 
-void PlayState::onNotify(EventType event) {
+void PlayState::onNotify(const GameEvent& eventData) {
+    const EventType event = eventData.type;
     // S6-TV1-13: reject terminal events if one was already committed this frame.
     if (m_terminalCommittedThisFrame) {
         return;
@@ -492,7 +497,7 @@ bool PlayState::loadLevel(int levelNumber) {
 
     // S6-TV1-11: never ignore the loadFromFile() result.
     m_level = std::make_unique<Level>();
-    m_level->setTheme(def->theme);
+    m_level->setTheme(def->initialTheme);
     m_level->setCameraVerticalMode(def->cameraMode);
     const bool levelLoaded = m_isCoop
         ? m_level->loadFromFile(def->filePath, m_progress.character, m_progress.character2)
@@ -509,7 +514,7 @@ bool PlayState::loadLevel(int levelNumber) {
             m_hud->attachSecondPlayer(*(m_level->getMario2()));
         }
         m_hud->setTimeWarningCallback([] {
-            SoundManager::getInstance().playSound("hurryup");
+            SoundManager::getInstance().playSound(SoundId::HURRY_UP);
         });
         m_hud->setTimeoutCallback([this] {
             if (!m_level || !m_level->getMario() ||
@@ -649,7 +654,9 @@ void PlayState::updateTransition(float dt) {
                 m_fadeOverlay.setFillColor(sf::Color(0, 0, 0, 255));
                 m_transitionPhase = TransitionPhase::FADE_IN;
                 m_skipNextDelta = true; // S6-TV2-21: skip lag spike on next frame
-                EventBus::getInstance().notify(EventType::LEVEL_STARTED);
+                EventBus::getInstance().notify(
+                    GameEvent{EventType::LEVEL_STARTED,
+                              LevelEventContext{m_progress.currentLevel}});
             }
             break;
 

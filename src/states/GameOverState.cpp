@@ -124,7 +124,7 @@ GameOverState::GameOverState(const GameProgress& progress)
                                         retryCharacterTwo, retryCoop]() {
             if (m_transitioning) return;
             m_transitioning = true;
-            SoundManager::getInstance().playSound("coin");
+            SoundManager::getInstance().playSound(SoundId::COIN);
             GameManager::getInstance().changeState(
                 retryCoop
                     ? std::make_unique<PlayState>(retryLevel, retryCharacter, retryCharacterTwo)
@@ -134,7 +134,7 @@ GameOverState::GameOverState(const GameProgress& progress)
         m_menu->addItem("QUIT TO MAIN MENU", [this]() {
             if (m_transitioning) return;
             m_transitioning = true;
-            SoundManager::getInstance().playSound("pipepowerdown");
+            SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         }, 13);
 

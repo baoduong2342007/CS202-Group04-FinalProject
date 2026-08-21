@@ -212,7 +212,10 @@ void LevelSelectState::initStageCards() {
 
             // Theme Name (e.g. "OVERWORLD")
             std::string themeName;
-            switch (def.theme) {
+            // The card describes the stage's dominant area.  PlayState still
+            // consumes the legacy `theme` field as the initial spawn theme,
+            // which is intentionally different for Levels 2 and 3.
+            switch (def.dominantTheme) {
                 case LevelTheme::OVERWORLD:   themeName = "OVERWORLD"; break;
                 case LevelTheme::UNDERGROUND: themeName = "UNDERGROUND"; break;
                 case LevelTheme::UNDERWATER:  themeName = "UNDERWATER"; break;
@@ -359,12 +362,12 @@ void LevelSelectState::confirmSelection(int levelNumber) {
     if (m_transitioning) return;
 
     if (!isLevelUnlocked(levelNumber)) {
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
         return;
     }
 
     m_transitioning = true;
-    SoundManager::getInstance().playSound("coin");
+    SoundManager::getInstance().playSound(SoundId::COIN);
     if (m_mode == Mode::Coop) {
         GameManager::getInstance().changeState(
             std::make_unique<CoopCharacterSelectState>(levelNumber));
@@ -418,11 +421,11 @@ void LevelSelectState::processInput(const InputState& inputState) {
     if (inputState.wasPressed(sf::Keyboard::Key::Left) ||
         inputState.wasPressed(sf::Keyboard::Key::A)) {
         selectCard(m_selectedIndex - 1);
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
     } else if (inputState.wasPressed(sf::Keyboard::Key::Right) ||
                inputState.wasPressed(sf::Keyboard::Key::D)) {
         selectCard(m_selectedIndex + 1);
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
     } else if (inputState.wasPressed(sf::Keyboard::Key::Enter) ||
                inputState.wasPressed(sf::Keyboard::Key::Space)) {
         if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_cards.size())) {
@@ -430,7 +433,7 @@ void LevelSelectState::processInput(const InputState& inputState) {
         }
     } else if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
         m_transitioning = true;
-        SoundManager::getInstance().playSound("powerdown");
+        SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
         GameManager::getInstance().changeState(std::make_unique<MenuState>());
     }
 }

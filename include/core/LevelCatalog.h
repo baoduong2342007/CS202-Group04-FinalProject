@@ -38,9 +38,14 @@ struct LevelDefinition {
     int number;                 // one-based release level number
     std::string filePath;       // e.g. "levels/level1.txt"
     std::string worldLabel;     // e.g. "1-1"
+    // `theme` remains as the start-theme compatibility field consumed by
+    // older state code.  New code should use initialTheme and dominantTheme
+    // so a level can describe its start area separately from its main area.
     LevelTheme theme;
     MusicId music;
     CameraVerticalMode cameraMode;
+    LevelTheme initialTheme;    // theme before any warp/area transition
+    LevelTheme dominantTheme;   // primary area/theme represented by the stage
 };
 
 namespace LevelCatalog {
@@ -48,13 +53,17 @@ namespace LevelCatalog {
     inline const std::vector<LevelDefinition>& getAll() {
         static const std::vector<LevelDefinition> catalog = {
             {1, "levels/level1.txt", "1-1", LevelTheme::OVERWORLD,
-                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
+                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE,
+                LevelTheme::OVERWORLD, LevelTheme::OVERWORLD},
             {2, "levels/level2.txt", "1-2", LevelTheme::OVERWORLD,
-                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
+                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE,
+                LevelTheme::OVERWORLD, LevelTheme::UNDERGROUND},
             {3, "levels/level3.txt", "1-3", LevelTheme::OVERWORLD,
-                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE},
+                MusicId::OVERWORLD, CameraVerticalMode::DEAD_ZONE,
+                LevelTheme::OVERWORLD, LevelTheme::UNDERWATER},
             {4, "levels/level4.txt", "1-4", LevelTheme::CASTLE,
-                MusicId::CASTLE, CameraVerticalMode::DEAD_ZONE},
+                MusicId::CASTLE, CameraVerticalMode::DEAD_ZONE,
+                LevelTheme::CASTLE, LevelTheme::CASTLE},
         };
         return catalog;
     }

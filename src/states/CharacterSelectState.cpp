@@ -280,7 +280,7 @@ void CharacterSelectState::queuePlay(CharacterType characterType) {
     if (m_transitioning) return;
 
     m_transitioning = true;
-    SoundManager::getInstance().playSound("coin");
+    SoundManager::getInstance().playSound(SoundId::COIN);
     GameManager::getInstance().changeState(
         std::make_unique<PlayState>(m_selectedLevel, characterType));
 }
@@ -316,7 +316,7 @@ void CharacterSelectState::processInput(const InputState& inputState) {
 
     if (inputState.wasPressed(sf::Keyboard::Key::Escape)) {
         m_transitioning = true;
-        SoundManager::getInstance().playSound("powerdown");
+        SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
         return;
     }
@@ -330,7 +330,7 @@ void CharacterSelectState::processInput(const InputState& inputState) {
         inputState.wasPressed(sf::Keyboard::Key::W) ||
         inputState.wasPressed(sf::Keyboard::Key::S)) {
         m_selectedIndex = (m_selectedIndex == 0) ? 1 : 0;
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
     } else if (inputState.wasPressed(sf::Keyboard::Key::Enter) ||
                inputState.wasPressed(sf::Keyboard::Key::Space)) {
         queuePlay(m_selectedIndex == 0 ? CharacterType::MARIO : CharacterType::LUIGI);

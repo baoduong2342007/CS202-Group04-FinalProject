@@ -124,7 +124,7 @@ WinState::WinState(const GameProgress& progress)
             m_menu->addItem("NEXT STAGE", [this, nextLevel, playCharacter, playCharacterTwo, isCoop]() {
                 if (m_transitioning) return;
                 m_transitioning = true;
-                SoundManager::getInstance().playSound("coin");
+                SoundManager::getInstance().playSound(SoundId::COIN);
                 GameManager::getInstance().changeState(
                     isCoop
                         ? std::make_unique<PlayState>(nextLevel, playCharacter, playCharacterTwo)
@@ -134,7 +134,7 @@ WinState::WinState(const GameProgress& progress)
             m_menu->addItem("PLAY AGAIN", [this, playCharacter, playCharacterTwo, isCoop]() {
                 if (m_transitioning) return;
                 m_transitioning = true;
-                SoundManager::getInstance().playSound("coin");
+                SoundManager::getInstance().playSound(SoundId::COIN);
                 GameManager::getInstance().changeState(
                     isCoop
                         ? std::make_unique<PlayState>(1, playCharacter, playCharacterTwo)
@@ -145,7 +145,7 @@ WinState::WinState(const GameProgress& progress)
         m_menu->addItem("RETURN TO MENU", [this]() {
             if (m_transitioning) return;
             m_transitioning = true;
-            SoundManager::getInstance().playSound("pipepowerdown");
+            SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         }, 13);
 

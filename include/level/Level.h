@@ -16,6 +16,7 @@
 #include "entities/Entity.h"
 #include "entities/Mario.h"
 #include "level/Camera.h"
+#include "level/EntityView.h"
 #include "level/TileMap.h"
 #include "level/CheepCheepConfig.h"
 #include "physics/CollisionManager.h"
@@ -23,6 +24,7 @@
 #include <box2d/box2d.h>
 class ContactListener;
 class FireFlower;
+class LevelTestAccess;
 
 class Level {
 public:
@@ -88,7 +90,12 @@ public:
     TileMap& getTileMap();
     Camera& getCamera();
     TextureManager& getTextureManager();
-    std::vector<std::unique_ptr<Entity>>& getEntities() { return m_entities; }
+    /**
+     * Observe the currently owned entities without acquiring ownership or a
+     * mutable Entity pointer.  The returned non-owning view and its iterators
+     * are invalid after any Level load/update/mutation.
+     */
+    EntityView getEntities() const noexcept { return EntityView(m_entities); }
     std::size_t getActiveFireBallCount() const;
     std::size_t getPendingFireBallCount() const {
         return m_pendingFireBallRequests.size();
@@ -99,6 +106,8 @@ public:
 
 
 private:
+    friend class LevelTestAccess;
+
     /// Flagpole outcome sequence driven by actual Mario/flag state instead of
     /// a rough time estimate (so a large dt spike cannot skip the slide).
     enum class FlagPhase {
@@ -141,6 +150,12 @@ private:
     void checkFinishFlag();
     void processPendingFireballs();
     void processPendingStompScorePopups();
+
+    /// Narrow test-only seam used by FireBall request fixtures.  The friend
+    /// helper supplies the requested subtype and receives only success; no
+    /// entity pointer or container reference crosses the production boundary.
+    bool deactivateFirstEntityOfSubtypeForTest(
+        Entity::EntitySubtype subtype) noexcept;
     
     void checkPipeWarps();
     void startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);

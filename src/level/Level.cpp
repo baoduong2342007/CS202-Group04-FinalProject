@@ -17,6 +17,8 @@
 #include "items/Coin.h"
 #include "items/FireFlower.h"
 #include "patterns/EntityFactory.h"
+#include "patterns/SpawnContext.h"
+#include "patterns/SpawnRequest.h"
 #include "patterns/EventBus.h"
 #include "physics/PhysicsEngine.h"
 #include "physics/ContactListener.h"
@@ -82,6 +84,38 @@ bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     const float enemyRight = enemyBounds.position.x + enemyBounds.size.x;
 
     return enemyRight >= cameraLeft && enemyLeft <= activationRight;
+}
+
+// Enemy and launcher targeting share the same horizontal proximity rule.
+// Player one is considered first and equal-distance ties stay with him.
+const Mario* nearestEligiblePlayer(const Mario* playerOne,
+                                   const Mario* playerTwo,
+                                   bool coopMode,
+                                   const sf::Vector2f& origin) {
+    const Mario* fallback = playerOne ? playerOne
+                                      : (coopMode ? playerTwo : nullptr);
+    const Mario* nearest = nullptr;
+    float nearestDistance = 0.0f;
+
+    const auto consider = [&](const Mario* player) {
+        if (!player || !player->isActive() || player->isDying() ||
+            player->isDead()) {
+            return;
+        }
+
+        const float distance =
+            std::abs(player->getPosition().x - origin.x);
+        if (!nearest || distance < nearestDistance) {
+            nearest = player;
+            nearestDistance = distance;
+        }
+    };
+
+    consider(playerOne);
+    if (coopMode) {
+        consider(playerTwo);
+    }
+    return nearest ? nearest : fallback;
 }
 
 bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float levelHeight) {
@@ -609,6 +643,7 @@ bool Level::loadPvpArena(const std::string& path,
 
 void Level::spawnEntitiesFromTileMap() {
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+    const EntityFactory entityFactory;
 
     // --- Spawn Mario from 'M' tile code (see level1.txt) ---
     auto marioSpawns = m_tileMap.findTiles('M');
@@ -646,8 +681,9 @@ void Level::spawnEntitiesFromTileMap() {
             sf::Vector2f worldPos =
                 TileMap::gridToWorldPosition(gridPos);
             const LevelTheme spawnTheme = getThemeForGridPosition(gridPos.x);
-            auto entity =
-                EntityFactory::createFromTileCode(code, worldPos, m_world.get(), spawnTheme);
+            auto entity = entityFactory.create(
+                SpawnRequest::tile(code, worldPos),
+                SpawnContext{m_world.get(), spawnTheme});
             if (entity) {
                 // Wire TextureManager so entity sprites can load
                 entity->setTextureManager(m_textureManager);
@@ -975,6 +1011,18 @@ void Level::updateEntities(float dt) {
             continue;
         }
 
+        // Launchers make their firing decision from the position supplied
+        // before update(). This keeps a target change effective on the frame
+        // the cadence expires instead of one frame later.
+        if (entity->isBulletBillLauncher()) {
+            if (const Mario* target = nearestEligiblePlayer(
+                    m_mario.get(), m_mario2.get(), m_coopMode,
+                    entity->getPosition())) {
+                static_cast<BulletBillLauncher*>(entity.get())
+                    ->updateMarioPosition(target->getPosition());
+            }
+        }
+
         if (!entity->isEnemy()) {
             entity->update(dt);
             continue;
@@ -990,17 +1038,10 @@ void Level::updateEntities(float dt) {
             enemy->activate();
         }
 
-        if (m_mario) {
-            sf::Vector2f nearestPos = m_mario->getPosition();
-            if (m_coopMode && m_mario2) {
-                const float playerOneDistance =
-                    std::abs(m_mario->getPosition().x - enemy->getPosition().x);
-                const float playerTwoDistance =
-                    std::abs(m_mario2->getPosition().x - enemy->getPosition().x);
-                if (playerTwoDistance < playerOneDistance) {
-                    nearestPos = m_mario2->getPosition();
-                }
-            }
+        if (const Mario* target = nearestEligiblePlayer(
+                m_mario.get(), m_mario2.get(), m_coopMode,
+                enemy->getPosition())) {
+            const sf::Vector2f nearestPos = target->getPosition();
 
             enemy->updatePlayerPosition(nearestPos);
 
@@ -1018,17 +1059,6 @@ void Level::updateEntities(float dt) {
         }
 
         enemy->update(dt);
-    }
-
-    // Non-enemy entities that need player awareness (Bullet Bill launchers
-    // only fire while someone stands in range).
-    if (m_mario) {
-        for (auto& entity : m_entities) {
-            if (entity && entity->isBulletBillLauncher()) {
-                static_cast<BulletBillLauncher*>(entity.get())
-                    ->updateMarioPosition(m_mario->getPosition());
-            }
-        }
     }
 
     // Spawner entities (Lakitu, launchers) hand their children over through
@@ -1793,6 +1823,30 @@ void Level::processPendingFireballs() {
     m_pendingFireBallRequests.clear();
 }
 
+bool Level::deactivateFirstEntityOfSubtypeForTest(
+    Entity::EntitySubtype subtype) noexcept {
+    // This seam is intentionally limited to the existing FireBall fixture
+    // setup.  It is private and callable only by the test-defined
+    // LevelTestAccess friend; production callers have no mutation API.
+    if (subtype != Entity::EntitySubtype::FIRE_BALL) {
+        return false;
+    }
+
+    for (auto& entity : m_entities) {
+        if (!entity || entity->getSubtype() != subtype) {
+            continue;
+        }
+
+        auto* fireball = dynamic_cast<FireBall*>(entity.get());
+        if (fireball == nullptr) {
+            return false;
+        }
+        fireball->deactivate(false);
+        return true;
+    }
+    return false;
+}
+
 std::size_t Level::getActiveFireBallCount() const {
     return static_cast<std::size_t>(std::count_if(
         m_entities.begin(), m_entities.end(),
@@ -1865,7 +1919,7 @@ void Level::startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const
     m_pipeWarpPhase = phase;
     m_pipeWarpTimer = 0.5f; // 0.5s smooth slide duration
 
-    SoundManager::getInstance().playSound("powerdown");
+    SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
 
     if (player->getBody()) {
         player->getBody()->SetGravityScale(0.0f);
@@ -2182,7 +2236,7 @@ void Level::warpMarioToReturn(char warpId) {
         m_pipeWarpExitTargetY = target.y;
         m_pipeWarpPhase = PipeWarpPhase::EXITING_VERTICAL;
         m_pipeWarpTimer = 0.45f;
-        SoundManager::getInstance().playSound("powerdown");
+        SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
     } else {
         mario->setPosition(target);
         m_pipeWarpPhase = PipeWarpPhase::NONE;

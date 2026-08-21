@@ -203,20 +203,20 @@ void MenuState::initMenu() {
     m_menu->addItem("1 PLAYER GAME", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
-        SoundManager::getInstance().playSound("coin");
+        SoundManager::getInstance().playSound(SoundId::COIN);
         GameManager::getInstance().changeState(std::make_unique<LevelSelectState>());
     }, 13);
     m_menu->addItem("2 PLAYER CO-OP", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
-        SoundManager::getInstance().playSound("coin");
+        SoundManager::getInstance().playSound(SoundId::COIN);
         GameManager::getInstance().changeState(
             std::make_unique<LevelSelectState>(LevelSelectState::Mode::Coop));
     }, 13);
     m_menu->addItem("2 PLAYER VERSUS", [this]() {
         if (m_transitioning) return;
         m_transitioning = true;
-        SoundManager::getInstance().playSound("coin");
+        SoundManager::getInstance().playSound(SoundId::COIN);
         GameManager::getInstance().changeState(std::make_unique<PvpCharacterSelectState>());
     }, 13);
 

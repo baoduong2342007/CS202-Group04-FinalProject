@@ -111,39 +111,40 @@ HUD::HUD(const Mario &mario, int worldNumber, int levelNumber)
 
     // Subscribe to gameplay events that affect the display.
     EventBus& bus = EventBus::getInstance();
-    bus.subscribe(EventType::COIN_COLLECTED, this);
-    bus.subscribe(EventType::PLAYER_DIED, this);
-    bus.subscribe(EventType::PLAYER_POWER_UP, this);
-    bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
-    bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
-    bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-    bus.subscribe(EventType::ONE_UP_COLLECTED, this);
-    bus.subscribe(EventType::GAME_PAUSED, this);
-    bus.subscribe(EventType::LEVEL_COMPLETED, this);
-    bus.subscribe(EventType::LEVEL_STARTED, this);
+    m_eventSubscriptions.reserve(10);
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::COIN_COLLECTED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_DIED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_POWER_UP, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_POWER_DOWN, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ONE_UP_COLLECTED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::GAME_PAUSED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::LEVEL_COMPLETED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::LEVEL_STARTED, this));
 
   // Render the initial values.
   refreshText();
 }
 
 HUD::~HUD() {
-    // Observer contract: unsubscribe to avoid dangling pointers.
-    EventBus& bus = EventBus::getInstance();
-    bus.unsubscribe(EventType::COIN_COLLECTED, this);
-    bus.unsubscribe(EventType::PLAYER_DIED, this);
-    bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
-    bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
-    bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
-    bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-    bus.unsubscribe(EventType::ONE_UP_COLLECTED, this);
-    bus.unsubscribe(EventType::GAME_PAUSED, this);
-    bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
-    bus.unsubscribe(EventType::LEVEL_STARTED, this);
+    m_eventSubscriptions.clear();
 }
 
 // ── IObserver ────────────────────────────────────────────────
 
-void HUD::onNotify(EventType event) {
+void HUD::onNotify(const GameEvent& eventData) {
+    const EventType event = eventData.type;
     switch (event) {
         case EventType::COIN_COLLECTED:
             refreshText();

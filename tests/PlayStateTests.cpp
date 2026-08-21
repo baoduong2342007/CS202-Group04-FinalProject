@@ -124,20 +124,22 @@ void restoreSaveData(SaveManager& saveManager, const SaveData& original) {
 class DeathCounter final : public IObserver {
 public:
     DeathCounter() {
-        EventBus::getInstance().subscribe(EventType::PLAYER_DIED, this);
+        m_subscription = EventBus::getInstance().subscribe(
+            EventType::PLAYER_DIED, this);
     }
 
-    ~DeathCounter() override {
-        EventBus::getInstance().unsubscribe(EventType::PLAYER_DIED, this);
-    }
+    ~DeathCounter() override = default;
 
-    void onNotify(EventType event) override {
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::PLAYER_DIED) {
             ++diedEvents;
         }
     }
 
     int diedEvents = 0;
+private:
+    Subscription m_subscription;
 };
 
 bool testRaceConditionGuard() {

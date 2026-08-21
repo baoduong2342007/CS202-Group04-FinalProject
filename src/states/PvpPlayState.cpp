@@ -314,7 +314,7 @@ void PvpPlayState::update(float dt) {
                     if (state == MarioState::FIRE_SMALL ||
                         state == MarioState::FIRE_SUPER) {
                         player->setMarioState(MarioState::SMALL);
-                        SoundManager::getInstance().playSound("powerdown");
+                        SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
                     }
                 }
             }
@@ -405,7 +405,7 @@ void PvpPlayState::updateFireDirector(float dt) {
     }
 
     m_level->spawnPvpFireFlower(m_pedestalPosition);
-    SoundManager::getInstance().playSound("item");
+    SoundManager::getInstance().playSound(SoundId::ITEM);
     scheduleNextFlowerCountdown();
 }
 
@@ -452,7 +452,7 @@ void PvpPlayState::applyFireballHits() {
 
         m_stunTimer[victimIndex] = STUN_DURATION;
         m_level->getCamera().shake(0.2f, 6.f);
-        SoundManager::getInstance().playSound("kickkill");
+        SoundManager::getInstance().playSound(SoundId::ENEMY_FIREBALL);
     }
 }
 

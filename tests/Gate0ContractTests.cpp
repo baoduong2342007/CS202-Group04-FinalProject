@@ -42,34 +42,38 @@ namespace {
 class CompletionCounter final : public IObserver {
 public:
     CompletionCounter() {
-        EventBus::getInstance().subscribe(EventType::LEVEL_COMPLETED, this);
+        m_subscription = EventBus::getInstance().subscribe(
+            EventType::LEVEL_COMPLETED, this);
     }
 
-    ~CompletionCounter() override {
-        EventBus::getInstance().unsubscribe(EventType::LEVEL_COMPLETED, this);
-    }
+    ~CompletionCounter() override = default;
 
-    void onNotify(EventType event) override {
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::LEVEL_COMPLETED) {
             ++count;
         }
     }
 
     int count = 0;
+private:
+    Subscription m_subscription;
 };
 
 class BlockBumpCounter final : public IObserver {
 public:
     BlockBumpCounter() {
-        EventBus::getInstance().subscribe(EventType::BLOCK_BUMPED, this);
+        m_subscription = EventBus::getInstance().subscribe(
+            EventType::BLOCK_BUMPED, this);
     }
-    ~BlockBumpCounter() override {
-        EventBus::getInstance().unsubscribe(EventType::BLOCK_BUMPED, this);
-    }
-    void onNotify(EventType event) override {
+    ~BlockBumpCounter() override = default;
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::BLOCK_BUMPED) ++count;
     }
     int count = 0;
+private:
+    Subscription m_subscription;
 };
 
 // ===== Compile-time interface guards =====
@@ -395,17 +399,16 @@ void testThemeWiringAndLevel4Spawns() {
     bool hasBowser = false;
     bool hasBowserAxe = false;
 
-    for (const auto& entity : castle.getEntities()) {
-        assert(entity);
+    for (const Entity& entity : castle.getEntities()) {
 
-        if (entity->isEnemy()) {
+        if (entity.isEnemy()) {
             ++enemyCount;
         }
 
-        hasPodoboo = hasPodoboo || entity->isPodoboo();
-        hasFirebar = hasFirebar || entity->isFirebar();
-        hasBowser = hasBowser || entity->isBowser();
-        hasBowserAxe = hasBowserAxe || entity->isBowserAxe();
+        hasPodoboo = hasPodoboo || entity.isPodoboo();
+        hasFirebar = hasFirebar || entity.isFirebar();
+        hasBowser = hasBowser || entity.isBowser();
+        hasBowserAxe = hasBowserAxe || entity.isBowserAxe();
     }
 
     // Level 4 is now the Castle finale, so validate its actual Castle mechanis instead of the old Koopa/Piranha/Springboard fixture.
@@ -514,18 +517,17 @@ void testLevel4ToadSequencePublishesOnce() {
     Mario* mario = level.getMario();
     assert(mario != nullptr);
 
-    Entity* axe = nullptr;
-    Entity* toad = nullptr;
+    const Entity* axe = nullptr;
+    const Entity* toad = nullptr;
 
-    for (const auto& entity : level.getEntities()) {
-        assert(entity);
+    for (const Entity& entity : level.getEntities()) {
 
-        if (entity->isBowserAxe()) {
-            axe = entity.get();
+        if (entity.isBowserAxe()) {
+            axe = &entity;
         }
 
-        if (entity->isToad()) {
-            toad = entity.get();
+        if (entity.isToad()) {
+            toad = &entity;
         }
     }
 
@@ -787,12 +789,11 @@ void testLevelAreaThemeSpawns() {
     int verifiedUndergroundKoopas = 0;
     int verifiedUndergroundBeetles = 0;
 
-    for (const auto& entity : level2.getEntities()) {
-        if (!entity) continue;
-        const float x = entity->getPosition().x;
-        if (x >= 50.f * 32.f && x < 275.f * 32.f && entity->isEnemy()) {
-            if (entity->getSprite().has_value()) {
-                const sf::IntRect rect = entity->getSprite()->getTextureRect();
+    for (const Entity& entity : level2.getEntities()) {
+        const float x = entity.getPosition().x;
+        if (x >= 50.f * 32.f && x < 275.f * 32.f && entity.isEnemy()) {
+            if (entity.getSprite().has_value()) {
+                const sf::IntRect rect = entity.getSprite()->getTextureRect();
                 // Overworld frames have x == 0 for Goomba, Koopa, BuzzyBeetle.
                 // Underground frames have x == 146 for Goomba & Koopa, and x == 74 for BuzzyBeetle.
                 if (rect.size.x == 16 && rect.size.y == 16 && rect.position.y == 16) {

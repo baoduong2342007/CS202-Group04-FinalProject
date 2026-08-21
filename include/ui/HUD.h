@@ -12,6 +12,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <vector>
 
 // 2. SFML
 #include <SFML/Graphics.hpp>
@@ -20,6 +21,7 @@
 #include "entities/Mario.h"
 #include "patterns/EventType.h"
 #include "patterns/IObserver.h"
+#include "patterns/Subscription.h"
 
 // ============================================================
 // PATTERN: Observer (Subscriber)
@@ -43,7 +45,7 @@ public:
 
     // 2. Override methods (IObserver)
     /// @brief Refreshes the displayed values when a subscribed event fires.
-    void onNotify(EventType event) override;
+    void onNotify(const GameEvent& event) override;
 
     // 3. Public methods
     /// @brief Re-reads score/lives and updates the text objects.
@@ -130,4 +132,5 @@ private:
     bool m_timerEnabled = true;
     std::function<void()> m_timeWarningCallback;
     std::function<void()> m_timeoutCallback;
+    std::vector<Subscription> m_eventSubscriptions;
 };

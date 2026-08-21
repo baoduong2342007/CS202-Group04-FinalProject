@@ -306,7 +306,7 @@ void PvpCharacterSelectState::rebuildMenuForPhase() {
 void PvpCharacterSelectState::confirmChoice(CharacterType characterType) {
     if (m_transitioning) return;
 
-    SoundManager::getInstance().playSound("coin");
+    SoundManager::getInstance().playSound(SoundId::COIN);
 
     if (m_phase == Phase::PLAYER_ONE) {
         m_playerOneChoice = characterType;
@@ -386,7 +386,7 @@ void PvpCharacterSelectState::processInput(const InputState& inputState) {
             rebuildMenuForPhase();
         } else if (m_phase == Phase::PLAYER_ONE) {
             m_transitioning = true;
-            SoundManager::getInstance().playSound("powerdown");
+            SoundManager::getInstance().playSound(SoundId::POWER_DOWN);
             GameManager::getInstance().changeState(std::make_unique<MenuState>());
         }
         return;
@@ -403,7 +403,7 @@ void PvpCharacterSelectState::processInput(const InputState& inputState) {
         inputState.wasPressed(sf::Keyboard::Key::W) ||
         inputState.wasPressed(sf::Keyboard::Key::S)) {
         m_selectedIndex = (m_selectedIndex == 0) ? 1 : 0;
-        SoundManager::getInstance().playSound("bump");
+        SoundManager::getInstance().playSound(SoundId::BUMP);
     } else if (inputState.wasPressed(sf::Keyboard::Key::Enter) ||
                inputState.wasPressed(sf::Keyboard::Key::Space)) {
         confirmChoice(m_selectedIndex == 0 ? CharacterType::MARIO : CharacterType::LUIGI);

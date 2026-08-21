@@ -1,0 +1,30 @@
+// Canonical sound-effect manifest.
+//
+// Each row is (enum token, stable compatibility key, executable-relative
+// asset path).  Include this file with SOUND_MANIFEST_ENTRY defined to derive
+// enums, metadata, or registration code.  Keep event-specific IDs separate
+// even when the currently packaged sample is shared: request counters and
+// gameplay diagnostics are keyed by the logical cue.
+SOUND_MANIFEST_ENTRY(JUMP, "jump", "assets/sounds/effects/jump.wav")
+SOUND_MANIFEST_ENTRY(JUMP_SMALL, "jumpsmall", "assets/sounds/effects/jumpsmall.wav")
+SOUND_MANIFEST_ENTRY(COIN, "coin", "assets/sounds/effects/coin.wav")
+SOUND_MANIFEST_ENTRY(STOMP, "stomp", "assets/sounds/effects/stompswim.wav")
+SOUND_MANIFEST_ENTRY(KICK, "kick", "assets/sounds/effects/kickkill.wav")
+SOUND_MANIFEST_ENTRY(DEATH, "death", "assets/sounds/effects/death.wav")
+SOUND_MANIFEST_ENTRY(GAME_OVER, "gameover", "assets/sounds/effects/gameover.wav")
+SOUND_MANIFEST_ENTRY(POWER_UP, "powerup", "assets/sounds/effects/powerup.wav")
+SOUND_MANIFEST_ENTRY(POWER_DOWN, "powerdown", "assets/sounds/effects/pipepowerdown.wav")
+SOUND_MANIFEST_ENTRY(FIREBALL, "fireball", "assets/sounds/effects/fireball.wav")
+SOUND_MANIFEST_ENTRY(SHELL_KICK, "shell_kick", "assets/sounds/effects/kickkill.wav")
+SOUND_MANIFEST_ENTRY(SHELL_KILL, "shell_kill", "assets/sounds/effects/kickkill.wav")
+SOUND_MANIFEST_ENTRY(ENEMY_FIREBALL, "enemy_fireball", "assets/sounds/effects/kickkill.wav")
+SOUND_MANIFEST_ENTRY(ENEMY_STAR, "enemy_star", "assets/sounds/effects/kickkill.wav")
+SOUND_MANIFEST_ENTRY(FLAGPOLE, "flagpole", "assets/sounds/effects/flagpole.wav")
+SOUND_MANIFEST_ENTRY(BRICK, "brick", "assets/sounds/effects/brick.wav")
+SOUND_MANIFEST_ENTRY(BUMP, "bump", "assets/sounds/effects/bump.wav")
+SOUND_MANIFEST_ENTRY(ITEM, "item", "assets/sounds/effects/item.wav")
+SOUND_MANIFEST_ENTRY(ONE_UP, "oneup", "assets/sounds/effects/1up.wav")
+SOUND_MANIFEST_ENTRY(PAUSE, "pause", "assets/sounds/effects/pause.wav")
+SOUND_MANIFEST_ENTRY(HURRY_UP, "hurryup", "assets/sounds/effects/hurryup.wav")
+SOUND_MANIFEST_ENTRY(BOWSER_FIRE, "bowser_fire", "assets/sounds/effects/fire.wav")
+SOUND_MANIFEST_ENTRY(BOWSER_FALL, "bowser_fall", "assets/sounds/effects/bowserfall.wav")

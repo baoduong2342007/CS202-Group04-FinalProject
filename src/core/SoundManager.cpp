@@ -46,56 +46,56 @@ SoundManager::SoundManager()
     : m_soundVolume(DEFAULT_SOUND_VOLUME),
       m_musicVolume(DEFAULT_MUSIC_VOLUME) {
     EventBus& bus = EventBus::getInstance();
-    bus.subscribe(EventType::PLAYER_JUMPED, this);
-    bus.subscribe(EventType::COIN_COLLECTED, this);
-    bus.subscribe(EventType::ENEMY_STOMPED, this);
-    bus.subscribe(EventType::PLAYER_DIED, this);
-    bus.subscribe(EventType::PLAYER_POWER_UP, this);
-    bus.subscribe(EventType::PLAYER_POWER_DOWN, this);
-    bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this);
-    bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-    bus.subscribe(EventType::GAME_PAUSED, this);
-    bus.subscribe(EventType::GAME_RESUMED, this);
-    bus.subscribe(EventType::LEVEL_COMPLETED, this);
-    bus.subscribe(EventType::FIREBALL_SHOT, this);
-    bus.subscribe(EventType::SHELL_KICKED, this);
-    bus.subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
-    bus.subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
-    bus.subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
-    bus.subscribe(EventType::ENEMY_DEFEATED_BY_BLOCK, this);
-    bus.subscribe(EventType::BLOCK_BUMPED, this);
-    bus.subscribe(EventType::BRICK_BROKEN, this);
-    bus.subscribe(EventType::ITEM_EMERGED, this);
-    bus.subscribe(EventType::ONE_UP_COLLECTED, this);
+    m_eventSubscriptions.reserve(21);
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_JUMPED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::COIN_COLLECTED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ENEMY_STOMPED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_DIED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_POWER_UP, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_POWER_DOWN, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_STAR_COLLECTED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::GAME_PAUSED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::GAME_RESUMED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::LEVEL_COMPLETED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::FIREBALL_SHOT, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::SHELL_KICKED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ENEMY_DEFEATED_BY_STAR, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ENEMY_DEFEATED_BY_BLOCK, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::BLOCK_BUMPED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::BRICK_BROKEN, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ITEM_EMERGED, this));
+    m_eventSubscriptions.emplace_back(
+        bus.subscribe(EventType::ONE_UP_COLLECTED, this));
 
-    // Event-to-SFX catalog. All paths are relative to the executable so the
-    // same mapping works from a clean CMake build directory.
-    loadSound("jump", "assets/sounds/effects/jump.wav");
-    loadSound("jumpsmall", "assets/sounds/effects/jumpsmall.wav");
-    loadSound("coin", "assets/sounds/effects/coin.wav");
-    loadSound("stomp", "assets/sounds/effects/stompswim.wav");
-    loadSound("kick", "assets/sounds/effects/kickkill.wav");
-    loadSound("death", "assets/sounds/effects/death.wav");
-    loadSound("gameover", "assets/sounds/effects/gameover.wav");
-    loadSound("powerup", "assets/sounds/effects/powerup.wav");
-    loadSound("powerdown", "assets/sounds/effects/pipepowerdown.wav");
-    loadSound("fireball", "assets/sounds/effects/fireball.wav");
-    // Separate logical cues keep shell kick and shell kill from sharing an
-    // EventBus/SFX path. The current packaged sample is reused until a
-    // dedicated shell-kill recording is supplied.
-    loadSound("shell_kick", "assets/sounds/effects/kickkill.wav");
-    loadSound("shell_kill", "assets/sounds/effects/kickkill.wav");
-    loadSound("enemy_fireball", "assets/sounds/effects/kickkill.wav");
-    loadSound("enemy_star", "assets/sounds/effects/kickkill.wav");
-    loadSound("flagpole", "assets/sounds/effects/flagpole.wav");
-    loadSound("brick", "assets/sounds/effects/brick.wav");
-    loadSound("bump", "assets/sounds/effects/bump.wav");
-    loadSound("item", "assets/sounds/effects/item.wav");
-    loadSound("oneup", "assets/sounds/effects/1up.wav");
-    loadSound("pause", "assets/sounds/effects/pause.wav");
-    loadSound("hurryup", "assets/sounds/effects/hurryup.wav");
-    loadSound("bowser_fire", "assets/sounds/effects/fire.wav");
-    loadSound("bowser_fall", "assets/sounds/effects/bowserfall.wav");
+    // Event-to-SFX registration is derived exclusively from the canonical
+    // manifest.  Paths are executable-relative so the same mapping works
+    // from a clean CMake build directory and from the source tree.
+    for (const SoundManifestEntry& entry : soundManifest()) {
+        loadSound(entry.id);
+    }
 
     registerDefaultMusicPaths();
     setLevelMusic(MusicId::OVERWORLD);
@@ -103,62 +103,42 @@ SoundManager::SoundManager()
 }
 
 SoundManager::~SoundManager() {
-    EventBus& bus = EventBus::getInstance();
-    bus.unsubscribe(EventType::PLAYER_JUMPED, this);
-    bus.unsubscribe(EventType::COIN_COLLECTED, this);
-    bus.unsubscribe(EventType::ENEMY_STOMPED, this);
-    bus.unsubscribe(EventType::PLAYER_DIED, this);
-    bus.unsubscribe(EventType::PLAYER_POWER_UP, this);
-    bus.unsubscribe(EventType::PLAYER_POWER_DOWN, this);
-    bus.unsubscribe(EventType::PLAYER_STAR_COLLECTED, this);
-    bus.unsubscribe(EventType::PLAYER_INVINCIBILITY_EXPIRED, this);
-    bus.unsubscribe(EventType::GAME_PAUSED, this);
-    bus.unsubscribe(EventType::GAME_RESUMED, this);
-    bus.unsubscribe(EventType::LEVEL_COMPLETED, this);
-    bus.unsubscribe(EventType::FIREBALL_SHOT, this);
-    bus.unsubscribe(EventType::SHELL_KICKED, this);
-    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_SHELL, this);
-    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_FIREBALL, this);
-    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_STAR, this);
-    bus.unsubscribe(EventType::ENEMY_DEFEATED_BY_BLOCK, this);
-    bus.unsubscribe(EventType::BLOCK_BUMPED, this);
-    bus.unsubscribe(EventType::BRICK_BROKEN, this);
-    bus.unsubscribe(EventType::ITEM_EMERGED, this);
-    bus.unsubscribe(EventType::ONE_UP_COLLECTED, this);
+    m_eventSubscriptions.clear();
 }
 
-void SoundManager::onNotify(EventType event) {
+void SoundManager::onNotify(const GameEvent& eventData) {
+    const EventType event = eventData.type;
     switch (event) {
         case EventType::PLAYER_JUMPED:
-            playSound("jump");
+            playSound(SoundId::JUMP);
             break;
         case EventType::COIN_COLLECTED:
-            playSound("coin");
+            playSound(SoundId::COIN);
             break;
         case EventType::ENEMY_STOMPED:
-            playSound("stomp");
+            playSound(SoundId::STOMP);
             break;
         case EventType::ENEMY_DEFEATED_BY_SHELL:
-            playSound("shell_kill");
+            playSound(SoundId::SHELL_KILL);
             break;
         case EventType::ENEMY_DEFEATED_BY_FIREBALL:
-            playSound("enemy_fireball");
+            playSound(SoundId::ENEMY_FIREBALL);
             break;
         case EventType::ENEMY_DEFEATED_BY_STAR:
-            playSound("enemy_star");
+            playSound(SoundId::ENEMY_STAR);
             break;
         case EventType::ENEMY_DEFEATED_BY_BLOCK:
-            playSound("stomp");
+            playSound(SoundId::STOMP);
             break;
         case EventType::PLAYER_DIED:
-            playSound("death");
+            playSound(SoundId::DEATH);
             playMusic(MusicId::DEATH);
             break;
         case EventType::PLAYER_POWER_UP:
-            playSound("powerup");
+            playSound(SoundId::POWER_UP);
             break;
         case EventType::PLAYER_POWER_DOWN:
-            playSound("powerdown");
+            playSound(SoundId::POWER_DOWN);
             break;
         case EventType::PLAYER_STAR_COLLECTED:
             playStarMusic();
@@ -171,40 +151,60 @@ void SoundManager::onNotify(EventType event) {
             }
             break;
         case EventType::FIREBALL_SHOT:
-            playSound("fireball");
+            playSound(SoundId::FIREBALL);
             break;
         case EventType::SHELL_KICKED:
-            playSound("shell_kick");
+            playSound(SoundId::SHELL_KICK);
             break;
         case EventType::BLOCK_BUMPED:
-            playSound("bump");
+            playSound(SoundId::BUMP);
             break;
         case EventType::BRICK_BROKEN:
-            playSound("brick");
+            playSound(SoundId::BRICK);
             break;
         case EventType::ITEM_EMERGED:
-            playSound("item");
+            playSound(SoundId::ITEM);
             break;
         case EventType::ONE_UP_COLLECTED:
-            playSound("oneup");
+            playSound(SoundId::ONE_UP);
             break;
         case EventType::GAME_PAUSED:
-            playSound("pause");
+            playSound(SoundId::PAUSE);
             pauseMusic();
             break;
         case EventType::GAME_RESUMED:
             playMusic();
             break;
         case EventType::LEVEL_COMPLETED:
-            playSound("flagpole");
+            playSound(SoundId::FLAGPOLE);
             break;
         default:
             break;
     }
 }
 
-bool SoundManager::loadSound(const std::string& id,
-                             const std::string& filepath) {
+bool SoundManager::failSound(const std::string& diagnostic) {
+    m_lastDiagnostic = diagnostic;
+    std::cerr << "[SoundManager] " << diagnostic << "\n";
+    return false;
+}
+
+bool SoundManager::loadSound(SoundId id) {
+    const SoundManifestEntry* entry = findSoundManifestEntry(id);
+    if (entry == nullptr) {
+        return failSound("Cannot load invalid sound ID " +
+                         std::to_string(static_cast<int>(id)));
+    }
+    return loadSound(id, entry->relativePath);
+}
+
+bool SoundManager::loadSound(SoundId id, const std::string& filepath) {
+    const SoundManifestEntry* entry = findSoundManifestEntry(id);
+    if (entry == nullptr) {
+        return failSound("Cannot load invalid sound ID " +
+                         std::to_string(static_cast<int>(id)));
+    }
+
     try {
         // Construct replacements first. If the file is invalid, the existing
         // voices remain usable instead of being replaced by an empty entry.
@@ -224,50 +224,89 @@ bool SoundManager::loadSound(const std::string& id,
         m_soundBuffers[id] = std::move(buffer);
         return true;
     } catch (const sf::Exception& e) {
-#ifdef DEBUG
-        std::cerr << "[SoundManager] Failed to load sound '" << id
-                  << "' from " << filepath << ": " << e.what() << "\n";
-#endif
-        return false;
+        return failSound("Failed to load sound '" + std::string(entry->key) +
+                         "' from " + filepath + ": " + e.what());
     } catch (const std::exception& e) {
-#ifdef DEBUG
-        std::cerr << "[SoundManager] Failed to load sound '" << id
-                  << "' from " << filepath << ": " << e.what() << "\n";
-#endif
-        return false;
+        return failSound("Failed to load sound '" + std::string(entry->key) +
+                         "' from " + filepath + ": " + e.what());
+    } catch (...) {
+        return failSound("Failed to load sound '" + std::string(entry->key) +
+                         "' from " + filepath + ": unknown error");
     }
 }
 
-void SoundManager::playSound(const std::string& id) {
+bool SoundManager::loadSound(const std::string& id,
+                             const std::string& filepath) {
+    const std::optional<SoundId> soundId = soundIdFromKey(id);
+    if (!soundId) {
+        return failSound("Unknown sound key '" + id + "'");
+    }
+    return loadSound(*soundId, filepath);
+}
+
+bool SoundManager::playSound(SoundId id) {
+    const SoundManifestEntry* entry = findSoundManifestEntry(id);
+    if (entry == nullptr) {
+        return failSound("Cannot play invalid sound ID " +
+                         std::to_string(static_cast<int>(id)));
+    }
+
     auto it = m_soundVoices.find(id);
     if (it == m_soundVoices.end() || it->second.empty()) {
-        return;
+        return failSound("Sound '" + std::string(entry->key) +
+                         "' is unavailable (asset was not loaded)");
     }
 
-    ++m_soundPlayRequests[id];
+    try {
+        ++m_soundPlayRequests[id];
 
-    auto& voices = it->second;
-    std::size_t& cursor = m_voiceCursors[id];
-    const std::size_t start = cursor % voices.size();
+        auto& voices = it->second;
+        std::size_t& cursor = m_voiceCursors[id];
+        const std::size_t start = cursor % voices.size();
 
-    for (std::size_t offset = 0; offset < voices.size(); ++offset) {
-        const std::size_t index = (start + offset) % voices.size();
-        if (voices[index]->getStatus() == sf::Sound::Status::Playing) {
-            continue;
+        for (std::size_t offset = 0; offset < voices.size(); ++offset) {
+            const std::size_t index = (start + offset) % voices.size();
+            if (voices[index]->getStatus() == sf::Sound::Status::Playing) {
+                continue;
+            }
+
+            voices[index]->play();
+            cursor = (index + 1) % voices.size();
+            return true;
         }
-
-        voices[index]->play();
-        cursor = (index + 1) % voices.size();
-        return;
+        // All voices are busy. Drop this request instead of restarting one
+        // and cutting off an already audible sound. The request itself was
+        // accepted and is still counted for deterministic gameplay tests.
+        return true;
+    } catch (const sf::Exception& e) {
+        return failSound("Failed to play sound '" + std::string(entry->key) +
+                         "': " + e.what());
+    } catch (const std::exception& e) {
+        return failSound("Failed to play sound '" + std::string(entry->key) +
+                         "': " + e.what());
+    } catch (...) {
+        return failSound("Failed to play sound '" + std::string(entry->key) +
+                         "': unknown error");
     }
-    // All voices are busy. Drop this request instead of restarting one and
-    // cutting off an already audible sound.
+}
+
+bool SoundManager::playSound(const std::string& id) {
+    const std::optional<SoundId> soundId = soundIdFromKey(id);
+    if (!soundId) {
+        return failSound("Unknown sound key '" + id + "'");
+    }
+    return playSound(*soundId);
+}
+
+std::size_t SoundManager::getSoundPlayRequestCount(SoundId id) const {
+    const auto request = m_soundPlayRequests.find(id);
+    return request == m_soundPlayRequests.end() ? 0u : request->second;
 }
 
 std::size_t SoundManager::getSoundPlayRequestCount(
     const std::string& id) const {
-    const auto request = m_soundPlayRequests.find(id);
-    return request == m_soundPlayRequests.end() ? 0u : request->second;
+    const std::optional<SoundId> soundId = soundIdFromKey(id);
+    return soundId ? getSoundPlayRequestCount(*soundId) : 0u;
 }
 
 bool SoundManager::loadMusic(const std::string& filepath) {
@@ -404,8 +443,13 @@ float SoundManager::clampVolume(float volume) {
     return std::clamp(volume, 0.f, 100.f);
 }
 
-bool SoundManager::isSoundLoaded(const std::string& id) const {
+bool SoundManager::isSoundLoaded(SoundId id) const {
     return m_soundVoices.find(id) != m_soundVoices.end();
+}
+
+bool SoundManager::isSoundLoaded(const std::string& id) const {
+    const std::optional<SoundId> soundId = soundIdFromKey(id);
+    return soundId && isSoundLoaded(*soundId);
 }
 
 void SoundManager::registerDefaultMusicPaths() {

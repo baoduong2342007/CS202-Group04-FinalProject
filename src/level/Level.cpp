@@ -64,9 +64,6 @@ constexpr float ELEVATOR_MARKER_X_OFFSET =
 constexpr float FLAGPOLE_WALK_SPEED = 150.0f;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
-const sf::Color UNDERGROUND_BACKGROUND_COLOR(0, 0, 128);
-const sf::Color UNDERWATER_BACKGROUND_COLOR(0, 48, 112);
-const sf::Color CASTLE_BACKGROUND_COLOR(28, 8, 36);
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     const sf::Vector2f cameraCenter = cameraView.getCenter();
@@ -105,42 +102,6 @@ bool isEntityOutsideLevelBounds(const Entity& entity, float levelWidth, float le
 constexpr char SPAWN_CODES[] = {'G', 'K', 'p', 'c', 'C', '?', 'f', 'h', 'U', 'u', 'O', 'o', 'J', 'e',
                                 'b', 'k', 'y', 'd', 'q', 'l', 'P', 't', 's', 'D', 'n', 'X', 'A', 'N'};
 
-std::size_t findGroundSurfaceRow(const TileMap& tileMap) {
-    const std::size_t height = tileMap.getHeight();
-    const std::size_t width = tileMap.getWidth();
-    if (height == 0 || width == 0) {
-        return 0;
-    }
-
-    // The floor can be one or several rows thick. A floor row is identified by
-    // its dominant ground-tile coverage; sparse platforms above it must not
-    // move the background down.
-    const auto isFloorRow = [&tileMap, width](std::size_t row) {
-        std::size_t groundTiles = 0;
-        for (std::size_t column = 0; column < width; ++column) {
-            const char tile = tileMap.getTileAt(static_cast<int>(column), static_cast<int>(row));
-            if (tile == '0' || tile == '1') {
-                ++groundTiles;
-            }
-        }
-        return groundTiles * 2 >= width;
-    };
-
-    std::size_t surfaceRow = height - 1;
-    while (surfaceRow > 0 && isFloorRow(surfaceRow - 1)) {
-        --surfaceRow;
-    }
-    return surfaceRow;
-}
-
-float calculateBackgroundTop(const TileMap& tileMap) {
-    const float groundTop = static_cast<float>(findGroundSurfaceRow(tileMap) * TILE_SIZE);
-    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
-    // Do not clamp this to zero: short levels can legitimately place the full
-    // background frame above world Y=0 while the camera is already inside it.
-    return groundTop - backgroundHeight;
-}
-
 constexpr float TOAD_DIALOGUE_DURATION = 2.5f;
 constexpr const char* TOAD_DIALOGUE_TEXT = "THANK YOU MARIO!\n"
                                            "BUT OUR PRINCESS IS IN\n"
@@ -172,6 +133,9 @@ Level::~Level() {
 void Level::setTheme(LevelTheme theme) {
     m_theme = theme;
     m_tileMap.setTheme(theme);
+    if (m_backgroundRenderer) {
+        m_backgroundRenderer->setTheme(theme);
+    }
 }
 
 void Level::applyAreaTheme(LevelTheme theme) {
@@ -181,6 +145,9 @@ void Level::applyAreaTheme(LevelTheme theme) {
 
     m_theme = theme;
     m_tileMap.setTheme(theme);
+    if (m_backgroundRenderer) {
+        m_backgroundRenderer->setTheme(theme);
+    }
 
     const bool underwater = theme == LevelTheme::UNDERWATER;
 
@@ -233,19 +200,19 @@ void Level::applyAreaTheme(LevelTheme theme) {
 
 LevelTheme Level::getThemeForGridPosition(int gridX) const {
     if (m_levelPath.find("level1.txt") != std::string::npos) {
-        if (gridX >= 216 && gridX <= 245) {
+        if (gridX >= 249 && gridX <= 265) {
             return LevelTheme::UNDERGROUND;
         }
         return LevelTheme::OVERWORLD;
     }
     if (m_levelPath.find("level2.txt") != std::string::npos) {
-        if (gridX >= 50 && gridX < 275) {
+        if (gridX >= 49 && gridX <= 281) {
             return LevelTheme::UNDERGROUND;
         }
         return LevelTheme::OVERWORLD;
     }
     if (m_levelPath.find("level3.txt") != std::string::npos) {
-        if (gridX >= 50 && gridX < 255) {
+        if (gridX >= 49 && gridX <= 242) {
             return LevelTheme::UNDERWATER;
         }
         return LevelTheme::OVERWORLD;
@@ -291,6 +258,7 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     m_flagSlideStartDropDistance = 0.0f;
     m_physicsAccumulator = 0.0f;
     m_levelPath = path;
+    m_tileMap.setColumnThemeResolver([this](int col) { return getThemeForGridPosition(col); });
     
     if (!m_tileMap.loadFromFile(path)) {
         std::cerr << "Level: Failed to load TileMap from " << path << std::endl;
@@ -301,6 +269,12 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
     
+    if (!m_backgroundRenderer) {
+        m_backgroundRenderer = std::make_unique<BackgroundRenderer>();
+    }
+    m_backgroundRenderer->init(m_textureManager, levelWidth, levelHeight);
+    m_backgroundRenderer->setTheme(m_theme);
+
     m_camera.setVerticalMode(m_cameraVerticalMode);
     m_camera.init(
         sf::Vector2f(static_cast<float>(DisplayConfig::LOGICAL_WIDTH),
@@ -548,6 +522,7 @@ bool Level::loadPvpArena(const std::string& path,
     m_activeGenerators.clear();
     m_generatorTimers.clear();
     m_pipeWarpPhase = PipeWarpPhase::NONE;
+    m_tileMap.setColumnThemeResolver([this](int col) { return getThemeForGridPosition(col); });
 
     if (!m_tileMap.loadFromFile(path, TileMap::LayoutMode::PVP_ARENA)) {
         std::cerr << "Level: Failed to load PvP arena TileMap from " << path << std::endl;
@@ -556,6 +531,12 @@ bool Level::loadPvpArena(const std::string& path,
 
     const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
     const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
+
+    if (!m_backgroundRenderer) {
+        m_backgroundRenderer = std::make_unique<BackgroundRenderer>();
+    }
+    m_backgroundRenderer->init(m_textureManager, levelWidth, levelHeight);
+    m_backgroundRenderer->setTheme(m_theme);
 
     m_camera.setVerticalMode(m_cameraVerticalMode);
     m_camera.init(
@@ -1116,6 +1097,10 @@ void Level::updateExplosions() {
 }
 
 void Level::update(float dt) {
+    if (m_backgroundRenderer) {
+        m_backgroundRenderer->update(dt);
+    }
+
     if (m_pvpMode) {
         updatePvp(dt);
         return;
@@ -1438,46 +1423,8 @@ void Level::render(sf::RenderTarget& target) {
     // Apply camera view
     target.setView(m_camera.getView());
 
-    const float backgroundHeight = static_cast<float>(DisplayConfig::LOGICAL_HEIGHT);
-    const float levelWidth = static_cast<float>(m_tileMap.getWidth() * TILE_SIZE);
-    const float levelHeight = static_cast<float>(m_tileMap.getHeight() * TILE_SIZE);
-
-    if (m_theme != LevelTheme::OVERWORLD) {
-        const sf::Color themeColor =
-            m_theme == LevelTheme::UNDERGROUND
-                ? UNDERGROUND_BACKGROUND_COLOR
-                : (m_theme == LevelTheme::UNDERWATER
-                       ? UNDERWATER_BACKGROUND_COLOR
-                       : CASTLE_BACKGROUND_COLOR);
-        // Each non-overworld theme has a deliberate palette. Extend it beyond
-        // the map so shake/dead-zone motion cannot expose the clear color.
-        sf::RectangleShape themeBackground(
-            sf::Vector2f(levelWidth, levelHeight + backgroundHeight * 2.f));
-        themeBackground.setPosition({0.f, -backgroundHeight});
-        themeBackground.setFillColor(themeColor);
-        target.draw(themeBackground);
-    } else {
-        // Draw the cheerful pixel-art world background behind the tilemap.
-        const sf::Texture& bgTex = m_textureManager.getTexture(
-            std::string(SpriteFrames::ovw::Backgrounds::WORLD_PATH));
-        sf::Sprite bgSprite(bgTex);
-        bgSprite.setTextureRect(SpriteFrames::ovw::Backgrounds::WORLD);
-
-        const float backgroundScale =
-            backgroundHeight / static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.y);
-        const float stripWidth =
-            static_cast<float>(SpriteFrames::ovw::Backgrounds::WORLD.size.x) * backgroundScale;
-        const float backgroundTop = calculateBackgroundTop(m_tileMap);
-
-        std::size_t stripIndex = 0;
-        for (float x = 0; x < levelWidth + stripWidth; x += stripWidth, ++stripIndex) {
-            const bool mirrored = (stripIndex % 2u) != 0u;
-            bgSprite.setScale(mirrored ? sf::Vector2f(-backgroundScale, backgroundScale)
-                                       : sf::Vector2f(backgroundScale, backgroundScale));
-            bgSprite.setPosition(mirrored ? sf::Vector2f(x + stripWidth, backgroundTop)
-                                         : sf::Vector2f(x, backgroundTop));
-            target.draw(bgSprite);
-        }
+    if (m_backgroundRenderer) {
+        m_backgroundRenderer->render(target, m_camera);
     }
 
     // Podoboo belongs behind the liquid layer.

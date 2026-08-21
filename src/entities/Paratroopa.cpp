@@ -4,7 +4,6 @@
  */
 
 #include "entities/Paratroopa.h"
-#include "entities/FireballExplosion.h"
 
 #include <cmath>
 
@@ -199,10 +198,6 @@ void Paratroopa::clipWings() {
     if (m_body) {
         m_body->SetGravityScale(1.f);
     }
-
-    // Spawn wing-clip feather/puff effect
-    m_pending.push_back(std::make_unique<FireballExplosion>(
-        sf::Vector2f{m_position.x + 8.f, m_position.y + 8.f}));
 
     playAnimation(WALK_ANIMATION);
     updateAnimation(0.f);

@@ -670,6 +670,20 @@ void TileMap::setTheme(LevelTheme theme) {
     }
 }
 
+void TileMap::setColumnThemeResolver(std::function<LevelTheme(int)> resolver) {
+    m_columnThemeResolver = std::move(resolver);
+    if (!m_grid.empty()) {
+        buildVertices();
+    }
+}
+
+LevelTheme TileMap::resolveColumnTheme(int column) const {
+    if (m_columnThemeResolver) {
+        return m_columnThemeResolver(column);
+    }
+    return m_theme;
+}
+
 namespace {
 sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
     switch (symbol) {
@@ -1151,13 +1165,19 @@ bool TileMap::loadFromFile(const std::string& path, LayoutMode mode) {
             return false;
         }
 
-        // The reference sheet is an opaque compositing sheet.  Its three
-        // backdrop colors are not gameplay pixels; key them out before the
-        // atlas is uploaded so pipes, poles, and assembled structures do not
-        // carry lavender/blue rectangles into the level.
+        // The reference sheet is an opaque compositing sheet.  Its backdrop
+        // colors are not gameplay pixels; key them out before the atlas is
+        // uploaded so pipes, poles, and assembled structures do not carry
+        // lavender/blue rectangles into the level.
         tilesetImage.createMaskFromColor(sf::Color(146, 144, 255));
         tilesetImage.createMaskFromColor(sf::Color(148, 148, 255));
+        tilesetImage.createMaskFromColor(sf::Color(108, 106, 255));
         tilesetImage.createMaskFromColor(sf::Color(0, 41, 140));
+        tilesetImage.createMaskFromColor(sf::Color(0, 0, 168));
+        tilesetImage.createMaskFromColor(sf::Color(12, 69, 176));
+        tilesetImage.createMaskFromColor(sf::Color(32, 56, 236));
+        tilesetImage.createMaskFromColor(sf::Color(36, 100, 252));
+        tilesetImage.createMaskFromColor(sf::Color(92, 148, 252));
         loadedTileset = sf::Texture(tilesetImage);
 
         sf::Image objectsImage;
@@ -1168,7 +1188,13 @@ bool TileMap::loadFromFile(const std::string& path, LayoutMode mode) {
         }
         objectsImage.createMaskFromColor(sf::Color(146, 144, 255));
         objectsImage.createMaskFromColor(sf::Color(148, 148, 255));
+        objectsImage.createMaskFromColor(sf::Color(108, 106, 255));
         objectsImage.createMaskFromColor(sf::Color(0, 41, 140));
+        objectsImage.createMaskFromColor(sf::Color(0, 0, 168));
+        objectsImage.createMaskFromColor(sf::Color(12, 69, 176));
+        objectsImage.createMaskFromColor(sf::Color(32, 56, 236));
+        objectsImage.createMaskFromColor(sf::Color(36, 100, 252));
+        objectsImage.createMaskFromColor(sf::Color(92, 148, 252));
         loadedObjectsTileset = sf::Texture(objectsImage);
     } catch (const sf::Exception& exception) {
         std::cerr << "Failed to load TileMap tileset: " << TILESET_PATH << std::endl;
@@ -1368,10 +1394,11 @@ void TileMap::buildVertices() {
         for (std::size_t column = 0; column < m_grid[row].size(); ++column) {
 
             const char symbol = m_grid[row][column];
+            const LevelTheme tileTheme = resolveColumnTheme(static_cast<int>(column));
 
             // L = bottom-left anchor of a 5x5 castle.
             if (symbol == 'L') {
-                const sf::IntRect rect = (m_theme == LevelTheme::UNDERGROUND)
+                const sf::IntRect rect = (tileTheme == LevelTheme::UNDERGROUND)
                                             ? TileFrames::CASTLE_UNDERGROUND
                                             : TileFrames::CASTLE;
 
@@ -1419,7 +1446,7 @@ void TileMap::buildVertices() {
 
             // H = bottom-left anchor of a 3x2 horizontal pipe.
             if (symbol == 'H') {
-                const sf::IntRect rect = getHorizontalPipeRect(m_theme);
+                const sf::IntRect rect = getHorizontalPipeRect(tileTheme);
 
                 const float left = static_cast<float>(column * TILE_SIZE);
                 const float top = static_cast<float>((static_cast<int>(row) - 1) * TILE_SIZE);
@@ -1484,7 +1511,7 @@ void TileMap::buildVertices() {
                 // cloth is anchored to the pole center, so this closes the
                 // small visual gap at the top without changing the validated
                 // trigger column or Mario's climb position.
-                const sf::IntRect poleRect = getTilesetRect('|', m_theme);
+                const sf::IntRect poleRect = getTilesetRect('|', tileTheme);
                 const float x = static_cast<float>(column * TILE_SIZE);
                 const float y = static_cast<float>(row * TILE_SIZE);
                 const float right = x + static_cast<float>(TILE_SIZE);
@@ -1507,7 +1534,7 @@ void TileMap::buildVertices() {
             // V = vine / chain tile (climbable)
             if (symbol == 'V') {
                 const sf::IntRect textureRect =
-                    (m_theme == LevelTheme::CASTLE)
+                    (tileTheme == LevelTheme::CASTLE)
                         ? TileFrames::BRIDGE_CHAIN_CASTLE
                         : ((row == 0 || getTileAt(static_cast<int>(column), static_cast<int>(row - 1)) != 'V')
                             ? SpriteFrames::shared::Items::VINE_TOP
@@ -1537,7 +1564,7 @@ void TileMap::buildVertices() {
             const float x = static_cast<float>(column * TILE_SIZE);
             const float y = static_cast<float>(row * TILE_SIZE);
 
-            const sf::IntRect textureRect = getTilesetRect(symbol, m_theme);
+            const sf::IntRect textureRect = getTilesetRect(symbol, tileTheme);
 
             float offsetY = 0.f;
 
@@ -1607,7 +1634,8 @@ void TileMap::buildFlagVertices() {
                 continue;
             }
 
-            const sf::IntRect textureRect = flagFrameForTheme(m_theme);
+            const LevelTheme flagTheme = resolveColumnTheme(static_cast<int>(col));
+            const sf::IntRect textureRect = flagFrameForTheme(flagTheme);
 
             int bottomRow = static_cast<int>(row);
             while (bottomRow + 1 < static_cast<int>(m_grid.size()) &&
@@ -1824,7 +1852,8 @@ bool TileMap::hitTile(int column, int row, bool isBigMario,
 
             // Spawn 4 flying debris particles (4 corners)
             sf::Vector2f center = tileWorldPos + sf::Vector2f(8.f, 8.f);
-            const DebrisFrames& debris = debrisFramesForTheme(m_theme);
+            const LevelTheme debrisTheme = resolveColumnTheme(column);
+            const DebrisFrames& debris = debrisFramesForTheme(debrisTheme);
             auto d1 = std::make_unique<BlockDebris>(center, sf::Vector2f(-120.f, -380.f), debris.topLeft);
             auto d2 = std::make_unique<BlockDebris>(center, sf::Vector2f(120.f, -380.f), debris.topRight);
             auto d3 = std::make_unique<BlockDebris>(center, sf::Vector2f(-80.f, -220.f), debris.bottomLeft);
@@ -1863,9 +1892,6 @@ void TileMap::buildWaterVertices() {
     if (m_layoutMode != LayoutMode::CAMPAIGN) {
         return;
     }
-    
-    const sf::IntRect surfaceRect = getWaterSurfaceRect(m_theme);
-    const sf::IntRect bodyRect = getWaterBodyRect(m_theme);
 
     for (std::size_t row = 0; row < m_grid.size(); ++row) {
         for (std::size_t col = 0; col < m_grid[row].size(); ++col) {
@@ -1873,14 +1899,24 @@ void TileMap::buildWaterVertices() {
                 continue;
             }
 
+            const LevelTheme tileTheme = resolveColumnTheme(static_cast<int>(col));
+            const sf::IntRect surfaceRect = getWaterSurfaceRect(tileTheme);
+            const sf::IntRect bodyRect = getWaterBodyRect(tileTheme);
+
             // W itself is the liquid surface.
             appendTileQuad(m_waterVertices,
                            static_cast<int>(col), static_cast<int>(row),
                            surfaceRect
                            );
 
+            if (tileTheme == LevelTheme::UNDERWATER) {
+                // In underwater theme, do NOT generate opaque body quads for rows below,
+                // allowing the BackgroundRenderer (bg_underwater.png) to be fully visible!
+                continue;
+            }
+
             // Fill the same column down to the bottom of the map.
-            // Terrain is rendered afterward and naturally covers liquid where solid blicks exist.
+            // Terrain is rendered afterward and naturally covers liquid where solid blocks exist.
             for (std::size_t waterRow = row + 1; waterRow < m_grid.size(); ++waterRow) {
                 // If another explicit surface exists lower in this column, let that marker own the remaining region.
                 if (m_grid[waterRow][col] == 'W') {

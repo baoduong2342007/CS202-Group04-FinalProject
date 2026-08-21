@@ -238,6 +238,48 @@ void testLevel4SectionSnapshots() {
     level.render(rt);
     rt.display();
 }
+
+void testBackgroundRendererLifecycle() {
+    TextureManager& tm = TextureManager::getInstance();
+    BackgroundRenderer bg;
+    bg.init(tm, 3000.f, 480.f);
+    assert(bg.getTheme() == LevelTheme::OVERWORLD);
+    assert(close(bg.getScrollFactorX(), 0.35f));
+
+    bg.setScrollFactorX(0.5f);
+    assert(close(bg.getScrollFactorX(), 0.5f));
+    bg.setScrollFactorX(0.35f);
+
+    Camera cam;
+    cam.init({640.f, 360.f}, sf::FloatRect({0.f, 0.f}, {3000.f, 480.f}));
+    cam.update(0.f, {320.f, 240.f});
+
+    sf::RenderTexture rt({640, 360});
+
+    for (LevelTheme theme : {LevelTheme::OVERWORLD, LevelTheme::UNDERGROUND,
+                             LevelTheme::UNDERWATER, LevelTheme::CASTLE}) {
+        bg.setTheme(theme);
+        assert(bg.getTheme() == theme);
+        bg.update(0.05f);
+        rt.clear(sf::Color::Black);
+        bg.render(rt, cam);
+        rt.display();
+    }
+
+    // Verify integration with Level
+    Level level;
+    level.setTheme(LevelTheme::UNDERGROUND);
+    bool loaded = level.loadFromFile("levels/level2.txt");
+    assert(loaded);
+    assert(level.getBackgroundRenderer() != nullptr);
+    assert(level.getBackgroundRenderer()->getTheme() == LevelTheme::UNDERGROUND);
+
+    level.update(0.016f);
+    rt.clear(sf::Color::Black);
+    level.render(rt);
+    rt.display();
+}
+
 } // namespace
 
 int main() {
@@ -248,5 +290,6 @@ int main() {
     testLevelSelectStateRenderSnapshot();
     testMenuStateRenderSnapshot();
     testLevel4SectionSnapshots();
+    testBackgroundRendererLifecycle();
     return 0;
 }

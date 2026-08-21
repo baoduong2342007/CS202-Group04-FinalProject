@@ -1,142 +1,227 @@
 /**
  * @file EventBusTests.cpp
- * @author TV1 (Duong)
- * @brief Regression tests for EventBus observer lifetime (S6-TV1-20) and
- *        subscriber duplicate/growth safety (S6-TV1-21).
- *
- * Verifies:
- *   - subscribing the same observer twice does not grow the listener list;
- *   - an observer unsubscribed (or destroyed) by another observer's callback is
- *     NOT invoked for that notification;
- *   - repeated subscribe/unsubscribe over many state-lifetime cycles does not
- *     accumulate stale callbacks.
+ * @brief Focused coverage for value events and RAII subscription leases.
  */
 
 #include <cassert>
 #include <iostream>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 #include "patterns/EventBus.h"
-#include "patterns/EventType.h"
+#include "patterns/GameEvent.h"
 #include "patterns/IObserver.h"
+#include "patterns/Subscription.h"
 
 namespace {
 
-struct SharedCounters {
-    int aCalls = 0;
-    int bCalls = 0;
+struct CountingObserver final : IObserver {
+    void onNotify(const GameEvent& event) override {
+        ++calls;
+        lastEvent = event;
+    }
+
+    int calls = 0;
+    GameEvent lastEvent{EventType::PLAYER_DIED};
 };
 
-class ObserverA : public IObserver {
-public:
-    explicit ObserverA(SharedCounters& c) : m_c(c) {}
-    void onNotify(EventType /*event*/) override { ++m_c.aCalls; }
-private:
-    SharedCounters& m_c;
-};
+struct RemovingObserver final : IObserver {
+    RemovingObserver(EventBus& eventBus, Subscription& tokenToRemove)
+        : bus(eventBus), target(tokenToRemove) {}
 
-// ObserverB can, on request, unsubscribe ObserverA from inside its own callback,
-// simulating one observer destroying/unsubscribing another during dispatch.
-class ObserverB : public IObserver {
-public:
-    explicit ObserverB(SharedCounters& c, EventBus& bus, IObserver* other)
-        : m_c(c), m_bus(bus), m_other(other), m_unsubscribeOtherOnHit(false) {}
-
-    void setUnsubscribeOtherOnHit(bool v) { m_unsubscribeOtherOnHit = v; }
-
-    void onNotify(EventType event) override {
-        ++m_c.bCalls;
-        if (m_unsubscribeOtherOnHit) {
-            m_bus.unsubscribe(event, m_other);
+    void onNotify(const GameEvent& event) override {
+        ++calls;
+        target.reset();
+        if (reenter) {
+            reenter = false;
+            bus.notify(event);
         }
     }
-private:
-    SharedCounters& m_c;
-    EventBus& m_bus;
-    IObserver* m_other;
-    bool m_unsubscribeOtherOnHit = false;
+
+    EventBus& bus;
+    Subscription& target;
+    int calls = 0;
+    bool reenter = false;
 };
+
+void testMoveOnlyTraits() {
+    static_assert(!std::is_copy_constructible_v<Subscription>);
+    static_assert(!std::is_copy_assignable_v<Subscription>);
+    static_assert(std::is_move_constructible_v<Subscription>);
+    static_assert(std::is_move_assignable_v<Subscription>);
+    static_assert(std::is_same_v<decltype(GameEvent::context), EventContext>);
+
+    std::cout << "[PASSED] testMoveOnlyTraits\n";
+}
+
+void testTemporaryTokenDisconnectsImmediately() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver observer;
+
+    bus.subscribe(EventType::PLAYER_DIED, &observer);
+    bus.notify(EventType::PLAYER_DIED);
+    assert(observer.calls == 0);
+
+    std::cout << "[PASSED] testTemporaryTokenDisconnectsImmediately\n";
+}
+
+void testScopeMoveAndReset() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver observer;
+
+    Subscription token = bus.subscribe(EventType::PLAYER_DIED, &observer);
+    assert(token.connected());
+    Subscription moved = std::move(token);
+    assert(!token.connected());
+    assert(moved.connected());
+
+    bus.notify(EventType::PLAYER_DIED);
+    assert(observer.calls == 1);
+
+    moved.reset();
+    assert(!moved.connected());
+    bus.notify(EventType::PLAYER_DIED);
+    assert(observer.calls == 1);
+
+    {
+        auto scoped = bus.subscribe(EventType::PLAYER_DIED, &observer);
+        assert(scoped.connected());
+        bus.notify(EventType::PLAYER_DIED);
+        assert(observer.calls == 2);
+    }
+    bus.notify(EventType::PLAYER_DIED);
+    assert(observer.calls == 2);
+
+    std::cout << "[PASSED] testScopeMoveAndReset\n";
+}
+
+void testDuplicateLeasesDisconnectOnLastToken() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver observer;
+
+    Subscription first = bus.subscribe(EventType::GAME_PAUSED, &observer);
+    Subscription second = bus.subscribe(EventType::GAME_PAUSED, &observer);
+    assert(first.connected());
+    assert(second.connected());
+
+    bus.notify(EventType::GAME_PAUSED);
+    assert(observer.calls == 1);
+
+    first.reset();
+    assert(!first.connected());
+    assert(second.connected());
+    bus.notify(EventType::GAME_PAUSED);
+    assert(observer.calls == 2);
+
+    second.reset();
+    assert(!second.connected());
+    bus.notify(EventType::GAME_PAUSED);
+    assert(observer.calls == 2);
+
+    std::cout << "[PASSED] testDuplicateLeasesDisconnectOnLastToken\n";
+}
+
+void testRemovalAndResetDuringDispatch() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver target;
+    Subscription targetToken = bus.subscribe(EventType::LEVEL_STARTED, &target);
+    RemovingObserver remover(bus, targetToken);
+    Subscription removerToken = bus.subscribe(EventType::LEVEL_STARTED, &remover);
+
+    // Move the remover ahead of target in deterministic subscription order by
+    // disconnecting and re-registering both observers.
+    targetToken.reset();
+    removerToken.reset();
+    targetToken = bus.subscribe(EventType::LEVEL_STARTED, &target);
+    removerToken = bus.subscribe(EventType::LEVEL_STARTED, &remover);
+    // The target is now first, so use a fresh event to place remover first.
+    targetToken.reset();
+    removerToken.reset();
+    removerToken = bus.subscribe(EventType::LEVEL_STARTED, &remover);
+    targetToken = bus.subscribe(EventType::LEVEL_STARTED, &target);
+
+    bus.notify(EventType::LEVEL_STARTED);
+    assert(remover.calls == 1);
+    assert(target.calls == 0);
+    assert(!targetToken.connected());
+
+    removerToken.reset();
+    std::cout << "[PASSED] testRemovalAndResetDuringDispatch\n";
+}
+
+void testReentrantDispatch() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver target;
+    Subscription targetToken = bus.subscribe(EventType::GAME_RESUMED, &target);
+    RemovingObserver reentrant(bus, targetToken);
+    reentrant.reenter = true;
+    Subscription reentrantToken = bus.subscribe(EventType::GAME_RESUMED, &reentrant);
+
+    // Place the reentrant observer first; it triggers one nested dispatch and
+    // then resets target before the outer snapshot reaches it.
+    targetToken.reset();
+    reentrantToken.reset();
+    reentrantToken = bus.subscribe(EventType::GAME_RESUMED, &reentrant);
+    targetToken = bus.subscribe(EventType::GAME_RESUMED, &target);
+
+    bus.notify(EventType::GAME_RESUMED);
+    assert(reentrant.calls == 2);
+    assert(target.calls == 0);
+
+    reentrantToken.reset();
+    std::cout << "[PASSED] testReentrantDispatch\n";
+}
+
+void testValueContextDelivery() {
+    EventBus& bus = EventBus::getInstance();
+    CountingObserver observer;
+    Subscription token = bus.subscribe(EventType::LEVEL_STARTED, &observer);
+
+    bus.notify(GameEvent{EventType::LEVEL_STARTED, LevelContext{7}});
+    assert(observer.calls == 1);
+    assert(observer.lastEvent.type == EventType::LEVEL_STARTED);
+    const auto* level = std::get_if<LevelContext>(&observer.lastEvent.context);
+    assert(level != nullptr);
+    assert(level->level == 7);
+
+    token.reset();
+    std::cout << "[PASSED] testValueContextDelivery\n";
+}
+
+void testLifecycleCycles() {
+    EventBus& bus = EventBus::getInstance();
+    int calls = 0;
+
+    struct CycleObserver final : IObserver {
+        explicit CycleObserver(int& count) : calls(count) {}
+        void onNotify(const GameEvent&) override { ++calls; }
+        int& calls;
+    };
+
+    for (int i = 0; i < 200; ++i) {
+        CycleObserver observer(calls);
+        auto token = bus.subscribe(EventType::COIN_COLLECTED, &observer);
+        bus.notify(EventType::COIN_COLLECTED);
+        assert(token.connected());
+    }
+
+    bus.notify(EventType::COIN_COLLECTED);
+    assert(calls == 200);
+    std::cout << "[PASSED] testLifecycleCycles\n";
+}
 
 } // namespace
 
 int main() {
-    EventBus& bus = EventBus::getInstance();
-
-    // --- 1. Subscribing the same observer twice does not create duplicate callbacks. ---
-    {
-        std::cout << "[RUNNING] testNoDuplicateSubscribers..." << std::endl;
-        SharedCounters c;
-        ObserverA a(c);
-
-        bus.unsubscribe(EventType::PLAYER_DIED, &a); // clean slate
-        for (int i = 0; i < 50; ++i) {
-            bus.subscribe(EventType::PLAYER_DIED, &a);
-        }
-        c.aCalls = 0;
-        bus.notify(EventType::PLAYER_DIED);
-        assert(c.aCalls == 1); // exactly one callback despite 50 subscribes
-
-        bus.unsubscribe(EventType::PLAYER_DIED, &a);
-        std::cout << "[PASSED] testNoDuplicateSubscribers" << std::endl;
-    }
-
-    // --- 2. Observer removed by another observer's callback is not invoked. ---
-    {
-        std::cout << "[RUNNING] testNoCallbackAfterUnsubscribe..." << std::endl;
-        SharedCounters c;
-        ObserverA a(c);
-        ObserverB b(c, bus, &a);
-
-        bus.unsubscribe(EventType::GAME_PAUSED, &a);
-        bus.unsubscribe(EventType::GAME_PAUSED, &b);
-
-        // Order: A then B. B unsubscribes A from within its own callback, so A
-        // (earlier in the list, already executed) is irrelevant here; to test the
-        // "skip already-unsubscribed observer" path we instead make the FIRST
-        // observer remove the SECOND, and verify the second is not called.
-        bus.subscribe(EventType::GAME_PAUSED, &b);
-        bus.subscribe(EventType::GAME_PAUSED, &a);
-        // Now B runs first; set B to remove A.
-        c.aCalls = 0;
-        c.bCalls = 0;
-        b.setUnsubscribeOtherOnHit(true);
-
-        bus.notify(EventType::GAME_PAUSED);
-        // B's callback ran; it removed A before the dispatch loop reached A.
-        assert(c.bCalls == 1);
-        assert(c.aCalls == 0); // A must NOT be called after being removed
-
-        // Reset and clean up.
-        b.setUnsubscribeOtherOnHit(false);
-        bus.unsubscribe(EventType::GAME_PAUSED, &a);
-        bus.unsubscribe(EventType::GAME_PAUSED, &b);
-        std::cout << "[PASSED] testNoCallbackAfterUnsubscribe" << std::endl;
-    }
-
-    // --- 3. Many state-lifetime cycles do not leave stale subscribers behind. ---
-    {
-        std::cout << "[RUNNING] testNoSubscriberGrowth..." << std::endl;
-        SharedCounters c;
-        {
-            ObserverB root(c, bus, nullptr); // (re)subscribe/unsubscribe in-place
-        }
-
-        // Simulate 200 PlayState enter/exit cycles: subscribe on enter, unsubscribe on exit.
-        c.bCalls = 0;
-        for (int i = 0; i < 200; ++i) {
-            // A fresh observer each cycle then destroyed at end of cycle scope.
-            ObserverB tmp(c, bus, nullptr);
-            bus.subscribe(EventType::LEVEL_STARTED, &tmp);
-            // (no notify here)
-            bus.unsubscribe(EventType::LEVEL_STARTED, &tmp);
-        }
-
-        // If unsubscribe works, notifying LEVEL_STARTED must fire zero callbacks for tmp.
-        bus.notify(EventType::LEVEL_STARTED);
-        assert(c.bCalls == 0); // no stale observer was called
-
-        std::cout << "[PASSED] testNoSubscriberGrowth" << std::endl;
-    }
-
-    std::cout << "All EventBus tests passed successfully!" << std::endl;
+    testMoveOnlyTraits();
+    testTemporaryTokenDisconnectsImmediately();
+    testScopeMoveAndReset();
+    testDuplicateLeasesDisconnectOnLastToken();
+    testRemovalAndResetDuringDispatch();
+    testReentrantDispatch();
+    testValueContextDelivery();
+    testLifecycleCycles();
+    std::cout << "All EventBus tests passed successfully!\n";
     return 0;
 }

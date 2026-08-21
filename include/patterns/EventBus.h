@@ -5,19 +5,19 @@
  * @note Week 2
  * 
  * @example Usage for Subscribing:
- *   EventBus::getInstance().subscribe(EventType::PLAYER_JUMPED, this);
+ *   auto token = EventBus::getInstance().subscribe(EventType::PLAYER_JUMPED, this);
  * 
  * @example Usage for Publishing:
  *   EventBus::getInstance().notify(EventType::PLAYER_JUMPED);
  * 
- * @todo Week 4: Add deferred queueEvent() and std::any payload support for complex events.
  */
 
 #pragma once
 
-#include <unordered_map>
-#include <vector>
+#include <cstddef>
+#include <memory>
 
+#include "patterns/GameEvent.h"
 #include "patterns/IObserver.h"
 #include "patterns/ISubject.h"
 
@@ -43,15 +43,16 @@ public:
     EventBus& operator=(const EventBus&) = delete;
 
     // 2. Override methods
-    void subscribe(EventType event, IObserver* observer) override;
+    [[nodiscard]] Subscription subscribe(EventType event,
+                                         IObserver* observer) override;
     void unsubscribe(EventType event, IObserver* observer) override;
+    void notify(const GameEvent& event) override;
     void notify(EventType event) override;
 
 private:
     // Private constructor & destructor for Singleton
-    EventBus() = default;
-    ~EventBus() override = default;
+    EventBus();
+    ~EventBus() noexcept override;
 
-    // Private members
-    std::unordered_map<EventType, std::vector<IObserver*>, EventTypeHash> m_listeners;
+    std::shared_ptr<eventbus_detail::EventBusState> m_state;
 };

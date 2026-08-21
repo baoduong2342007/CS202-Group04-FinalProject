@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "patterns/EventType.h"
+#include "patterns/GameEvent.h"
+#include "patterns/Subscription.h"
 
 class IObserver;
 
@@ -23,7 +24,8 @@ public:
      * @param event The event type to listen to.
      * @param observer Pointer to the observer instance.
      */
-    virtual void subscribe(EventType event, IObserver* observer) = 0;
+    [[nodiscard]] virtual Subscription subscribe(EventType event,
+                                                  IObserver* observer) = 0;
 
     /**
      * @brief Unsubscribe an observer from a specific event type.
@@ -33,8 +35,11 @@ public:
     virtual void unsubscribe(EventType event, IObserver* observer) = 0;
 
     /**
-     * @brief Notify all subscribed observers of an event.
-     * @param event The event type broadcasted.
+     * @brief Notify all subscribed observers of a value event.
+     * @param event The event and its value context.
      */
-    virtual void notify(EventType event) = 0;
+    virtual void notify(const GameEvent& event) = 0;
+
+    /** Compatibility publisher for existing EventType-only call sites. */
+    virtual void notify(EventType event) { notify(GameEvent{event}); }
 };

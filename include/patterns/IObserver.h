@@ -7,11 +7,12 @@
 
 #pragma once
 
-#include "patterns/EventType.h"
+#include "patterns/GameEvent.h"
 
 /**
  * @brief Interface for any object that wants to listen to game events.
- * @note Observers MUST unsubscribe from EventBus in their destructor to prevent dangling pointers.
+ * @note EventBus subscribers should retain the move-only Subscription returned
+ *       by subscribe(); its lifetime controls the registration.
  */
 class IObserver {
 public:
@@ -19,7 +20,7 @@ public:
 
     /**
      * @brief Called by EventSubject/EventBus when a subscribed event occurs.
-     * @param event The type of event that occurred.
+     * @param event The value event that occurred.
      */
-    virtual void onNotify(EventType event) = 0;
+    virtual void onNotify(const GameEvent& event) = 0;
 };

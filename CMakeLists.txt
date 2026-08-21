@@ -193,6 +193,27 @@ if(BUILD_TESTING)
     )
     target_link_libraries(tv5_integration_tests PRIVATE game_lib)
     add_test(NAME tv5_integration_tests COMMAND tv5_integration_tests)
+    set_tests_properties(tv5_integration_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(factory_method_tests
+        tests/FactoryMethodTests.cpp
+    )
+    target_link_libraries(factory_method_tests PRIVATE game_lib)
+    add_test(NAME factory_method_tests COMMAND factory_method_tests)
+    set_tests_properties(factory_method_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    add_executable(sound_manager_manifest_tests
+        tests/SoundManagerManifestTests.cpp
+    )
+    target_link_libraries(sound_manager_manifest_tests PRIVATE game_lib)
+    add_test(NAME sound_manager_manifest_tests COMMAND sound_manager_manifest_tests)
+    set_tests_properties(sound_manager_manifest_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 
     # S6-TV1-05/06/07/08 — New headless test for level-catalog & GameProgress contracts.
     add_executable(level_catalog_tests
@@ -201,6 +222,9 @@ if(BUILD_TESTING)
     target_include_directories(level_catalog_tests PRIVATE include)
     target_link_libraries(level_catalog_tests PRIVATE game_lib)
     add_test(NAME level_catalog_tests COMMAND level_catalog_tests)
+    set_tests_properties(level_catalog_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
 
     add_executable(save_manager_tests
         tests/SaveManagerTests.cpp
@@ -325,6 +349,27 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    add_executable(entity_view_tests
+        tests/EntityViewTests.cpp
+    )
+    target_link_libraries(entity_view_tests PRIVATE game_lib)
+    add_test(NAME entity_view_tests COMMAND entity_view_tests)
+    set_tests_properties(entity_view_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
+    # P2 public gameplay-interface probes: release-level runtime sweep,
+    # projectile/spawner lifecycle, item idempotence, proximity guard, and
+    # co-op nearest-target behavior.
+    add_executable(p2_gameplay_interface_tests
+        tests/P2GameplayInterfaceTests.cpp
+    )
+    target_link_libraries(p2_gameplay_interface_tests PRIVATE game_lib)
+    add_test(NAME p2_gameplay_interface_tests COMMAND p2_gameplay_interface_tests)
+    set_tests_properties(p2_gameplay_interface_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     add_executable(display_camera_ui_tests
         tests/DisplayCameraUITests.cpp
     )
@@ -404,6 +449,8 @@ if(BUILD_TESTING)
         game_manager_tests
         event_bus_tests
         tv5_integration_tests
+        factory_method_tests
+        sound_manager_manifest_tests
         level_catalog_tests
         save_manager_tests
         level_validator_tests
@@ -421,6 +468,8 @@ if(BUILD_TESTING)
         sprite_frames_theme_tests
         collision_matrix_tests
         fireball_request_tests
+        entity_view_tests
+        p2_gameplay_interface_tests
         display_camera_ui_tests
         character_flow_tests
         stomp_score_tests
@@ -460,11 +509,12 @@ endif()
 
 # 5.1. Package only the release runtime inputs next to the executable.
 #
-# Keep this list explicit and source-relative.  A recursive copy silently pulls
-# fixtures, future content, and documentation/reference files into an RC.  The
-# configure-time checks make a missing or accidentally renamed input fail with a
-# path-specific diagnostic before a package can be built.
+# Keep non-audio paths explicit and source-relative.  A recursive copy silently
+# pulls fixtures, future content, and documentation/reference files into an RC.
+# Sound-effect paths are appended below by parsing the same X-macro consumed by
+# SoundManager.h; there is deliberately no second handwritten SFX list.
 set(SUPERMARIO_RUNTIME_ASSETS
+    "ASSETS_LIST.md"
     "fonts/mario.ttf"
     "ui/bg_world.png"
     "textures/ui/hud.png"
@@ -477,24 +527,9 @@ set(SUPERMARIO_RUNTIME_ASSETS
     "textures/items/items_blocks.png"
     "textures/items/items_objects.png"
     "textures/enemies/enemies.png"
+    "textures/enemies/goomba.png"
+    "textures/enemies/koopa.png"
     "textures/enemies/hammer.png"
-    "sounds/effects/1up.wav"
-    "sounds/effects/brick.wav"
-    "sounds/effects/bump.wav"
-    "sounds/effects/coin.wav"
-    "sounds/effects/death.wav"
-    "sounds/effects/fireball.wav"
-    "sounds/effects/flagpole.wav"
-    "sounds/effects/gameover.wav"
-    "sounds/effects/hurryup.wav"
-    "sounds/effects/item.wav"
-    "sounds/effects/jump.wav"
-    "sounds/effects/jumpsmall.wav"
-    "sounds/effects/kickkill.wav"
-    "sounds/effects/pause.wav"
-    "sounds/effects/pipepowerdown.wav"
-    "sounds/effects/powerup.wav"
-    "sounds/effects/stompswim.wav"
     "sounds/music/overworld.flac"
     "sounds/music/underground.flac"
     "sounds/music/underwater.flac"
@@ -504,6 +539,136 @@ set(SUPERMARIO_RUNTIME_ASSETS
     "sounds/music/gameover.flac"
     "sounds/music/level_complete.flac"
 )
+
+# Parse the canonical SFX manifest with commands available in CMake 3.16.
+# Every non-comment line must be a complete SOUND_MANIFEST_ENTRY row: silently
+# skipping a typo would make C++ and the package disagree.  Duplicate tokens
+# and keys are errors; duplicate paths are valid semantic aliases and are
+# copied once.
+set(SUPERMARIO_SOUND_MANIFEST_FILE
+    "${CMAKE_SOURCE_DIR}/include/core/SoundManifest.def")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${SUPERMARIO_SOUND_MANIFEST_FILE}")
+if(NOT EXISTS "${SUPERMARIO_SOUND_MANIFEST_FILE}" OR
+   IS_DIRECTORY "${SUPERMARIO_SOUND_MANIFEST_FILE}")
+    message(FATAL_ERROR
+        "Canonical sound manifest is missing or is not a file: "
+        "${SUPERMARIO_SOUND_MANIFEST_FILE}")
+endif()
+
+file(STRINGS "${SUPERMARIO_SOUND_MANIFEST_FILE}"
+     _SUPERMARIO_SOUND_MANIFEST_LINES)
+set(_SUPERMARIO_SOUND_MANIFEST_REGEX
+    "^SOUND_MANIFEST_ENTRY\\([ \\t]*([A-Za-z_][A-Za-z0-9_]*)[ \\t]*,[ \\t]*\\\"([^\\\";,]+)\\\"[ \\t]*,[ \\t]*\\\"([^\\\";,]+)\\\"[ \\t]*\\)$")
+set(_SUPERMARIO_SOUND_TOKENS)
+set(_SUPERMARIO_SOUND_KEYS)
+set(_SUPERMARIO_SOUND_PATHS)
+set(_SUPERMARIO_SOUND_MANIFEST_ROW 0)
+foreach(_SUPERMARIO_SOUND_LINE IN LISTS _SUPERMARIO_SOUND_MANIFEST_LINES)
+    string(STRIP "${_SUPERMARIO_SOUND_LINE}" _SUPERMARIO_SOUND_LINE_STRIPPED)
+    if("${_SUPERMARIO_SOUND_LINE_STRIPPED}" STREQUAL "" OR
+       "${_SUPERMARIO_SOUND_LINE_STRIPPED}" MATCHES "^//")
+        continue()
+    endif()
+
+    math(EXPR _SUPERMARIO_SOUND_MANIFEST_ROW
+         "${_SUPERMARIO_SOUND_MANIFEST_ROW} + 1")
+    string(REGEX MATCH "${_SUPERMARIO_SOUND_MANIFEST_REGEX}"
+           _SUPERMARIO_SOUND_MANIFEST_MATCH
+           "${_SUPERMARIO_SOUND_LINE_STRIPPED}")
+    if("${_SUPERMARIO_SOUND_MANIFEST_MATCH}" STREQUAL "")
+        message(FATAL_ERROR
+            "Malformed sound manifest row ${_SUPERMARIO_SOUND_MANIFEST_ROW} "
+            "in ${SUPERMARIO_SOUND_MANIFEST_FILE}: "
+            "${_SUPERMARIO_SOUND_LINE_STRIPPED}")
+    endif()
+
+    set(_SUPERMARIO_SOUND_TOKEN "${CMAKE_MATCH_1}")
+    set(_SUPERMARIO_SOUND_KEY "${CMAKE_MATCH_2}")
+    set(_SUPERMARIO_SOUND_PATH "${CMAKE_MATCH_3}")
+    if(NOT "${_SUPERMARIO_SOUND_KEY}" MATCHES
+       "^[A-Za-z_][A-Za-z0-9_]*$")
+        message(FATAL_ERROR
+            "Sound manifest key must be an identifier (row "
+            "${_SUPERMARIO_SOUND_MANIFEST_ROW}): ${_SUPERMARIO_SOUND_KEY}")
+    endif()
+    list(FIND _SUPERMARIO_SOUND_TOKENS
+         "${_SUPERMARIO_SOUND_TOKEN}" _SUPERMARIO_SOUND_DUPLICATE)
+    if(NOT _SUPERMARIO_SOUND_DUPLICATE EQUAL -1)
+        message(FATAL_ERROR
+            "Duplicate sound manifest token '${_SUPERMARIO_SOUND_TOKEN}' "
+            "in ${SUPERMARIO_SOUND_MANIFEST_FILE}")
+    endif()
+    list(FIND _SUPERMARIO_SOUND_KEYS
+         "${_SUPERMARIO_SOUND_KEY}" _SUPERMARIO_SOUND_DUPLICATE)
+    if(NOT _SUPERMARIO_SOUND_DUPLICATE EQUAL -1)
+        message(FATAL_ERROR
+            "Duplicate sound manifest key '${_SUPERMARIO_SOUND_KEY}' "
+            "in ${SUPERMARIO_SOUND_MANIFEST_FILE}")
+    endif()
+    list(APPEND _SUPERMARIO_SOUND_TOKENS "${_SUPERMARIO_SOUND_TOKEN}")
+    list(APPEND _SUPERMARIO_SOUND_KEYS "${_SUPERMARIO_SOUND_KEY}")
+
+    if(NOT "${_SUPERMARIO_SOUND_PATH}" MATCHES
+       "^assets/sounds/effects/.+\\.wav$")
+        message(FATAL_ERROR
+            "Sound manifest path must be an assets/sounds/effects/*.wav "
+            "path (row ${_SUPERMARIO_SOUND_MANIFEST_ROW}): "
+            "${_SUPERMARIO_SOUND_PATH}")
+    endif()
+    string(FIND "${_SUPERMARIO_SOUND_PATH}" "\\"
+           _SUPERMARIO_SOUND_BACKSLASH)
+    if(NOT _SUPERMARIO_SOUND_BACKSLASH EQUAL -1 OR
+       "${_SUPERMARIO_SOUND_PATH}" MATCHES "(^|/)\\.\\.(/|$)")
+        message(FATAL_ERROR
+            "Sound manifest path must use safe repository-relative '/' "
+            "components (row ${_SUPERMARIO_SOUND_MANIFEST_ROW}): "
+            "${_SUPERMARIO_SOUND_PATH}")
+    endif()
+
+    set(_SUPERMARIO_SOUND_SOURCE
+        "${CMAKE_SOURCE_DIR}/${_SUPERMARIO_SOUND_PATH}")
+    if(NOT EXISTS "${_SUPERMARIO_SOUND_SOURCE}" OR
+       IS_DIRECTORY "${_SUPERMARIO_SOUND_SOURCE}")
+        message(FATAL_ERROR
+            "Sound manifest source is missing or is not a file: "
+            "${_SUPERMARIO_SOUND_SOURCE}")
+    endif()
+
+    list(FIND _SUPERMARIO_SOUND_PATHS
+         "${_SUPERMARIO_SOUND_PATH}" _SUPERMARIO_SOUND_DUPLICATE)
+    if(_SUPERMARIO_SOUND_DUPLICATE EQUAL -1)
+        list(APPEND _SUPERMARIO_SOUND_PATHS "${_SUPERMARIO_SOUND_PATH}")
+        string(REGEX REPLACE "^assets/" ""
+               _SUPERMARIO_SOUND_RUNTIME_PATH "${_SUPERMARIO_SOUND_PATH}")
+        list(APPEND SUPERMARIO_RUNTIME_ASSETS
+             "${_SUPERMARIO_SOUND_RUNTIME_PATH}")
+    endif()
+endforeach()
+
+list(LENGTH _SUPERMARIO_SOUND_TOKENS _SUPERMARIO_SOUND_ROW_COUNT)
+if(NOT _SUPERMARIO_SOUND_ROW_COUNT EQUAL _SUPERMARIO_SOUND_MANIFEST_ROW)
+    message(FATAL_ERROR
+        "Sound manifest row count drifted while parsing "
+        "${SUPERMARIO_SOUND_MANIFEST_FILE}")
+endif()
+if(_SUPERMARIO_SOUND_ROW_COUNT LESS 1)
+    message(FATAL_ERROR
+        "Canonical sound manifest contains no SOUND_MANIFEST_ENTRY rows: "
+        "${SUPERMARIO_SOUND_MANIFEST_FILE}")
+endif()
+
+set(_SUPERMARIO_RUNTIME_UNIQUE_ASSETS "${SUPERMARIO_RUNTIME_ASSETS}")
+list(LENGTH _SUPERMARIO_RUNTIME_UNIQUE_ASSETS
+     _SUPERMARIO_RUNTIME_ASSET_COUNT)
+list(REMOVE_DUPLICATES _SUPERMARIO_RUNTIME_UNIQUE_ASSETS)
+list(LENGTH _SUPERMARIO_RUNTIME_UNIQUE_ASSETS
+     _SUPERMARIO_RUNTIME_UNIQUE_ASSET_COUNT)
+if(NOT _SUPERMARIO_RUNTIME_ASSET_COUNT EQUAL
+       _SUPERMARIO_RUNTIME_UNIQUE_ASSET_COUNT)
+    message(FATAL_ERROR
+        "Duplicate non-audio/runtime asset path in SUPERMARIO_RUNTIME_ASSETS")
+endif()
 
 set(SUPERMARIO_RUNTIME_LEVELS
     "level1.txt"
@@ -518,11 +683,34 @@ set(SUPERMARIO_RUNTIME_LEVELS
     "pvp_arena.txt"
 )
 
+# Persist the configure-time authority for the package inventory.  The
+# verification test reads this file instead of receiving a semicolon-delimited
+# CMake list, so paths remain deterministic even when the source/build root
+# contains spaces.
+set(SUPERMARIO_RUNTIME_INVENTORY_FILE
+    "${CMAKE_BINARY_DIR}/runtime_expected_inventory.txt")
+set(_SUPERMARIO_RUNTIME_INVENTORY)
+foreach(_SUPERMARIO_RUNTIME_ASSET IN LISTS SUPERMARIO_RUNTIME_ASSETS)
+    list(APPEND _SUPERMARIO_RUNTIME_INVENTORY
+         "assets/${_SUPERMARIO_RUNTIME_ASSET}")
+endforeach()
+foreach(_SUPERMARIO_RUNTIME_LEVEL IN LISTS SUPERMARIO_RUNTIME_LEVELS)
+    list(APPEND _SUPERMARIO_RUNTIME_INVENTORY
+         "levels/${_SUPERMARIO_RUNTIME_LEVEL}")
+endforeach()
+list(SORT _SUPERMARIO_RUNTIME_INVENTORY)
+file(WRITE "${SUPERMARIO_RUNTIME_INVENTORY_FILE}" "")
+foreach(_SUPERMARIO_RUNTIME_FILE IN LISTS _SUPERMARIO_RUNTIME_INVENTORY)
+    file(APPEND "${SUPERMARIO_RUNTIME_INVENTORY_FILE}"
+         "${_SUPERMARIO_RUNTIME_FILE}\n")
+endforeach()
+
 # TARGET_FILE_DIR is the package root for both single- and multi-config
 # generators (e.g. the Debug subdirectory under Visual Studio/Xcode).
 set(SUPERMARIO_PACKAGE_ROOT "$<TARGET_FILE_DIR:SuperMario>")
 
 add_custom_target(CopyRuntimeAssets ALL)
+add_dependencies(CopyRuntimeAssets SuperMario)
 
 foreach(RUNTIME_ASSET_REL IN LISTS SUPERMARIO_RUNTIME_ASSETS)
     set(RUNTIME_ASSET_SOURCE "${CMAKE_SOURCE_DIR}/assets/${RUNTIME_ASSET_REL}")
@@ -559,6 +747,32 @@ foreach(RUNTIME_LEVEL_REL IN LISTS SUPERMARIO_RUNTIME_LEVELS)
         COMMENT "Packaging runtime level/config ${RUNTIME_LEVEL_REL}"
     )
 endforeach()
+
+if(BUILD_TESTING)
+    # The manifest executable is run once from the source tree and once from
+    # the packaged executable directory.  Its existing root discovery then
+    # exercises both deterministic asset roots without an audio device.
+    add_dependencies(sound_manager_manifest_tests CopyRuntimeAssets)
+    add_test(NAME sound_manager_manifest_package_tests
+        COMMAND ${CMAKE_COMMAND} -E chdir
+            "$<TARGET_FILE_DIR:SuperMario>"
+            "$<TARGET_FILE:sound_manager_manifest_tests>"
+    )
+    set_tests_properties(sound_manager_manifest_package_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+
+    add_test(NAME runtime_package_inventory_tests
+        COMMAND ${CMAKE_COMMAND}
+            "-DPACKAGE_ROOT=$<TARGET_FILE_DIR:SuperMario>"
+            "-DSOURCE_ROOT=${CMAKE_SOURCE_DIR}"
+            "-DEXPECTED_INVENTORY=${SUPERMARIO_RUNTIME_INVENTORY_FILE}"
+            -P "${CMAKE_SOURCE_DIR}/cmake/VerifyRuntimePackage.cmake"
+    )
+    set_tests_properties(runtime_package_inventory_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+endif()
 
 # 5.2. Copy SFML DLL files (Windows only)
 if(WIN32)

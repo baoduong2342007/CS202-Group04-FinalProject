@@ -1,11 +1,18 @@
 # Design Patterns
 
-This document describes the 5 main design patterns implemented in the SuperMario project.
+This document describes the five main design patterns implemented in the
+SuperMario project.
 
-## 1. Factory Pattern
-**Location:** `include/patterns/EntityFactory.h`, `src/patterns/EntityFactory.cpp`
+## 1. Factory Method Pattern
+**Location:** `include/patterns/EntityFactory.h`, `include/patterns/EntityCreator.h`, `src/patterns/EntityFactory.cpp`
 **Implementer:** TV1 (Dương)
-**Reasoning:** Avoids hardcoded instantiation (`new Goomba()`, `new Koopa()`) scattered throughout `Level.cpp`. Provides a centralized location to map `EntityIdentifier` (from `TileMap`) or `EnemyType` directly to their heap-allocated representations without coupling `Level` tightly to every new enemy or item type.
+**Reasoning:** Avoids hardcoded instantiation (`new Goomba()`, `new Koopa()`)
+scattered throughout `Level.cpp`. The instantiable `EntityFactory` exposes the
+canonical `create(const SpawnRequest&, const SpawnContext&)` seam and delegates
+to the abstract `EntityCreator` contract implemented by `EnemyCreator`,
+`ItemCreator`, and `WorldObjectCreator`. The static `createEnemy`, `createItem`,
+and `createFromTileCode` methods remain compatibility shims for existing
+callers and forward to the same mapping authority.
 
 ## 2. Singleton Pattern
 **Location:** `include/core/GameManager.h`, `include/core/SoundManager.h`, `include/core/SaveManager.h`
@@ -15,10 +22,19 @@ This document describes the 5 main design patterns implemented in the SuperMario
 - **SoundManager**: Coordinates audio playback. A singleton ensures that audio playing asynchronously isn't duplicated or lost.
 - **SaveManager**: Manages session-wide progress (high score, highest unlocked level) ensuring consistency across all menus and gameplay levels.
 
+The SFX contract is centralized in `include/core/SoundManifest.def`. It is
+consumed to derive typed `SoundId` metadata for `SoundManager`; CMake reads the
+same manifest while packaging runtime sound effects.
+
 ## 3. Observer Pattern
 **Location:** `include/patterns/EventBus.h`, `include/patterns/IObserver.h`
 **Implementer:** TV1 (Dương)
-**Reasoning:** Decouples gameplay logic from audio and UI code. For example, when Mario collects a coin, `Mario` simply notifies the `EventBus` (`COIN_COLLECTED`). The `HUD` and `SoundManager` are subscribed to this event and update the score/play the sound accordingly without `Mario` needing a direct reference to them.
+**Reasoning:** Decouples gameplay logic from audio and UI code. Publishers
+send value-only `GameEvent` data through `EventBus`; `HUD` and `SoundManager`
+subscribe without direct gameplay references. Each subscription is represented
+by a move-only RAII `Subscription` token: destroying or resetting the token
+disconnects that registration. The EventType-only `notify` overload remains a
+compatibility publisher.
 
 ## 4. State Pattern
 **Location:** `include/states/IGameState.h`, `MenuState`, `PlayState`, `GameOverState`, `WinState`, `PauseState` (and Mario power-up states)

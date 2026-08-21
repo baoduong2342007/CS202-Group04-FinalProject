@@ -1,6 +1,7 @@
 # Repository Structure
 
-This document reflects the Sprint 6 remediation working tree. Files are grouped by responsibility; generated build directories are intentionally omitted.
+This document reflects the current working tree. Files are grouped by
+responsibility; generated build directories are intentionally omitted.
 
 ## Root
 
@@ -23,7 +24,7 @@ CS202-Group04-FinalProject/
 `-- thirdparty/
 ```
 
-- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 24 CTest executables.
+- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 37 CTest suites.
 - `CMakePresets.json` defines `mingw-debug`, `mingw-release`, and `mingw-tests`.
 - Evaluation and fix-plan versions are audit history. Version 4 is the input to the current remediation.
 
@@ -35,7 +36,7 @@ include/
 |-- entities/   # Mario, enemies, blocks, FireBall, explosion, shared entity types
 |-- items/      # Coin, Mushroom, FireFlower, Star
 |-- level/      # Level ownership, TileMap, Camera, tile semantics and frames
-|-- patterns/   # commands, InputState, EventBus, Simple Factory, observer interfaces
+|-- patterns/   # commands, InputState, EventBus, Factory Method, observer interfaces
 |-- physics/    # Box2D engine, listener, collision manager and tile resolver
 |-- states/     # Menu, Play, Pause, GameOver, Win, PvP duel states and Mario State pattern classes
 |-- ui/         # HUD, layout anchors and shared menu widget
@@ -54,13 +55,30 @@ src/
 `-- main.cpp
 ```
 
-Important Sprint 6 ownership rules:
+Important ownership rules:
 
-- `LevelCatalog.h` is the only release-level graph: Levels 1, 2, and 3.
-- `Level` owns the Box2D world, Mario, TileMap, Camera, and `std::unique_ptr<Entity>` collection.
+- `LevelCatalog.h` is the only release-level graph: Levels 1 through 4. Level
+  2 and Level 3 start with `initialTheme = Overworld` before a warp/area
+  transition; their `dominantTheme` values are Underground and Underwater.
+- `Level` exclusively owns and mutates the Box2D world, Mario, TileMap,
+  Camera, and `std::unique_ptr<Entity>` collection. Callers receive only the
+  read-only `EntityView`, including `find` and `count` queries.
 - `Level::requestFireBallShot()` is the only production projectile request API. There is no `FireBallPool` class.
 - `CollisionManager::defeatEnemy()` is the central enemy-defeat transaction.
+- `Entity` identity combines broad `EntityType`, `EntitySubtype`, and
+  capabilities; `ContactListener` and `CollisionManager` dispatch through a
+  typed two-participant `CollisionContext`.
+- `EventBus` publishes value-only `GameEvent` values; subscribers retain
+  move-only RAII `Subscription` tokens. EventType-only `notify` remains a
+  compatibility overload.
 - `SoundManager` is the only SFX playback authority for gameplay events.
+- `include/core/SoundManifest.def` is the SFX authority consumed for typed
+  `SoundId` values by `SoundManager` and for CMake runtime packaging.
+- `EntityFactory` is instantiable; its canonical `create(SpawnRequest,
+  SpawnContext)` delegates to abstract `EntityCreator`, `EnemyCreator`,
+  `ItemCreator`, and `WorldObjectCreator`. Static helpers remain compatibility
+  shims.
+- Co-op enemy and launcher AI select the nearest eligible player.
 - `Game` owns physical-to-logical mouse remapping and centered integer viewport presentation.
 
 ## Level data
@@ -69,9 +87,9 @@ Important Sprint 6 ownership rules:
 |---|---|---|
 | `levels/level0.txt` | Test | Non-release fixture; New Game cannot load it |
 | `levels/level1.txt` | Runtime | Overworld, world 1-1 |
-| `levels/level2.txt` | Runtime | Underground, world 1-2 |
-| `levels/level3.txt` | Runtime | Castle finale, world 1-3, then Win |
-| `levels/level4.txt` | Future/reference | Mechanics fixture excluded from the release catalog |
+| `levels/level2.txt` | Runtime | Starts Overworld, then transitions to dominant Underground, world 1-2 |
+| `levels/level3.txt` | Runtime | Starts Overworld, then transitions to dominant Underwater, world 1-3 |
+| `levels/level4.txt` | Runtime | Castle finale, world 1-4, then Win |
 | `levels/elevators.txt` | Config | External elevator moving platform route registry |
 | `levels/cheep_cheep.txt` | Config | External Cheep Cheep route and spawn registry |
 | `levels/pvp_arena.txt` | Runtime | 2 PLAYER VERSUS duel arena: one screen, center fire flower pedestal flanked by symmetric floating step blocks over a clear duel floor; loaded directly by `PvpPlayState` (not part of `LevelCatalog`) |
@@ -107,26 +125,37 @@ tests/
 |-- GameManagerTests.cpp
 |-- EventBusTests.cpp
 |-- TV5IntegrationTests.cpp
+|-- FactoryMethodTests.cpp
+|-- SoundManagerManifestTests.cpp
 |-- LevelCatalogTests.cpp
 |-- SaveManagerTests.cpp
 |-- LevelValidatorTests.cpp
 |-- SpringboardTests.cpp
 |-- ElevatorTests.cpp
 |-- CheepCheepTests.cpp
+|-- KoopaVariantTests.cpp
+|-- BuzzyBeetleTests.cpp
+|-- BlooperPodobooTests.cpp
+|-- SpawnerEnemyTests.cpp
+|-- HammerBroTests.cpp
+|-- BowserTests.cpp
 |-- Gate0ContractTests.cpp
 |-- SaveSessionTests.cpp
 |-- SpriteFramesThemeTests.cpp
 |-- CollisionMatrixTests.cpp
 |-- FireBallRequestTests.cpp
+|-- EntityViewTests.cpp
+|-- P2GameplayInterfaceTests.cpp
 |-- DisplayCameraUITests.cpp
 |-- CharacterFlowTests.cpp
 |-- StompScoreTests.cpp
 |-- PvpArenaTests.cpp
 |-- PvpStompTests.cpp
-`-- PvpFlowTests.cpp
+|-- PvpFlowTests.cpp
+`-- CoopFlowTests.cpp
 ```
 
-`TestSpawnDeath.cpp` is a standalone diagnostic source and is not registered as a CTest suite.
+`TestSpawnDeath.cpp` is a standalone diagnostic source and is not registered as a CTest suite. The final two CTest registrations, `sound_manager_manifest_package_tests` and `runtime_package_inventory_tests`, are CMake/package checks rather than test source files.
 
 ## Assets
 

@@ -27,9 +27,10 @@ Exact file, world-label, theme, music, and camera metadata are covered by
 failed level (1–4), Level Select enforces `highestUnlockedLevel`, and the v1
 save schema keeps level bounds monotonic; see [`S7_TV1_TV5_STATUS.md`](docs/management/S7_TV1_TV5_STATUS.md).
 
-This documents catalog metadata and syntactic map validation separately from
-semantic Underwater acceptance. `levels/level3.txt` remains Castle-style and
-its Underwater semantic/playthrough gate is blocked under TV4 ownership.
+Level 2 and Level 3 start in the Overworld before their warp/area transition;
+their dominant themes are Underground and Underwater respectively. Automated
+catalog metadata and progression checks are verified. Physical visual play
+(GUI, audio, and video) remains a separate manual acceptance activity.
 
 ## Team
 
@@ -90,7 +91,8 @@ cmake --build --preset mingw-tests --parallel 2
 ctest --preset mingw-tests --output-on-failure
 ```
 
-The Sprint 6 candidate contained 17 CTest suites (historical):
+The Sprint 6 candidate's test inventory is historical and is not the current
+release contract:
 
 - `input_state_tests`
 - `tile_collision_span_tests`
@@ -115,20 +117,11 @@ The Sprint 6 candidate contained 17 CTest suites (historical):
 - `pvp_stomp_tests`
 - `pvp_flow_tests`
 
-The current source registers 24 CTest suites (the three `pvp_*` suites cover
-the 2 PLAYER VERSUS arena validation, contact rules, and round/fire-flower
-state machine). In the 2026-08-16 verification,
-fresh writable isolated MinGW Debug and Release `BUILD_TESTING=ON` runs each
-passed 21/21; a Release
-`BUILD_TESTING=OFF` production build also passed. These automated results do
-not replace manual four-level playthrough, screenshots, device-audio, or
-final-hash evidence. Manual acceptance remains separately recorded in [the
-release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md). MSVC was
-statically reviewed but not executed.
-
-The four additional current registrations are `elevator_tests`,
-`cheep_cheep_tests`, `character_flow_tests`, and `stomp_score_tests`; the
-complete registration source is [CMakeLists.txt](CMakeLists.txt).
+The current source registers 37 CTest suites. Fresh external Debug and
+Release `BUILD_TESTING=ON` runs each passed 37/37. These automated results do
+not replace manual GUI, audio, or video acceptance; those activities remain
+separate evidence recorded in [the release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md).
+The complete registration source is [CMakeLists.txt](CMakeLists.txt).
 
 ## Controls
 

@@ -1,8 +1,8 @@
 # TV5 Sprint 6 Runtime Integration Report
 
 > Scope: input, sound, HUD, item behavior, and related cross-module integration
-> Updated: 2026-08-12
-> Candidate: base `3047252` plus remediation working tree
+> Updated: 2026-08-21
+> Candidate: validated external P4 worktree evidence; no final RC commit
 > Final RC commit: `PENDING`
 
 > **Historical scope note:** This Sprint 6 report retains its original
@@ -53,9 +53,12 @@ Automated diagnostic counters verify one SFX request for each accepted transitio
 
 Rejected FireBall requests and repeated contacts produce no extra event/SFX. Star expiry restores level music; damage grace is an independent clock and cannot stop/replace the music lifecycle.
 
-The Sprint 6 release music sequence above is historical. Sprint 7 maps
-Overworld, Underground, Underwater, and Castle music to Levels 1–4, then Win;
-see the addendum below.
+The Sprint 6 release music sequence above is historical. Sprint 7 catalog
+metadata maps the dominant/stage themes and tracks to Overworld, Underground,
+Underwater, and Castle for Levels 1–4, then Win. Levels 2 and 3 still spawn
+with `initialTheme=OVERWORLD` and initial music `OVERWORLD` before their warp;
+see the addendum below. This mapping and package presence do not constitute a
+complete automated four-level playback sequence.
 
 Evidence: [SoundManager](../../src/core/SoundManager.cpp), [FireBallRequestTests.cpp](../../tests/FireBallRequestTests.cpp), [CollisionMatrixTests.cpp](../../tests/CollisionMatrixTests.cpp), [TV5IntegrationTests.cpp](../../tests/TV5IntegrationTests.cpp).
 
@@ -93,38 +96,57 @@ The exact commands and manual device procedure are in
 counters establish event cardinality, but they do not prove that a
 speaker/headset produced audible output.
 
-## Sprint 7 verified addendum (2026-08-16)
+## Sprint 7 verified addendum (2026-08-21)
 
 ### Current automated contract
 
-- Runtime music maps Level 1 to Overworld, Level 2 to Underground, Level 3 to
-  Underwater, Level 4 to Castle, and completion to Win. Star, death, GameOver,
-  volume persistence, and controlled missing/invalid-track behavior are
-  covered by [TV5IntegrationTests.cpp](../../tests/TV5IntegrationTests.cpp): a
+- Runtime catalog metadata maps the dominant/stage tracks for Level 1 Overworld,
+  Level 2 Underground, Level 3 Underwater, Level 4 Castle, and completion Win.
+  Levels 2 and 3 spawn with `initialTheme=OVERWORLD` and initial music
+  `OVERWORLD` before their warp. Star, death, GameOver, volume persistence, and
+  controlled missing/invalid-track behavior are covered by
+  [TV5IntegrationTests.cpp](../../tests/TV5IntegrationTests.cpp): a
   failed/missing/invalid track clears stale current-track state without a
-  crash.
+  crash. The same integration tests directly assert Overworld, Overworld, and
+  Castle transitions only; Underwater playback/sequence remains not directly
+  automated and is a manual gate.
 - HUD world labels `WORLD 1-1` through `WORLD 1-4`, timer behavior, and the
   Star/death/GameOver/Win lifecycle pass the same automated integration
   coverage. Device-audio output and screenshots remain separate manual gates.
-- The explicit package allowlist contains 37 assets plus 6 level/config files
-  (43 entries). Clean Debug and Release package inventory comparisons and the
-  negative missing-file configure check passed. Reference/future material and
-  `level0.txt` are excluded; see
+- The explicit package allowlist contains 43 assets plus 7 level/config files
+  (50 entries). Clean Debug and Release package inventory comparisons each
+  contain exactly 50 files; required fire/Bowser/enemy paths are present and
+  Future/Reference material plus `level0.txt` are excluded. The negative
+  missing-file configure check also passed; see
   [S7_TV5_PACKAGE_MANIFEST.md](S7_TV5_PACKAGE_MANIFEST.md),
   [ASSETS_LIST.md](../../assets/ASSETS_LIST.md), and
   [CMakeLists.txt](../../CMakeLists.txt).
-- Fresh current-source writable isolated MinGW Debug and Release
-  `BUILD_TESTING=ON` runs each passed `21/21`; a Release `BUILD_TESTING=OFF`
-  production build also passed. This is automated build/test evidence, not
-  manual device evidence or RC sign-off. The MSVC branch was statically
-  reviewed but not executed.
+- Fresh external MinGW Debug and Release roots each configured, built `all`,
+  `SuperMario`, and `CopyRuntimeAssets`, and passed `37/37` CTest. This is
+  automated build/test evidence, not manual GUI, device-audio, visual,
+  screenshot, or video evidence and not RC sign-off. No MSVC or macOS execution
+  is established by this evidence.
 
 ### Remaining evidence
 
-Manual four-level playthrough, screenshots, device-audio, source/license
-attribution, `S6-TV5-43/44` dispositions, `BUG-038`, final candidate hash,
-and final TV1/TV5 release sign-off remain `REVIEW`/`PENDING`. The current
-`levels/level3.txt` is Castle-style despite Underwater catalog metadata; its
-semantic Underwater acceptance is a blocked TV4-owned map/asset gate.
+Manual four-level GUI playthrough, physical audio listening, visual review,
+screenshots/video, `S6-TV5-43/44` dispositions, `BUG-038`, final candidate hash,
+and final TV1/TV5 release sign-off remain `REVIEW`/`PENDING`. Level 3
+initial/dominant-theme semantics pass automated probes; interactive Underwater
+visual acceptance remains `PENDING`. Per-file source/license attribution and
+external redistribution remain `BLOCKED`; see
+[THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). The validated worktree
+fingerprint `df57eee2bda743329debbfadc95a20f25563bfb4aebe1c6b86178e2b8ae1a331`
+is not a commit or final-RC hash.
 
 See [S7_TV1_TV5_STATUS.md](S7_TV1_TV5_STATUS.md) for the task matrix.
+
+The P4 evidence snapshot is external to the repository and is cited for
+traceability only:
+`C:\Users\ASUS\AppData\Local\Temp\supermario-p4-final-20260821-025948\evidence\`.
+See `p4-criterion-matrix.md`, `debug-ctest-full.log`,
+`release-ctest-full.log`, `package-inventory-audit.txt`, `log-scan.txt`, and
+`startup-smoke.txt`. The recorded procedure used fresh MinGW Makefiles
+configure, `cmake --build <root> --target all`,
+`cmake --build <root> --target SuperMario CopyRuntimeAssets`, and
+`ctest --test-dir <root> --output-on-failure` for each Debug/Release root.

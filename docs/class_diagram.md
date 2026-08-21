@@ -1,11 +1,8 @@
-# Sprint 6 Class Diagram (Sprint 7 contract addendum)
+# Current Class Diagram
 
 > Updated: 2026-08-16
 > Source of truth: current headers in `include/`
 > Scope: release ownership, state lifecycle, gameplay transactions, and the five documented patterns
->
-> The diagram remains a Sprint 6 baseline; the catalog paragraph below is the
-> dated current Sprint 7 contract addendum.
 
 ## Application and state ownership
 
@@ -55,7 +52,7 @@ classDiagram
         -unique_ptr~HUD~ m_hud
         -GameProgress m_progress
         -TransitionPhase m_transitionPhase
-        +onNotify(EventType)
+        +onNotify(const GameEvent&)
         -loadLevel(int) bool
         -snapshotProgress()
         -restoreProgress()
@@ -106,6 +103,15 @@ classDiagram
         +requestFireBallShot(Mario&) bool
         +requestFireBallShot() bool
         +getActiveFireBallCount() size_t
+        +getEntities() EntityView
+    }
+
+    class EntityView {
+        <<read-only non-owning view>>
+        +find(EntityType) const Entity*
+        +find(EntitySubtype) const Entity*
+        +count(EntityType) size_t
+        +count(EntitySubtype) size_t
     }
 
     class Entity {
@@ -115,7 +121,9 @@ classDiagram
         +update(float)*
         +render(RenderTarget)
         +getBoundingBox() FloatRect
-        +getType() EntityType*
+        +getType() EntityType
+        +getSubtype() EntitySubtype
+        +getCapabilities() Capabilities
     }
 
     class Character
@@ -161,8 +169,28 @@ classDiagram
     class CollisionManager {
         <<utility>>
         +resolve(b2Contact*,TileMap&)
+        +dispatch(CollisionContext&,TileMap&)
         +preSolve(b2Contact*,TileMap&)
         +defeatEnemy(Enemy&,DefeatCause,Mario*) bool
+    }
+
+    class ContactListener {
+        +BeginContact(b2Contact*)
+        +EndContact(b2Contact*)
+        +PreSolve(b2Contact*,const b2Manifold*)
+    }
+
+    class CollisionContext {
+        +first() CollisionParticipant
+        +second() CollisionParticipant
+        +normalFrom(CollisionParticipant) b2Vec2
+        +other(CollisionParticipant) CollisionParticipant
+    }
+
+    class CollisionParticipant {
+        +type() EntityType
+        +subtype() EntitySubtype
+        +has(Capability) bool
     }
 
     Level *-- TileMap
@@ -170,6 +198,7 @@ classDiagram
     Level *-- Mario
     Level *-- Entity
     Level *-- ContactListener
+    Level --> EntityView : returns read-only
     Entity <|-- Character
     Character <|-- Mario
     Entity <|-- Enemy
@@ -184,7 +213,9 @@ classDiagram
     Item <|-- Mushroom
     Item <|-- FireFlower
     Item <|-- Star
-    ContactListener --> CollisionManager
+    ContactListener --> CollisionManager : dispatches
+    CollisionManager ..> CollisionContext : typed dispatch
+    CollisionContext *-- CollisionParticipant : two participants
     CollisionManager --> Mario
     CollisionManager --> Enemy
 ```
@@ -200,6 +231,8 @@ classDiagram
         +string filePath
         +string worldLabel
         +LevelTheme theme
+        +LevelTheme initialTheme
+        +LevelTheme dominantTheme
         +MusicId music
         +CameraVerticalMode cameraMode
     }
@@ -233,16 +266,16 @@ classDiagram
     WinState *-- UIMenuWidget
 ```
 
-The current Sprint 7 catalog metadata contains four entries: Level 1
-Overworld (`1-1`), Level 2 Underground (`1-2`), Level 3 Underwater (`1-3`),
-and Level 4 Castle (`1-4`), followed by the Win boundary. Physical input is
+The current catalog metadata contains four entries: Level 1 Overworld (`1-1`),
+Level 2 (`1-2`), Level 3 (`1-3`), and Level 4 Castle (`1-4`), followed by the
+Win boundary. Levels 2 and 3 use `initialTheme = Overworld` before their
+transitions and `dominantTheme = Underground`/`Underwater`. Physical input is
 remapped to the logical 640x360 canvas using the same centered integer
 viewport used for rendering; bar input is rejected.
 
-Catalog metadata and syntactic map validation are separate contracts. The
-current `levels/level3.txt` is Castle-style despite its Underwater catalog
-metadata, so semantic Underwater acceptance/playthrough remains a blocked,
-TV4-owned gate pending map/asset scope.
+Catalog metadata and syntactic map validation are separate contracts.
+Automated metadata/progression checks are verified; physical visual play
+acceptance remains a separate pending GUI, audio, and video activity.
 
 ## Patterns and event flow
 
@@ -252,19 +285,43 @@ flowchart LR
     Handler --> Command["Command objects"]
     Command --> Mario["Mario intent"]
 
-    Factory["EntityFactory: Simple Factory"] --> Owned["unique_ptr<Entity>"]
+    Factory["EntityFactory: Factory Method orchestrator"] --> Creator["EntityCreator (abstract)"]
+    Creator --> EnemyCreator["EnemyCreator"]
+    Creator --> ItemCreator["ItemCreator"]
+    Creator --> WorldCreator["WorldObjectCreator"]
+    EnemyCreator --> Owned["unique_ptr<Entity>"]
+    ItemCreator --> Owned
+    WorldCreator --> Owned
     Owned --> Level["Level entity collection"]
 
-    Contact["Box2D contact"] --> Defeat["CollisionManager::defeatEnemy"]
+    Contact["Box2D contact"] --> Context["CollisionContext: two typed participants"]
+    Context --> Defeat["CollisionManager dispatch / defeat"]
     Defeat --> Score["ScoreRules"]
     Defeat --> Bus["EventBus"]
     Item["Pickup / block / player action"] --> Bus
-    Bus --> HUD["HUD observer"]
-    Bus --> Sound["SoundManager observer and SFX authority"]
+    Event["GameEvent: value-only context"] --> Bus
+    Bus --> Token["Subscription: move-only RAII token"]
+    Bus --> HUD["HUD subscriber"]
+    Bus --> Sound["SoundManager subscriber and SFX authority"]
+
+    Coop["Co-op targeting: nearest eligible player"] --> EnemyAI["Enemy / launcher AI"]
 
     MarioState["Small / Super / Fire IMarioState"] --> Mario
 ```
 
-The project documents and uses Singleton (`GameManager`, resource managers), Command, Observer/EventBus, State, and Simple Factory patterns. Raw pointers passed through collision and projectile requests are non-owning references; object ownership remains with `std::unique_ptr` containers.
+The project documents and uses Singleton (`GameManager`, resource managers),
+Command, Observer/EventBus, State, and Factory Method patterns. `EntityFactory`
+is instantiable and its canonical seam is `create(SpawnRequest, SpawnContext)`;
+the static `createEnemy`, `createItem`, and `createFromTileCode` methods remain
+compatibility shims. `Level` alone mutates entity ownership and exposes a
+read-only `EntityView` with `find`/`count` queries.
+
+`EventBus` publishes value-only `GameEvent` data. Each subscription is held by
+a move-only RAII `Subscription` token; the EventType-only `notify` overload is
+retained for compatibility. `Entity` identity combines broad `EntityType`,
+`EntitySubtype`, and capability bits. `ContactListener` creates a typed
+two-participant `CollisionContext` for `CollisionManager` dispatch. `SoundManager`
+uses typed `SoundId` values generated from `SoundManifest.def`, which CMake
+also consumes for runtime SFX packaging.
 
 Current `EventType` values are: player jump/death/power-up/power-down/star/expiry; enemy stomp and shell/FireBall/Star defeat; FireBall shot; shell kick; block bump/brick break/item emerge/1-Up/coin; level completed/started; game paused/resumed.

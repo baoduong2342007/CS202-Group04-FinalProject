@@ -1,13 +1,45 @@
-# Sprint 6 Asset Manifest
+# S7 Runtime Asset Inventory and Attribution Gate
 
-This is the source of truth for asset paths and classifications. Runtime paths are relative to the executable directory after CMake synchronization. Reference paths are relative to the repository root.
+> Updated: 2026-08-21
+
+This is the authoritative repository-relative runtime asset and usage inventory.
+Runtime paths are relative to the executable directory after CMake
+synchronization; reference paths are relative to the repository root. The S7
+package allowlist is generated from `CMakeLists.txt` and
+`include/core/SoundManifest.def`; see [S7-TV5 package manifest](../docs/management/S7_TV5_PACKAGE_MANIFEST.md).
+Runtime classification records loader/package inclusion only and does not grant
+redistribution permission. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)
+for the current attribution/legal gate.
+
+The P4 package audit recorded exactly 50 files in both Debug and Release: 43
+runtime assets (including this metadata file) plus 7 level/config files. The
+required `fire.wav`, `bowserfall.wav`, `goomba.png`, `koopa.png`, and
+`hammer.png` paths were present; no Future or Reference extras were present.
 
 | Label | Meaning |
 |---|---|
 | `Runtime` | Loaded by current code or packaged for a current game-loop path |
 | `Reference` | Source/measurement/documentation material outside the runtime package |
-| `Future` | Valid asset with no Sprint 6 release gameplay path |
+| `Future` | Valid asset with no current release gameplay path |
 | `Remove` | Must not remain in the repository or package |
+
+Per-file provenance, license, and redistribution permission are not established
+by this inventory. Until each packaged asset has a source/license record, the
+asset redistribution and final release sign-off gate is `BLOCKED`; educational
+use is not treated as permission.
+
+`include/core/SoundManifest.def` is the sole source for sound-effect runtime
+paths. CMake validates and deduplicates its rows while configuring the package;
+shared samples remain separate logical manifest entries. Non-audio runtime
+paths and runtime level/config files are explicit CMake authorities, and this
+document records their roles. The package inventory test compares the copied
+files with that configured authority.
+
+## Package metadata
+
+| Path | Dimensions | Usage | Runtime caller or note |
+|---|---:|---|---|
+| `assets/ASSETS_LIST.md` | — | `Runtime` | Package inventory/usage metadata copied by CMake |
 
 ## Textures and font
 
@@ -15,8 +47,9 @@ This is the source of truth for asset paths and classifications. Runtime paths a
 |---|---:|---|---|
 | `assets/fonts/mario.ttf` | 116,008 bytes | `Runtime` | HUD and state UI font |
 | `assets/textures/enemies/enemies.png` | 436×530 | `Runtime` | Goomba/Koopa atlas cropped through `SpriteFrames` |
-| `assets/textures/enemies/goomba.png` | 96×32 | `Future` | Standalone sheet without a release loader |
-| `assets/textures/enemies/koopa.png` | 128×48 | `Future` | Standalone sheet without a release loader |
+| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Deterministic enemy fixture/package coverage |
+| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Deterministic enemy fixture/package coverage |
+| `assets/textures/enemies/hammer.png` | — | `Runtime` | Hammer projectile texture loaded by `Hammer` |
 | `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | QuestionBlock and block frames |
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Mushroom, Coin, FireFlower, and Star frames |
 | `assets/textures/mario/MarioLuigi.png` | 584×469 | `Runtime` | Mario/Luigi state spritesheet |
@@ -26,9 +59,9 @@ This is the source of truth for asset paths and classifications. Runtime paths a
 | `assets/textures/ui/stage_2.png` | 978 bytes | `Runtime` | Level Select preview for World 1-2 |
 | `assets/textures/ui/stage_3.png` | 1039 bytes | `Runtime` | Level Select preview for World 1-3 |
 | `assets/textures/ui/stage_4.png` | 1427 bytes | `Runtime` | Level Select preview for World 1-4 |
-| `assets/textures/ui/bg_clouds.png` | 768×1129 | `Future` | No Sprint 6 runtime caller |
+| `assets/textures/ui/bg_clouds.png` | 768×1129 | `Future` | No current release runtime caller |
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld reference |
-| `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | No Sprint 6 runtime caller |
+| `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | No current release runtime caller |
 | `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu and HUD bitmap UI |
 
 Underground, Underwater, and Castle are distinct renderer branches; they do not reuse
@@ -45,12 +78,12 @@ S7 runtime package. The S7 package manifest records the corresponding level/conf
 | `assets/sounds/effects/1up.wav` | `Runtime` — one-up reward |
 | `assets/sounds/effects/beep.wav` | `Future` — no event mapping |
 | `assets/sounds/effects/billfirework.wav` | `Future` — no Bullet Bill path |
-| `assets/sounds/effects/bowserfall.wav` | `Future` — no Bowser path |
+| `assets/sounds/effects/bowserfall.wav` | `Runtime` — `BOWSER_FALL` manifest cue |
 | `assets/sounds/effects/brick.wav` | `Runtime` — `BRICK_BROKEN` |
 | `assets/sounds/effects/bump.wav` | `Runtime` — `BLOCK_BUMPED` |
 | `assets/sounds/effects/coin.wav` | `Runtime` — `COIN_COLLECTED` |
 | `assets/sounds/effects/death.wav` | `Runtime` — `PLAYER_DIED` |
-| `assets/sounds/effects/fire.wav` | `Future` — reserved effect |
+| `assets/sounds/effects/fire.wav` | `Runtime` — `BOWSER_FIRE` manifest cue |
 | `assets/sounds/effects/fireball.wav` | `Runtime` — `FIREBALL_SHOT` after projectile creation |
 | `assets/sounds/effects/flagpole.wav` | `Runtime` — `LEVEL_COMPLETED` |
 | `assets/sounds/effects/gameover.wav` | `Runtime` — GameOver cue/catalog |
@@ -66,6 +99,15 @@ S7 runtime package. The S7 package manifest records the corresponding level/conf
 | `assets/sounds/effects/vine.wav` | `Future` — no event mapping |
 
 SoundManager is the only SFX playback authority. Event and request-counter tests protect one logical cue per accepted gameplay transaction.
+
+The runtime package's WAV/FLAC files, font, sprites, backgrounds, and
+Nintendo-inspired textures have no per-file provenance/license record in this
+repository. The tileset comparison link in
+[docs/tileset_coordinate.md](../docs/tileset_coordinate.md) is an analysis
+reference only and does not grant permission to redistribute the compared or
+derived assets. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md); the
+asset redistribution/sign-off gate remains `BLOCKED` until provenance and
+license/permission are supplied for every packaged file.
 
 ## Music
 

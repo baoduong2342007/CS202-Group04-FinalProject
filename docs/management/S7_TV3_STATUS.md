@@ -1,10 +1,13 @@
 # Sprint 7 TV3 Status Matrix & Audit Report
 
-> Updated: 2026-08-18  
-> Author: TV3 (Bảo)  
-> Scope: verified physics, Box2D integration, collision pipelines, automated test suites, and manual playthrough sign-off for `S7-TV3-01`..`05`.
+> Updated: 2026-08-21
+> Author: TV3 (Bảo)
+> Scope: verified physics, Box2D integration, collision pipelines, automated
+> release evidence, and remaining manual gates for `S7-TV3-01`..`05`.
 
-`VERIFIED` means the stated automated test or manual playthrough evidence passed. `PARTIAL` means the core technical deliverable passed but a dependent team deliverable (e.g. map asset / camera) has remaining notes. `REVIEW` means governance disposition or release hash is pending.
+`VERIFIED (automated)` means the stated automated evidence passed. `PARTIAL`
+means the automated portion passed but an acceptance portion remains. `REVIEW`
+means manual evidence, governance disposition, or release identity is pending.
 
 ---
 
@@ -12,29 +15,41 @@
 
 | Task | Status | Verified Scope & Exact Evidence | Residual Notes / Observations |
 |---|---|---|---|
-| `S7-TV3-01` Underwater Swim Physics Audit | `VERIFIED` | `setUnderwater`, low-gravity buoyancy damping, mid-air swim impulse cadence on jump input, and speed caps pass in [MarioPhysicsTests.cpp](../../tests/MarioPhysicsTests.cpp) and [CheepCheepTests.cpp](../../tests/CheepCheepTests.cpp). | Playtested and verified in World 1-3. |
-| `S7-TV3-02` Underwater Collision & Contact Audit | `VERIFIED` | Continuous Box2D contact filtering, Blooper float/chase collision matrices, Cheep-Cheep arcs, and absence of tile snagging pass in [CollisionMatrixTests.cpp](../../tests/CollisionMatrixTests.cpp) and [BlooperPodobooTests.cpp](../../tests/BlooperPodobooTests.cpp). | **Layout Note (TV4)**: Stage 1-3 does not have top ceiling collision tiles, allowing Mario to swim above the visible viewport. |
-| `S7-TV3-03` Castle & Cross-Level Physics Audit | `VERIFIED` | Rotating Firebar box-collision swept queries, Podoboo leap trajectories, Bowser multi-height breath bounds, and bridge collapse sequence pass in [BowserTests.cpp](../../tests/BowserTests.cpp). | **Visual Polish (P2)**: Triggering the axe initiates bridge collapse correctly, but the axe sprite itself remains visible on screen. |
-| `S7-TV3-04` Determinism & Soak Gate | `VERIFIED` | Deterministic respawn, body count cleanup, zero Box2D locked-world exceptions, and cross-platform compilation pass across all 31 test suites on Windows MSVC and 30/31 on macOS AppleClang. | Test #26 (`character_flow_tests`) on macOS exhibits an SFML 3.0 audio thread mutex teardown exception under rapid sequential state swapping; physics/engine core remains 100% stable. |
-| `S7-TV3-05` Final Gameplay Sign-off | `VERIFIED` | Full 4-level manual playthrough (World 1-1 Overworld, 1-2 Underground, 1-3 Underwater, 1-4 Castle) verified with normal user input from title to completion. | **Multiplayer Note (P2 - TV2)**: 2-Player Co-Op camera currently does not bound both players within the viewport, permitting character to drift off-screen. |
+| `S7-TV3-01` Underwater Swim Physics Audit | `VERIFIED (automated)` | `setUnderwater`, low-gravity buoyancy damping, mid-air swim impulse cadence on jump input, and speed caps pass in [MarioPhysicsTests.cpp](../../tests/MarioPhysicsTests.cpp) and [CheepCheepTests.cpp](../../tests/CheepCheepTests.cpp); the P4 matrix includes underwater movement probes. | Interactive route and Underwater visual acceptance are `PENDING`; automated initial/dominant-theme semantics do not substitute for a human review. |
+| `S7-TV3-02` Underwater Collision & Contact Audit | `VERIFIED (automated)` | Continuous Box2D contact filtering, Blooper/Cheep-Cheep collision matrices, and tile-collision probes pass in [CollisionMatrixTests.cpp](../../tests/CollisionMatrixTests.cpp), [BlooperPodobooTests.cpp](../../tests/BlooperPodobooTests.cpp), and the P4 matrix. | Interactive four-level GUI route and visual acceptance are `PENDING`; no manual pass is recorded in the P4 evidence. |
+| `S7-TV3-03` Castle & Cross-Level Physics Audit | `VERIFIED (automated)` | Firebar, Podoboo, Bowser, bridge, enemy, projectile, and cross-level mechanics are covered by [BowserTests.cpp](../../tests/BowserTests.cpp) and the P4 criterion matrix. | Castle route, visual review, screenshots/video, and physical audio remain `PENDING`. |
+| `S7-TV3-04` Determinism & Soak Gate | `VERIFIED (automated)` | Fresh external MinGW Debug and Release roots each passed `37/37` CTest; the evidence log scan reports zero unexpected missing/unknown/crash indicators. | No MSVC/macOS execution or manual soak is established by this evidence; no final RC hash exists. |
+| `S7-TV3-05` Final Gameplay Sign-off | `REVIEW` | Automated mechanics evidence and the exact 50-file package pass; the P4 matrix does not include a human playthrough or visual/audio/video sign-off. | Four-level GUI playthrough, visual review, screenshots/video, physical listening, asset provenance, and final RC identity remain open. |
 
 ---
 
 ## 2. Evidence Boundaries & Platform Breakdown
 
-* **macOS (Apple Silicon `arm64`)**:
-  * Clean build with AppleClang (C++17, SFML 3.0, Box2D v2.4.1).
-  * Main game executable: `build/SuperMario`.
-  * CTest automated suites: **30 / 31 PASSED** (All physics, Box2D, and mechanics tests passed).
-* **Windows (x64 MSVC / MinGW)**:
-  * Main game executable: `build-tests/Debug/SuperMario.exe`.
-  * Automated suites: **31 / 31 PASSED**.
-* **Manual Playthrough Verification**:
-  * **World 1-1 (Overworld)**: Variable jump height, 1-tile gap sprint momentum, mushroom growth clearance, and flagpole slide verified.
-  * **World 1-2 (Underground)**: Elevator platform riding, pipe transitions, and ceiling clearance verified.
-  * **World 1-3 (Underwater)**: Swimming cadence, buoyancy damping, and enemy interaction verified.
-  * **World 1-4 (Castle)**: Firebar avoidance, Podoboo timing, Bowser battle, and axe bridge collapse verified.
-  * **2-Player Co-Op & PvP**: Mechanics functional; co-op camera leash noted as P2.
+* **Fresh external MinGW Debug and Release roots:** each configured with
+  `BUILD_TESTING=ON`, built `all`, `SuperMario`, and `CopyRuntimeAssets`, and
+  passed `37/37` CTest. The P4 matrix covers movement, pipes, collision,
+  underwater probes, Castle/Bowser/projectiles, co-op, and PvP contracts.
+* **Runtime package:** Debug and Release inventories each contain exactly 50
+  files: 43 assets plus 7 level/config files. Required fire/Bowser/enemy
+  package paths are present and no Future/Reference extras are present.
+* **Manual evidence:** physical audio listening, interactive four-level GUI
+  playthrough, visual review, screenshots, and video are `NOT RUN`/`PENDING`.
+  Level 3 initial/dominant-theme semantics pass automated probes, while
+  Underwater visual acceptance remains manual and pending.
+* **Release identity:** the validated worktree fingerprint is evidence identity
+  only, not a commit or final-RC hash. Asset provenance/license and external
+  redistribution sign-off remain `BLOCKED`; see
+  [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
+
+The external P4 evidence snapshot is cited for traceability and is not a durable
+repository artifact:
+`C:\Users\ASUS\AppData\Local\Temp\supermario-p4-final-20260821-025948\evidence\`.
+Relevant records are `p4-criterion-matrix.md`, `debug-ctest-full.log`,
+`release-ctest-full.log`, `package-inventory-audit.txt`, `log-scan.txt`, and
+`worktree-fingerprint.txt`. The recorded command sequence was fresh MinGW
+Makefiles configure, `cmake --build <root> --target all`,
+`cmake --build <root> --target SuperMario CopyRuntimeAssets`, then
+`ctest --test-dir <root> --output-on-failure` for each Debug/Release root.
 
 ---
 

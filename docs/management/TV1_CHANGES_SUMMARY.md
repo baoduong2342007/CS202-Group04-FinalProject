@@ -1,8 +1,8 @@
 # TV1 Sprint 6 Integration Report
 
 > Owner: TV1 — architecture, states, integration
-> Updated: 2026-08-12
-> Candidate: base `3047252` plus remediation working tree
+> Updated: 2026-08-21
+> Candidate: validated external P4 worktree evidence; no final RC commit
 > Final RC commit: `PENDING`
 
 > **Historical scope note:** Sections describing the Sprint 6 candidate below
@@ -89,7 +89,7 @@ this report deliberately did not declare Sprint 6 released until the table
 above was complete. This historical statement is not a current Sprint 7
 no-P0/P1 sign-off.
 
-## Sprint 7 verified addendum (2026-08-16)
+## Sprint 7 verified addendum (2026-08-21)
 
 ### Current contract and automated evidence
 
@@ -109,25 +109,39 @@ no-P0/P1 sign-off.
   selection and monotonic `highestUnlockedLevel` are retained. GameOver →
   Retry starts a fresh run, so transient score, coins, lives, and power reset;
   the save schema remains v1 with no migration.
-- Fresh current-source writable isolated MinGW Debug and Release
-  `BUILD_TESTING=ON` runs each passed `21/21`; a Release `BUILD_TESTING=OFF`
-  production build also passed. The test-target-only NDEBUG restoration gives
-  every test target `-DNDEBUG` then `-UNDEBUG`, while `game_lib`/`SuperMario`
-  retain only `-DNDEBUG`. No assert-disabled or production compiler warnings
-  were observed; the only warning was external Box2D CMake deprecation. The
-  MSVC branch was statically reviewed but not executed. The registered count
-  is 21; earlier 17/19/20 counts are historical snapshots.
+- Fresh external MinGW Debug and Release roots each configured, built `all`,
+  `SuperMario`, and `CopyRuntimeAssets`, and passed `37/37` CTest. This is
+  automated evidence only; no MSVC or macOS execution is established by this
+  evidence. The P4 matrix covers L1→L4 progression/goals, movement/pipes,
+  collision/enemies/Bowser/projectiles, all items, death/save/HUD/transitions,
+  co-op/PvP, and package/manifest checks.
+- The runtime package inventory passed exactly 50 files in each root: 43 assets
+  plus 7 level/config files, with required fire/Bowser/enemy paths present and
+  no Future/Reference extras. Controlled missing-file diagnostics are negative
+  tests, not release failures.
 
 ### Gates that remain open
 
-Syntactic map validation/load evidence is distinct from semantic Underwater
-acceptance. `levels/level3.txt` remains Castle-style and semantically invalid
-for the Underwater catalog entry; that TV4-owned map/asset gate is `BLOCKED`.
-Manual four-level playthrough, screenshots, device-audio, source/license
-attribution, `S6-TV5-43/44` dispositions, `BUG-038`, and final TV1/TV5
-release sign-off remain `REVIEW`/`PENDING`. Automated Debug/Release 21/21,
-the Release production build, and clean Debug/Release package inventory
-evidence do not establish a final RC, no-P0/P1 state, or a candidate hash.
+Automated Level 3 initial/dominant-theme semantic probes pass; interactive
+Underwater visual acceptance remains `PENDING`. Manual four-level GUI
+playthrough, physical audio listening, visual review, screenshots/video,
+`S6-TV5-43/44` dispositions, `BUG-038`, and final TV1/TV5 release sign-off
+remain `REVIEW`/`PENDING`. Per-file source/license attribution and external
+redistribution remain `BLOCKED`; see [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
+The validated worktree fingerprint
+`df57eee2bda743329debbfadc95a20f25563bfb4aebe1c6b86178e2b8ae1a331` is not a
+commit or final-RC hash; the automated evidence does not establish a final RC
+or no-P0/P1 state.
 
 See the task-by-task matrix in
 [S7_TV1_TV5_STATUS.md](S7_TV1_TV5_STATUS.md).
+
+The P4 evidence snapshot is external to the repository and is cited for
+traceability only:
+`C:\Users\ASUS\AppData\Local\Temp\supermario-p4-final-20260821-025948\evidence\`.
+See `p4-criterion-matrix.md`, `debug-ctest-full.log`,
+`release-ctest-full.log`, `package-inventory-audit.txt`, `log-scan.txt`, and
+`startup-smoke.txt`. The recorded procedure used fresh MinGW Makefiles
+configure, `cmake --build <root> --target all`,
+`cmake --build <root> --target SuperMario CopyRuntimeAssets`, and
+`ctest --test-dir <root> --output-on-failure` for each Debug/Release root.

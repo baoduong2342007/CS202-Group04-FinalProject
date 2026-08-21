@@ -4,6 +4,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-21 | [TV2] Merge `feature/engine-core-systems` (S7 Visual Sign-Off & Theme/Camera Audit) | CTest 31/31 PASS | Fast-forward merged the 2 newest commits (`d3bb3a4` and `94c42da`) from `origin/feature/engine-core-systems` authored by TV2 (TheMeoXuExp). Added `docs/management/S7_TV2_VISUAL_SIGN_OFF.md` containing TV2's visual sign-off matrix for Underwater and Castle themes, camera bounds, Z-order, and UI resolution tests. Confirmed `docs/management/s7_plan.md` is 100% intact. |
 | 2026-08-20 | PvP Top Ceiling Boundary Clamp & Complete HUD Realignment | CTest 31/31 PASS | Implemented top screen ceiling boundary clamp (`m_ceilingClampEnabled`, `Level::clampPvpFighters`) in PvP mode so fighters never disappear off the top frame when jumping from platforms; redesigned duel HUD into balanced 3-column screen-fixed layout (`P1` top-left, `P2` top-right, `Match Score/Round` top-center, dedicated `FIRE` badges) with clear padding from arena walls and center pedestal; added regression tests in `PvpArenaTests`. |
 | 2026-08-20 | PvP Camera Elevation & Enemy Narrow Patrol Breakout AI | CTest 31/31 PASS | Enabled `CameraVerticalMode::DEAD_ZONE` in `PvpPlayState` with dual-player elevation tracking in `Level::updatePvp`; implemented narrow patrol (<= 2-2.5 tile) breakout AI in `Enemy.h/.cpp` (Goomba, Koopa, Spiny, HammerBro) to break out towards player upon rapid turnaround oscillation; added test coverage in `PvpArenaTests` and `KoopaVariantTests`. |
 | 2026-08-20 | Area-Accurate Multi-Theme Resolution for Enemies, Blocks & Entities | CTest 31/31 PASS | Added `Level::getThemeForGridPosition(gridX)` to dynamically resolve area themes (Level 1 Underground Bonus, Level 2 Underground Stage, Level 3 Underwater Reef) during initial spawn; updated `EntityFactory::createFromTileCode`, `spawnElevatorsFromTileMap`, `spawnCheepCheepRoutesFromTileMap`, `spawnCheepCheepsFromConfig`, and `updateCheepCheepGenerators`; added `Entity::getSprite()` getter; added regression unit tests in `Gate0ContractTests`. |
@@ -108,6 +109,19 @@ A working-tree result may support review, but release sign-off requires one immu
 ---
 
 ## 4. DETAILED LOGIC CHANGE LOG (For Opus Review)
+
+### Entry #54: [TV2 Visual & Camera Audit] - Sprint 7 Theme Rendering, Camera Tracking & Multi-Resolution UI Sign-Off
+- **Trạng thái:** Đã hoàn thành 100%, 31/31 CTest passed.
+- **Tác giả:** TV2 (Nguyễn Phúc Minh Nhật - `TheMeoXuExp <npmnhat2523@apcs.fitus.edu.vn>`)
+- **File ảnh hưởng:** `docs/management/S7_TV2_VISUAL_SIGN_OFF.md`, `docs/change_in_develop.md`.
+- **Mô tả:**
+  1. **Đồng bộ nhánh TV2**: Tích hợp các commit từ `origin/feature/engine-core-systems` (`d3bb3a4` và `94c42da`) vào `develop`.
+  2. **Báo cáo Sign-Off Visual Sprint 7 (`S7-TV2-01..05`)**:
+     - Hoàn thiện tài liệu [`docs/management/S7_TV2_VISUAL_SIGN_OFF.md`](docs/management/S7_TV2_VISUAL_SIGN_OFF.md) ghi nhận đầy đủ bằng chứng kiểm thử visual cho Underwater (Level 3) và Castle (Level 4).
+     - Kiểm chứng giới hạn camera (Camera Bounds) ở điểm đầu, giữa và cột cờ đích không lộ vùng ngoài map.
+     - Xác nhận thứ tự hiển thị Z-order (HUD > Mario > Foreground > Background).
+     - Kiểm tra ma trận phân giải UI (800x600, 1080p) trên các màn hình Menu, Pause, Game Over, Win State.
+  3. **Bảo toàn Kế hoạch Sprint 7**: Toàn bộ nội dung [`docs/management/s7_plan.md`](docs/management/s7_plan.md) được giữ nguyên vẹn 100%.
 
 ### Entry #53: [Feature & AI] - PvP Arena Vertical Camera Elevation & Enemy Narrow Patrol Breakout AI
 - **Trạng thái:** Đã hoàn thành 100%, 31/31 CTest passed.

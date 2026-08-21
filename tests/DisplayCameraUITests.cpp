@@ -183,9 +183,6 @@ void testLevelSelectStateRenderSnapshot() {
     sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
     state.render(rt);
     rt.display();
-
-    const bool saved = rt.getTexture().copyToImage().saveToFile("level_select_preview.png");
-    assert(saved);
 }
 
 void testMenuStateRenderSnapshot() {
@@ -196,9 +193,6 @@ void testMenuStateRenderSnapshot() {
     sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
     state.render(rt);
     rt.display();
-
-    const bool saved = rt.getTexture().copyToImage().saveToFile("menu_state_preview.png");
-    assert(saved);
 }
 
 void testLevel4SectionSnapshots() {
@@ -216,28 +210,24 @@ void testLevel4SectionSnapshots() {
     rt.clear(sf::Color::Black);
     level.render(rt);
     rt.display();
-    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec1_corridor.png"));
 
     // 2. Section 2 (Question Blocks, Removed Pit at cols 46-48)
     level.getCamera().update(1.f, {1500.f, 240.f});
     rt.clear(sf::Color::Black);
     level.render(rt);
     rt.display();
-    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec2_powerup.png"));
 
     // 3. Section 3 (Stepping platforms over lava)
     level.getCamera().update(1.f, {2800.f, 240.f});
     rt.clear(sf::Color::Black);
     level.render(rt);
     rt.display();
-    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec3_stepping.png"));
 
     // 4. Section 4 (Bowser Chamber: Springboard, Elevator, Cleared ceiling, Vine, Bowser, Axe, Bridge)
     level.getCamera().update(1.f, {4250.f, 240.f});
     rt.clear(sf::Color::Black);
     level.render(rt);
     rt.display();
-    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec4_bowser.png"));
 
     // 5. Section 4 with Elevator mid-flight over Bowser after 2 seconds
     for (int i = 0; i < 120; ++i) {
@@ -247,7 +237,6 @@ void testLevel4SectionSnapshots() {
     rt.clear(sf::Color::Black);
     level.render(rt);
     rt.display();
-    static_cast<void>(rt.getTexture().copyToImage().saveToFile("level4_sec4_bowser_moving.png"));
 }
 } // namespace
 

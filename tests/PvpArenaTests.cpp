@@ -334,9 +334,6 @@ bool testPvpPlayStateHudRenderSnapshot() {
     state.render(rt);
     rt.display();
 
-    bool saved = rt.getTexture().copyToImage().saveToFile("pvp_hud_preview.png");
-    assert(saved);
-
     // Fast forward into FIGHT phase and give P1 a fire flower
     for (int i = 0; i < 150; ++i) {
         state.update(1.f / 60.f);
@@ -358,9 +355,6 @@ bool testPvpPlayStateHudRenderSnapshot() {
     rt.clear(sf::Color::Black);
     state.render(rt);
     rt.display();
-
-    saved = rt.getTexture().copyToImage().saveToFile("pvp_hud_fire_preview.png");
-    assert(saved);
 
     std::cout << "[PASSED] testPvpPlayStateHudRenderSnapshot" << std::endl;
     return true;

@@ -41,11 +41,15 @@ void testCheepCheepCreation() {
     auto swimCheep = EntityFactory::createFromTileCode('c', {50.f, 150.f}, &world, LevelTheme::UNDERWATER);
     assert(swimCheep != nullptr);
     assert(swimCheep->isCheepCheep());
+    assert(swimCheep->getSubtype() == Entity::EntitySubtype::CHEEP_CHEEP);
+    assert(!swimCheep->hasCapability(Entity::Capability::STOMPABLE));
     assert(static_cast<CheepCheep*>(swimCheep.get())->getBehavior() == CheepCheepBehavior::SWIMMING);
 
     // 3. Direct create Jumping Red Cheep Cheep
     CheepCheep jumpCheep({80.f, 300.f}, &world, LevelTheme::OVERWORLD, CheepCheepBehavior::JUMPING, CheepCheepColor::RED, {0.f, -600.f});
     assert(jumpCheep.isCheepCheep());
+    assert(jumpCheep.getSubtype() == Entity::EntitySubtype::CHEEP_CHEEP_JUMPING);
+    assert(jumpCheep.hasCapability(Entity::Capability::STOMPABLE));
     assert(jumpCheep.getBehavior() == CheepCheepBehavior::JUMPING);
     assert(jumpCheep.getColor() == CheepCheepColor::RED);
     assert(jumpCheep.canBeStomped());

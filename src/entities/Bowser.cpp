@@ -306,7 +306,7 @@ void Bowser::enterDie() {
     m_state = State::DIE;
     setHealth(0);
 
-    SoundManager::getInstance().playSound("bowser_fall");
+    SoundManager::getInstance().playSound(SoundId::BOWSER_FALL);
 
     b2Body* body = getBody();
     if (body) {
@@ -353,9 +353,8 @@ void Bowser::breatheFire() {
         return;
     }
 
-    SoundManager::getInstance().playSound("bowser_fire");
+    SoundManager::getInstance().playSound(SoundId::BOWSER_FIRE);
 
     m_pending.push_back(std::make_unique<BowserFire>(
         sf::Vector2f{spawnX, spawnY}, m_world, m_theme, direction));
 }
-

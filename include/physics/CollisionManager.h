@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/ScoreRules.h"
+#include "entities/Entity.h"
 
 #include <SFML/System/Vector2.hpp>
 
@@ -19,6 +20,63 @@ class TileMap;
 class Entity;
 class Mario;
 class Enemy;
+class FireBall;
+class Item;
+class Koopa;
+class Mushroom;
+class Star;
+class Springboard;
+
+/// Non-owning, checked view of one Box2D collision participant. Typed access
+/// methods validate the entity's declared contract and concrete base before
+/// policy code receives a pointer, so malformed identities fail closed.
+class CollisionParticipant {
+public:
+    CollisionParticipant() = default;
+    CollisionParticipant(Entity* entity, b2Body* body) noexcept;
+
+    Entity* entity() const noexcept { return m_entity; }
+    b2Body* body() const noexcept { return m_body; }
+    Entity::EntityType type() const noexcept;
+    Entity::EntitySubtype subtype() const noexcept;
+    bool has(Entity::Capability capability) const noexcept;
+
+    Mario* mario() const noexcept;
+    Enemy* enemy() const noexcept;
+    FireBall* fireBall() const noexcept;
+    Item* item() const noexcept;
+    Koopa* shell() const noexcept;
+    Mushroom* mushroom() const noexcept;
+    Star* star() const noexcept;
+    Springboard* springboard() const noexcept;
+
+private:
+    Entity* m_entity = nullptr;
+    b2Body* m_body = nullptr;
+};
+
+/// Typed two-entity collision transaction. `normal` points from first to
+/// second; `normalFrom(p)` preserves that convention independently of Box2D
+/// fixture order.
+class CollisionContext {
+public:
+    CollisionContext(CollisionParticipant first,
+                     CollisionParticipant second,
+                     b2Contact* contact,
+                     const b2Vec2& normal) noexcept;
+
+    const CollisionParticipant& first() const noexcept { return m_first; }
+    const CollisionParticipant& second() const noexcept { return m_second; }
+    b2Contact* contact() const noexcept { return m_contact; }
+    b2Vec2 normalFrom(const CollisionParticipant& participant) const noexcept;
+    const CollisionParticipant* other(const CollisionParticipant& participant) const noexcept;
+
+private:
+    CollisionParticipant m_first;
+    CollisionParticipant m_second;
+    b2Contact* m_contact = nullptr;
+    b2Vec2 m_normal{0.f, 0.f};
+};
 
 /// One deferred player-vs-player contact outcome, produced inside the Box2D
 /// step and applied by Level after the step completes.
@@ -44,6 +102,13 @@ public:
     /// @brief Resolves beginning of collision between Box2D fixtures
     /// @param contact Pointer to Box2D contact object
     static void resolve(b2Contact* contact, TileMap& tileMap);
+
+    /// Genuine two-participant gameplay dispatch, also usable by focused
+    /// tests with a typed context.
+    static void dispatch(CollisionContext& context, TileMap& tileMap);
+
+    /// Completes the entity callback lifecycle for a Box2D EndContact.
+    static void end(b2Contact* contact);
 
     /// Commit one enemy defeat transaction. This is the only operation that
     /// applies defeat score and its cause-specific EventBus event.

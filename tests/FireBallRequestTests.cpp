@@ -14,19 +14,32 @@
 #include "patterns/EventBus.h"
 #include "patterns/IObserver.h"
 
+// The production Level keeps its entity storage private.  This test-defined
+// friend exposes only the semantic fixture operation needed by these request
+// tests; it never returns an Entity pointer or the owning container.
+class LevelTestAccess {
+public:
+    static bool deactivateFirstFireBall(Level& level) {
+        return level.deactivateFirstEntityOfSubtypeForTest(
+            Entity::EntitySubtype::FIRE_BALL);
+    }
+};
+
 namespace {
 class ShotCounter final : public IObserver {
 public:
     ShotCounter() {
-        EventBus::getInstance().subscribe(EventType::FIREBALL_SHOT, this);
+        m_subscription = EventBus::getInstance().subscribe(
+            EventType::FIREBALL_SHOT, this);
     }
-    ~ShotCounter() override {
-        EventBus::getInstance().unsubscribe(EventType::FIREBALL_SHOT, this);
-    }
-    void onNotify(EventType event) override {
+    ~ShotCounter() override = default;
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::FIREBALL_SHOT) ++count;
     }
     int count = 0;
+private:
+    Subscription m_subscription;
 };
 
 class LockedShotListener final : public b2ContactListener {
@@ -70,12 +83,7 @@ void testLimitReleaseAndSingleSfx() {
     assert(events.count == 2);
     assert(sound.getSoundPlayRequestCount("fireball") == 2);
 
-    for (auto& entity : level.getEntities()) {
-        if (entity && entity->isFireBall() && entity->isActive()) {
-            static_cast<FireBall*>(entity.get())->deactivate(false);
-            break;
-        }
-    }
+    assert(LevelTestAccess::deactivateFirstFireBall(level));
     assert(level.getActiveFireBallCount() == 1);
     assert(level.requestFireBallShot(mario));
     assert(level.getActiveFireBallCount() == 2);
@@ -123,12 +131,14 @@ void testWorldLockedRequestReservesCooldownAndOwner() {
     assert(events.count == 1);
     assert(sound.getSoundPlayRequestCount("fireball") == 1);
 
-    FireBall* spawned = nullptr;
-    for (auto& entity : level.getEntities()) {
-        if (entity && entity->isFireBall() && entity->isActive()) {
-            spawned = static_cast<FireBall*>(entity.get());
-            break;
-        }
+    const FireBall* spawned = nullptr;
+    if (const Entity* entity = level.getEntities().find(
+            [](const Entity& candidate) {
+                return candidate.getSubtype() ==
+                           Entity::EntitySubtype::FIRE_BALL &&
+                       candidate.isActive();
+            })) {
+        spawned = dynamic_cast<const FireBall*>(entity);
     }
     assert(spawned);
     assert(spawned->getOwner() == &mario);

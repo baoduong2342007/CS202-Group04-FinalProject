@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
+#include <vector>
 
 #include <box2d/box2d.h>
 
@@ -14,6 +15,7 @@
 #include "core/SoundManager.h"
 #include "core/TextureManager.h"
 #include "entities/FireBall.h"
+#include "entities/BuzzyBeetle.h"
 #include "entities/Goomba.h"
 #include "entities/Koopa.h"
 #include "entities/Mario.h"
@@ -22,8 +24,78 @@
 #include "patterns/EventBus.h"
 #include "patterns/IObserver.h"
 #include "physics/ContactListener.h"
+#include "physics/CollisionManager.h"
 
 namespace {
+class IdentitySpoof final : public Entity {
+public:
+    void update(float) override {}
+    EntityType getType() const override { return EntityType::MARIO; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::MARIO; }
+};
+
+class CollisionCallbackProbe final : public Entity {
+public:
+    CollisionCallbackProbe(const sf::Vector2f& position, b2World& world)
+        : Entity(position, {16.f, 16.f}) {
+        initPhysics(&world, b2_dynamicBody, {16.f, 16.f});
+    }
+    void update(float) override {}
+    EntityType getType() const override { return EntityType::TERRAIN; }
+    void onCollisionBegin(Entity*, b2Contact*, const b2Vec2&) override { ++begins; }
+    void onCollisionEnd(Entity*, b2Contact*) override { ++ends; }
+    int begins = 0;
+    int ends = 0;
+};
+
+void runIdentityCapabilityAndDispatchContract() {
+    b2World world({0.f, 0.f});
+    Goomba goomba({64.f, 0.f}, &world);
+    Koopa koopa({96.f, 0.f}, &world);
+    BuzzyBeetle buzzy({128.f, 0.f}, &world);
+    FireBall fireBall({160.f, 0.f}, Direction::RIGHT, &world);
+
+    assert(goomba.getType() == Entity::EntityType::ENEMY);
+    assert(goomba.getSubtype() == Entity::EntitySubtype::GOOMBA);
+    assert(goomba.hasCapability(Entity::Capability::STOMPABLE));
+    assert(koopa.hasCapability(Entity::Capability::SHELL_LIKE));
+    assert(buzzy.hasCapability(Entity::Capability::SHELL_LIKE));
+    assert(buzzy.hasCapability(Entity::Capability::FIREPROOF));
+    assert(fireBall.getSubtype() == Entity::EntitySubtype::FIRE_BALL);
+    assert(fireBall.hasCapability(Entity::Capability::PLAYER_PROJECTILE));
+    assert(!fireBall.hasCapability(Entity::Capability::ENEMY_PROJECTILE));
+
+    // Declared identity alone cannot unlock an unchecked policy cast.
+    IdentitySpoof spoof;
+    CollisionParticipant malformed(&spoof, nullptr);
+    assert(malformed.type() == Entity::EntityType::MARIO);
+    assert(malformed.mario() == nullptr);
+    assert(malformed.enemy() == nullptr);
+    assert(malformed.fireBall() == nullptr);
+    assert(malformed.item() == nullptr);
+    assert(!malformed.has(Entity::Capability::PLAYER_PROJECTILE));
+
+    // A missing body/entity is an inert participant, not an invitation to
+    // infer a concrete type or dereference a null policy target.
+    CollisionParticipant absent;
+    assert(absent.type() == Entity::EntityType::UNKNOWN);
+    assert(absent.subtype() == Entity::EntitySubtype::UNKNOWN);
+    assert(!absent.has(Entity::Capability::SOLID));
+    assert(absent.mario() == nullptr && absent.enemy() == nullptr);
+    assert(absent.fireBall() == nullptr && absent.item() == nullptr);
+
+    TileMap tileMap;
+    ContactListener listener(tileMap);
+    world.SetContactListener(&listener);
+    CollisionCallbackProbe first({0.f, 0.f}, world);
+    CollisionCallbackProbe second({8.f, 0.f}, world);
+    world.Step(1.f / 60.f, 8, 3);
+    assert(first.begins == 1 && second.begins == 1);
+    second.setPosition({256.f, 0.f});
+    world.Step(1.f / 60.f, 8, 3);
+    assert(first.ends == 1 && second.ends == 1);
+}
+
 class CollisionEvents final : public IObserver {
 public:
     CollisionEvents() {
@@ -35,22 +107,12 @@ public:
                                 EventType::ENEMY_DEFEATED_BY_STAR,
                                 EventType::ENEMY_DEFEATED_BY_BLOCK,
                                 EventType::PLAYER_DIED}) {
-            bus.subscribe(event, this);
+            m_subscriptions.emplace_back(bus.subscribe(event, this));
         }
     }
-    ~CollisionEvents() override {
-        auto& bus = EventBus::getInstance();
-        for (EventType event : {EventType::ENEMY_STOMPED,
-                                EventType::SHELL_KICKED,
-                                EventType::ENEMY_DEFEATED_BY_SHELL,
-                                EventType::ENEMY_DEFEATED_BY_FIREBALL,
-                                EventType::ENEMY_DEFEATED_BY_STAR,
-                                EventType::ENEMY_DEFEATED_BY_BLOCK,
-                                EventType::PLAYER_DIED}) {
-            bus.unsubscribe(event, this);
-        }
-    }
-    void onNotify(EventType event) override {
+    ~CollisionEvents() override = default;
+    void onNotify(const GameEvent& eventData) override {
+        const EventType event = eventData.type;
         if (event == EventType::ENEMY_STOMPED) ++stomp;
         else if (event == EventType::SHELL_KICKED) ++shellKick;
         else if (event == EventType::ENEMY_DEFEATED_BY_SHELL) ++shellKill;
@@ -66,6 +128,8 @@ public:
     int starKill = 0;
     int blockKill = 0;
     int death = 0;
+private:
+    std::vector<Subscription> m_subscriptions;
 };
 
 void stepTwice(b2World& world) {
@@ -553,6 +617,7 @@ void runStar(bool marioFixtureFirst) {
 
 int main() {
     SoundManager::getInstance(); // install the production SFX observer
+    runIdentityCapabilityAndDispatchContract();
     for (bool orderA : {true, false}) {
         runStomp(orderA);
         runSideHit(orderA);

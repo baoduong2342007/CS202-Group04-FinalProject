@@ -15,6 +15,7 @@
 #include "core/TextureManager.h"
 #include "entities/Entity.h"
 #include "entities/Mario.h"
+#include "level/BackgroundRenderer.h"
 #include "level/Camera.h"
 #include "level/EntityView.h"
 #include "level/TileMap.h"
@@ -103,6 +104,8 @@ public:
     bool isLevelCompleted() const;
     /// True while the flagpole slide and the automatic walk into the exit are running.
     bool isFlagSequenceActive() const { return m_flagSequenceActive; }
+    BackgroundRenderer* getBackgroundRenderer() { return m_backgroundRenderer.get(); }
+    const BackgroundRenderer* getBackgroundRenderer() const { return m_backgroundRenderer.get(); }
 
 
 private:
@@ -251,4 +254,5 @@ private:
 
     sf::Font m_toadDialogueFont;
     bool m_toadDialogueFontLoaded = false;
+    std::unique_ptr<BackgroundRenderer> m_backgroundRenderer;
 };

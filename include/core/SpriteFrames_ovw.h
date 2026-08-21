@@ -130,6 +130,8 @@ inline constexpr std::string_view WORLD_PATH = legacy::Backgrounds::WORLD_PATH;
 inline const sf::IntRect& WORLD = legacy::Backgrounds::WORLD;
 inline const sf::IntRect& MOUNTAIN_BIG = legacy::Backgrounds::MOUNTAIN_BIG;
 inline const sf::IntRect& MOUNTAIN_SMALL = legacy::Backgrounds::MOUNTAIN_SMALL;
+inline constexpr std::string_view OVERWORLD_PATH = legacy::Backgrounds::OVERWORLD_PATH;
+inline const sf::IntRect& THEME_BG = legacy::Backgrounds::THEME_BG;
 } // namespace Backgrounds
 
 } // namespace ovw

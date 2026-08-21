@@ -62,5 +62,7 @@ agent_docs/
 .codex_workflow_hidden_resources/
 .zcode/
 *_preview.png
+level4_sec*.png
+scratch/
 AGENTS.md
 Testing/

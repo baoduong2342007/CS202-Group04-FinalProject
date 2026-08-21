@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 #include <optional>
@@ -84,6 +85,7 @@ public:
     std::optional<sf::Vector2i> findWarpReturn(char id) const;
 
     void setTheme(LevelTheme theme);
+    void setColumnThemeResolver(std::function<LevelTheme(int)> resolver);
 
     /// Validation contract of the layout being loaded.
     /// CAMPAIGN requires exactly one 'M', one 'F' and one 'T' with a valid
@@ -176,6 +178,8 @@ private:
         float maxOffset{-12.f};
     };
 
+    LevelTheme resolveColumnTheme(int column) const;
+
     void buildVertices();
     void buildWaterVertices();
     void buildFlagVertices();
@@ -196,6 +200,7 @@ private:
     std::vector<TileBump> m_bumpAnimations;
     std::vector<PendingTileHit> m_pendingTileHits;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
+    std::function<LevelTheme(int)> m_columnThemeResolver;
     LayoutMode m_layoutMode{LayoutMode::CAMPAIGN};
     
     std::vector<WarpEntry> m_warpEntries;

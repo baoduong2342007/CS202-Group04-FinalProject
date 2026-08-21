@@ -63,6 +63,10 @@ files with that configured authority.
 | `assets/textures/ui/bg_mountains.png` | 768×1660 | `Future` | Legacy overworld reference |
 | `assets/textures/ui/bg_trees.png` | 768×1660 | `Future` | No current release runtime caller |
 | `assets/textures/ui/hud.png` | 784×948 | `Runtime` | Menu and HUD bitmap UI |
+| `assets/textures/backgrounds/bg_overworld.png` | 640×360 | `Runtime` | Procedural themed pixel-art background for Overworld |
+| `assets/textures/backgrounds/bg_underground.png` | 640×360 | `Runtime` | Procedural themed pixel-art background for Underground |
+| `assets/textures/backgrounds/bg_underwater.png` | 640×360 | `Runtime` | Procedural themed pixel-art background for Underwater |
+| `assets/textures/backgrounds/bg_castle.png` | 640×360 | `Runtime` | Procedural themed pixel-art background for Castle |
 
 Underground, Underwater, and Castle are distinct renderer branches; they do not reuse
 `bg_world.png`. Underwater music and all four Level Select previews are included in the

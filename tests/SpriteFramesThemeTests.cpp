@@ -254,6 +254,24 @@ void testScoreCoordinates() {
     assert(hasPosition(SCORE_1UP, 252, 76));
 }
 
+void testBackgroundConstants() {
+    assert(SpriteFrames::legacy::Backgrounds::OVERWORLD_PATH == "assets/textures/backgrounds/bg_overworld.png");
+    assert(SpriteFrames::legacy::Backgrounds::UNDERGROUND_PATH == "assets/textures/backgrounds/bg_underground.png");
+    assert(SpriteFrames::legacy::Backgrounds::UNDERWATER_PATH == "assets/textures/backgrounds/bg_underwater.png");
+    assert(SpriteFrames::legacy::Backgrounds::CASTLE_PATH == "assets/textures/backgrounds/bg_castle.png");
+    assert(SpriteFrames::legacy::Backgrounds::THEME_BG.size.x == 640 &&
+           SpriteFrames::legacy::Backgrounds::THEME_BG.size.y == 360);
+
+    assert(SpriteFrames::ovw::Backgrounds::OVERWORLD_PATH == "assets/textures/backgrounds/bg_overworld.png");
+    assert(SpriteFrames::udg::Backgrounds::UNDERGROUND_PATH == "assets/textures/backgrounds/bg_underground.png");
+    assert(SpriteFrames::udw::Backgrounds::UNDERWATER_PATH == "assets/textures/backgrounds/bg_underwater.png");
+    assert(SpriteFrames::castle::Backgrounds::CASTLE_PATH == "assets/textures/backgrounds/bg_castle.png");
+    assert(SpriteFrames::ovw::Backgrounds::THEME_BG.size.x == 640);
+    assert(SpriteFrames::udg::Backgrounds::THEME_BG.size.x == 640);
+    assert(SpriteFrames::udw::Backgrounds::THEME_BG.size.x == 640);
+    assert(SpriteFrames::castle::Backgrounds::THEME_BG.size.x == 640);
+}
+
 } // namespace
 
 int main() {
@@ -266,6 +284,7 @@ int main() {
     testCanonicalFlagpoleCoordinates();
     testMushroomCoordinates();
     testScoreCoordinates();
+    testBackgroundConstants();
 
     std::cout << "SpriteFramesThemeTests passed." << std::endl;
     return 0;

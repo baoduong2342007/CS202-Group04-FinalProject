@@ -127,5 +127,10 @@ inline const std::vector<sf::IntRect>& debris4Corners() {
 }
 } // namespace Blocks
 
+namespace Backgrounds {
+inline constexpr std::string_view UNDERGROUND_PATH = legacy::Backgrounds::UNDERGROUND_PATH;
+inline const sf::IntRect& THEME_BG = legacy::Backgrounds::THEME_BG;
+} // namespace Backgrounds
+
 } // namespace udg
 } // namespace SpriteFrames

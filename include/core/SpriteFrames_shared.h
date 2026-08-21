@@ -981,12 +981,18 @@ inline const std::vector<sf::IntRect> &uwQuestionBlockFrames() {
 
 } // namespace Blocks
 
-//  Modern overworld background (full generated frame)
+// ── Modern overworld & themed backgrounds ────────────────────────────
 namespace Backgrounds {
 inline constexpr std::string_view WORLD_PATH = "assets/ui/bg_world.png";
 inline const sf::IntRect WORLD({0, 0}, {1857, 847});
 inline const sf::IntRect MOUNTAIN_BIG({0, 160}, {80, 50});
 inline const sf::IntRect MOUNTAIN_SMALL({250, 160}, {64, 50});
+
+inline constexpr std::string_view OVERWORLD_PATH = "assets/textures/backgrounds/bg_overworld.png";
+inline constexpr std::string_view UNDERGROUND_PATH = "assets/textures/backgrounds/bg_underground.png";
+inline constexpr std::string_view UNDERWATER_PATH = "assets/textures/backgrounds/bg_underwater.png";
+inline constexpr std::string_view CASTLE_PATH = "assets/textures/backgrounds/bg_castle.png";
+inline const sf::IntRect THEME_BG({0, 0}, {640, 360});
 } // namespace Backgrounds
 
 //  Entities & Items extracted from Tileset

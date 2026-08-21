@@ -11,6 +11,7 @@
 
 class FireFlower : public Item {
 public:
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::FIRE_FLOWER; }
     // 1. Constructor / Destructor
     FireFlower();
     FireFlower(const sf::Vector2f& position, b2World* world);

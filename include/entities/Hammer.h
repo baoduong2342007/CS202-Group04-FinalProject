@@ -12,6 +12,7 @@
 
 class Hammer : public EnemyProjectile {
 public:
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::HAMMER; }
     Hammer(const sf::Vector2f& position,
            b2World* world,
            Direction direction);

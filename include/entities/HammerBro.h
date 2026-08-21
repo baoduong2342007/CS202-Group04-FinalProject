@@ -33,7 +33,7 @@ public:
 
     void setTileMap(const TileMap* tileMap) override;
 
-    bool isHammerBro() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::HAMMER_BRO; }
     int getStompScore() const override { return 1000; }
     int getDefeatScore(int cause) const override {
         (void)cause;

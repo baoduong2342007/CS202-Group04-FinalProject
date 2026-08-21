@@ -27,6 +27,9 @@ public:
     EntityType getType() const override {
         return EntityType::ENEMY;
     }
+    Capabilities getCapabilities() const noexcept override {
+        return capability(Capability::SOLID) | capability(Capability::STOMPABLE);
+    }
 
     void activate();
     bool isActivated() const;
@@ -45,31 +48,21 @@ public:
     }
     virtual void onSideCollision(Entity* other);
 
-    bool isEnemy() const override {
-        return true;
-    }
-
     virtual bool isDying() const {
         return !isActive() || isDead();
     }
 
     /// Whether Mario's fireballs simply burst against this enemy without
     /// defeating it (Buzzy Beetle shell, Bullet Bill).
-    virtual bool isFireproof() const {
-        return false;
-    }
+    bool isFireproof() const { return hasCapability(Capability::FIREPROOF); }
 
     /// Whether a top contact counts as a stomp. Swimming Cheep Cheeps,
     /// Bloopers, and Podoboo harm Mario instead of being stompable.
-    virtual bool canBeStomped() const {
-        return true;
-    }
+    bool canBeStomped() const { return hasCapability(Capability::STOMPABLE); }
 
     /// Whether this enemy is absolutely unkillable by any defeat cause
     /// (the Podoboo lava bubble ignores star, fire, and shell alike).
-    virtual bool isIndestructible() const {
-        return false;
-    }
+    bool isIndestructible() const { return hasCapability(Capability::INDESTRUCTIBLE); }
 
     /// Species-specific stomp score; 0 = use the shared airborne stomp
     /// chain (Bullet Bill 200, Lakitu 800, Hammer Bro 1000).

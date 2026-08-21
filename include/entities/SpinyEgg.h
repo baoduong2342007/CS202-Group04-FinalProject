@@ -25,8 +25,10 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isSpinyEgg() const override { return true; }
-    bool canBeStomped() const override { return false; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::SPINY_EGG; }
+    Capabilities getCapabilities() const noexcept override {
+        return Enemy::getCapabilities() & ~capability(Capability::STOMPABLE);
+    }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();
     }

@@ -34,8 +34,10 @@ public:
     void onFireHit() override;
     void onStarHit() override;
 
-    bool isBowser() const override { return true; }
-    bool canBeStomped() const override { return false; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BOWSER; }
+    Capabilities getCapabilities() const noexcept override {
+        return Enemy::getCapabilities() & ~capability(Capability::STOMPABLE);
+    }
     int getFireballHealth() const override { return FIREBALL_HITS_TO_KILL; }
     int getDefeatScore(int cause) const override {
         (void)cause;

@@ -36,7 +36,7 @@ public:
 
     CoinType getCoinType() const { return m_type; }
     LevelTheme getTheme() const { return m_theme; }
-    bool isCoin() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::COIN; }
 
 private:
     // 6. Private members

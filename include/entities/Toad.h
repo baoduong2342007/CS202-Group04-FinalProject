@@ -13,7 +13,5 @@ public:
         return EntityType::TERRAIN;
     }
 
-    bool isToad() const override {
-        return true;
-    }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::TOAD; }
 };

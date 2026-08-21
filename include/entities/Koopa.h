@@ -54,7 +54,10 @@ public:
     bool isShellSliding() const;
     bool isShellWaking() const;
     KoopaState getState() const;
-    bool isKoopa() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::KOOPA; }
+    Capabilities getCapabilities() const noexcept override {
+        return Enemy::getCapabilities() | capability(Capability::SHELL_LIKE);
+    }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();
     }

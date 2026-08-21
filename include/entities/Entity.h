@@ -8,6 +8,7 @@
 #pragma once
 
 #include <memory>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -77,8 +78,50 @@ public:
         UNKNOWN
     };
 
+    /// Stable, behaviorally meaningful identity within the broad EntityType.
+    /// Collision policy uses this value (plus capabilities), never RTTI-style
+    /// virtual `isX()` predicates.
+    enum class EntitySubtype : std::uint8_t {
+        UNKNOWN,
+        MARIO, TOAD,
+        GOOMBA, KOOPA, RED_KOOPA, PARATROOPA, BUZZY_BEETLE,
+        PIRANHA_PLANT, CHEEP_CHEEP, CHEEP_CHEEP_JUMPING, BLOOPER, PODOBOO, BULLET_BILL,
+        LAKITU, SPINY_EGG, SPINY, HAMMER_BRO, BOWSER, FIREBAR,
+        FIRE_BALL, ENEMY_PROJECTILE, HAMMER, BOWSER_FIRE,
+        COIN, MUSHROOM, FIRE_FLOWER, STAR,
+        QUESTION_BLOCK, SPRINGBOARD, ELEVATOR, BULLET_BILL_LAUNCHER,
+        BOWSER_AXE, BLOCK_DEBRIS, FIREBALL_EXPLOSION, SCORE_POPUP
+    };
+
+    /// Orthogonal collision facts. Capabilities describe what an entity can
+    /// do in a contact; they are not mutable state (dying, grounded, etc.).
+    enum class Capability : std::uint32_t {
+        NONE             = 0,
+        STOMPABLE        = 1u << 0,
+        SHELL_LIKE       = 1u << 1,
+        PLAYER_PROJECTILE= 1u << 2,
+        ENEMY_PROJECTILE = 1u << 3,
+        COLLECTIBLE      = 1u << 4,
+        FIREPROOF        = 1u << 5,
+        INDESTRUCTIBLE   = 1u << 6,
+        SOLID            = 1u << 7,
+        TRIGGER          = 1u << 8
+    };
+    using Capabilities = std::uint32_t;
+
+    static constexpr Capabilities capability(Capability value) noexcept {
+        return static_cast<Capabilities>(value);
+    }
+
     /// Pure virtual type check — constant time O(1) type identification
     virtual EntityType getType() const = 0;
+    virtual EntitySubtype getSubtype() const noexcept { return EntitySubtype::UNKNOWN; }
+    virtual Capabilities getCapabilities() const noexcept {
+        return capability(Capability::SOLID);
+    }
+    bool hasCapability(Capability value) const noexcept {
+        return (getCapabilities() & capability(value)) != 0;
+    }
 
     /// Polymorphic Double Dispatch collision callbacks
     virtual void onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal);
@@ -91,37 +134,46 @@ public:
         return {};
     }
 
-    /// Legacy helper type checks
-    virtual bool isItem() const { return getType() == EntityType::ITEM; }
-    virtual bool isMario() const { return getType() == EntityType::MARIO; }
-    virtual bool isEnemy() const { return getType() == EntityType::ENEMY; }
-    virtual bool isFireBall() const { return getType() == EntityType::PROJECTILE; }
-    virtual bool isToad() const { return false; }
-    virtual bool isSpringboard() const { return getType() == EntityType::SPRINGBOARD; }
-    virtual bool isElevator() const { return getType() == EntityType::ELEVATOR; }
-    virtual bool isKoopa() const { return false; }
-    virtual bool isPiranhaPlant() const { return false; }
-    virtual bool isCheepCheep() const { return false; }
-    virtual bool isBuzzyBeetle() const { return false; }
-    virtual bool isRedKoopa() const { return false; }
-    virtual bool isParatroopa() const { return false; }
-    virtual bool isBlooper() const { return false; }
-    virtual bool isPodoboo() const { return false; }
-    virtual bool isBulletBill() const { return false; }
-    virtual bool isBulletBillLauncher() const { return false; }
-    virtual bool isLakitu() const { return false; }
-    virtual bool isSpinyEgg() const { return false; }
-    virtual bool isSpiny() const { return false; }
-    virtual bool isHammerBro() const { return false; }
-    virtual bool isHammer() const { return false; }
-    virtual bool isBowserFire() const { return false; }
-    virtual bool isEnemyProjectile() const { return false; }
-    virtual bool isBowser() const { return false; }
-    virtual bool isBowserAxe() const { return false; }
-    virtual bool isFirebar() const { return false; }
-    virtual bool isMushroom() const { return false; }
-    virtual bool isStar() const { return false; }
-    virtual bool isQuestionBlock() const { return false; }
+    /// Compatibility helpers are non-virtual adapters over the stable
+    /// identity contract. New collision policy must use type/subtype/capability.
+    bool isItem() const { return getType() == EntityType::ITEM; }
+    bool isMario() const { return getType() == EntityType::MARIO; }
+    bool isEnemy() const { return getType() == EntityType::ENEMY; }
+    bool isFireBall() const { return getSubtype() == EntitySubtype::FIRE_BALL; }
+    bool isToad() const { return getSubtype() == EntitySubtype::TOAD; }
+    bool isSpringboard() const { return getSubtype() == EntitySubtype::SPRINGBOARD; }
+    bool isElevator() const { return getSubtype() == EntitySubtype::ELEVATOR; }
+    bool isKoopa() const {
+        const auto s = getSubtype();
+        return s == EntitySubtype::KOOPA || s == EntitySubtype::RED_KOOPA ||
+               s == EntitySubtype::PARATROOPA || s == EntitySubtype::BUZZY_BEETLE;
+    }
+    bool isPiranhaPlant() const { return getSubtype() == EntitySubtype::PIRANHA_PLANT; }
+    bool isCheepCheep() const {
+        return getSubtype() == EntitySubtype::CHEEP_CHEEP ||
+               getSubtype() == EntitySubtype::CHEEP_CHEEP_JUMPING;
+    }
+    bool isBuzzyBeetle() const { return getSubtype() == EntitySubtype::BUZZY_BEETLE; }
+    bool isRedKoopa() const { return getSubtype() == EntitySubtype::RED_KOOPA; }
+    bool isParatroopa() const { return getSubtype() == EntitySubtype::PARATROOPA; }
+    bool isBlooper() const { return getSubtype() == EntitySubtype::BLOOPER; }
+    bool isPodoboo() const { return getSubtype() == EntitySubtype::PODOBOO; }
+    bool isBulletBill() const { return getSubtype() == EntitySubtype::BULLET_BILL; }
+    bool isBulletBillLauncher() const { return getSubtype() == EntitySubtype::BULLET_BILL_LAUNCHER; }
+    bool isLakitu() const { return getSubtype() == EntitySubtype::LAKITU; }
+    bool isSpinyEgg() const { return getSubtype() == EntitySubtype::SPINY_EGG; }
+    bool isSpiny() const { return getSubtype() == EntitySubtype::SPINY; }
+    bool isHammerBro() const { return getSubtype() == EntitySubtype::HAMMER_BRO; }
+    bool isHammer() const { return getSubtype() == EntitySubtype::HAMMER; }
+    bool isBowserFire() const { return getSubtype() == EntitySubtype::BOWSER_FIRE; }
+    bool isEnemyProjectile() const { return hasCapability(Capability::ENEMY_PROJECTILE); }
+    bool isBowser() const { return getSubtype() == EntitySubtype::BOWSER; }
+    bool isBowserAxe() const { return getSubtype() == EntitySubtype::BOWSER_AXE; }
+    bool isFirebar() const { return getSubtype() == EntitySubtype::FIREBAR; }
+    bool isCoin() const { return getSubtype() == EntitySubtype::COIN; }
+    bool isMushroom() const { return getSubtype() == EntitySubtype::MUSHROOM; }
+    bool isStar() const { return getSubtype() == EntitySubtype::STAR; }
+    bool isQuestionBlock() const { return getSubtype() == EntitySubtype::QUESTION_BLOCK; }
 
 
     void setPosition(const sf::Vector2f& position);

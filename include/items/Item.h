@@ -38,9 +38,9 @@ public:
 
     /// Identifies this entity as an Item for constant-time type checking
     EntityType getType() const override { return EntityType::ITEM; }
-    bool isItem() const override { return true; }
-    virtual bool isCoin() const { return false; }
-
+    Capabilities getCapabilities() const noexcept override {
+        return capability(Capability::COLLECTIBLE) | capability(Capability::TRIGGER);
+    }
 protected:
     /// Advance the emergence delay. Subclasses call this from update().
     void updateCollectibleDelay(float dt);

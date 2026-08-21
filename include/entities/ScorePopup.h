@@ -15,6 +15,7 @@ public:
 
     void update(float dt) override;
     EntityType getType() const override { return EntityType::TERRAIN; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::SCORE_POPUP; }
 
     int getDisplayedPoints() const { return m_points; }
     bool isOneUp() const { return m_oneUp; }

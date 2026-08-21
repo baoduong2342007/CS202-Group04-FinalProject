@@ -20,7 +20,7 @@ public:
     // 2. Override methods
     void update(float dt) override;
     void onCollect(Mario& mario) override;
-    bool isStar() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::STAR; }
 
     // 3. Public methods
     /// Reverse horizontal direction when hitting a wall

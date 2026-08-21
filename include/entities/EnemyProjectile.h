@@ -28,9 +28,10 @@ public:
         return EntityType::PROJECTILE;
     }
 
-    // CollisionManager must never confuse these with Mario's FireBalls.
-    bool isFireBall() const override { return false; }
-    bool isEnemyProjectile() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::ENEMY_PROJECTILE; }
+    Capabilities getCapabilities() const noexcept override {
+        return capability(Capability::ENEMY_PROJECTILE) | capability(Capability::TRIGGER);
+    }
 
 protected:
     /// Subclass rendering hook (rotation, wave, animation frames).

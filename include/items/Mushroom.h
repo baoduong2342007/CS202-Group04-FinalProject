@@ -29,7 +29,7 @@ public:
     // 2. Override methods
     void update(float dt) override;
     void onCollect(Mario& mario) override;
-    bool isMushroom() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::MUSHROOM; }
     LevelTheme getTheme() const { return m_theme; }
 
     // 3. Public methods

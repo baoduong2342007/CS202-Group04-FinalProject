@@ -31,7 +31,7 @@ public:
 
     bool hasWings() const { return m_hasWings; }
     ParatroopaMode getMode() const { return m_mode; }
-    bool isParatroopa() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::PARATROOPA; }
 
     std::vector<std::unique_ptr<Entity>> takePendingSpawns() override;
 

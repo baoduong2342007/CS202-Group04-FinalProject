@@ -115,7 +115,7 @@ public:
     /// Checks if 32px overhead space is clear of solid terrain before growing (S6-TV3-11).
     bool hasCeilingClearance() const;
     EntityType getType() const override { return EntityType::MARIO; }
-    bool isMario() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::MARIO; }
 
     // Double Dispatch collision overrides
     void onCollisionBegin(Entity* other, b2Contact* contact, const b2Vec2& normal) override;

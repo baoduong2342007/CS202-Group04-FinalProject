@@ -17,8 +17,10 @@ public:
                          LevelTheme theme = LevelTheme::OVERWORLD);
     ~BuzzyBeetle() override = default;
 
-    bool isBuzzyBeetle() const override { return true; }
-    bool isFireproof() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BUZZY_BEETLE; }
+    Capabilities getCapabilities() const noexcept override {
+        return Koopa::getCapabilities() | capability(Capability::FIREPROOF);
+    }
 
 protected:
     /// A Buzzy Beetle's shell gives no visual warning before it wakes up.

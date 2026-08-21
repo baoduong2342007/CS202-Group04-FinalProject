@@ -37,7 +37,7 @@ public:
 
     // 4. Getters / Setters
     EntityType getType() const override { return EntityType::ELEVATOR; }
-    bool isElevator() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::ELEVATOR; }
     Axis getAxis() const { return m_axis; }
     float getSpeed() const { return m_speedPixels; }
     bool isPaused() const { return m_pauseRemaining > 0.0f; }

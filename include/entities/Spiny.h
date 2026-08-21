@@ -29,8 +29,10 @@ public:
 
     void setTileMap(const TileMap* tileMap) override;
 
-    bool isSpiny() const override { return true; }
-    bool canBeStomped() const override { return false; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::SPINY; }
+    Capabilities getCapabilities() const noexcept override {
+        return Enemy::getCapabilities() & ~capability(Capability::STOMPABLE);
+    }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();
     }

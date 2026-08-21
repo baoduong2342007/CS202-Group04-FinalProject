@@ -25,8 +25,10 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isBulletBill() const override { return true; }
-    bool isFireproof() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BULLET_BILL; }
+    Capabilities getCapabilities() const noexcept override {
+        return Enemy::getCapabilities() | capability(Capability::FIREPROOF);
+    }
     int getStompScore() const override { return 200; }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();

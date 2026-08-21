@@ -17,6 +17,7 @@ public:
 
     void update(float dt) override;
     EntityType getType() const override { return EntityType::TERRAIN; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BLOCK_DEBRIS; }
 
 private:
     sf::Vector2f m_vel;

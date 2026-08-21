@@ -16,6 +16,7 @@ class TileMap;
 
 class Goomba : public Enemy {
 public:
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::GOOMBA; }
     Goomba(const sf::Vector2f& position,
            b2World* world,
            LevelTheme theme = LevelTheme::OVERWORLD);

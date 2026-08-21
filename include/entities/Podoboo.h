@@ -24,9 +24,11 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isPodoboo() const override { return true; }
-    bool canBeStomped() const override { return false; }
-    bool isIndestructible() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::PODOBOO; }
+    Capabilities getCapabilities() const noexcept override {
+        return (Enemy::getCapabilities() & ~capability(Capability::STOMPABLE)) |
+               capability(Capability::INDESTRUCTIBLE);
+    }
     bool isDying() const override {
         return !isActive();
     }

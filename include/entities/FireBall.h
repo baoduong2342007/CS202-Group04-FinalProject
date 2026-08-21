@@ -28,7 +28,10 @@ public:
     bool shouldSpawnExplosion() const { return m_spawnExplosion; }
     void clearExplosionFlag() { m_spawnExplosion = false; }
     EntityType getType() const override { return EntityType::PROJECTILE; }
-    bool isFireBall() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::FIRE_BALL; }
+    Capabilities getCapabilities() const noexcept override {
+        return capability(Capability::PLAYER_PROJECTILE) | capability(Capability::TRIGGER);
+    }
 
     /// Re-initialize FireBall for Object Pooling without re-allocating memory
     void spawn(const sf::Vector2f& position, Direction direction, b2World* world);

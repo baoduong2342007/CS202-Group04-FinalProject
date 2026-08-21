@@ -41,7 +41,7 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isPiranhaPlant() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::PIRANHA_PLANT; }
     bool isDying() const override {
         return m_isRetractingAfterFireHit || isDead() || !isActive();
     }

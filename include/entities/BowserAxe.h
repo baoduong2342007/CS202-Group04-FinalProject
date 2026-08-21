@@ -21,7 +21,7 @@ public:
         return EntityType::TERRAIN;
     }
 
-    bool isBowserAxe() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BOWSER_AXE; }
 
 private:
     float m_blinkTimer{0.f};

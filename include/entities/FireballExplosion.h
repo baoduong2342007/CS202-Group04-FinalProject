@@ -16,6 +16,7 @@ public:
 
     void update(float dt) override;
     EntityType getType() const override { return EntityType::TERRAIN; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::FIREBALL_EXPLOSION; }
 
 private:
     float m_lifetime{0.15f};

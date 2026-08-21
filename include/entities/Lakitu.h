@@ -31,7 +31,7 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isLakitu() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::LAKITU; }
     int getStompScore() const override { return 800; }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();

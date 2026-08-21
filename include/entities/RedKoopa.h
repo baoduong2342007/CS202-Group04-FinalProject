@@ -17,5 +17,5 @@ public:
                       LevelTheme theme = LevelTheme::OVERWORLD);
     ~RedKoopa() override = default;
 
-    bool isRedKoopa() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::RED_KOOPA; }
 };

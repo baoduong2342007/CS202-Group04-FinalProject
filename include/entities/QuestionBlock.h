@@ -36,8 +36,8 @@ public:
 
     // 2. Override methods
     void update(float dt) override;
-    bool isQuestionBlock() const override { return true; }
     EntityType getType() const override { return EntityType::TERRAIN; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::QUESTION_BLOCK; }
 
     // 3. Public methods
     /// Triggers block hit reaction: 12px bump animation, spawns item & changes sprite to empty block

@@ -24,7 +24,7 @@ public:
         return EntityType::TERRAIN;
     }
 
-    bool isBulletBillLauncher() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BULLET_BILL_LAUNCHER; }
 
     /// Feed the player position; the cannon only fires while a player is
     /// inside its horizontal range.

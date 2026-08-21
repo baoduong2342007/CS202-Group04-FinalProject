@@ -21,7 +21,7 @@ public:
 
     void update(float dt) override;
 
-    bool isBowserFire() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::BOWSER_FIRE; }
 
 private:
     void updatePresentation(float dt) override;

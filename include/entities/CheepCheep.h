@@ -42,13 +42,19 @@ public:
     void onWallCollision() override;
     void onFireHit() override;
 
-    bool isCheepCheep() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override {
+        return m_behavior == CheepCheepBehavior::JUMPING
+            ? EntitySubtype::CHEEP_CHEEP_JUMPING
+            : EntitySubtype::CHEEP_CHEEP;
+    }
+    Capabilities getCapabilities() const noexcept override {
+        const Capabilities base = Enemy::getCapabilities();
+        return m_behavior == CheepCheepBehavior::JUMPING
+            ? base
+            : base & ~capability(Capability::STOMPABLE);
+    }
     bool isDying() const override {
         return m_isFlippedDead || isDead() || !isActive();
-    }
-
-    bool canBeStomped() const {
-        return m_behavior == CheepCheepBehavior::JUMPING && !m_isFlippedDead && !isDead();
     }
 
     CheepCheepBehavior getBehavior() const { return m_behavior; }

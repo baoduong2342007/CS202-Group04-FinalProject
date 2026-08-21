@@ -37,7 +37,7 @@ public:
 
     // 4. Getters / Setters
     EntityType getType() const override { return EntityType::SPRINGBOARD; }
-    bool isSpringboard() const override { return true; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::SPRINGBOARD; }
     State getState() const { return m_state; }
 
     static constexpr float BOUNCE_NORMAL_SPEED = 600.f; // px/s (was 450)

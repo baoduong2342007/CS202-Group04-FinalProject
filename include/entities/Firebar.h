@@ -30,9 +30,11 @@ public:
     void onWallCollision() override {}
     void onFireHit() override {}
 
-    bool isFirebar() const override { return true; }
-    bool isIndestructible() const override { return true; }
-    bool canBeStomped() const override { return false; }
+    EntitySubtype getSubtype() const noexcept override { return EntitySubtype::FIREBAR; }
+    Capabilities getCapabilities() const noexcept override {
+        return (Enemy::getCapabilities() & ~capability(Capability::STOMPABLE)) |
+               capability(Capability::INDESTRUCTIBLE);
+    }
     bool isDying() const override { return false; }
 
     /// Returns true if the given bounding box touches any of the rotating fireballs.

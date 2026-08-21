@@ -84,12 +84,6 @@ const char* STAGE_DESCRIPTIONS[4] = {
     "CASTLE KEEP"
 };
 
-const char* STAGE_TAGS[4] = {
-    "CLASSIC ADVENTURE",
-    "WARP PIPES & BRICKS",
-    "SWIMMING CURRENTS",
-    "BOWSER BOSS BATTLE"
-};
 } // namespace
 
 LevelSelectState::LevelSelectState(Mode mode)

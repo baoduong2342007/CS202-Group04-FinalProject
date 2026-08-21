@@ -21,11 +21,7 @@ b2World makeWorld() {
     return b2World(b2Vec2(0.f, 25.f));
 }
 
-void advance(Enemy& enemy, float seconds, float dt = 0.1f) {
-    for (float t = 0.f; t < seconds; t += dt) {
-        enemy.update(dt);
-    }
-}
+
 
 } // namespace
 

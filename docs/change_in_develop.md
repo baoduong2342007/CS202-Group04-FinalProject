@@ -1543,7 +1543,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - Romanized `@author` headers: 83 source files across `include/` and `src/`
 - **Detailed Logic Changes:**
   1. **Junk Cleanup (9 deletions, with deliberate keeps)**:
-     - Removed dead/duplicate/stale artifacts: the superseded tileset reference image, the duplicate `docs/tiles_coordinate.md`, the orphaned athletic level, the never-registered `TestSpawnDeath.cpp`, the dead TV3 demo pair, the stale S6 dependency board and weekly plan, and the dead-root `Evaluate.md` (its live content is `docs/management/Evaluate_v4.md`).
+     - Removed dead/duplicate/stale artifacts: the superseded tileset reference image, the duplicate `docs/tiles_coordinate.md`, the orphaned athletic level, the never-registered `TestSpawnDeath.cpp`, the dead TV3 demo pair, the stale S6 dependency board and weekly plan, and the dead-root `Evaluate.md` (stale Sprint-6 grading snapshot; its `Evaluate_v4.md` successor never existed — the S6 tracker/register references to it were reworded).
      - Deliberately kept: `assets/textures/enemies/enemies_all_components_atlas_full.png` (test contract), `levels/level0.txt` (registered test fixture), `docs/management/s6_plan.md`/`s7_plan.md` and the S6/S7 status docs (audit trail).
   2. **Documentation Fact Repairs**:
      - `FILE_STRUCTURE.md`: phantom entries removed, missing entries added, every path re-verified against the tree. `S6_LOCKED_INTERFACES.md`: corrected to the 4-level catalog, co-op `GameProgress` fields, `defeatEnemy` parameter, and the camera-mode axis line. `ROLES.md` rewritten around real APIs. Dead `Evaluate_v4` references reworded in the S6 tracker/bug register. `S7_TV5_PACKAGE_MANIFEST.md`: `hud.png` reclassified as packaged-unused. `CODING_RULES.md`, `ASSETS_LIST.md`, `README.md`, `s6_plan.md`, and the `Gate0ContractTests.cpp` header comment corrected.
@@ -1553,3 +1553,17 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Grep-verified file:line map of every asset to its loader (runtime / fixture / packaged-unused / future / reference). Key findings: `bg_world.png` and `hud.png` are packaged-unused legacy assets (candidates for future package-list removal).
   5. **Verification**:
      - Independent tester clean-rebuilt both build directories: build/ 37/37 and build-tests/ 37/37 CTest pass (logs `/tmp/ctest_main_final.log`, `/tmp/ctest_tests_final.log`); no-weakening audit of all changed test suites passed; regression sweep clean (sole binary diff = intentional junk deletion); Vietnamese grep: code directories empty, docs limited to the 3 protected files.
+
+### 76. Demo Video Recording Script
+
+- **Date:** 2026-08-22
+- **Author:** TV1 (glm-workflow leaf task, main agent)
+- **Status:** Completed
+- **Modified Files:**
+  - Created: `docs/DEMO_VIDEO_SCRIPT.md`
+  - Updated: `FILE_STRUCTURE.md` (docs tree now lists `DEMO_VIDEO_SCRIPT.md` and `docs/assets/ASSET_MAPPING.md`)
+  - Updated: `docs/change_in_develop.md` (this entry; plus factual correction to entry #75: `Evaluate_v4.md` never existed)
+- **Detailed Logic Changes:**
+  1. Documentation only; no code or assets changed. Added a 5-minute demo video recording script aligned with the 20-scenario matrix in `docs/testing/TV4_PLAYTHROUGH_LOG.md`, so one recording session on one immutable RC commit yields both the required spec deliverable (demo video) and the human playthrough evidence.
+  2. The script contains: pre-flight checklist (release build, RC commit citation, capture/audio setup, two-pass save plan), a chaptered main timeline with exact key actions and per-chapter rubric mapping (menu/character select, 1-1 overworld mechanics showcase including the new canonical ledge walk-off and flagpole tiers, 1-2 underground, 1-3 underwater, 1-4 castle with both Bowser kill routes, save/load persistence proof, 2-player co-op, 2-player versus, pause), an off-camera Part B list covering the remaining matrix rows (no-damage, death-respawn, low-flag, GameOver paths, pause stress, continuous run), a controls cheat sheet sourced from `src/states/PlayState.cpp` bindings, and editing notes (1280x720/60fps, keep game audio, cut only between chapters).
+  3. Entry #75 correction: replaced the false claim that `Evaluate.md`'s live content is `docs/management/Evaluate_v4.md` — that file never existed (verified during the audit); `Evaluate.md` was a stale Sprint-6 grading snapshot with dead links.

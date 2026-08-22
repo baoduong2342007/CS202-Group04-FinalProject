@@ -185,6 +185,7 @@ docs/
 |-- change_in_develop.md
 |-- class_diagram.md
 |-- design_patterns.md
+|-- DEMO_VIDEO_SCRIPT.md
 |-- enemies_coordinate.md
 |-- items_objects_coordinate.md
 |-- oop_principles_and_design_patterns.md
@@ -206,6 +207,7 @@ docs/
 |   `-- TV5_AUDIO_HUD_ITEM_CHECKLIST.md
 |-- testing/TV4_PLAYTHROUGH_LOG.md
 |-- specs/CS202-FinalProject_SuperMario.md
+|-- assets/ASSET_MAPPING.md
 `-- assets/reference/
 ```
 

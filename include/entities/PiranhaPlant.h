@@ -72,5 +72,5 @@ private:
     static constexpr float TRAVEL_DISTANCE = 64.f;  // Pixels to move up out of pipe (64px travel = 48px full plant height above pipe rim!)
     static constexpr float MOVE_SPEED = 64.f;       // Pixels per second (1.0s emergence time)
     static constexpr float WAIT_TIME = 1.5f;        // Pause time at top and bottom inside pipe
-    static constexpr float PROXIMITY_RADIUS = 20.f; // 20px guard (only holds when Mario is directly on top of pipe, emerges as Mario approaches!)
+    static constexpr float PROXIMITY_RADIUS = 40.f; // 40px guard: the plant stays hidden while Mario is on or adjacent to the pipe (canonical SMB1)
 };

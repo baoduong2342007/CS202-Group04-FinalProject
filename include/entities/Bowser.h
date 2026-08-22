@@ -2,7 +2,7 @@
  * @file Bowser.h
  * @brief Castle boss: patrols the bridge, hops, and breathes wavy fire
  * @note Enemy expansion - SMB1-accurate: five fireballs defeat him, star
- *       contact is lethal, stomping him hurts Mario, and the axe that
+ *       contact cannot harm him, stomping him hurts Mario, and the axe that
  *       collapses his bridge drops him into the lava regardless of health.
  */
 

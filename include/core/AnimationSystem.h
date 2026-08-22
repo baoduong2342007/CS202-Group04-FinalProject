@@ -1,6 +1,6 @@
 /**
  * @file AnimationSystem.h
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Manages animation states and handles the logic for updating sprite texture rectangles over time.
  */
 

@@ -144,7 +144,9 @@ void Paratroopa::patrol() {
     }
 
     if (m_mode == ParatroopaMode::HOP) {
-        if (isApproachingLedge()) {
+        // Canonical SMB1: the hopper drifts off ledges too - its wings only
+        // hop, they do not fly. Wingless walkers follow Koopa::patrol().
+        if (turnsAtLedge() && isApproachingLedge()) {
             reverseDirection();
         }
 

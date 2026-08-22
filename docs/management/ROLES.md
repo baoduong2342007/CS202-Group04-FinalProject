@@ -5,7 +5,7 @@
 
 ---
 
-## TV1 (Dương) — Architect / Team Lead
+## TV1 (Duong) — Architect / Team Lead
 
 **Main Responsibilities:**
 - Overall OOP design: class hierarchy, interfaces between modules
@@ -25,15 +25,15 @@
 GameManager::getInstance().changeState(new PlayState());
 
 // TV3/TV4/TV5 use this to publish events
-EventBus::getInstance().publish(Event::COIN_COLLECTED, data);
+EventBus::getInstance().notify(EventType::COIN_COLLECTED);
 
-// TV2 uses this to subscribe to events
-EventBus::getInstance().subscribe(Event::PLAYER_DIED, callback);
+// TV2 uses this to subscribe to events; subscribers implement IObserver
+auto token = EventBus::getInstance().subscribe(EventType::PLAYER_DIED, observer);
 ```
 
 ---
 
-## TV2 (Nhật) — Engine & Render
+## TV2 (Nhat) — Engine & Render
 
 **Main Responsibilities:**
 - Setup SFML: window, game loop, delta time
@@ -58,7 +58,7 @@ void Entity::playAnimation(const std::string& clipName);
 
 ---
 
-## TV3 (Bảo) — Mario & Physics
+## TV3 (Bao) — Mario & Physics
 
 **Main Responsibilities:**
 - Class `Mario`: movement, jump, gravity, power-up states
@@ -77,9 +77,12 @@ void Entity::playAnimation(const std::string& clipName);
 
 **Collision interface TV4 needs:**
 ```cpp
-// TV3 exposes these for TV4 to use for enemies
-CollisionManager::checkCollision(Entity* a, Entity* b);
-CollisionManager::resolveCollision(Entity* a, Entity* b, Direction dir);
+// Real dispatch flow (no per-pair checkCollision/resolveCollision API exists):
+// Box2D contacts enter via CollisionManager::resolve(b2Contact*, TileMap&),
+// which builds a typed CollisionContext and hands it to
+CollisionManager::dispatch(CollisionContext& context, TileMap& tileMap);
+// Enemy defeats are committed by the central transaction
+CollisionManager::defeatEnemy(Enemy& victim, DefeatCause cause, Mario* owner, int streakIndex = 0);
 ```
 
 ---
@@ -127,7 +130,7 @@ F = finish flag / level end
 
 ---
 
-## TV5 (Truyền) — UI, Sound & Items
+## TV5 (Truyen) — UI, Sound & Items
 
 **Main Responsibilities:**
 - `SoundManager` (Singleton): load and play sound effects + background music
@@ -148,7 +151,7 @@ F = finish flag / level end
 ```cpp
 // TV3 uses InputHandler to get actions
 auto action = inputHandler.getAction(sf::Keyboard::Space);
-if (action) action->execute(mario);
+if (action) action->execute();
 ```
 
 ---

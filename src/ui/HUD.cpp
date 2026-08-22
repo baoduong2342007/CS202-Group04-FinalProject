@@ -1,6 +1,6 @@
 /**
  * @file HUD.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Implementation of HUD — score, lives, coin count, and world indicator.
  * @note sf::Font::loadFromFile returns bool (unlike sf::Texture/sf::SoundBuffer
  *       constructors in SFML 3 which throw). The return value is checked and

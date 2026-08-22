@@ -1,6 +1,6 @@
 /**
  * @file Camera.h
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Manages sf::View to track the player with boundary clamping against level limits.
  * @note Designed for SFML 3. Clamps camera center to prevent rendering out-of-bounds areas.
  */
@@ -41,6 +41,17 @@ public:
     void setVerticalMode(CameraVerticalMode mode) { m_verticalMode = mode; }
 
     /**
+     * @brief Enables or disables monotonic (never-backward) horizontal scroll.
+     * @details Canonical SMB1 campaign rule: once the camera has scrolled
+     *          right, its center x never decreases and the player is held at
+     *          the view's left edge. Off by default; co-op and PvP keep the
+     *          free two-way deadzone follow.
+     * @param monotonic True to lock the horizontal scroll direction.
+     */
+    void setMonotonicScroll(bool monotonic) { m_monotonicScroll = monotonic; }
+    bool isMonotonicScroll() const { return m_monotonicScroll; }
+
+    /**
      * @brief Updates the camera's center position to follow a target.
      * @details Tracks the X-axis continuously. In DEAD_ZONE mode, the camera
      *          follows targets that rise within 32 logical pixels of the
@@ -76,6 +87,10 @@ private:
     sf::Vector2f m_stableCenter{0.f, 0.f};
     CameraVerticalMode m_verticalMode = CameraVerticalMode::LOCKED;
     float m_horizontalDeadzoneRatio = 0.05f;
+    /// Monotonic mode: the stable follow center never moves left.
+    bool m_monotonicScroll = false;
+    /// Last committed stable center x; the monotonic clamp floor.
+    float m_lastStableCenterX = 0.f;
 
     float m_shakeTimer = 0.f;
     float m_shakeMagnitude = 0.f;

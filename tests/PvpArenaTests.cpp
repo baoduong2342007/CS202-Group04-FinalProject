@@ -1,6 +1,6 @@
 /**
  * @file PvpArenaTests.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief PvP arena layout validation and Level duel-mode loading tests
  * @note Covers the PVP_ARENA TileMap contract, the shipped arena fixture and
  *       Level::loadPvpArena (fighters, stats, flower lifecycle).

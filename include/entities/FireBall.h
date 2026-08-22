@@ -1,6 +1,6 @@
 /**
  * @file FireBall.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Fireball projectile entity for Mario FIRE power-up state
  * @note Week 7 implementation
  */

@@ -1,6 +1,6 @@
 /**
  * @file SuperMarioState.cpp
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Implementation of SuperMarioState
  */
 

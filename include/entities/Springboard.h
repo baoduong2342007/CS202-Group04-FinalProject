@@ -1,6 +1,6 @@
 /**
  * @file Springboard.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Springboard / Trampoline entity for high jump launches
  * @note Authentic NES SMB springboard with normal bounce and Super Spring Jump mechanics
  */

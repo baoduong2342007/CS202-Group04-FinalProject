@@ -173,7 +173,9 @@ void Goomba::patrol() {
         return;
     }
 
-    if (isApproachingLedge()) {
+    // Canonical SMB1: a Goomba walks off ledges (turnsAtLedge() is false);
+    // only ledge-aware species reverse before the drop.
+    if (turnsAtLedge() && isApproachingLedge()) {
         reverseDirection();
     }
 

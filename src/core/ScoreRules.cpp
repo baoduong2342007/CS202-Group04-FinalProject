@@ -1,6 +1,6 @@
 /**
  * @file ScoreRules.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Implementation of the shared score catalog.
  */
 

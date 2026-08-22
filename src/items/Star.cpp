@@ -1,6 +1,6 @@
 /**
  * @file Star.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Starman — bouncing item that grants temporary invincibility
  * @note Week 5 — publishes PLAYER_POWER_UP on collect; invincibility is time-limited.
  *       The item queries Mario's state directly (no EventBus payload required).

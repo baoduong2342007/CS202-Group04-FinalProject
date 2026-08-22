@@ -1,6 +1,6 @@
 /**
  * @file SoundManager.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Singleton audio manager — loads, caches, and plays sound effects & music
  * @note Week 1 — skeleton only, full implementation in later weeks
  */

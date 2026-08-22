@@ -1,49 +1,51 @@
-# Sơ đồ lớp hiện tại của game
+# Current class diagrams of the game
 
-Tài liệu này mô tả các lớp và đường biên runtime được suy ra từ mã nguồn hiện
-tại trong `include/` và `src/`. Các sơ đồ được tách theo trách nhiệm để có thể
-đọc từng lát cắt mà không nhầm quan hệ sở hữu với quan hệ sử dụng.
+This document describes the classes and runtime boundaries inferred from the
+current source code in `include/` and `src/`. The diagrams are split by
+responsibility so each slice can be read without confusing ownership
+relations with usage relations.
 
-## Phạm vi và cách đọc
+## Scope and how to read
 
-- `*--` là composition: đối tượng bên trái sở hữu vòng đời thành phần (thường
-  là member theo giá trị hoặc `std::unique_ptr`).
-- `o--` là aggregation/ghi nhận không sở hữu; `-->` và `..>` là tham chiếu,
-  lời gọi hoặc kiểu trả về, không chuyển quyền sở hữu.
-- Nhãn cardinality (`1`, `0..1`, `0..*`, `2`) phản ánh member/collection ở
-  thời điểm runtime, không phải số lượng lớp C++ được tạo tĩnh.
-- `<<interface>>`, `<<abstract>>`, `<<Singleton>>`, `<<utility>>` và
-  `<<RAII token>>` là vai trò được khai báo hoặc thể hiện trực tiếp trong mã.
-  `SaveManager` cố ý không mang nhãn Singleton.
-- Tên lớp, enum và method giữ nguyên tiếng Anh như C++; phần giải thích bằng
-  tiếng Việt. Các template dài được rút gọn trong ô lớp để Mermaid ổn định;
-  kiểu sở hữu chính xác được ghi trong chú thích và bảng bằng chứng.
+- `*--` is composition: the left object owns the component's lifetime
+  (usually a by-value member or a `std::unique_ptr`).
+- `o--` is aggregation/non-owning recording; `-->` and `..>` are references,
+  calls, or return types — they transfer no ownership.
+- Cardinality labels (`1`, `0..1`, `0..*`, `2`) reflect the runtime
+  members/collections, not the number of statically created C++ classes.
+  `<<RAII token>>` is a role declared or shown directly in the code.
+  `SaveManager` deliberately carries no Singleton label.
+- Class, enum, and method names stay in English as in C++; the explanations
+  are prose. Long templates are shortened inside class boxes to keep Mermaid
+  stable; the precise owning type is recorded in the notes and evidence
+  table.
 
-Bảng màu dùng nhất quán giữa các block: cam = core/owner, xanh dương = state
-hoặc physics, xanh lá = gameplay/entity, tím = pattern/event và đỏ nhạt =
-enemy. Màu chỉ giúp định hướng thị giác; semantics vẫn do mũi tên và chú thích
-quyết định.
+The color scheme is consistent across blocks: orange = core/owner, blue =
+state or physics, green = gameplay/entity, purple = pattern/event, and light
+red = enemy. Colors are only a visual aid; semantics are decided by the
+arrows and notes.
 
-## Điều hướng
+## Navigation
 
-1. [Vòng lặp ứng dụng và state stack](#runtime)
-2. [Biên sở hữu của các state gameplay](#state-boundary)
-3. [Level, vật lý và collection entity](#world)
-4. [Đường biên callback va chạm](#collision)
-5. [Cây kế thừa entity](#entity-hierarchy)
-6. [State power-up của Mario](#mario-state)
+1. [Application loop and state stack](#runtime)
+2. [Ownership boundary of the gameplay states](#state-boundary)
+3. [Level, physics, and the entity collection](#world)
+4. [Collision callback boundary](#collision)
+5. [Entity inheritance tree](#entity-hierarchy)
+6. [Mario power-up state](#mario-state)
 7. [Factory Method](#factory)
-8. [EventBus và Observer](#observer)
-9. [Command và input](#command)
-10. [Bằng chứng nguồn](#evidence)
+8. [EventBus and Observer](#observer)
+9. [Command and input](#command)
+10. [Source evidence](#evidence)
 
 <a id="runtime"></a>
-## 1. Vòng lặp ứng dụng và state stack
+## 1. Application loop and state stack
 
-Đây là đường đi của một frame: `Game` nhận event và giữ `InputState`, sau đó
-ủy quyền input, update và render cho `GameManager`. `GameManager` là Singleton
-điều phối một stack các `unique_ptr<IGameState>`; `SaveManager` chỉ là member
-theo giá trị của manager, không phải Singleton độc lập.
+This is the path of one frame: `Game` receives events and keeps the
+`InputState`, then delegates input, update, and render to `GameManager`.
+`GameManager` is a Singleton coordinating a stack of `unique_ptr<IGameState>`;
+`SaveManager` is merely a by-value member of the manager, not an independent
+Singleton.
 
 ```mermaid
 classDiagram
@@ -134,20 +136,21 @@ classDiagram
     cssClass "MenuState,LevelSelectState,CharacterSelectState,CoopCharacterSelectState,PvpCharacterSelectState,PlayState,PvpPlayState,PauseState,GameOverState,WinState" state
 ```
 
-`GameManager::changeState`, `pushState` và `popState` chỉ xếp `PendingOp`; cuối
-`GameManager::update()` mới gọi `processPendingOps()`. `CHANGE` gọi `onExit()`
-cho stack cũ rồi `onEnter()` state mới; `PUSH` gọi `onPause()` state dưới và
-`POP` gọi `onResume()` state mới ở đỉnh. Khi state trên cùng là overlay,
-`render()` vẽ state dưới trước. Các hành vi này là lifecycle thực, không phải
-chỉ quan hệ kế thừa trên hình.
+`GameManager::changeState`, `pushState`, and `popState` only enqueue a
+`PendingOp`; only at the end of `GameManager::update()` does
+`processPendingOps()` run. `CHANGE` calls `onExit()` on the old stack then
+`onEnter()` on the new state; `PUSH` calls `onPause()` on the state below and
+`POP` calls `onResume()` on the new top state. When the top state is an
+overlay, `render()` draws the state below first. These behaviors are real
+lifecycle semantics, not just inheritance relations on the picture.
 
 <a id="state-boundary"></a>
-## 2. Biên sở hữu của các state gameplay
+## 2. Ownership boundary of the gameplay states
 
-`PlayState` là state campaign duy nhất sở hữu level hiện tại, HUD, hai
-`InputHandler` theo giá trị (handler thứ hai dùng cho co-op), progress phiên và
-các token đăng ký event. `PvpPlayState` có một `Level` arena và hai handler
-đầu vào. Cả hai state không sở hữu `Mario` trực tiếp; `Level` mới là owner.
+`PlayState` is the only campaign state owning the current level, HUD, two
+by-value `InputHandler`s (the second handler is for co-op), session progress,
+and event subscription tokens. `PvpPlayState` has an arena `Level` and two
+input handlers. Neither state owns `Mario` directly; `Level` is the owner.
 
 ```mermaid
 classDiagram
@@ -278,21 +281,22 @@ classDiagram
     cssClass "InputHandler,Subscription,EventBus" pattern
 ```
 
-Trong `PlayState::onEnter()`, bốn subscription được giữ trong
-`m_eventSubscriptions`; `onExit()` giải phóng chúng trước khi dừng nhạc. Khi
-nhận `GAME_PAUSED`, state xếp `PauseState` qua `GameManager`, thay vì tự sở hữu
-overlay. `HUD` giữ `const Mario&` và tùy chọn `const Mario*` thứ hai, vì vậy mũi
-tên tới `Mario` là đọc dữ liệu chứ không phải ownership.
+In `PlayState::onEnter()`, four subscriptions are kept in
+`m_eventSubscriptions`; `onExit()` releases them before stopping the music.
+On receiving `GAME_PAUSED`, the state enqueues `PauseState` through
+`GameManager` instead of owning the overlay itself. `HUD` holds a
+`const Mario&` and optionally a second `const Mario*`, so the arrow to
+`Mario` means reading data, not ownership.
 
 <a id="world"></a>
-## 3. Level, vật lý và collection entity
+## 3. Level, physics, and the entity collection
 
-`Level` là boundary ownership của một màn: world Box2D và listener là
-`unique_ptr`, `TileMap`/`Camera` là member theo giá trị, Mario chính và Mario
-thứ hai (co-op/PvP) là `unique_ptr`, còn các entity spawn được gom trong một
-`vector<unique_ptr<Entity>>`. `TextureManager&` là reference lấy từ Singleton
-toàn cục; Level không giải phóng nó. `m_pvpFireFlower` chỉ là raw handle tới
-flower đã nằm trong `m_entities`.
+`Level` is the ownership boundary of a stage: the Box2D world and listener
+are `unique_ptr`s, `TileMap`/`Camera` are by-value members, the primary and
+second Mario (co-op/PvP) are `unique_ptr`s, and spawned entities are gathered
+in a `vector<unique_ptr<Entity>>`. `TextureManager&` is a reference taken
+from the global Singleton; Level does not release it. `m_pvpFireFlower` is
+only a raw handle to a flower already inside `m_entities`.
 
 ```mermaid
 classDiagram
@@ -392,19 +396,20 @@ classDiagram
     cssClass "EntityView" view
 ```
 
-`Level::spawnEntitiesFromTileMap()` tạo `EntityFactory` cục bộ, gọi
-`create(SpawnRequest, SpawnContext)`, gắn `TextureManager` và đẩy kết quả vào
-`m_entities`; Mario được tạo riêng trước đó. Vì vậy quan hệ `Level`--`Entity`
-trên hình là ownership thật, còn `getEntities()` chỉ trả view hết hạn khi Level
-load/update/mutate.
+`Level::spawnEntitiesFromTileMap()` creates a local `EntityFactory`, calls
+`create(SpawnRequest, SpawnContext)`, attaches the `TextureManager`, and
+pushes the result into `m_entities`; Mario is created separately beforehand.
+Therefore the `Level`--`Entity` relation in the picture is true ownership,
+while `getEntities()` only returns a view that expires when Level
+loads/updates/mutates.
 
 <a id="collision"></a>
-## 4. Đường biên callback va chạm
+## 4. Collision callback boundary
 
-Box2D gọi `ContactListener`; listener chuyển callback cho
-`CollisionManager`. Utility này tạo/nhận `CollisionContext` gồm hai
-`CollisionParticipant` đã kiểm tra kiểu. Các participant chỉ trỏ tới entity và
-body đang sống; chúng không thay đổi owner của Level.
+Box2D calls `ContactListener`; the listener forwards the callback to
+`CollisionManager`. This utility creates/receives a `CollisionContext`
+containing two type-checked `CollisionParticipant`s. The participants merely
+point at live entities and bodies; they never change Level's ownership.
 
 ```mermaid
 classDiagram
@@ -471,19 +476,19 @@ classDiagram
     cssClass "Entity,Mario,Enemy,Item" entity
 ```
 
-Đây là dependency/callback, không phải một object graph mới: constructor của
-`ContactListener` nhận `TileMap&`; `CollisionManager` có constructor bị xóa và
-chỉ cung cấp static helper. Các overload compatibility kiểu `isMario()` hay
-`isItem()` của `Entity` không được vẽ như các subclass mới.
+This is dependency/callback, not a new object graph: `ContactListener`'s
+constructor takes a `TileMap&`; `CollisionManager` has a deleted constructor
+and only provides static helpers. Compatibility overloads like `isMario()`
+or `isItem()` on `Entity` are not drawn as new subclasses.
 
 <a id="entity-hierarchy"></a>
-## 5. Cây kế thừa entity
+## 5. Entity inheritance tree
 
-Sơ đồ này tách hierarchy khỏi ownership của Level. Các nhánh enemy và item
-được liệt kê theo các header concrete hiện tại; những world object trực tiếp
-khác như `Elevator`, `Springboard`, `Toad`, `ScorePopup`, `BlockDebris`,
-`BowserAxe` và `BulletBillLauncher` vẫn là `Entity` nhưng được lược khỏi lát
-cắt enemy/item.
+This diagram separates the hierarchy from Level's ownership. The enemy and
+item branches list the current concrete headers; other direct world objects
+such as `Elevator`, `Springboard`, `Toad`, `ScorePopup`, `BlockDebris`,
+`BowserAxe`, and `BulletBillLauncher` are still `Entity`s but are omitted
+from the enemy/item slice.
 
 ```mermaid
 classDiagram
@@ -621,19 +626,20 @@ classDiagram
     cssClass "EnemyProjectile,FireBall,Hammer,BowserFire" projectile
 ```
 
-`Entity` nhận `TextureManager*` không sở hữu; `AnimationSystem` mới là state
-được entity giữ bằng `unique_ptr`. `Enemy` và `Item` là các interface hành vi
-đa hình (patrol/defeat và onCollect), còn identity va chạm runtime vẫn dựa vào
-`EntityType`, `EntitySubtype` và capability bits. Vì vậy enum identity không
-được diễn giải thành thêm một tầng kế thừa.
+`Entity` receives a non-owning `TextureManager*`; `AnimationSystem` is the
+state held by the entity via `unique_ptr`. `Enemy` and `Item` are polymorphic
+behavior interfaces (patrol/defeat and onCollect), while runtime collision
+identity still relies on `EntityType`, `EntitySubtype`, and capability bits.
+Therefore the enum identity must not be interpreted as an extra inheritance
+layer.
 
 <a id="mario-state"></a>
-## 6. State power-up của Mario
+## 6. Mario power-up state
 
-Ngoài state stack của game, Mario có State Pattern riêng. Mario giữ một state
-hiện hành bằng `std::unique_ptr<IMarioState>` và thay implementation khi
-`applyStateTransition()` đổi `MarioState`; bốn state cụ thể chỉ cung cấp luật
-hitbox, fireball và phá gạch.
+Besides the game's state stack, Mario has its own State Pattern. Mario holds
+the current state in a `std::unique_ptr<IMarioState>` and swaps the
+implementation when `applyStateTransition()` changes `MarioState`; the four
+concrete states only supply the hitbox, fireball, and brick-breaking rules.
 
 ```mermaid
 classDiagram
@@ -688,25 +694,25 @@ classDiagram
     cssClass "MarioState,IMarioState" contract
 ```
 
-Đây là hai state seam khác nhau: `IGameState` điều khiển lifecycle của màn hình
-game; `IMarioState` điều khiển luật power-up của một Mario. Các method
-`onEnter`, `onExit`, `update`, `getHitboxSize` và `canShootFireBall` vẫn là
-interface signatures, nhưng không có production call qua `m_statePattern` trong
-`Mario.cpp` hiện tại. Mũi tên nét đứt tới `Mario` vì vậy chỉ là dependency của
-kiểu tham số; mũi tên runtime duy nhất ở lát cắt này là
-`Mario::canBreakBricks()` gọi `m_statePattern->canBreakBricks()`. Không gộp hai
-state seam vào một hierarchy chung và cũng không gán `SaveManager` vào State
-Pattern.
+These are two different state seams: `IGameState` controls the lifecycle of
+game screens; `IMarioState` controls the power-up rules of one Mario. The
+methods `onEnter`, `onExit`, `update`, `getHitboxSize`, and
+`canShootFireBall` remain interface signatures, but there is no production
+call through `m_statePattern` for them in the current `Mario.cpp`. The dashed
+arrow to `Mario` is therefore only a parameter-type dependency; the single
+runtime arrow in this slice is `Mario::canBreakBricks()` calling
+`m_statePattern->canBreakBricks()`. Do not merge the two state seams into one
+shared hierarchy, and do not assign `SaveManager` to the State Pattern.
 
 <a id="factory"></a>
-## 7. Factory Method: request → creator → entity
+## 7. Factory Method: request -> creator -> entity
 
-`EntityFactory::create()` là entry point canonical. `SpawnRequest` có payload
-variant đúng một trong `EnemyType`, `ItemType` hoặc tile code; `SpawnContext`
-chỉ truyền `b2World*` và theme không sở hữu. `EntityFactory` giữ ba creator
-theo giá trị; `WorldObjectCreator` lại giữ hai creator stateless theo giá trị.
-Không có nhãn Singleton trên factory: các static helper cũ chỉ forward về
-default orchestrator.
+`EntityFactory::create()` is the canonical entry point. A `SpawnRequest`
+carries exactly one variant payload among `EnemyType`, `ItemType`, or a tile
+code; `SpawnContext` passes only a non-owning `b2World*` and the theme.
+`EntityFactory` holds three creators by value; `WorldObjectCreator` in turn
+holds two stateless creators by value. There is no Singleton label on the
+factory: the old static helpers merely forward to the default orchestrator.
 
 ```mermaid
 classDiagram
@@ -779,17 +785,19 @@ classDiagram
     cssClass "SpawnRequest,SpawnContext,Entity,Level" value
 ```
 
-Trong `Level::spawnEntitiesFromTileMap()`, factory tạo object rồi Level mới
-gắn texture, tile map cho enemy và chuyển `unique_ptr` vào collection. Chỉ
-Level nhận ownership kết quả; creator không giữ entity sau khi trả về.
+In `Level::spawnEntitiesFromTileMap()`, the factory creates the object and
+only then does Level attach the texture and tile map for enemies and move the
+`unique_ptr` into the collection. Only Level receives ownership of the
+result; creators keep no entity after returning it.
 
 <a id="observer"></a>
-## 8. EventBus và Observer với token RAII
+## 8. EventBus and Observer with the RAII token
 
-`EventBus` thực thi `ISubject` và là Singleton. `subscribe()` trả một
-`Subscription` move-only; token giữ `shared_ptr<SubscriptionLease>`, còn
-state EventBus chỉ lưu weak lease records. `IObserver*` trong lease là pointer
-không sở hữu. Khi token cuối cùng bị hủy hoặc `reset()`, registration bị ngắt.
+`EventBus` implements `ISubject` and is a Singleton. `subscribe()` returns a
+move-only `Subscription`; the token holds a `shared_ptr<SubscriptionLease>`,
+while EventBus state stores only weak lease records. The `IObserver*` inside
+a lease is a non-owning pointer. When the last token is destroyed or
+`reset()`, the registration is disconnected.
 
 ```mermaid
 classDiagram
@@ -877,22 +885,24 @@ classDiagram
     cssClass "PlayState,HUD,SoundManager" subscriber
 ```
 
-`EventBus::notify(const GameEvent&)` chụp snapshot listener và kiểm tra lại
-lease trước từng callback, nên callback có thể `reset()` token khác mà không
-làm hỏng vòng lặp. `PlayState::onEnter()` đăng ký bốn event; `HUD` cũng là
-observer và giữ token riêng. `SoundManager` là Singleton `IObserver` thứ ba:
-`Game` lấy instance ở composition root, constructor đăng ký 21 event với
-`EventBus` và giữ các token để `onNotify()` phát SFX. EventType-only `notify`
-vẫn là overload tương thích, còn payload canonical là `GameEvent` value-only.
+`EventBus::notify(const GameEvent&)` snapshots the listeners and re-checks
+the lease before each callback, so a callback may `reset()` another token
+without corrupting the loop. `PlayState::onEnter()` registers four events;
+`HUD` is also an observer and keeps its own tokens. `SoundManager` is the
+third `IObserver` Singleton: `Game` obtains the instance at the composition
+root, the constructor subscribes to 21 events with `EventBus` and keeps the
+tokens so `onNotify()` can play SFX. The EventType-only `notify` remains a
+compatibility overload; the canonical payload is the value-only `GameEvent`.
 
 <a id="command"></a>
-## 9. Command và input rebinding
+## 9. Command and input rebinding
 
-`InputHandler` sở hữu các command bằng `unique_ptr` trong binding; việc bind
-lại cùng key/trigger/group thay object cũ. `handleInput()` đọc `InputState`,
-thực thi command Pressed/Released/Held và chọn lệnh horizontal/vertical mới
-nhất. Concrete command giữ Mario pointer không sở hữu hoặc nhận callback;
-đặc biệt `ShootCommand` chỉ phát request, không tự tạo `FireBall`.
+`InputHandler` owns commands via `unique_ptr` inside bindings; rebinding the
+same key/trigger/group replaces the old object. `handleInput()` reads the
+`InputState`, executes Pressed/Released/Held commands, and picks the newest
+horizontal/vertical command. Concrete commands hold a non-owning Mario
+pointer or receive a callback; in particular `ShootCommand` only issues a
+request and never creates the `FireBall` itself.
 
 ```mermaid
 classDiagram
@@ -971,35 +981,37 @@ classDiagram
     cssClass "JumpCommand,MoveLeftCommand,MoveRightCommand,RunCommand,ShootCommand,PauseCommand" command
 ```
 
-`PlayState::rebindCommands()` tạo concrete command với `m_level->getMario()`
-và map shoot callback tới `Level::requestFireBallShot()`. Đây là dependency
-được tạo ở call site, không phải field ownership của command tới Level.
+`PlayState::rebindCommands()` builds the concrete commands with
+`m_level->getMario()` and maps the shoot callback to
+`Level::requestFireBallShot()`. This is a dependency created at the call
+site, not field ownership from the command to Level.
 
 <a id="evidence"></a>
-## 10. Bằng chứng nguồn và giới hạn biểu diễn
+## 10. Source evidence and representation limits
 
-| Quan hệ/contract trong sơ đồ | Bằng chứng hiện hành |
+| Diagram relation/contract | Current evidence |
 | --- | --- |
-| Vòng lặp `Game` ủy quyền cho manager | [`include/core/Game.h:14`](../include/core/Game.h#L14), [`src/core/Game.cpp:78`](../src/core/Game.cpp#L78), [`src/core/Game.cpp:105`](../src/core/Game.cpp#L105), [`src/core/Game.cpp:124`](../src/core/Game.cpp#L124) |
+| `Game` loop delegates to the manager | [`include/core/Game.h:14`](../include/core/Game.h#L14), [`src/core/Game.cpp:78`](../src/core/Game.cpp#L78), [`src/core/Game.cpp:105`](../src/core/Game.cpp#L105), [`src/core/Game.cpp:124`](../src/core/Game.cpp#L124) |
 | Singleton, deferred state stack, value `SaveManager` | [`include/core/GameManager.h:23`](../include/core/GameManager.h#L23), [`include/core/GameManager.h:72`](../include/core/GameManager.h#L72), [`include/core/GameManager.h:74`](../include/core/GameManager.h#L74), [`include/core/SaveManager.h:22`](../include/core/SaveManager.h#L22), [`src/core/GameManager.cpp:27`](../src/core/GameManager.cpp#L27), [`src/core/GameManager.cpp:76`](../src/core/GameManager.cpp#L76), [`src/core/GameManager.cpp:88`](../src/core/GameManager.cpp#L88) |
-| Lifecycle change/push/pop và overlay render | [`src/core/GameManager.cpp:44`](../src/core/GameManager.cpp#L44), [`src/core/GameManager.cpp:57`](../src/core/GameManager.cpp#L57), [`src/core/GameManager.cpp:64`](../src/core/GameManager.cpp#L64), [`src/core/GameManager.cpp:109`](../src/core/GameManager.cpp#L109) |
-| Concrete game states và state contract | [`include/states/IGameState.h:19`](../include/states/IGameState.h#L19), [`include/states/PlayState.h:23`](../include/states/PlayState.h#L23), [`include/states/PvpPlayState.h:24`](../include/states/PvpPlayState.h#L24), [`include/states/PauseState.h:13`](../include/states/PauseState.h#L13) |
+| change/push/pop lifecycle and overlay rendering | [`src/core/GameManager.cpp:44`](../src/core/GameManager.cpp#L44), [`src/core/GameManager.cpp:57`](../src/core/GameManager.cpp#L57), [`src/core/GameManager.cpp:64`](../src/core/GameManager.cpp#L64), [`src/core/GameManager.cpp:109`](../src/core/GameManager.cpp#L109) |
+| Concrete game states and the state contract | [`include/states/IGameState.h:19`](../include/states/IGameState.h#L19), [`include/states/PlayState.h:23`](../include/states/PlayState.h#L23), [`include/states/PvpPlayState.h:24`](../include/states/PvpPlayState.h#L24), [`include/states/PauseState.h:13`](../include/states/PauseState.h#L13) |
 | `PlayState` owns Level/HUD/handlers/tokens | [`include/states/PlayState.h:77`](../include/states/PlayState.h#L77), [`include/states/PlayState.h:78`](../include/states/PlayState.h#L78), [`include/states/PlayState.h:82`](../include/states/PlayState.h#L82), [`include/states/PlayState.h:106`](../include/states/PlayState.h#L106), [`include/ui/HUD.h:37`](../include/ui/HUD.h#L37), [`src/states/PlayState.cpp:224`](../src/states/PlayState.cpp#L224) |
-| Level ownership and non-owning handles | [`include/level/Level.h:30`](../include/level/Level.h#L30), [`include/level/Level.h:192`](../include/level/Level.h#L192), [`include/level/Level.h:194`](../include/level/Level.h#L194), [`include/level/Level.h:196`](../include/level/Level.h#L196), [`include/level/Level.h#L200`](../include/level/Level.h#L200), [`include/level/Level.h:209`](../include/level/Level.h#L209), [`src/level/Level.cpp:148`](../src/level/Level.cpp#L148), [`src/level/Level.cpp:157`](../src/level/Level.cpp#L157) |
-| Level factory call and entity adoption | [`src/level/Level.cpp:625`](../src/level/Level.cpp#L625), [`src/level/Level.cpp:658`](../src/level/Level.cpp#L658), [`src/level/Level.cpp:665`](../src/level/Level.cpp#L665), [`src/level/Level.cpp#L674`](../src/level/Level.cpp#L674) |
+| Level ownership and non-owning handles | [`include/level/Level.h:30`](../include/level/Level.h#L30), [`include/level/Level.h:192`](../include/level/Level.h#L192), [`include/level/Level.h:194`](../include/level/Level.h#L194), [`include/level/Level.h:196`](../include/level/Level.h#L196), [`include/level/Level.h:200`](../include/level/Level.h#L200), [`include/level/Level.h:209`](../include/level/Level.h#L209), [`src/level/Level.cpp:148`](../src/level/Level.cpp#L148), [`src/level/Level.cpp:157`](../src/level/Level.cpp#L157) |
+| Level factory call and entity adoption | [`src/level/Level.cpp:625`](../src/level/Level.cpp#L625), [`src/level/Level.cpp:658`](../src/level/Level.cpp#L658), [`src/level/Level.cpp:665`](../src/level/Level.cpp#L665), [`src/level/Level.cpp:674`](../src/level/Level.cpp#L674) |
 | Entity/Character/Mario/Enemy hierarchy | [`include/entities/Entity.h:31`](../include/entities/Entity.h#L31), [`include/entities/Character.h:17`](../include/entities/Character.h#L17), [`include/entities/Mario.h:54`](../include/entities/Mario.h#L54), [`include/entities/Enemy.h:21`](../include/entities/Enemy.h#L21), [`include/entities/Goomba.h:17`](../include/entities/Goomba.h#L17), [`include/entities/Koopa.h:26`](../include/entities/Koopa.h#L26), [`include/entities/PiranhaPlant.h:15`](../include/entities/PiranhaPlant.h#L15), [`include/entities/BuzzyBeetle.h:13`](../include/entities/BuzzyBeetle.h#L13) |
 | Item hierarchy and collection contract | [`include/items/Item.h:14`](../include/items/Item.h#L14), [`include/items/Item.h:26`](../include/items/Item.h#L26), [`include/items/Coin.h:18`](../include/items/Coin.h#L18), [`include/items/Mushroom.h:19`](../include/items/Mushroom.h#L19), [`include/items/FireFlower.h:12`](../include/items/FireFlower.h#L12), [`include/items/Star.h:13`](../include/items/Star.h#L13) |
 | Mario power-up State Pattern | [`include/states/IMarioState.h:17`](../include/states/IMarioState.h#L17), [`include/entities/Mario.h:205`](../include/entities/Mario.h#L205), [`src/entities/Mario.cpp:252`](../src/entities/Mario.cpp#L252), [`src/entities/Mario.cpp:937`](../src/entities/Mario.cpp#L937), [`src/entities/Mario.cpp:1461`](../src/entities/Mario.cpp#L1461), [`src/entities/Mario.cpp:1465`](../src/entities/Mario.cpp#L1465) |
 | Read-only `EntityView` lookup results | [`include/level/EntityView.h:25`](../include/level/EntityView.h#L25), [`include/level/EntityView.h:133`](../include/level/EntityView.h#L133), [`include/level/EntityView.h:143`](../include/level/EntityView.h#L143), [`include/level/EntityView.h:156`](../include/level/EntityView.h#L156), [`include/level/EntityView.h:171`](../include/level/EntityView.h#L171) |
 | Collision callback and typed context | [`include/physics/ContactListener.h:14`](../include/physics/ContactListener.h#L14), [`include/physics/CollisionManager.h:33`](../include/physics/CollisionManager.h#L33), [`include/physics/CollisionManager.h:61`](../include/physics/CollisionManager.h#L61), [`include/physics/CollisionManager.h:95`](../include/physics/CollisionManager.h#L95), [`src/physics/ContactListener.cpp:10`](../src/physics/ContactListener.cpp#L10), [`src/physics/ContactListener.cpp:14`](../src/physics/ContactListener.cpp#L14) |
 | Factory Method creator composition | [`include/patterns/EntityFactory.h:20`](../include/patterns/EntityFactory.h#L20), [`include/patterns/EntityFactory.h:48`](../include/patterns/EntityFactory.h#L48), [`include/patterns/EntityCreator.h:14`](../include/patterns/EntityCreator.h#L14), [`include/patterns/WorldObjectCreator.h:13`](../include/patterns/WorldObjectCreator.h#L13), [`src/patterns/EntityFactory.cpp:19`](../src/patterns/EntityFactory.cpp#L19) |
-| EventBus, Observer và RAII token | [`include/patterns/EventBus.h:36`](../include/patterns/EventBus.h#L36), [`include/patterns/IObserver.h:17`](../include/patterns/IObserver.h#L17), [`include/patterns/Subscription.h:23`](../include/patterns/Subscription.h#L23), [`src/patterns/EventBus.cpp:17`](../src/patterns/EventBus.cpp#L17), [`src/patterns/EventBus.cpp:51`](../src/patterns/EventBus.cpp#L51), [`src/patterns/EventBus.cpp:196`](../src/patterns/EventBus.cpp#L196), [`src/patterns/EventBus.cpp:210`](../src/patterns/EventBus.cpp#L210), [`src/patterns/EventBus.cpp:242`](../src/patterns/EventBus.cpp#L242) |
-| `SoundManager` Singleton observer và subscription seam | [`include/core/SoundManager.h:116`](../include/core/SoundManager.h#L116), [`include/core/SoundManager.h:127`](../include/core/SoundManager.h#L127), [`include/core/SoundManager.h:251`](../include/core/SoundManager.h#L251), [`src/core/SoundManager.cpp:40`](../src/core/SoundManager.cpp#L40), [`src/core/SoundManager.cpp:45`](../src/core/SoundManager.cpp#L45), [`src/core/SoundManager.cpp:48`](../src/core/SoundManager.cpp#L48), [`src/core/SoundManager.cpp:105`](../src/core/SoundManager.cpp#L105), [`src/core/SoundManager.cpp:109`](../src/core/SoundManager.cpp#L109), [`src/core/Game.cpp:62`](../src/core/Game.cpp#L62), [`src/core/Game.cpp:65`](../src/core/Game.cpp#L65) |
-| Command ownership và dispatch | [`include/patterns/InputHandler.h:40`](../include/patterns/InputHandler.h#L40), [`include/patterns/InputHandler.h:86`](../include/patterns/InputHandler.h#L86), [`include/patterns/ICommand.h:16`](../include/patterns/ICommand.h#L16), [`src/patterns/InputHandler.cpp:18`](../src/patterns/InputHandler.cpp#L18), [`src/patterns/InputHandler.cpp:46`](../src/patterns/InputHandler.cpp#L46), [`src/states/PlayState.cpp:62`](../src/states/PlayState.cpp#L62) |
+| EventBus, Observer, and the RAII token | [`include/patterns/EventBus.h:36`](../include/patterns/EventBus.h#L36), [`include/patterns/IObserver.h:17`](../include/patterns/IObserver.h#L17), [`include/patterns/Subscription.h:23`](../include/patterns/Subscription.h#L23), [`src/patterns/EventBus.cpp:17`](../src/patterns/EventBus.cpp#L17), [`src/patterns/EventBus.cpp:51`](../src/patterns/EventBus.cpp#L51), [`src/patterns/EventBus.cpp:196`](../src/patterns/EventBus.cpp#L196), [`src/patterns/EventBus.cpp:210`](../src/patterns/EventBus.cpp#L210), [`src/patterns/EventBus.cpp:242`](../src/patterns/EventBus.cpp#L242) |
+| `SoundManager` Singleton observer and subscription seam | [`include/core/SoundManager.h:116`](../include/core/SoundManager.h#L116), [`include/core/SoundManager.h:127`](../include/core/SoundManager.h#L127), [`include/core/SoundManager.h:251`](../include/core/SoundManager.h#L251), [`src/core/SoundManager.cpp:40`](../src/core/SoundManager.cpp#L40), [`src/core/SoundManager.cpp:45`](../src/core/SoundManager.cpp#L45), [`src/core/SoundManager.cpp:48`](../src/core/SoundManager.cpp#L48), [`src/core/SoundManager.cpp:105`](../src/core/SoundManager.cpp#L105), [`src/core/SoundManager.cpp:109`](../src/core/SoundManager.cpp#L109), [`src/core/Game.cpp:62`](../src/core/Game.cpp#L62), [`src/core/Game.cpp:65`](../src/core/Game.cpp#L65) |
+| Command ownership and dispatch | [`include/patterns/InputHandler.h:40`](../include/patterns/InputHandler.h#L40), [`include/patterns/InputHandler.h:86`](../include/patterns/InputHandler.h#L86), [`include/patterns/ICommand.h:16`](../include/patterns/ICommand.h#L16), [`src/patterns/InputHandler.cpp:18`](../src/patterns/InputHandler.cpp#L18), [`src/patterns/InputHandler.cpp:46`](../src/patterns/InputHandler.cpp#L46), [`src/states/PlayState.cpp:62`](../src/states/PlayState.cpp#L62) |
 
-Các sơ đồ không cố ý liệt kê mọi field private, mọi tile object hay mọi enum
-gameplay. Phần bị lược bỏ là chi tiết triển khai không làm thay đổi boundary
-ownership/contract đã vẽ; không nên suy ra rằng một lớp không xuất hiện là
-không tồn tại. Mermaid parser/renderer không được cài sẵn trong workspace, nên
-việc kiểm tra cục bộ của tài liệu dựa trên block `classDiagram` chuẩn, ID lớp
-không có ký tự namespace/generic nguy hiểm, và kiểm tra cân bằng delimiter.
+The diagrams do not attempt to list every private field, every tile object,
+or every gameplay enum. What is omitted is implementation detail that does
+not change the ownership/contract boundaries drawn; a class not appearing
+must not be inferred to be non-existent. A Mermaid parser/renderer is not
+installed in the workspace, so the document's local verification relies on
+standard `classDiagram` blocks, class IDs free of dangerous
+namespace/generic characters, and delimiter balance checks.

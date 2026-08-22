@@ -1,6 +1,6 @@
 /**
  * @file AnimationSystem.cpp
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Implementation of sprite animation handling.
  */
 

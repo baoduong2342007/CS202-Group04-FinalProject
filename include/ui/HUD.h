@@ -1,6 +1,6 @@
 /**
  * @file HUD.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Heads-Up Display showing score, lives, coin count, and world indicator.
  * @note Subscribes to EventBus for refresh triggers, while Mario remains the
  *       authoritative source for score, lives, and coin count.

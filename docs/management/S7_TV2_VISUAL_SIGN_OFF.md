@@ -2,7 +2,7 @@
 
 This document serves as the visual evidence and regression matrix for TV2 tasks in Sprint 7.
 
-**Reviewer:** Nhật (TV2)
+**Reviewer:** Nhat (TV2)
 **Date:** `20/08/2026`
 
 ---

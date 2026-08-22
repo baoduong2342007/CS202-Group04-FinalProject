@@ -1,6 +1,6 @@
 /**
  * @file PvpCharacterSelectState.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Sequential two-player character selection implementation for PvP duel.
  */
 

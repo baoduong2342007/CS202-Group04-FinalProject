@@ -81,7 +81,8 @@ void Spiny::patrol() {
         return;
     }
 
-    if (isApproachingLedge()) {
+    // Canonical SMB1: a Spiny walks off ledges like every ground walker.
+    if (turnsAtLedge() && isApproachingLedge()) {
         reverseDirection();
     }
 

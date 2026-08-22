@@ -1,6 +1,6 @@
 /**
  * @file PhysicsEngine.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief PhysicsEngine singleton managing the Box2D simulation world
  * @note Week 2 Box2D integration
  */

@@ -1,6 +1,6 @@
 /**
  * @file QuestionBlock.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Animated Question block entity — 3-frame flashing & 12px bump animation on hit
  * @note Sprint 4 — spawned by EntityFactory from '?' tile code
  */

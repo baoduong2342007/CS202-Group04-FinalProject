@@ -43,6 +43,10 @@ public:
         return m_isFlippedDead || isDead() || !isActive();
     }
 
+    /// Canonical SMB1: the Hammer Bro is effectively platform-bound and
+    /// reverses at ledges instead of walking off its platform.
+    bool turnsAtLedge() const override { return true; }
+
     State getState() const { return m_state; }
 
     /// Feed Mario's position; hammer bursts aim at the player's side.

@@ -1,6 +1,6 @@
 /**
  * @file WinState.cpp
- * @author TV1 (Dương) & TV2 (Nhật)
+ * @author TV1 (Duong) & TV2 (Nhat)
  * @brief Polished retro arcade Victory Win State implementation
  */
 #include "states/WinState.h"

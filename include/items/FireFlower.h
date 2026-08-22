@@ -1,6 +1,6 @@
 /**
  * @file FireFlower.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Fire Flower — stationary item that applies FIRE to the current body tier
  * @note Small Mario becomes Small Fire Mario; Super Mario becomes Super Fire Mario
  */

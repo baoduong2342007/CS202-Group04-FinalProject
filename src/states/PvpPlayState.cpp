@@ -1,6 +1,6 @@
 /**
  * @file PvpPlayState.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Two-player duel gameplay implementation (best-of-3 stomp duel).
  */
 

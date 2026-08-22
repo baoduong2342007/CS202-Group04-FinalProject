@@ -1,6 +1,6 @@
 /**
  * @file Mushroom.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Super Mushroom — horizontal patrol and body-tier growth
  * @note Week 5 — power-up logic queries Mario's state directly (no EventBus payload)
  */

@@ -141,7 +141,7 @@ license/permission are supplied for every packaged file.
 |---|---:|---|
 | `docs/assets/reference/enemies.png` | 436×530 | `Reference` — source enemy atlas |
 | `docs/assets/reference/enemies_all_components_atlas.png` | 1072×1160 | `Reference` — indexed enemy analysis |
-| `docs/assets/reference/enemies_all_components_atlas_full.png` | 800×1280 | `Reference` — historical component atlas |
+| `docs/assets/reference/enemies_all_components_atlas_full.png` | 1072×1160 | `Reference` — historical component atlas |
 | `docs/assets/reference/enemies_candidate.png` | 128×96 | `Reference` — candidate without runtime loader |
 | `docs/assets/reference/blocks_all_components_atlas_full.png` | 800×800 | `Reference` — block analysis |
 | `docs/assets/reference/items_objects_all_components_atlas_full.png` | 960×1840 | `Reference` — item analysis |
@@ -151,6 +151,5 @@ license/permission are supplied for every packaged file.
 | `docs/assets/reference/tileset_all_components_atlas_full.png` | 720×2448 | `Reference` — indexed component atlas |
 | `docs/assets/reference/bg_world_candidate.png` | 1857×847 | `Reference` — background candidate/source |
 | `docs/assets/reference/general_tile.png` | 680×776 | `Reference` — duplicate/source tile sheet |
-| `docs/assets/reference/tileset(v2).png` | 680×776 | `Reference` — legacy tile source |
 
 Production code must not use absolute asset paths, and CMake must not copy `docs/assets/reference/` into the runtime package.

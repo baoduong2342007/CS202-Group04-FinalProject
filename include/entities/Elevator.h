@@ -1,6 +1,6 @@
 /**
  * @file Elevator.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Moving platform / lift entity driven by a Box2D kinematic body
  * @note Travels between two level markers with optional pause at each end;
  *       kinematic bodies carry Mario and enemies natively via the solver.

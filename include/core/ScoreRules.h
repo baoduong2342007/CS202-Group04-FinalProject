@@ -1,6 +1,6 @@
 /**
  * @file ScoreRules.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Central score catalog shared by item and gameplay producers.
  */
 

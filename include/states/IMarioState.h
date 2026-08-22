@@ -1,6 +1,6 @@
 /**
  * @file IMarioState.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Interface for Mario power-up State Pattern
  * @note Design Pattern #4 — State Pattern for Mario
  */

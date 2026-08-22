@@ -1,57 +1,59 @@
-# Design patterns đang chạy trong Super Mario
+# Design patterns running in Super Mario
 
-## Phạm vi và cách đọc
+## Scope and how to read
 
-Tài liệu này mô tả **luồng runtime đang có trong source hiện tại**, không phải
-một danh sách quan hệ lớp lý thuyết. Mỗi phần bắt đầu bằng một tình huống có
-thật, sau đó dùng sequence diagram để giữ đúng thứ tự gọi hàm, nhánh và vòng
-đời đối tượng. Tên lớp, hàm và enum được giữ nguyên tiếng Anh để có thể tra
-ngược vào code.
+This document describes the **runtime flows that exist in the current source**, not
+a theoretical list of class relationships. Each section starts from a real
+situation, then uses a sequence diagram to preserve the exact call order,
+branches, and object lifetimes. Class, function, and enum names are kept in
+English so they can be traced back into the code.
 
-| Ký hiệu | Cách hiểu trong diagram |
+| Symbol | How to read it in the diagram |
 | --- | --- |
-| `->>` | Lời gọi đồng bộ; bên gọi chờ hàm/event dispatch xử lý xong. |
-| `-->>` | Giá trị trả về hoặc kết quả có ý nghĩa (`bool`, `unique_ptr`, token). |
-| `activate` / `deactivate` | Khoảng thời gian đối tượng đang ở trên call stack. |
-| `alt` | Nhánh `if`/`switch` có trong code. |
-| `opt` | Nhánh tùy chọn, chỉ xảy ra khi điều kiện runtime đúng. |
-| `loop` | Vòng lặp thật trong code, ví dụ các binding hoặc mã tile. |
+| `->>` | Synchronous call; the caller waits until the function/event dispatch finishes. |
+| `-->>` | Return value or meaningful result (`bool`, `unique_ptr`, token). |
+| `activate` / `deactivate` | The span during which an object is on the call stack. |
+| `alt` | An `if`/`switch` branch present in the code. |
+| `opt` | An optional branch that only happens when a runtime condition holds. |
+| `loop` | A real loop in the code, e.g. bindings or tile codes. |
 
-Các mũi tên trong tài liệu đều là lời gọi/event có thể tìm thấy trong source;
-một self-call dùng để ghi rõ phép kiểm tra hoặc mutation nội bộ. `EventBus`
-dispatch **đồng bộ**: `notify()` gọi `IObserver::onNotify()` ngay trong cùng
-call stack. Ngược lại, các thao tác state của `GameManager` được **defer** đến
-điểm an toàn cuối `update()`.
+Every arrow in this document is a call/event that can be found in the source;
+a self-call is used to spell out an internal check or mutation. `EventBus`
+dispatch is **synchronous**: `notify()` invokes `IObserver::onNotify()` in the
+same call stack. In contrast, `GameManager` state operations are **deferred**
+to the safe point at the end of `update()`.
 
-## Bản đồ nhanh các scenario
+## Quick map of the scenarios
 
-| Pattern được theo dõi | Scenario runtime | Seam chính |
+| Tracked pattern | Runtime scenario | Main seam |
 | --- | --- | --- |
-| Command | Một frame gameplay: phím di chuyển held và phím bắn pressed | `InputHandler → ICommand → Mario/Level` |
-| Factory Method | `Level` đọc tile `G` và tạo một `Goomba` | `EntityFactory → EntityCreator → EnemyCreator` |
-| Observer | Nhặt coin cập nhật HUD và phát SFX | `EventBus → HUD/SoundManager` |
-| Game State | `Escape` mở `PauseState` bằng state stack | `IGameState → GameManager` |
-| Mario State | Nhặt Mushroom, thay state power-up hoặc chờ clearance | `Mario → IMarioState` |
-| Singleton (hạ tầng có thật) | Composition root lấy manager dùng chung; `Level` lấy resource manager | `getInstance() → function-local static` |
+| Command | One gameplay frame: a held movement key and a pressed fire key | `InputHandler -> ICommand -> Mario/Level` |
+| Factory Method | `Level` reads tile `G` and creates a `Goomba` | `EntityFactory -> EntityCreator -> EnemyCreator` |
+| Observer | Coin pickup updates the HUD and plays an SFX | `EventBus -> HUD/SoundManager` |
+| Game State | `Escape` opens `PauseState` via the state stack | `IGameState -> GameManager` |
+| Mario State | Picking up a Mushroom swaps the power-up state or waits for clearance | `Mario -> IMarioState` |
+| Singleton (real infrastructure) | The composition root grabs shared managers; `Level` gets the resource manager | `getInstance() -> function-local static` |
 
-Singleton được trace riêng ở phần 6 vì đây là hạ tầng lifetime/access, không phải
-seam gameplay chính của năm pattern trên. `GameManager`, `EventBus`,
-`SoundManager` và `TextureManager` đều có `getInstance()`/constructor private
-hoặc copy guard tương ứng. Đặc biệt, `SaveManager` **không phải Singleton**:
-constructor của nó là public (`include/core/SaveManager.h:22-26`) và
-`GameManager` value-own một đối tượng tại `include/core/GameManager.h:72-75`.
+Singleton is traced separately in section 6 because it is lifetime/access
+infrastructure, not a primary gameplay seam like the five patterns above.
+`GameManager`, `EventBus`, `SoundManager`, and `TextureManager` each have
+`getInstance()`/private constructors or the corresponding copy guards.
+Notably, `SaveManager` is **not a Singleton**: its constructor is public
+(`include/core/SaveManager.h:22-26`) and `GameManager` value-owns one object at
+`include/core/GameManager.h:72-75`.
 
 ---
 
-## 1. Command — input thành intent gameplay
+## 1. Command — turning input into gameplay intent
 
-### Scenario: một frame có `X` pressed và `Right` held
+### Scenario: one frame with `X` pressed and `Right` held
 
-`Game` tích lũy `InputState` từ SFML rồi chuyển frame input cho state trên cùng.
-`PlayState` kiểm tra các gate gameplay trước khi giao cho `InputHandler`.
-`InputHandler` không biết Mario hay projectile là gì; nó chỉ chọn
-`ICommand::execute()` theo trigger/group. Trong cùng frame, `ShootCommand` gửi
-request cho `Level`, còn `MoveRightCommand` gửi intent cho `Mario`.
+`Game` accumulates the `InputState` from SFML then hands the frame input to the
+top state. `PlayState` checks the gameplay gates before passing it to
+`InputHandler`. `InputHandler` knows nothing about Mario or projectiles; it only
+picks an `ICommand::execute()` by trigger/group. In the same frame,
+`ShootCommand` sends a request to `Level` while `MoveRightCommand` sends an
+intent to `Mario`.
 
 ```mermaid
 sequenceDiagram
@@ -71,39 +73,39 @@ sequenceDiagram
     activate GM
     GM->>PS: top()->processInput(inputState)
     activate PS
-    PS->>PS: reset intents, kiểm tra transition/death/transform gates
-    alt gameplay bị khóa
-        Note over PS: return, không dispatch command và input không được buffer
-    else frame gameplay hợp lệ
+    PS->>PS: reset intents, check transition/death/transform gates
+    alt gameplay locked
+        Note over PS: return, no command dispatched and input is not buffered
+    else valid gameplay frame
         PS->>IH: handleInput(inputState)
         activate IH
-        loop Pressed và Released bindings
+        loop Pressed and Released bindings
             IH->>IH: wasPressed/wasReleased(key)
         end
-        opt X pressed và có ShootCommand
+        opt X pressed and ShootCommand bound
             IH->>Shoot: execute()
             activate Shoot
-            Shoot->>Level: callback → requestFireBallShot(*Mario)
+            Shoot->>Level: callback -> requestFireBallShot(*Mario)
             activate Level
             Level->>Mario: tryStartFireBallShot()
-            alt đầy giới hạn, cooldown hoặc state không cho bắn
+            alt at fireball limit, on cooldown, or state forbids shooting
                 Mario-->>Level: false
-            else request được chấp nhận
+            else request accepted
                 Mario-->>Level: true
                 alt m_world->IsLocked()
                     Level->>Level: queue m_pendingFireBallRequests
-                    Note over Level: Chưa tạo FireBall và chưa phát FIREBALL_SHOT
-                else Box2D đã unlock
-                    Level->>Level: make_unique<FireBall>, push vào m_entities
+                    Note over Level: FireBall not created yet, FIREBALL_SHOT not fired
+                else Box2D unlocked
+                    Level->>Level: make_unique<FireBall>, push into m_entities
                     Level->>Bus: notify(FIREBALL_SHOT)
                 end
             end
-            Note over Shoot,Level: ShootCommand giữ callback void, bool request chỉ được Level dùng nội bộ
+            Note over Shoot,Level: ShootCommand holds a void callback; the bool request is internal to Level
             deactivate Level
             deactivate Shoot
         end
-        opt Right đang active và binding thuộc Horizontal
-            IH->>IH: chọn binding có pressOrder mới nhất
+        opt Right active and binding belongs to Horizontal group
+            IH->>IH: pick binding with the newest pressOrder
             IH->>Move: execute()
             activate Move
             Move->>Mario: moveRight()
@@ -123,54 +125,56 @@ sequenceDiagram
     Level->>Physics: update(*m_world, dt, m_physicsAccumulator)
     Physics-->>Level: physicsStepped
     Level->>Level: processPendingFireballs()
-    opt có request pending và world đã unlock
-        Level->>Level: make_unique<FireBall>, push vào m_entities
+    opt pending request and world unlocked
+        Level->>Level: make_unique<FireBall>, push into m_entities
         Level->>Bus: notify(FIREBALL_SHOT)
     end
 ```
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò Command | Đối tượng thực tế | Trách nhiệm |
+| Command role | Actual object | Responsibility |
 | --- | --- | --- |
-| Invoker | `InputHandler` | Giữ `unique_ptr<ICommand>`, kiểm tra trigger/group và gọi `execute()`. |
-| Command | `ICommand` | Hợp đồng duy nhất `execute()`. |
-| Concrete Command | `MoveRightCommand`, `ShootCommand`, `PauseCommand`, `RunCommand` | Đóng gói một hành động hoặc callback; không sở hữu `Mario`/`Level`. |
-| Receiver | `Mario`, `Level` | Nhận intent hoặc request và quyết định gameplay/physics thật sự. |
+| Invoker | `InputHandler` | Holds `unique_ptr<ICommand>`, checks trigger/group, and calls `execute()`. |
+| Command | `ICommand` | The single `execute()` contract. |
+| Concrete Command | `MoveRightCommand`, `ShootCommand`, `PauseCommand`, `RunCommand` | Encapsulates one action or callback; does not own `Mario`/`Level`. |
+| Receiver | `Mario`, `Level` | Receive the intent or request and decide the actual gameplay/physics. |
 
-`PlayState::rebindCommands()` đặt các binding (`src/states/PlayState.cpp:62-132`),
-`Game::update()` và `GameManager::processInput()` truyền input xuống
-(`src/core/Game.cpp:124-126`, `src/core/GameManager.cpp:103-106`). Vòng dispatch,
-nhánh `gameplayEnabled` và chọn `pressOrder` nằm ở
-`src/patterns/InputHandler.cpp:43-102`. `MoveRightCommand::execute()` gọi
-`Mario::moveRight()` (`src/patterns/MoveRightCommand.cpp:17-21`), còn callback
-`ShootCommand` đi đến `Level::requestFireBallShot()`
+`PlayState::rebindCommands()` installs the bindings (`src/states/PlayState.cpp:62-132`),
+`Game::update()` and `GameManager::processInput()` push input down
+(`src/core/Game.cpp:124-126`, `src/core/GameManager.cpp:103-106`). The dispatch
+loop, the `gameplayEnabled` branch, and the `pressOrder` selection live at
+`src/patterns/InputHandler.cpp:43-102`. `MoveRightCommand::execute()` calls
+`Mario::moveRight()` (`src/patterns/MoveRightCommand.cpp:17-21`), while the
+`ShootCommand` callback goes to `Level::requestFireBallShot()`
 (`src/states/PlayState.cpp:123-129`, `src/level/Level.cpp:1708-1749`).
-Trong `Level::update()`, nhịp physics sau đó giữ đúng thứ tự
-`m_mario->preparePhysics(dt) → PhysicsEngine::update(...) →
-processPendingFireballs()` (`src/level/Level.cpp:1169-1189`); diagram gọi rõ
-`Mario::preparePhysics()` để không biến nó thành một phương thức không tồn tại
-của `Level`.
+Inside `Level::update()`, the subsequent physics beat preserves the order
+`m_mario->preparePhysics(dt) -> PhysicsEngine::update(...) ->
+processPendingFireballs()` (`src/level/Level.cpp:1169-1189`); the diagram calls
+`Mario::preparePhysics()` explicitly so it is not mistaken for a non-existent
+method of `Level`.
 
-### Vì sao pattern giúp ích
+### Why the pattern helps
 
-Key mapping thay đổi mà không sửa `Mario` hoặc `Level`; cùng một action cũng có
-thể bind cho keyboard khác, player 2 hoặc mode co-op. Trigger `Pressed`,
-`Held`, `Released` và group horizontal/vertical giữ logic input ở một nơi.
-Trade-off là command giữ con trỏ/callback không sở hữu receiver; owner phải
-đảm bảo `Mario`/`Level` còn sống. `ShootCommand` cũng chỉ yêu cầu bắn: giới
-hạn hai FireBall, cooldown, Box2D lock và ownership entity vẫn thuộc `Level`.
+Key mappings can change without touching `Mario` or `Level`; the same action
+can also be bound to another keyboard, player 2, or a co-op mode. The
+`Pressed`, `Held`, `Released` triggers and the horizontal/vertical groups keep
+the input logic in one place. The trade-off is that commands hold non-owning
+pointers/callbacks to the receiver; the owner must guarantee `Mario`/`Level`
+stay alive. `ShootCommand` also only requests a shot: the two-FireBall limit,
+cooldown, Box2D lock, and entity ownership remain with `Level`.
 
 ---
 
-## 2. Factory Method — tạo entity theo request polymorphic
+## 2. Factory Method — creating entities from a polymorphic request
 
-### Scenario: tile `G` tạo `Goomba`
+### Scenario: tile `G` creates a `Goomba`
 
-`Level` dùng seam không-static `EntityFactory::create()` cho vòng spawn. Request
-có đúng một payload trong `std::variant`: `EnemyType`, `ItemType` hoặc `char`.
-Với tile `G`, `WorldObjectCreator` đổi tile thành request enemy rồi ủy quyền cho
-`EnemyCreator`; concrete creator mới biết phải gọi constructor nào.
+`Level` uses the non-static `EntityFactory::create()` seam for the spawn loop.
+A request carries exactly one payload inside a `std::variant`: `EnemyType`,
+`ItemType`, or `char`. For tile `G`, `WorldObjectCreator` converts the tile
+into an enemy request then delegates to `EnemyCreator`; only the concrete
+creator knows which constructor to call.
 
 ```mermaid
 sequenceDiagram
@@ -183,95 +187,98 @@ sequenceDiagram
     participant Entity as "Entity (unique_ptr)"
     participant Item as ItemCreator
 
-    loop code và vị trí trong SPAWN_CODES
+    loop code and position in SPAWN_CODES
         Level->>Factory: create(SpawnRequest::tile(code, worldPos), SpawnContext{world, theme})
         activate Factory
         Factory->>Factory: std::visit(request.payload)
-        alt payload là char tile code
+        alt payload is a char tile code
             Factory->>World: create(request, context)
             activate World
             World->>World: tileCode()
             alt code == 'G'
                 World->>Enemy: create(SpawnRequest::enemy(GOOMBA, position), context)
                 activate Enemy
-                Enemy->>Enemy: enemyType(), đọc position/world/theme
+                Enemy->>Enemy: enemyType(), read position/world/theme
                 Enemy->>Goomba: make_unique<Goomba>(position, world, theme)
                 Goomba-->>Enemy: unique_ptr<Entity>
                 Enemy-->>World: unique_ptr<Entity>
                 deactivate Enemy
                 World-->>Factory: unique_ptr<Entity>
-            else tile code không được hỗ trợ
+            else unsupported tile code
                 World-->>Factory: nullptr
             end
             deactivate World
-        else payload là EnemyType
+        else payload is EnemyType
             Factory->>Enemy: create(request, context)
-            Enemy-->>Factory: unique_ptr<Entity> hoặc nullptr
-        else payload là ItemType
+            Enemy-->>Factory: unique_ptr<Entity> or nullptr
+        else payload is ItemType
             Factory->>Item: create(request, context)
-            Item-->>Factory: unique_ptr<Entity> hoặc nullptr
+            Item-->>Factory: unique_ptr<Entity> or nullptr
         end
-        Factory-->>Level: kết quả create()
+        Factory-->>Level: create() result
         deactivate Factory
 
-        alt entity khác nullptr
+        alt entity is not nullptr
             Level->>Entity: setTextureManager(m_textureManager)
-            opt entity là Enemy
+            opt entity is an Enemy
                 Level->>Entity: setTileMap(&m_tileMap)
             end
             Level->>Level: m_entities.push_back(std::move(entity))
         else nullptr
-            Level->>Level: if (entity) bỏ qua spawn
+            Level->>Level: if (entity) skip spawn
         end
     end
 ```
 
-Nhánh `EnemyType`/`ItemType` trong diagram là đường dùng chung cho các caller
-trực tiếp hoặc compatibility helper; production tile-map path chủ yếu đi qua
-payload `char` rồi `WorldObjectCreator`.
+The `EnemyType`/`ItemType` branches in the diagram are the shared path for
+direct callers or compatibility helpers; the production tile-map path mainly
+goes through the `char` payload and then `WorldObjectCreator`.
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò Factory Method | Đối tượng thực tế | Bằng chứng |
+| Factory Method role | Actual object | Evidence |
 | --- | --- | --- |
-| Product | `Entity` | `std::unique_ptr<Entity>` là kiểu trả về chung. |
-| Concrete Products | `Goomba`, `Koopa`, `Mushroom`, `QuestionBlock`, ... | Được khởi tạo trong các creator. |
-| Creator seam | `EntityCreator::create()` | Virtual factory method thuần ảo tại `include/patterns/EntityCreator.h:12-19`. |
-| Concrete Creators | `EnemyCreator`, `ItemCreator`, `WorldObjectCreator` | Override method; `WorldObjectCreator` còn delegate enemy/item. |
-| Orchestrator | `EntityFactory` | `std::visit` chọn creator tại `src/patterns/EntityFactory.cpp:19-35`. |
+| Product | `Entity` | `std::unique_ptr<Entity>` is the common return type. |
+| Concrete Products | `Goomba`, `Koopa`, `Mushroom`, `QuestionBlock`, ... | Constructed inside the creators. |
+| Creator seam | `EntityCreator::create()` | Pure virtual factory method at `include/patterns/EntityCreator.h:12-19`. |
+| Concrete Creators | `EnemyCreator`, `ItemCreator`, `WorldObjectCreator` | Override the method; `WorldObjectCreator` also delegates enemy/item creation. |
+| Orchestrator | `EntityFactory` | `std::visit` selects the creator at `src/patterns/EntityFactory.cpp:19-35`. |
 
-Call-site thật là `Level::spawnEntitiesFromTileMap()`
-(`src/level/Level.cpp:625-677`). Mapping `G → Goomba` nằm ở
-`src/patterns/WorldObjectCreator.cpp:32-47`, sau đó
-`src/patterns/EnemyCreator.cpp:24-78` mới gọi constructor concrete. Mapping
-item (`COIN`, `MUSHROOM`, `FIRE_FLOWER`, `STAR`) nằm ở
+The real call-site is `Level::spawnEntitiesFromTileMap()`
+(`src/level/Level.cpp:625-677`). The `G -> Goomba` mapping lives at
+`src/patterns/WorldObjectCreator.cpp:32-47`, after which
+`src/patterns/EnemyCreator.cpp:24-78` calls the concrete constructor. The item
+mapping (`COIN`, `MUSHROOM`, `FIRE_FLOWER`, `STAR`) lives at
 `src/patterns/ItemCreator.cpp:13-35`.
 
-`EntityFactory::createEnemy()`, `createItem()` và `createFromTileCode()` là
-**compatibility static helpers**, không phải seam canonical mới. Chúng tạo
-`SpawnRequest`/`SpawnContext` rồi forward về `defaultFactory().create()` tại
-`src/patterns/EntityFactory.cpp:37-59`; vì vậy không được diễn giải thành một
-`EntityFactory` Singleton mà caller phải lấy qua `getInstance()`.
+`EntityFactory::createEnemy()`, `createItem()`, and `createFromTileCode()` are
+**compatibility static helpers**, not the new canonical seam. They build a
+`SpawnRequest`/`SpawnContext` then forward to `defaultFactory().create()` at
+`src/patterns/EntityFactory.cpp:37-59`; therefore they must not be interpreted
+as making `EntityFactory` a Singleton that callers must obtain via
+`getInstance()`.
 
-### Vì sao pattern giúp ích
+### Why the pattern helps
 
-`Level` chỉ biết request, context và product base; thêm một loại enemy/item có
-thể tập trung ở concrete creator thay vì rải `new Goomba`, `new Koopa` khắp
-loader. `std::variant` cũng làm payload hợp lệ rõ ràng và creator trả `nullptr`
-khi type/tile không hỗ trợ. Đổi lại, mapping enum/tile vẫn là switch tập trung;
-đây là Factory Method có creator seam, không phải lời hứa rằng mọi entity đều
-tự đăng ký động.
+`Level` knows only the request, the context, and the product base; adding a
+new enemy/item type can be centralized in a concrete creator instead of
+sprinkling `new Goomba`, `new Koopa` across the loader. `std::variant` also
+makes the valid payloads explicit, and creators return `nullptr` for
+unsupported types/tiles. In exchange, the enum/tile mapping is still a
+centralized switch; this is a Factory Method with a creator seam, not a
+promise that every entity self-registers dynamically.
 
 ---
 
-## 3. Observer — event gameplay đến HUD và âm thanh
+## 3. Observer — gameplay events reaching the HUD and audio
 
-### Scenario: nhặt coin, dispatch đồng bộ đến hai subscriber
+### Scenario: coin pickup, synchronous dispatch to two subscribers
 
-Trong production, `Game` chạm `SoundManager::getInstance()` trước khi gameplay
-được tạo, nên `SoundManager` đăng ký event. Khi `PlayState::loadLevel()` tạo
-`HUD`, HUD đăng ký cùng `COIN_COLLECTED`. Một lần nhặt coin thay đổi dữ liệu
-authoritative trong `Mario`, rồi `EventBus` gọi từng observer ngay lập tức.
+In production, `Game` touches `SoundManager::getInstance()` before gameplay is
+created, so `SoundManager` registers for events. When `PlayState::loadLevel()`
+creates the `HUD`, the HUD subscribes to `COIN_COLLECTED` as well. One coin
+pickup mutates the authoritative data inside `Mario`, then `EventBus` invokes
+each observer immediately.
 
 ```mermaid
 sequenceDiagram
@@ -290,21 +297,21 @@ sequenceDiagram
     activate Sound
     Sound->>Bus: subscribe(COIN_COLLECTED, this)
     Bus-->>Sound: Subscription (move-only RAII token)
-    Sound->>Sound: giữ token trong m_eventSubscriptions
+    Sound->>Sound: keep token in m_eventSubscriptions
     deactivate Sound
 
     PS->>HUD: make_unique<HUD>(m_level->getMario(), ...)
     activate HUD
     HUD->>Bus: subscribe(COIN_COLLECTED, this)
     Bus-->>HUD: Subscription (move-only RAII token)
-    HUD->>HUD: giữ token trong m_eventSubscriptions
+    HUD->>HUD: keep token in m_eventSubscriptions
     deactivate HUD
 
     Level->>Level: checkItemCollisions()
     Level->>Coin: checkOverlap(player)
-    alt coin không collectible hoặc không overlap
+    alt coin not collectible or no overlap
         Coin-->>Level: false
-    else overlap hợp lệ
+    else valid overlap
         Level->>Coin: onCollect(Mario&)
         activate Coin
         Coin->>Mario: collectCoin(ScoreRules::pointsFor(COIN_COLLECTED))
@@ -312,10 +319,10 @@ sequenceDiagram
         Mario->>Mario: addCoin(), award score
         Mario->>Bus: notify(EventType::COIN_COLLECTED)
         activate Bus
-        Bus->>Bus: wrap thành GameEvent, snapshot listeners[event]
-        alt không có listener
-            Bus->>Bus: không có listener, return khỏi notify()
-        else có listener
+        Bus->>Bus: wrap into GameEvent, snapshot listeners[event]
+        alt no listener
+            Bus->>Bus: no listener, return from notify()
+        else listener present
             Bus->>Sound: onNotify(GameEvent{COIN_COLLECTED})
             activate Sound
             Sound->>Sound: playSound(SoundId::COIN)
@@ -324,7 +331,7 @@ sequenceDiagram
             activate HUD
             HUD->>HUD: refreshText()
             deactivate HUD
-            Bus->>Bus: dispatch xong theo thứ tự subscription
+            Bus->>Bus: dispatch finished in subscription order
         end
         deactivate Bus
         deactivate Mario
@@ -333,63 +340,64 @@ sequenceDiagram
         Level->>Coin: markForRemoval()
     end
 
-    opt HUD bị thay khi load level hoặc PlayState bị hủy
+    opt HUD replaced on level load or PlayState destroyed
         HUD->>HUD: m_eventSubscriptions.clear()
         HUD->>Sub: ~Subscription() / reset()
-        Sub->>Bus: lease.release() → disconnect/removeLease
-        Note over Sub,Bus: Observer không còn bị gọi sau khi token cuối bị hủy
+        Sub->>Bus: lease.release() -> disconnect/removeLease
+        Note over Sub,Bus: Observer no longer invoked after the last token dies
     end
 ```
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò Observer | Đối tượng thực tế | Trách nhiệm |
+| Observer role | Actual object | Responsibility |
 | --- | --- | --- |
-| Subject | `EventBus : ISubject` | Lưu listener theo `EventType`, snapshot và gọi `onNotify`. |
-| Observer | `IObserver` | Hợp đồng `onNotify(const GameEvent&)`. |
-| Concrete Observers | `HUD`, `SoundManager`, `PlayState` | Phản ứng độc lập với cùng value event. |
-| Registration lifetime | `Subscription` | Move-only RAII token; hủy/reset sẽ disconnect registration. |
-| Publisher | `Mario`, `Coin`, `Level`, command/collision code | Chỉ phát event value; không giữ reference đến HUD/audio. |
+| Subject | `EventBus : ISubject` | Stores listeners per `EventType`, snapshots, and calls `onNotify`. |
+| Observer | `IObserver` | The `onNotify(const GameEvent&)` contract. |
+| Concrete Observers | `HUD`, `SoundManager`, `PlayState` | React independently to the same value event. |
+| Registration lifetime | `Subscription` | Move-only RAII token; destroying/resetting it disconnects the registration. |
+| Publisher | `Mario`, `Coin`, `Level`, command/collision code | Only publish value events; hold no reference to HUD/audio. |
 
-Đăng ký HUD và lifecycle token nằm ở `src/ui/HUD.cpp:112-142`; audio đăng ký
-`COIN_COLLECTED` tại `src/core/SoundManager.cpp:45-91`. `HUD::onNotify()` refresh
-display tại `src/ui/HUD.cpp:146-190`, còn SoundManager map event sang SFX tại
-`src/core/SoundManager.cpp:109-184`. Luồng nhặt coin được gọi từ
-`src/level/Level.cpp:1504-1550` (và có fallback Box2D tại
-`src/physics/CollisionManager.cpp:938-949`), sau đó
-`Coin::awardTo()` → `Mario::collectCoin()` tại `src/items/Coin.cpp:147-168` và
-`src/entities/Mario.cpp:1367-1377`.
+HUD registration and the token lifecycle live at `src/ui/HUD.cpp:112-142`;
+audio registers for `COIN_COLLECTED` at `src/core/SoundManager.cpp:45-91`.
+`HUD::onNotify()` refreshes the display at `src/ui/HUD.cpp:146-190`, while
+SoundManager maps events to SFX at `src/core/SoundManager.cpp:109-184`. The
+coin pickup flow is invoked from `src/level/Level.cpp:1504-1550` (with a Box2D
+fallback at `src/physics/CollisionManager.cpp:938-949`), then
+`Coin::awardTo()` -> `Mario::collectCoin()` at `src/items/Coin.cpp:147-168`
+and `src/entities/Mario.cpp:1367-1377`.
 
-`EventBus::notify()` chụp snapshot rồi revalidate lease trước từng callback
-(`src/patterns/EventBus.cpp:242-272`), nên callback có thể reset subscription
-mà không làm hỏng vòng lặp. Nếu không có listener, dispatch chỉ return; tài
-liệu không giả định một subscriber chưa được source xác nhận.
+`EventBus::notify()` snapshots then revalidates the lease before each callback
+(`src/patterns/EventBus.cpp:242-272`), so a callback may reset a subscription
+without corrupting the loop. If there is no listener, dispatch simply returns;
+this document does not assume a subscriber that the source has not confirmed.
 
-Trong diagram, `SoundManager` đứng trước `HUD` vì composition root gọi
-`SoundManager::getInstance()` trước khi `PlayState::loadLevel()` tạo HUD. Đây là
-thứ tự đăng ký của production path; EventBus không xem các observer là chạy
-song song.
+In the diagram, `SoundManager` comes before `HUD` because the composition root
+calls `SoundManager::getInstance()` before `PlayState::loadLevel()` creates the
+HUD. This is the registration order of the production path; EventBus does not
+treat observers as running in parallel.
 
-### Vì sao pattern giúp ích
+### Why the pattern helps
 
-Gameplay không cần include hay gọi trực tiếp HUD/SoundManager; thêm observer mới
-không đổi `Mario::collectCoin()`. Event payload là value-only nên publisher không
-trao ownership. Chi phí là luồng điều khiển gián tiếp và thứ tự callback phụ
-thuộc thứ tự đăng ký; dispatch vẫn synchronous, không phải message queue hay
-thread nền. Token phải sống ít nhất bằng observer và được giữ trong owner thích
-hợp.
+Gameplay code does not need to include or call HUD/SoundManager directly;
+adding a new observer does not change `Mario::collectCoin()`. The event payload
+is value-only, so publishers exchange no ownership. The costs are indirection
+in the control flow and callback ordering that depends on registration order;
+dispatch remains synchronous — it is not a message queue or a background
+thread. The token must outlive its observer and be kept by a suitable owner.
 
 ---
 
-## 4. Game State — state stack với chuyển đổi deferred
+## 4. Game State — state stack with deferred transitions
 
-### Scenario: `Escape` mở `PauseState` ở safe point
+### Scenario: `Escape` opens `PauseState` at a safe point
 
-`PlayState` không tự hủy hoặc thay thế chính mình trong lúc đang chạy input.
-`PauseCommand` phát `GAME_PAUSED`; `PlayState::onNotify()` chỉ enqueue
-`pushState()`. Cuối `GameManager::update()`, queue được snapshot và `PauseState`
-mới được đưa lên stack. Vì `PauseState::isOverlay()` là `true`, frame render sau
-đó vẫn có thể vẽ `PlayState` bên dưới.
+`PlayState` does not destroy or replace itself in the middle of input
+processing. `PauseCommand` publishes `GAME_PAUSED`; `PlayState::onNotify()`
+only enqueues a `pushState()`. At the end of `GameManager::update()`, the
+queue is snapshotted and the new `PauseState` is pushed onto the stack.
+Because `PauseState::isOverlay()` is `true`, the next render frame can still
+draw `PlayState` underneath.
 
 ```mermaid
 sequenceDiagram
@@ -404,19 +412,19 @@ sequenceDiagram
     participant Sound as SoundManager
 
     PS->>Bus: subscribe(GAME_PAUSED, this)
-    Bus-->>PS: Subscription giữ trong m_eventSubscriptions
+    Bus-->>PS: Subscription kept in m_eventSubscriptions
 
     Game->>GM: processInput(inputState)
     activate GM
     GM->>PS: top()->processInput(inputState)
     activate PS
-    PS->>PS: kiểm tra transition/death/transform/flag gates
-    alt gameplay đang bị freeze
-        PS->>PS: return, Escape không được xử lý ở frame này
-    else gameplay hợp lệ
+    PS->>PS: check transition/death/transform/flag gates
+    alt gameplay frozen
+        PS->>PS: return, Escape not handled this frame
+    else gameplay valid
         PS->>IH: handleInput(inputState)
         activate IH
-        opt Escape wasPressed và PauseCommand đã bind
+        opt Escape wasPressed and PauseCommand bound
             IH->>PauseCmd: execute()
             activate PauseCmd
             PauseCmd->>Bus: notify(GAME_PAUSED)
@@ -428,7 +436,7 @@ sequenceDiagram
             Bus->>PS: onNotify(GameEvent{GAME_PAUSED})
             PS->>GM: pushState(make_unique<PauseState>())
             GM->>GM: m_pendingOps.push_back(PUSH)
-            Bus->>Bus: dispatch return (đồng bộ)
+            Bus->>Bus: dispatch returns (synchronous)
             deactivate Bus
             deactivate PauseCmd
         end
@@ -441,7 +449,7 @@ sequenceDiagram
     activate GM
     GM->>PS: top()->update(dt)
     activate PS
-    PS->>PS: update xong, PlayState vẫn còn trên stack trong call này
+    PS->>PS: update done, PlayState still on the stack during this call
     deactivate PS
     GM->>GM: processPendingOps(), ops.swap(m_pendingOps)
     GM->>PS: onPause()
@@ -451,14 +459,14 @@ sequenceDiagram
     Pause->>Pause: refreshVolumeDisplay()
     deactivate GM
 
-    opt frame sau nhấn Escape để resume
+    opt next frame presses Escape to resume
         Game->>GM: processInput(inputState)
         GM->>Pause: top()->processInput(inputState)
         Pause->>GM: popState()
         GM->>GM: enqueue POP
         Game->>GM: update(dt)
         GM->>Pause: top()->update(dt)
-        GM->>GM: snapshot queue ở safe point
+        GM->>GM: snapshot queue at safe point
         GM->>Pause: onExit()
         GM->>GM: pop_back()
         GM->>PS: onResume()
@@ -466,53 +474,56 @@ sequenceDiagram
     end
 ```
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò State | Đối tượng thực tế | Trách nhiệm |
+| State role | Actual object | Responsibility |
 | --- | --- | --- |
-| State interface | `IGameState` | Lifecycle `onEnter/onExit/onPause/onResume` và frame methods. |
-| Concrete states | `MenuState`, `PlayState`, `PauseState`, `GameOverState`, `WinState`, ... | Đóng gói behavior từng mode. |
-| Context/owner | `GameManager` | Chuyển tiếp event/input/update đến top state và sở hữu stack. |
-| Transition policy | `PendingOp { CHANGE, PUSH, POP }` | Tách yêu cầu chuyển state khỏi thời điểm hủy object. |
+| State interface | `IGameState` | `onEnter/onExit/onPause/onResume` lifecycle and frame methods. |
+| Concrete states | `MenuState`, `PlayState`, `PauseState`, `GameOverState`, `WinState`, ... | Encapsulate the behavior of each mode. |
+| Context/owner | `GameManager` | Forwards event/input/update to the top state and owns the stack. |
+| Transition policy | `PendingOp { CHANGE, PUSH, POP }` | Separates the state-change request from the moment objects are destroyed. |
 
-`GameManager::changeState/pushState/popState()` chỉ append pending operation
-(`src/core/GameManager.cpp:32-42`). `update()` gọi top state trước rồi mới
-`processPendingOps()` (`src/core/GameManager.cpp:76-95`); `applyOp(PUSH)` gọi
-`onPause`, push object và gọi `onEnter` (`src/core/GameManager.cpp:44-73`).
-`PlayState` đăng ký `GAME_PAUSED`/enqueue push tại
-`src/states/PlayState.cpp:224-237` và `src/states/PlayState.cpp:272-332`; `PauseState` resume bằng
-`popState()` tại `src/states/PauseState.cpp:276-281`.
+`GameManager::changeState/pushState/popState()` only append a pending operation
+(`src/core/GameManager.cpp:32-42`). `update()` calls the top state first and
+only then `processPendingOps()` (`src/core/GameManager.cpp:76-95`);
+`applyOp(PUSH)` calls `onPause`, pushes the object, and calls `onEnter`
+(`src/core/GameManager.cpp:44-73`). `PlayState` registers `GAME_PAUSED`/enqueues
+the push at `src/states/PlayState.cpp:224-237` and
+`src/states/PlayState.cpp:272-332`; `PauseState` resumes via `popState()` at
+`src/states/PauseState.cpp:276-281`.
 
-`Bus → SoundManager → PlayState` trong diagram phản ánh production registration
-order: `SoundManager` nhận `GAME_PAUSED` trước, sau đó `PlayState` enqueue
-`PUSH`. `PlayState::onPause()` còn gọi `pauseMusic()` lần nữa khi operation được
-apply; hai lời gọi là có thật và không được rút gọn thành một transition đồng bộ.
+`Bus -> SoundManager -> PlayState` in the diagram reflects the production
+registration order: `SoundManager` receives `GAME_PAUSED` first, then
+`PlayState` enqueues the `PUSH`. `PlayState::onPause()` also calls
+`pauseMusic()` again when the operation is applied; both calls are real and
+must not be collapsed into one synchronous transition.
 
-Queue được snapshot bằng `ops.swap(m_pendingOps)`. Vì vậy nếu callback lifecycle
-tạo thêm operation, operation mới nằm trong queue rỗng và chờ safe point kế
-tiếp; không được mô tả như một transition tức thời giữa call stack hiện tại.
+The queue is snapshotted via `ops.swap(m_pendingOps)`. Consequently, if a
+lifecycle callback creates additional operations, the new operations land in
+the now-empty queue and wait for the next safe point; this must not be
+described as an instantaneous transition inside the current call stack.
 
-### Vì sao pattern giúp ích
+### Why the pattern helps
 
-`GameManager` không cần một `switch` khổng lồ cho menu/play/pause/game-over;
-state tự sở hữu behavior và lifecycle. Stack cho phép overlay pause mà vẫn giữ
-play state bên dưới. Trade-off là cần hiểu rõ `CHANGE` (xóa toàn stack), `PUSH`
-(overlay) và `POP` (resume state dưới); mọi state operation có độ trễ ít nhất
-đến cuối `update()`.
+`GameManager` needs no giant `switch` for menu/play/pause/game-over; each state
+owns its behavior and lifecycle. The stack allows a pause overlay while keeping
+the play state underneath. The trade-off is understanding `CHANGE` (clears the
+whole stack), `PUSH` (overlay), and `POP` (resumes the state below); every
+state operation is delayed at least until the end of `update()`.
 
 ---
 
-## 5. Mario State — power-up state thay đổi capability
+## 5. Mario State — power-up states change capabilities
 
-### Scenario: nhặt Mushroom, có thể grow ngay hoặc chờ clearance
+### Scenario: picking up a Mushroom, either growing immediately or waiting for clearance
 
-`Mushroom::onCollect()` đọc `MarioState` hiện tại và chọn state đích. Với
-`SMALL → SUPER` hoặc `FIRE_SMALL → FIRE_SUPER`, `Mario::powerUp()` thay
-`m_statePattern` bằng concrete `IMarioState`. Nếu Box2D đang lock hoặc khoảng
-trống phía trên không đủ, `applyStateTransition()` giữ
-`m_pendingGrowthState`; event pickup vẫn được phát, nhưng state object chưa đổi
-trong frame đó. Đây là deferred growth riêng của Mario, không phải queue state
-của `GameManager`.
+`Mushroom::onCollect()` reads the current `MarioState` and picks the target
+state. For `SMALL -> SUPER` or `FIRE_SMALL -> FIRE_SUPER`,
+`Mario::powerUp()` swaps `m_statePattern` for a concrete `IMarioState`. If
+Box2D is locked or there is not enough headroom, `applyStateTransition()`
+keeps `m_pendingGrowthState`; the pickup event is still published, but the
+state object does not change in that frame. This is Mario's own deferred
+growth, not the `GameManager` state queue.
 
 ```mermaid
 sequenceDiagram
@@ -530,9 +541,9 @@ sequenceDiagram
 
     Level->>Level: checkItemCollisions()
     Level->>Mushroom: checkOverlap(Mario)
-    alt chưa collectible hoặc không overlap
+    alt not collectible yet or no overlap
         Mushroom-->>Level: false
-    else overlap hợp lệ
+    else valid overlap
         Level->>Mushroom: onCollect(Mario&)
         activate Mushroom
         Mushroom->>Mushroom: m_isCollected = true
@@ -541,17 +552,17 @@ sequenceDiagram
             Mushroom->>Mario: powerUp(SUPER)
         else current FIRE_SMALL
             Mushroom->>Mario: powerUp(FIRE_SUPER)
-        else current SUPER hoặc FIRE_SUPER
-            Note over Mushroom,Mario: targetState == current, không gọi powerUp
+        else current SUPER or FIRE_SUPER
+            Note over Mushroom,Mario: targetState == current, powerUp not called
         end
 
-        opt targetState khác current
+        opt targetState differs from current
             activate Mario
-            Mario->>Mario: validUpgrade và applyStateTransition(target, true)
-            alt world locked hoặc thiếu hasGrowthClearance()
+            Mario->>Mario: validUpgrade and applyStateTransition(target, true)
+            alt world locked or hasGrowthClearance() fails
                 Mario->>Mario: m_pendingGrowthState = target
-                Note over Mario: state object hiện tại vẫn được giữ đến frame an toàn
-            else có thể đổi ngay
+                Note over Mario: current state object kept until a safe frame
+            else can switch immediately
                 Mario->>Mario: m_marioState = target
                 alt target SUPER
                     Mario->>Super: make_unique<SuperMarioState>()
@@ -569,116 +580,123 @@ sequenceDiagram
         opt targetState == current
             Mushroom->>Bus: notify(PLAYER_POWER_UP)
         end
-        Mushroom->>Mushroom: onCollect() kết thúc
+        Mushroom->>Mushroom: onCollect() finishes
         deactivate Mushroom
         Level->>Mushroom: markForRemoval()
     end
 
-    Note over Level,Mario: frame kế tiếp: Level query capability trước Mario::update
+    Note over Level,Mario: next frame: Level queries capability before Mario::update
     Level->>Mario: canBreakBricks()
-    Note over Mario: đánh giá inline term (m_statePattern && m_statePattern->canBreakBricks())
-    alt m_statePattern tồn tại
+    Note over Mario: evaluate inline term (m_statePattern && m_statePattern->canBreakBricks())
+    alt m_statePattern exists
         Mario->>IState: m_statePattern->canBreakBricks()
-        alt state là SuperMarioState
+        alt state is SuperMarioState
             IState->>Super: virtual canBreakBricks()
             Super-->>IState: true
             IState-->>Mario: true
-        else state là SuperFireMarioState
+        else state is SuperFireMarioState
             IState->>FireSuper: virtual canBreakBricks()
             FireSuper-->>IState: true
             IState-->>Mario: true
-        else state là SmallMarioState
+        else state is SmallMarioState
             IState->>Small: virtual canBreakBricks()
             Small-->>IState: false
             IState-->>Mario: false
-        else state là SmallFireMarioState
+        else state is SmallFireMarioState
             IState->>FireSmall: virtual canBreakBricks()
             FireSmall-->>IState: false
             IState-->>Mario: false
         end
     else m_statePattern == nullptr
-        Note over Mario: (m_statePattern && m_statePattern->canBreakBricks()) là false
+        Note over Mario: (m_statePattern && m_statePattern->canBreakBricks()) is false
     end
     Note over Mario: return source = (m_statePattern && m_statePattern->canBreakBricks()) || isStarInvincible()
-    alt (m_statePattern && m_statePattern->canBreakBricks()) là true
-        Note over Mario: toán tử || short-circuit, kết quả true
+    alt (m_statePattern && m_statePattern->canBreakBricks()) is true
+        Note over Mario: || short-circuits, result true
         Mario-->>Level: true
-    else (m_statePattern && m_statePattern->canBreakBricks()) là false
+    else (m_statePattern && m_statePattern->canBreakBricks()) is false
         Mario->>Mario: isStarInvincible()
-        alt Star đang active
+        alt Star active
             Mario-->>Level: true
-        else Star không active
+        else Star inactive
             Mario-->>Level: false
         end
     end
 
     Level->>Mario: update(dt)
-    opt m_pendingGrowthState != SMALL và world đã unlock + clearance đủ
+    opt m_pendingGrowthState != SMALL and world unlocked + clearance OK
         Mario->>Mario: copy target, clear pending, applyStateTransition(target, presentation)
-        Mario->>Mario: replace m_statePattern bằng concrete state tương ứng
+        Mario->>Mario: replace m_statePattern with the matching concrete state
     end
 ```
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò State | Đối tượng thực tế | Trách nhiệm |
+| State role | Actual object | Responsibility |
 | --- | --- | --- |
-| Context | `Mario` | Giữ `m_marioState` và `unique_ptr<IMarioState>`. |
-| State interface | `IMarioState` | Interface khai báo capability và lifecycle hooks; production hiện chỉ delegate `canBreakBricks()` qua con trỏ state. |
-| Concrete states | `SmallMarioState`, `SuperMarioState`, `SmallFireMarioState`, `SuperFireMarioState` | Trả capability khác nhau và đại diện power tier. |
-| Transition policy | `Mario::applyStateTransition()` | Kiểm tra body/clearance, dựng state object, fixture và presentation. |
+| Context | `Mario` | Holds `m_marioState` and the `unique_ptr<IMarioState>`. |
+| State interface | `IMarioState` | Interface declaring capabilities and lifecycle hooks; production currently only delegates `canBreakBricks()` through the state pointer. |
+| Concrete states | `SmallMarioState`, `SuperMarioState`, `SmallFireMarioState`, `SuperFireMarioState` | Return different capabilities and represent power tiers. |
+| Transition policy | `Mario::applyStateTransition()` | Checks body/clearance, builds the state object, fixture, and presentation. |
 
-Đường nhặt item nằm ở `src/level/Level.cpp:1523-1548`; target state và nhánh
-re-entry nằm ở `src/items/Mushroom.cpp:106-140`. Việc tạo concrete state,
-growth defer và fixture rebuild nằm ở `src/entities/Mario.cpp:937-1047`; vòng
-frame sau flush pending growth ở `src/entities/Mario.cpp:443-468`. Level hỏi
-capability trước khi xử lý tile hit tại `src/level/Level.cpp:1197-1204`, còn
-`Mario::canBreakBricks()` delegate vào `m_statePattern` tại
-`src/entities/Mario.cpp:1465-1467`. Ngược lại, `Mario::canShootFireBall()`
-không gọi `IMarioState::canShootFireBall()`; nó kiểm tra `usesFire(m_marioState)`
-và `m_fireCooldown <= 0.0f` trực tiếp (`src/entities/Mario.cpp:1461-1463`).
+The item pickup path lives at `src/level/Level.cpp:1523-1548`; the target
+state and re-entry branches live at `src/items/Mushroom.cpp:106-140`. Building
+the concrete state, growth deferral, and fixture rebuild live at
+`src/entities/Mario.cpp:937-1047`; the next-frame loop flushes pending growth
+at `src/entities/Mario.cpp:443-468`. Level asks for the capability before
+handling the tile hit at `src/level/Level.cpp:1197-1204`, while
+`Mario::canBreakBricks()` delegates to `m_statePattern` at
+`src/entities/Mario.cpp:1465-1467`. In contrast,
+`Mario::canShootFireBall()` does not call `IMarioState::canShootFireBall()`;
+it checks `usesFire(m_marioState)` and `m_fireCooldown <= 0.0f` directly
+(`src/entities/Mario.cpp:1461-1463`).
 
-`IMarioState` có `onEnter`, `onExit` và `update` trong interface
-(`include/states/IMarioState.h:17-33`), nhưng transition hiện tại **không gọi
-trực tiếp các callback đó**; source chỉ tạo/replaces `unique_ptr`, cập nhật
-animation/fixture và dùng capability virtual. Cùng lý do, production chưa có
-call-site cho `IMarioState::getHitboxSize()`, `canShootFireBall()`, `onEnter()`,
-`onExit()` hoặc `update()`; đây là các hook/contract đã khai báo, không phải
-runtime delegation đang được trace. Vì vậy diagram không bịa ra các lời gọi đó.
+`IMarioState` declares `onEnter`, `onExit`, and `update` in the interface
+(`include/states/IMarioState.h:17-33`), but the current transitions **do not
+invoke those callbacks directly**; the source only creates/replaces the
+`unique_ptr`, updates animation/fixture, and uses the virtual capabilities.
+For the same reason, production has no call-sites for
+`IMarioState::getHitboxSize()`, `canShootFireBall()`, `onEnter()`,
+`onExit()`, or `update()`; these are declared hooks/contracts, not runtime
+delegation being traced here. The diagrams therefore do not invent those
+calls.
 
-### Re-entry và damage đã được giữ đúng
+### Re-entry and damage are preserved correctly
 
-Mushroom khi Mario đã `SUPER`/`FIRE_SUPER` không gọi `powerUp`; nó vẫn award
-điểm và phát một `PLAYER_POWER_UP` duy nhất (`src/items/Mushroom.cpp:127-139`).
-FireFlower có cùng nguyên tắc cho `SMALL/SUPER` và fire tier
-(`src/items/FireFlower.cpp:51-75`). Với damage, `Mario::powerDown()` bỏ qua khi
-đang immune/star/dying/transforming; các transition hợp lệ là
-`FIRE_SUPER → SUPER`, `FIRE_SMALL → SMALL`, `SUPER → SMALL`, còn `SMALL` gọi
-`loseLife()` (`src/entities/Mario.cpp:1111-1134`). Đây là lý do không nên diễn
-giải mọi va chạm như một state change.
+A Mushroom picked up while Mario is already `SUPER`/`FIRE_SUPER` does not call
+`powerUp`; it still awards points and publishes exactly one `PLAYER_POWER_UP`
+(`src/items/Mushroom.cpp:127-139`). FireFlower follows the same principle for
+`SMALL/SUPER` and the fire tier (`src/items/FireFlower.cpp:51-75`). For
+damage, `Mario::powerDown()` is ignored while immune/star-powered/dying/
+transforming; the valid transitions are `FIRE_SUPER -> SUPER`,
+`FIRE_SMALL -> SMALL`, `SUPER -> SMALL`, while `SMALL` calls `loseLife()`
+(`src/entities/Mario.cpp:1111-1134`). This is why not every collision should
+be interpreted as a state change.
 
-### Vì sao pattern giúp ích
+### Why the pattern helps
 
-Code gameplay delegate capability `canBreakBricks()` thay vì rải điều kiện theo
-từng power tier; điều kiện bắn FireBall hiện vẫn là enum/cooldown trong `Mario`.
-Thay state object cho phép thêm tier mới mà không đổi
-caller. Trade-off là body/fixture và animation phải đồng bộ với state; growth
-blocked cần pending marker để không sửa Box2D trong lúc world lock. State này
-cũng không phải state machine async: việc đổi concrete object thường đồng bộ,
-chỉ growth bị giữ lại đến `Mario::update()` an toàn.
+Gameplay code delegates the `canBreakBricks()` capability instead of
+scattering per-tier conditionals; the FireBall firing condition currently
+remains an enum/cooldown check inside `Mario`. Swapping the state object
+allows new tiers without changing callers. The trade-off is that body/fixture
+and animation must stay in sync with the state; blocked growth needs a
+pending marker so Box2D is not mutated while the world is locked. This state
+is also not an async state machine: swapping the concrete object is usually
+synchronous — only growth is held back until a safe `Mario::update()`.
 
 ---
 
-## 6. Singleton — hạ tầng dùng chung, lifetime có điểm kết thúc
+## 6. Singleton — shared infrastructure with a bounded lifetime
 
-### Scenario: composition root lấy manager, rồi `Level` lấy resource manager
+### Scenario: the composition root grabs managers, then `Level` gets the resource manager
 
-Đây là scenario Singleton thật, tách khỏi các seam gameplay ở phần 1–5.
-`Game::Game()` gọi `SoundManager::getInstance()` trước để chạy constructor đăng
-ký observer và preload asset, sau đó lấy `GameManager::getInstance()` để đọc
-`SaveManager` và xếp `MenuState`. Khi `PlayState::loadLevel()` tạo `Level`,
-constructor của `Level` lấy cùng `TextureManager` reference. Cuối process,
-`main()` gọi `TextureManager::shutdown()` khi context đồ họa còn sống.
+This is a genuine Singleton scenario, kept apart from the gameplay seams in
+sections 1-5. `Game::Game()` calls `SoundManager::getInstance()` first so its
+constructor registers observers and preloads assets, then obtains
+`GameManager::getInstance()` to read `SaveManager` and queue `MenuState`. When
+`PlayState::loadLevel()` creates a `Level`, the `Level` constructor grabs the
+same `TextureManager` reference. At process end, `main()` calls
+`TextureManager::shutdown()` while the graphics context is still alive.
 
 ```mermaid
 sequenceDiagram
@@ -696,13 +714,13 @@ sequenceDiagram
     activate Game
     Game->>Sound: SoundManager::getInstance()
     activate Sound
-    Sound->>Sound: static SoundManager instance (lần gọi đầu)
+    Sound->>Sound: static SoundManager instance (first call)
     Sound->>Bus: EventBus::getInstance()
     activate Bus
-    Bus->>Bus: static EventBus instance (lần gọi đầu)
+    Bus->>Bus: static EventBus instance (first call)
     Bus-->>Sound: EventBus&
     deactivate Bus
-    loop 21 event subscriptions trong SoundManager()
+    loop 21 event subscriptions inside SoundManager()
         Sound->>Bus: subscribe(event, this)
         Bus-->>Sound: move-only Subscription token
     end
@@ -713,7 +731,7 @@ sequenceDiagram
 
     Game->>GM: GameManager::getInstance()
     activate GM
-    GM->>GM: static GameManager instance (lần gọi đầu)
+    GM->>GM: static GameManager instance (first call)
     GM->>GM: m_saveManager.load()
     GM-->>Game: GameManager&
     deactivate GM
@@ -722,29 +740,29 @@ sequenceDiagram
     Game->>Sound: setSoundVolume(savedAudio.soundVolume)
     Game->>Sound: setMusicVolume(savedAudio.musicVolume)
     Game->>GM: changeState(make_unique<MenuState>())
-    Note over GM: changeState() chỉ append pending op, apply ở safe point của update()
+    Note over GM: changeState() only appends a pending op, applied at the safe point of update()
     deactivate Game
 
     Main->>Game: run()
-    loop mỗi frame
+    loop every frame
         Game->>GM: GameManager::getInstance().processInput(...)
         Game->>GM: GameManager::getInstance().update(dt)
-        opt safe point áp dụng PlayState mới
+        opt safe point applying the new PlayState
             PS->>PS: onEnter()
             PS->>PS: loadLevel(currentLevel)
-            alt LevelCatalog::find() có entry
+            alt LevelCatalog::find() has an entry
                 PS->>Level: make_unique<Level>()
                 activate Level
                 Level->>Texture: TextureManager::getInstance()
                 activate Texture
-                Texture->>Texture: static TextureManager instance (lần gọi đầu)
+                Texture->>Texture: static TextureManager instance (first call)
                 Texture-->>Level: TextureManager&
                 deactivate Texture
-                Level->>Level: m_textureManager nhận reference từ constructor
+                Level->>Level: m_textureManager receives the reference from the constructor
                 deactivate Level
-            else không có catalog entry
+            else no catalog entry
                 PS->>GM: changeState(make_unique<MenuState>())
-                Note over GM: request Menu được defer đến safe point kế tiếp
+                Note over GM: Menu request deferred to the next safe point
             end
         end
         Game->>GM: GameManager::getInstance().render(...)
@@ -752,47 +770,51 @@ sequenceDiagram
 
     Main->>Texture: TextureManager::getInstance().shutdown()
     activate Texture
-    alt m_textures không rỗng
-        Texture->>Texture: tạo sf::Context cleanupContext
+    alt m_textures not empty
+        Texture->>Texture: create sf::Context cleanupContext
         Texture->>Texture: m_textures.clear()
-    else đã rỗng
-        Note over Texture: shutdown() return, không có resource để clear
+    else already empty
+        Note over Texture: shutdown() returns, nothing to clear
     end
     deactivate Texture
-    Note over Sound,GM: các function-local static ở trên tồn tại đến process teardown, SaveManager vẫn là member của GM
+    Note over Sound,GM: the function-local statics above live until process teardown; SaveManager remains a member of GM
 ```
 
-### Vai trò và điểm đặt trong source
+### Roles and where they live in the source
 
-| Vai trò Singleton | Đối tượng thực tế | Trách nhiệm và bằng chứng |
+| Singleton role | Actual object | Responsibility and evidence |
 | --- | --- | --- |
-| Instance/accessor | `GameManager`, `SoundManager`, `TextureManager`, `EventBus` | `getInstance()` trả function-local `static` tại `src/core/GameManager.cpp:27-30`, `src/core/SoundManager.cpp:40-43`, `src/core/TextureManager.cpp:15-18`, `src/patterns/EventBus.cpp:196-208`. |
-| Construction/copy guard | Bốn participant ở trên | `GameManager` có constructor/destructor private và copy delete (`include/core/GameManager.h:23-50`); `SoundManager` có accessor, copy/move delete và constructor/destructor private (`include/core/SoundManager.h:116-125`, `include/core/SoundManager.h:211-214`); `TextureManager` có copy delete và constructor/destructor private (`include/core/TextureManager.h:25-35`, `include/core/TextureManager.h:70-80`); `EventBus` có constructor/destructor private và copy delete (`include/patterns/EventBus.h:36-55`). |
-| Client của instance | `Game`, `PlayState`, `Level`, `main` | `Game` lấy Sound/Game manager và state đầu tiên (`src/core/Game.cpp:62-76`); `PlayState::onEnter()` gọi `loadLevel()` (`src/states/PlayState.cpp:224-247`), rồi tạo `Level` (`src/states/PlayState.cpp:490-504`); `Level` lấy texture reference (`src/level/Level.cpp:148-150`); `main` gọi shutdown (`src/main.cpp:10-16`). |
-| Lifetime/resource boundary | `SoundManager`, `TextureManager` | Sound destructor clear subscription tokens (`src/core/SoundManager.cpp:105-107`); `TextureManager::shutdown()` clear GPU resources dưới `sf::Context` (`src/core/TextureManager.cpp:123-132`). |
+| Instance/accessor | `GameManager`, `SoundManager`, `TextureManager`, `EventBus` | `getInstance()` returns a function-local `static` at `src/core/GameManager.cpp:27-30`, `src/core/SoundManager.cpp:40-43`, `src/core/TextureManager.cpp:15-18`, `src/patterns/EventBus.cpp:196-208`. |
+| Construction/copy guard | The four participants above | `GameManager` has a private constructor/destructor and deleted copies (`include/core/GameManager.h:23-50`); `SoundManager` has the accessor, deleted copy/move, and private constructor/destructor (`include/core/SoundManager.h:116-125`, `include/core/SoundManager.h:211-214`); `TextureManager` has deleted copies and a private constructor/destructor (`include/core/TextureManager.h:25-35`, `include/core/TextureManager.h:70-80`); `EventBus` has a private constructor/destructor and deleted copies (`include/patterns/EventBus.h:36-55`). |
+| Instance clients | `Game`, `PlayState`, `Level`, `main` | `Game` gets the Sound/Game managers and the first state (`src/core/Game.cpp:62-76`); `PlayState::onEnter()` calls `loadLevel()` (`src/states/PlayState.cpp:224-247`) then creates `Level` (`src/states/PlayState.cpp:490-504`); `Level` takes the texture reference (`src/level/Level.cpp:148-150`); `main` calls shutdown (`src/main.cpp:10-16`). |
+| Lifetime/resource boundary | `SoundManager`, `TextureManager` | The Sound destructor clears subscription tokens (`src/core/SoundManager.cpp:105-107`); `TextureManager::shutdown()` clears GPU resources under an `sf::Context` (`src/core/TextureManager.cpp:123-132`). |
 
-Luồng trên cho thấy lợi ích cụ thể: các state/entity không phải truyền một
-registry toàn cục qua mọi constructor, còn `Level` giữ một reference đến resource
-manager duy nhất. Trade-off là accessor toàn cục làm dependency ẩn và cần kiểm
-soát test/lifetime; vì vậy việc cleanup GPU được gọi tường minh ở `main()`. Không
-được suy ra từ đây rằng `SaveManager` là Singleton: constructor của nó public
-(`include/core/SaveManager.h:22-26`), và `GameManager` value-own member
-`m_saveManager` (`include/core/GameManager.h:69-75`).
+The flow above shows the concrete benefit: states/entities do not have to
+thread a global registry through every constructor, and `Level` keeps one
+reference to the single resource manager. The trade-off is that a global
+accessor hides dependencies and requires test/lifetime discipline; this is why
+GPU cleanup is invoked explicitly in `main()`. Do not infer from this that
+`SaveManager` is a Singleton: its constructor is public
+(`include/core/SaveManager.h:22-26`), and `GameManager` value-owns the
+`m_saveManager` member (`include/core/GameManager.h:69-75`).
 
 ---
 
-## Các điểm không nên gán nhầm pattern
+## Places not to mislabel as patterns
 
-1. `SaveManager` không phải Singleton. Public constructor cho phép tạo instance
-   độc lập trong test/session; production composition root để `GameManager` value-own
-   một instance và state truy cập qua `getSaveManager()`.
-2. `EntityFactory::createEnemy/createItem/createFromTileCode` là compatibility
-   forwarding helpers. `defaultFactory()` dùng static local để tránh lặp mapping,
-   nhưng API canonical vẫn là `EntityFactory::create(request, context)` và
-   `EntityFactory` có constructor public.
-3. `GameManager`, `EventBus`, `SoundManager` và `TextureManager` có singleton
-   accessor thật; phần 6 trace lifetime/access này, nhưng singleton storage
-   không thay thế Observer/Command/State seam được mô tả ở đây.
-4. Các arrow trong diagrams không phải class-diagram relation: chỉ những lời
-   gọi/event có call-site hiện hành mới được vẽ; subscriber, return value và
-   ownership đều được ghi chú khi source có bằng chứng.
+1. `SaveManager` is not a Singleton. Its public constructor allows
+   independent instances in tests/sessions; the production composition root
+   lets `GameManager` value-own one instance accessed through
+   `getSaveManager()`.
+2. `EntityFactory::createEnemy/createItem/createFromTileCode` are
+   compatibility forwarding helpers. `defaultFactory()` uses a static local to
+   avoid duplicating the mapping, but the canonical API remains
+   `EntityFactory::create(request, context)` and `EntityFactory` has a public
+   constructor.
+3. `GameManager`, `EventBus`, `SoundManager`, and `TextureManager` have real
+   singleton accessors; section 6 traces this lifetime/access behavior, but
+   singleton storage does not replace the Observer/Command/State seams
+   described here.
+4. The arrows in the diagrams are not class-diagram relations: only
+   calls/events with live call-sites are drawn; subscribers, return values,
+   and ownership are annotated wherever the source provides evidence.

@@ -1,6 +1,6 @@
 /**
  * @file PvpCharacterSelectState.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Sequential two-player character selection for the PvP duel mode.
  * @note Player one picks first, then player two (mirror picks are allowed);
  *       both fighters keep their authentic campaign stats.

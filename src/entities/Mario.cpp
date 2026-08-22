@@ -1,6 +1,6 @@
 /**
  * @file Mario.cpp
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Mario character implementation with authentic NES movement physics and
  * states
  * @note Sprint 6 TV3: foot-anchored growth, low-ceiling query, independent

@@ -1,6 +1,6 @@
 /**
  * @file GameOverState.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Game Over State
  */
 #pragma once

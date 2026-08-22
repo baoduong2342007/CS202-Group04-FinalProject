@@ -1,6 +1,6 @@
 /**
  * @file SmallMarioState.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Concrete Small Mario power-up state (small body, no fireball shooting)
  */
 

@@ -280,9 +280,8 @@ void Bowser::onFireHit() {
 }
 
 void Bowser::onStarHit() {
-    if (m_state == State::DIE) return;
-    setHealth(0);
-    enterDie();
+    // Canonical SMB1: star contact never harms Bowser — only five fireballs
+    // or the axe can defeat him. This is intentionally a no-op.
 }
 
 void Bowser::collapseIntoLava() {

@@ -1,6 +1,6 @@
 /**
  * @file SoundManager.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Singleton audio manager with named music tracks and SFX voice pool.
  */
 

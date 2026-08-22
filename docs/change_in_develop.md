@@ -1,9 +1,11 @@
 # Develop Integration Log
+Note: entries #1–#73 are historical (Vietnamese); from entry #74 onward entries are written in English.
 
 This file summarizes important integration checkpoints. Git history remains the authoritative record of individual commits and merges. Historical test counts are not current release evidence.
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-22 | [TV3/TV1] Canonical gameplay fixes D2-D7: stomp held-jump bounce, Bowser star immunity, monotonic campaign camera, Piranha radius, flagpole score, dynamic_cast audit | CTest 36/37 PASS (1 pre-existing packaging failure, see notes) | (1) D2 src/physics/CollisionManager.cpp stomp bounce: holding Space/Up/W at bounce applies the character jump velocity (Mario::getJumpForce(), 460/510) instead of the fixed 300/200, mirroring the springboard held-key pattern. (2) D3 src/entities/Bowser.cpp onStarHit() is now a no-op (canonical SMB1: star never harms Bowser; only 5 fireballs or the axe); CollisionManager star path skips multi-hit bosses (getFireballHealth() > 0) so no kill/score/event transaction is created; tests/BowserTests.cpp testBowserStarAndAxeKill split into testBowserStarIsHarmless + testBowserAxeCollapseKill. (3) D4 include/level/Camera.h + src/level/Camera.cpp: new setMonotonicScroll(bool), the stable center x never decreases; src/level/Level.cpp + include/level/Level.h: enabled only for the single-player campaign (!coop && !pvp), coop/PvP keep free follow; new Level::clampCampaignPlayerToCameraLeft() holds Mario at the view left edge (mirrors clampCoopPlayersToCamera); docs/management/S6_LOCKED_INTERFACES.md documents the new camera-mode axis; tests/P2GameplayInterfaceTests.cpp Lakitu/fireball probe phases reordered forward-only. (4) D5 include/entities/PiranhaPlant.h PROXIMITY_RADIUS 20->40 (plant stays hidden while Mario is on/adjacent to the pipe). (5) D6 src/level/Level.cpp checkFinishFlag() awards canonical grab-height tiers 100/400/800/2000/5000 through Mario::queueScoreAward (same popup/score pipeline as stomps); new tests/Gate0ContractTests.cpp testFlagpoleScoreByGrabHeight. (6) D7 dynamic_cast audit: all 14 candidate sites in CollisionManager.cpp/Level.cpp KEPT as dynamic_cast; the O(1) discriminator virtuals (getType/getSubtype/getCapabilities) are spoofable by any Entity subclass and tests/CollisionMatrixTests.cpp (IdentitySpoof) pins the fail-closed contract; the enum checks already perform the type test per AGENTS.md rule 5, the dynamic_cast validates the concrete base. Pre-existing failure unrelated to this change: runtime_package_inventory_tests flags stale files (levels/level0.txt, level_athletic.txt, old asset copies) left in the build-tests package dir by in-flight asset/manifest reorganization. |
 | 2026-08-22 | [TV5] Merge `feature/sound-input` into `develop` | CTest 37/37 PASS | Fast-forward merged `origin/feature/sound-input` (including commit `b5d7726`). Includes complete OOP principles & design pattern documentation (`docs/oop_principles_and_design_patterns.md`, updated `docs/class_diagram.md` and `docs/design_patterns.md`), Factory pattern enhancements, audio & collision systems, and 100% passing test suite (37/37 CTest). |
 | 2026-08-21 | [TV4/TV1] Fix Paratroopa Stomp Effect & Deploy Hammer Bros to Levels | CTest 31/31 PASS | Removed unintended `FireballExplosion` spawn from `Paratroopa::clipWings()` in `src/entities/Paratroopa.cpp`, restoring authentic NES behavior where stomping a winged Koopa removes its wings and converts it to a walking Koopa with standard stomp sound (`stompswim.wav`) and zero fireball pop; deployed `HammerBro` (`'n'`) with full theme palette support to canonical locations: World 1-4 (pre-Bowser stone platform at row 31, col 98), World 1-1 (upper brick platform at row 35, col 140), and World 1-2 (upper underground catwalk at row 36, col 139). |
 | 2026-08-21 | [TV4/TV1] Tileset Transparency Cleanup & Comprehensive Chroma-Key Expansion | CTest 31/31 PASS | Converted 4,555 solid blue and lavender backdrop pixels in `assets/textures/tiles/tileset.png` (around underwater coral reef 'S' tiles, horizontal pipe, and scenery) to transparent `RGBA(0, 0, 0, 0)`; expanded `TileMap.cpp` and `TextureManager.cpp` chroma-key masking palette to 9 standard NES background shades (`32, 56, 236`, `36, 100, 252`, `0, 0, 168`, `12, 69, 176`, `92, 148, 252`, `108, 106, 255`, `146, 144, 255`, `148, 148, 255`, `0, 41, 140`), eliminating all solid blue bounding box artifacts behind coral and scenery across World 1-3. |
@@ -1501,3 +1503,53 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Added `testPvpCeilingClampAndContainment` verifying that extreme upward impulses from the center pedestal cannot breach $Y < 0$.
      - Added `testPvpPlayStateHudRenderSnapshot` rendering and verifying pixel-perfect HUD presentation and dedicated Fire Flower timer badge snapshots.
      - Verified all 31/31 CTest suites pass with 100% success rate.
+
+### 74. Canonical SMB1 Ledge Behavior - Walk-Off Patrollers vs Ledge-Aware Guards
+- **Date:** 2026-08-22
+- **Author:** D1 (Executor)
+- **Status:** Completed
+- **Modified Files:**
+  - `include/entities/Enemy.h`
+  - `include/entities/RedKoopa.h`
+  - `include/entities/HammerBro.h`
+  - `src/entities/Goomba.cpp`
+  - `src/entities/Koopa.cpp`
+  - `src/entities/Spiny.cpp`
+  - `src/entities/Paratroopa.cpp`
+  - `tests/KoopaVariantTests.cpp`
+  - `levels/level2.txt`
+- **Detailed Logic Changes:**
+  1. **New Ledge Policy Hook (`Enemy.h`)**:
+     - Added `virtual bool turnsAtLedge() const { return false; }` to the `Enemy` base class. Canonical SMB1 ground walkers (Goomba, green Koopa, Spiny, wingless Paratroopa, Buzzy Beetle) do NOT reverse at ledges - they walk off and fall into pits.
+  2. **Ledge Reversal Guards (Goomba.cpp, Koopa.cpp, Spiny.cpp, Paratroopa.cpp)**:
+     - Guarded every patrol ledge-reversal site with `if (turnsAtLedge() && isApproachingLedge())`: Goomba patrol, Koopa patrol (shared by Buzzy Beetle and the wingless Paratroopa walk mode), Spiny patrol, and the Paratroopa HOP drift. Wall-reversal (`onWallCollision`), `isEscapingNarrowRange()` interplay, and the `isEnemySupport()` probing machinery are untouched.
+  3. **Ledge-Aware Overrides (`RedKoopa.h`, `HammerBro.h`)**:
+     - `RedKoopa::turnsAtLedge()` and `HammerBro::turnsAtLedge()` override to `true` - the canonical SMB1 ledge guards that stay on their platforms. HammerBro.cpp needed no change (its patrol already reverses unconditionally).
+  4. **Test Contract Rewrite (`KoopaVariantTests.cpp`)**:
+     - `testEnemySupportTileCoverageAndLedgeProbing` now asserts: Goomba / green Koopa / Spiny / wingless Paratroopa / Buzzy Beetle keep facing a ledge (walk off), Red Koopa and HammerBro reverse at the ledge, and `onWallCollision()` still turns every walker.
+     - `testNarrowPatrolBreakoutAI` re-based on Red Koopa (the ledge-aware species) for the 2-tile pocket oscillation and wide-platform cases, plus a new canonical-walker section proving a Goomba on the same pocket walks straight off without triggering the breakout AI.
+  5. **Level Data Audit (`levels/level1-4.txt`)**:
+     - Audited every Goomba/Koopa/Spiny/Paratroopa/BuzzyBeetle spawn against pit columns. Single adjustment: `levels/level2.txt` line 42 col 195 changed `K` -> `k` (green Koopa -> Red Koopa): the Koopa guarding the 8-tile island between the two pits near the finish would otherwise walk into the left pit ~1.3s after activation. A Red Koopa is the canonical SMB1 island guard. All other spawns either drop onto solid ground below (canonical SMB1 behavior) or are far enough from pits to stay meaningful.
+
+### 75. Repo-Wide Docs Phase - Junk Cleanup, Vietnamese-to-English Translation, Doc Fact Repairs, Asset Mapping
+- **Date:** 2026-08-22
+- **Author:** End-of-Session Worker (deployment codebase_audit_2026_08_22, Heavy route; consolidating the docs-phase work of the audit executors)
+- **Status:** Completed
+- **Modified Files:**
+  - Deleted (9 junk files): `Evaluate.md`, `docs/assets/reference/tileset(v2).png`, `docs/tiles_coordinate.md`, `docs/management/S6_DEPENDENCY_BOARD.md`, `docs/management/WEEKLY_PLAN.md`, `include/demo/TV3Demo.h`, `src/demo/TV3Demo.cpp`, `levels/level_athletic.txt`, `tests/TestSpawnDeath.cpp`
+  - Created: `docs/assets/ASSET_MAPPING.md`
+  - Doc fact repairs: `FILE_STRUCTURE.md`, `CODING_RULES.md` (line 287), `assets/ASSETS_LIST.md` (lines 144/154), `README.md`, `docs/management/ROLES.md`, `docs/management/S6_LOCKED_INTERFACES.md`, `docs/management/S6_AUDIT_TRACKER.md`, `docs/management/S6_BUG_REGISTER.md`, `docs/management/s6_plan.md`, `docs/management/S7_TV5_PACKAGE_MANIFEST.md`, `tests/Gate0ContractTests.cpp` (header comment only; the D6 test addition is logged in the D2-D7 checkpoint row above)
+  - Translations: `docs/tileset_coordinate.md` (plus coordinate corrections), `docs/blocks_coordinate.md`, `docs/enemies_coordinate.md`, `docs/items_objects_coordinate.md`, `docs/design_patterns.md`, `docs/oop_principles_and_design_patterns.md`, `docs/class_diagram.md` (plus 2 malformed anchor fixes), `docs/management/S7_TV3_STATUS.md`, `docs/management/S7_TV2_VISUAL_SIGN_OFF.md`, `include/core/SpriteFrames_shared.h`, `include/core/LevelCatalog.h`, `docs/change_in_develop.md` (English-entry note)
+  - Romanized `@author` headers: 83 source files across `include/` and `src/`
+- **Detailed Logic Changes:**
+  1. **Junk Cleanup (9 deletions, with deliberate keeps)**:
+     - Removed dead/duplicate/stale artifacts: the superseded tileset reference image, the duplicate `docs/tiles_coordinate.md`, the orphaned athletic level, the never-registered `TestSpawnDeath.cpp`, the dead TV3 demo pair, the stale S6 dependency board and weekly plan, and the dead-root `Evaluate.md` (its live content is `docs/management/Evaluate_v4.md`).
+     - Deliberately kept: `assets/textures/enemies/enemies_all_components_atlas_full.png` (test contract), `levels/level0.txt` (registered test fixture), `docs/management/s6_plan.md`/`s7_plan.md` and the S6/S7 status docs (audit trail).
+  2. **Documentation Fact Repairs**:
+     - `FILE_STRUCTURE.md`: phantom entries removed, missing entries added, every path re-verified against the tree. `S6_LOCKED_INTERFACES.md`: corrected to the 4-level catalog, co-op `GameProgress` fields, `defeatEnemy` parameter, and the camera-mode axis line. `ROLES.md` rewritten around real APIs. Dead `Evaluate_v4` references reworded in the S6 tracker/bug register. `S7_TV5_PACKAGE_MANIFEST.md`: `hud.png` reclassified as packaged-unused. `CODING_RULES.md`, `ASSETS_LIST.md`, `README.md`, `s6_plan.md`, and the `Gate0ContractTests.cpp` header comment corrected.
+  3. **Vietnamese-to-English Translation (~2,238 lines)**:
+     - Full translation of the four coordinate documents, both design-pattern documents, `class_diagram.md`, S7_TV3_STATUS, S7_TV2 sign-off, `SpriteFrames_shared.h` comments (10), `LevelCatalog.h`, plus 83 romanized `@author` headers. `tileset_coordinate.md` values corrected against the real sheet (680x356; Stone/Hard/Ground per `TileFrames.h`). Vietnamese intentionally retained only in: `change_in_develop.md` history (entries #1-#73), `s6_plan.md`, `s7_plan.md`.
+  4. **New `docs/assets/ASSET_MAPPING.md`**:
+     - Grep-verified file:line map of every asset to its loader (runtime / fixture / packaged-unused / future / reference). Key findings: `bg_world.png` and `hud.png` are packaged-unused legacy assets (candidates for future package-list removal).
+  5. **Verification**:
+     - Independent tester clean-rebuilt both build directories: build/ 37/37 and build-tests/ 37/37 CTest pass (logs `/tmp/ctest_main_final.log`, `/tmp/ctest_tests_final.log`); no-weakening audit of all changed test suites passed; regression sweep clean (sole binary diff = intentional junk deletion); Vietnamese grep: code directories empty, docs limited to the 3 protected files.

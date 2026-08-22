@@ -76,7 +76,7 @@ No P1 bug is open.
 
 - Open P0: 0
 - Open P1: 0
-- Automated implementation defects identified by `Evaluate_v4.md`: fixed
+- Automated implementation defects identified by the Sprint-6 evaluation: fixed
 - Remaining reviews: final RC hash, 15 human playthroughs, four visual screenshots/click checks, and device-audio acceptance
 
 `REVIEW` entries must not be changed to `FIXED` or `PASS` until their evidence references the same final RC commit.

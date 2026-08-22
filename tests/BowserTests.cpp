@@ -77,17 +77,36 @@ void testBowserFireballChips() {
     std::cout << "[PASSED] testBowserFireballChips" << std::endl;
 }
 
-void testBowserStarAndAxeKill() {
-    std::cout << "[RUNNING] testBowserStarAndAxeKill..." << std::endl;
+void testBowserStarIsHarmless() {
+    std::cout << "[RUNNING] testBowserStarIsHarmless..." << std::endl;
 
     b2World world = makeWorld();
 
-    // Star contact is lethal at full health.
+    // Canonical SMB1: star contact does NOT harm Bowser — only five
+    // fireballs or the axe finish him. Full health is preserved.
     Bowser starred({500.f, 416.f}, &world, LevelTheme::CASTLE);
     starred.onStarHit();
+    assert(!starred.isDying());
+    assert(starred.getState() == Bowser::State::PATROL);
+    assert(starred.getHealth() == 5);
+
+    // Star immunity never weakens the fireball path.
+    for (int i = 0; i < 4; ++i) {
+        starred.onFireHit();
+        assert(!starred.isDying());
+    }
+    starred.onFireHit();
     assert(starred.isDying());
 
-    // So is the axe's bridge collapse.
+    std::cout << "[PASSED] testBowserStarIsHarmless" << std::endl;
+}
+
+void testBowserAxeCollapseKill() {
+    std::cout << "[RUNNING] testBowserAxeCollapseKill..." << std::endl;
+
+    b2World world = makeWorld();
+
+    // The axe's bridge collapse is lethal at full health.
     Bowser axed({600.f, 416.f}, &world, LevelTheme::CASTLE);
     axed.collapseIntoLava();
     assert(axed.isDying());
@@ -101,7 +120,7 @@ void testBowserStarAndAxeKill() {
     }
     assert(axed.getPosition().y > startY);
 
-    std::cout << "[PASSED] testBowserStarAndAxeKill" << std::endl;
+    std::cout << "[PASSED] testBowserAxeCollapseKill" << std::endl;
 }
 
 void testBowserBreathesFire() {
@@ -166,7 +185,8 @@ int main() {
     std::cout << "=== Running Bowser Tests ===" << std::endl;
     testBowserCreation();
     testBowserFireballChips();
-    testBowserStarAndAxeKill();
+    testBowserStarIsHarmless();
+    testBowserAxeCollapseKill();
     testBowserBreathesFire();
     testBowserAxeEntity();
     testBridgeTileLoadsAndRemoves();

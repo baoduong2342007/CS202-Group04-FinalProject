@@ -1,6 +1,6 @@
 /**
  * @file ShootCommand.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Command that requests a projectile shot.
  *
  * Input only emits the request. Projectile ownership and creation remain in

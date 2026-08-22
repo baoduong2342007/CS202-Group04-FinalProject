@@ -1,6 +1,6 @@
 /**
  * @file PvpPlayState.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Two-player duel gameplay state: best-of-3 head-stomp arena with a
  *        contested timed fire flower.
  * @note The arena fits one logical screen, so the camera stays pinned. Only a

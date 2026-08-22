@@ -243,11 +243,11 @@ std::unique_ptr<Entity> EntityFactory::createEnemy(EnemyType type, const sf::Vec
 
 | # | Pattern | Main File | Implementer |
 |---|---|---|---|
-| 1 | Simple Factory | `EntityFactory.h/.cpp` | TV1 (Dương) |
-| 2 | Singleton | `GameManager.h`, `SoundManager.h` | TV1 (Dương), TV5 (Truyền) |
-| 3 | Observer | `EventBus.h`, `IObserver.h` | TV1 (Dương) |
-| 4 | State | `IGameState.h`, `*State.cpp` | TV1 (Dương), TV2 (Nhật) |
-| 5 | Command | `ICommand.h`, `InputHandler.h` | TV5 (Truyền) |
+| 1 | Simple Factory | `EntityFactory.h/.cpp` | TV1 (Duong) |
+| 2 | Singleton | `GameManager.h`, `SoundManager.h` | TV1 (Duong), TV5 (Truyen) |
+| 3 | Observer | `EventBus.h`, `IObserver.h` | TV1 (Duong) |
+| 4 | State | `IGameState.h`, `*State.cpp` | TV1 (Duong), TV2 (Nhat) |
+| 5 | Command | `ICommand.h`, `InputHandler.h` | TV5 (Truyen) |
 
 ---
 
@@ -284,7 +284,7 @@ In Week 6, TV1 uses this checklist:
 
 - [ ] Clean build succeeds from scratch on a new machine
 - [ ] Play through 3 levels without crash
-- [ ] `docs/class_diagram.png` contains all main classes
+- [ ] `docs/class_diagram.md` contains all main classes
 - [ ] `docs/design_patterns.md` describes all 5 patterns
 - [ ] Code is well documented (especially where patterns are used)
 - [ ] Demo video recorded, with voice explanation

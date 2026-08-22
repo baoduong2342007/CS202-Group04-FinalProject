@@ -1,6 +1,6 @@
 /**
  * @file RunCommand.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Command that requests the run state while its key is held.
  *
  * The command deliberately receives a callback instead of spawning or

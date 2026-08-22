@@ -1,6 +1,6 @@
 /**
  * @file GameManager.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Singleton manager for game states
  * @note Sprint 6 — deferred state operations (S6-TV1-16)
  */

@@ -1,6 +1,6 @@
 /**
  * @file SuperMarioState.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Concrete Super Mario power-up state (super body, breaks bricks)
  */
 

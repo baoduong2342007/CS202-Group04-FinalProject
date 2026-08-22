@@ -1,6 +1,6 @@
 /**
  * @file IGameState.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Interface for game states (State Pattern)
  * @note Sprint 6 — locked interface: onEnter/onExit/onPause/onResume lifecycle
  */

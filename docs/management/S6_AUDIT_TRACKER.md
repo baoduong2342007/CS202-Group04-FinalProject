@@ -77,7 +77,7 @@ Automated evidence never substitutes for a device-audio check, visual screenshot
 
 ## Remediation task status
 
-This table tracks the 40 tasks reopened by `Evaluate_v4.md`.
+This table tracks the 40 tasks reopened by the Sprint-6 evaluation.
 
 | Owner | DONE by implementation/automated evidence | REVIEW for manual/final-RC evidence |
 |---|---|---|

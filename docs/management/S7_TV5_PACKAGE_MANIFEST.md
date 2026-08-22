@@ -21,7 +21,7 @@ prefix used by runtime code.
 | `assets/ASSETS_LIST.md` | `assets/ASSETS_LIST.md` | Package metadata | Required input | Runtime inventory/usage metadata |
 | `assets/fonts/mario.ttf` | `assets/fonts/mario.ttf` | Font | Required input | HUD and state UI font |
 | `assets/ui/bg_world.png` | `assets/ui/bg_world.png` | UI background | Required input | Overworld background |
-| `assets/textures/ui/hud.png` | `assets/textures/ui/hud.png` | UI texture | Required input | Menu and HUD bitmap |
+| `assets/textures/ui/hud.png` | `assets/textures/ui/hud.png` | UI texture | Packaged | Not currently loaded by code (HUD is font/vector rendered); retained for potential future use |
 | `assets/textures/ui/stage_1.png` | `assets/textures/ui/stage_1.png` | UI preview | Required input | Level Select World 1-1 preview |
 | `assets/textures/ui/stage_2.png` | `assets/textures/ui/stage_2.png` | UI preview | Required input | Level Select World 1-2 preview |
 | `assets/textures/ui/stage_3.png` | `assets/textures/ui/stage_3.png` | UI preview | Required input | Level Select World 1-3 preview |

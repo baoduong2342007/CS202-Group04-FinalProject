@@ -1,6 +1,6 @@
 /**
  * @file SpringboardTests.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Unit tests for Springboard / Trampoline mechanics and animation states
  */
 

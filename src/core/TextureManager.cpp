@@ -1,6 +1,6 @@
 /**
  * @file TextureManager.cpp
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Implementation of the TextureManager class.
  * 
  * @details Fixed for SFML 3.0.0 API. sf::Texture has no loadFromFile() in SFML 3, 

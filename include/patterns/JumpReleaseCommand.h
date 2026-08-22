@@ -1,6 +1,6 @@
 /**
  * @file JumpReleaseCommand.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Command bridge for the jump-release frame.
  */
 

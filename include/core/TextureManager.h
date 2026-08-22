@@ -1,6 +1,6 @@
 /**
  * @file TextureManager.h
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Singleton class for managing textures in the engine.
  * 
  * @details Implements a centralized resource management strategy using the 

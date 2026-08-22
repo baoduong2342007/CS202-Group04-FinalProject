@@ -1,6 +1,6 @@
 /**
  * @file Coin.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Concrete collectible item — awards score and publishes COIN_COLLECTED
  * @note Week 4 — spawned by EntityFactory or TileMap parser
  */

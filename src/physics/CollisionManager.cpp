@@ -43,6 +43,12 @@ bool CollisionParticipant::has(Entity::Capability capability) const noexcept {
     return m_entity && m_entity->hasCapability(capability);
 }
 
+// Typed accessors below keep dynamic_cast on purpose (D7 audit): the O(1)
+// discriminator (EntityType / EntitySubtype / Capability bit) is a virtual
+// that ANY Entity subclass can spoof — tests/CollisionMatrixTests.cpp
+// (IdentitySpoof) pins the fail-closed contract that a lying identity must
+// yield nullptr here. The enum check performs the type test per AGENTS.md
+// rule 5; the dynamic_cast validates the concrete base, not the type.
 Mario* CollisionParticipant::mario() const noexcept {
     return type() == Entity::EntityType::MARIO ? dynamic_cast<Mario*>(m_entity) : nullptr;
 }
@@ -61,6 +67,8 @@ Item* CollisionParticipant::item() const noexcept {
         ? dynamic_cast<Item*>(m_entity) : nullptr;
 }
 
+// SHELL_LIKE is added solely by Koopa::getCapabilities(), but the same
+// spoofable-virtual rule applies, so the concrete base is still validated.
 Koopa* CollisionParticipant::shell() const noexcept {
     return has(Entity::Capability::SHELL_LIKE) ? dynamic_cast<Koopa*>(m_entity) : nullptr;
 }
@@ -579,10 +587,11 @@ bool CollisionManager::defeatEnemy(Enemy& victim,
             points = ScoreRules::pointsFor(DefeatCause::FIREBALL);
             break;
         case DefeatCause::STAR:
-            // Star contact uses the fireball-style flipped death for most
-            // enemies; multi-hit bosses override onStarHit to die outright.
-            // The transaction latch above still owns score/event
-            // deduplication, while the enemy owns its presentation/lifecycle.
+            // Star contact uses the fireball-style flipped death for regular
+            // enemies. Canonical SMB1 keeps multi-hit bosses (Bowser) immune
+            // to star power entirely, so the Mario-contact path never routes
+            // them here; the transaction still owns score/event
+            // deduplication while the enemy owns its presentation/lifecycle.
             victim.onStarHit();
             EventBus::getInstance().notify(EventType::ENEMY_DEFEATED_BY_STAR);
             points = ScoreRules::pointsFor(DefeatCause::STAR);
@@ -1082,9 +1091,14 @@ void CollisionManager::handleMarioCollision(Mario* mario,
         // Star invincibility is a separate gameplay authority from damage
         // grace. It defeats the enemy through the same cause/score/event
         // transaction regardless of whether the contact looks like a stomp
-        // or a side hit. Indestructible enemies (Podoboo) simply pass by.
+        // or a side hit. Indestructible enemies (Podoboo) and multi-hit
+        // bosses (Bowser) simply pass by: canonical SMB1 star contact never
+        // harms Bowser, so no defeat transaction — and no score — is created.
         if (mario->isStarInvincible()) {
-            if (!enemy->hasCapability(Entity::Capability::INDESTRUCTIBLE)) {
+            const bool starVulnerable =
+                !enemy->hasCapability(Entity::Capability::INDESTRUCTIBLE) &&
+                enemy->getFireballHealth() == 0;
+            if (starVulnerable) {
                 CollisionManager::defeatEnemy(*enemy, DefeatCause::STAR, mario);
             }
             mario->clearGroundedState();
@@ -1129,9 +1143,21 @@ void CollisionManager::handleMarioCollision(Mario* mario,
 
         float currentY = marioBody->GetLinearVelocity().y;
 
-        float bounceVel = -PhysicsEngine::pixelsToMeters(currentY > 0
-                                                         ? STOMP_BOUNCE_SPEED : STOMP_BOUNCE_SPEED_LOW
-                                                         );
+        // Canonical SMB1: holding the jump button when bouncing off a
+        // defeated enemy converts the fixed rebound into the character's own
+        // jump velocity (Mario 460 / Luigi 510), the same held-key boost the
+        // springboard applies.
+        float bounceSpeed = currentY > 0 ? STOMP_BOUNCE_SPEED
+                                         : STOMP_BOUNCE_SPEED_LOW;
+        const bool isHoldingJump =
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
+        if (isHoldingJump) {
+            bounceSpeed = mario->getJumpForce();
+        }
+
+        float bounceVel = -PhysicsEngine::pixelsToMeters(bounceSpeed);
 
         marioBody->SetLinearVelocity(b2Vec2(marioBody->GetLinearVelocity().x, bounceVel));
 

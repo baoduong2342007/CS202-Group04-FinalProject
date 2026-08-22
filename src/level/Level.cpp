@@ -1,6 +1,6 @@
 /**
  * @file Level.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Level implementation — loads map, spawns entities, orchestrates update/render
  * @note Sprint 4 fix: TextureManager wired to entities, item collision, dead entity cleanup
  */
@@ -66,6 +66,17 @@ constexpr float ELEVATOR_MARKER_X_OFFSET =
 constexpr float FLAGPOLE_WALK_SPEED = 150.0f;
 constexpr float ENEMY_ACTIVATION_MARGIN = 64.f;
 constexpr float ENTITY_CLEANUP_MARGIN = 64.f;
+
+// Canonical SMB1 flagpole award, paid by grab height on the pole: 5000 at
+// the very top, 100 at the base. `heightFraction` is 0 at the pole base and
+// 1 at the top tile; the bands mirror the original's 10-unit pole.
+int flagpoleScoreForHeightFraction(float heightFraction) {
+    if (heightFraction >= 0.9f) return 5000;
+    if (heightFraction >= 0.7f) return 2000;
+    if (heightFraction >= 0.5f) return 800;
+    if (heightFraction >= 0.3f) return 400;
+    return 100;
+}
 
 bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
     const sf::Vector2f cameraCenter = cameraView.getCenter();
@@ -316,6 +327,10 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
+    // Canonical SMB1 campaign scroll: the single-player camera never moves
+    // backward. Co-op (this overload is reused by loadFromFile co-op) and PvP
+    // re-disable the rule after their own loads.
+    m_camera.setMonotonicScroll(!m_coopMode && !m_pvpMode);
     // Must be called BEFORE spawnEntitiesFromTileMap() so entities have ground to land on
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
     m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
@@ -481,6 +496,9 @@ bool Level::loadFromFile(const std::string& path,
     }
 
     m_coopMode = true;
+    // Co-op players may separate and move backward freely: the shared camera
+    // keeps two-way deadzone follow instead of the campaign's monotonic rule.
+    m_camera.setMonotonicScroll(false);
     m_camera.setHorizontalDeadzoneRatio(0.0f);
 
     // Player two spawns beside the campaign 'M' tile so both players start
@@ -579,6 +597,8 @@ bool Level::loadPvpArena(const std::string& path,
         sf::FloatRect(sf::Vector2f(0.f, 0.f),
                       sf::Vector2f(levelWidth, levelHeight))
     );
+    // The PvP arena is a single fixed screen; it keeps the free camera.
+    m_camera.setMonotonicScroll(false);
     const float gravity = (m_theme == LevelTheme::UNDERWATER) ? 8.0f : 25.0f;
     m_world = std::make_unique<b2World>(b2Vec2(0.f, gravity));
     m_contactListener = std::make_unique<ContactListener>(m_tileMap);
@@ -1389,6 +1409,10 @@ void Level::updateCoop(float dt) {
     // Keep both players bounded within the visible camera viewport so neither
     // player can wander off-screen or get separated beyond the shared view.
     clampCoopPlayersToCamera();
+
+    // Campaign-only: the camera never scrolls backward, so neither can the
+    // player — he is held at the view's left edge exactly like SMB1.
+    clampCampaignPlayerToCameraLeft();
 }
 
 void Level::processPendingPvpHits() {
@@ -1611,6 +1635,21 @@ void Level::checkFinishFlag() {
     m_flagPoleCenterX = poleCenterX;
     const float targetTopY = static_cast<float>(bottomRow + 1) * TILE_SIZE -
                              mario->getSize().y;
+
+    // Canonical SMB1: the flagpole pays by grab height — the higher on the
+    // pole Mario grabbed, the larger the award (5000 at the very top, 100 at
+    // the base). The award flows through the same queueScoreAward popup/score
+    // transaction a stomp uses, at the grab point on the pole.
+    const float poleTopY = static_cast<float>(finishPosition.y) * TILE_SIZE;
+    const float poleBottomY = static_cast<float>(bottomRow + 1) * TILE_SIZE;
+    const float grabY = mario->getPosition().y + mario->getSize().y / 2.0f;
+    const float poleHeight = std::max(1.0f, poleBottomY - poleTopY);
+    const float heightFraction =
+        std::clamp((poleBottomY - grabY) / poleHeight, 0.0f, 1.0f);
+    mario->queueScoreAward(
+        sf::Vector2f(poleCenterX, std::max(grabY, poleTopY)),
+        flagpoleScoreForHeightFraction(heightFraction), false);
+
     mario->beginFlagpoleSlide(poleCenterX, targetTopY);
     m_tileMap.setFlagDropDistance(m_flagSlideStartDropDistance);
 
@@ -2038,6 +2077,49 @@ void Level::clampCoopPlayersToCamera() {
             }
             player->syncPhysics();
         }
+    }
+}
+
+void Level::clampCampaignPlayerToCameraLeft() {
+    // Mirrors clampCoopPlayersToCamera(), but only against the left edge:
+    // the monotonic campaign camera never scrolls backward, so Mario cannot
+    // walk off the left side of the locked view.
+    if (m_coopMode || m_pvpMode || !m_mario) {
+        return;
+    }
+    if (m_pipeWarpPhase != PipeWarpPhase::NONE || m_flagSequenceActive) {
+        return;
+    }
+    if (!m_camera.isMonotonicScroll()) {
+        return;
+    }
+
+    Mario* player = m_mario.get();
+    if (!player->isActive() || player->isDying()) {
+        return;
+    }
+
+    b2Body* body = player->getBody();
+    if (!body) {
+        return;
+    }
+
+    const sf::View& view = m_camera.getView();
+    const float viewLeft = view.getCenter().x - (view.getSize().x / 2.0f);
+    const float halfWidthPixels = player->getSize().x / 2.0f;
+    const float minXPixels = viewLeft + halfWidthPixels;
+
+    b2Vec2 pos = body->GetPosition();
+    const float posXPixels = PhysicsEngine::metersToPixels(pos.x);
+    if (posXPixels < minXPixels) {
+        b2Vec2 vel = body->GetLinearVelocity();
+        body->SetTransform(
+            b2Vec2(PhysicsEngine::pixelsToMeters(minXPixels), pos.y),
+            body->GetAngle());
+        if (vel.x < 0.0f) {
+            body->SetLinearVelocity(b2Vec2(0.0f, vel.y));
+        }
+        player->syncPhysics();
     }
 }
 

@@ -1,6 +1,6 @@
 /**
  * @file Item.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Abstract base class for collectible items
  * @note Week 4
  */

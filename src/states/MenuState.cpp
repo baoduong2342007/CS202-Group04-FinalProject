@@ -1,6 +1,6 @@
 /**
  * @file MenuState.cpp
- * @author TV1 (Dương) & TV2 (Nhật)
+ * @author TV1 (Duong) & TV2 (Nhat)
  * @brief Polished, crisp retro-modern Title / Main Menu state
  */
 

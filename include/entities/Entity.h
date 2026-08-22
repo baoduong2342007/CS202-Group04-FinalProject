@@ -1,6 +1,6 @@
 /**
  * @file Entity.h
- * @author TV1 (Dương) & TV3 (Bảo)
+ * @author TV1 (Duong) & TV3 (Bao)
  * @brief Base Entity class — all game objects with physics, rendering, and lifecycle management
  * @note Sprint 4: TextureManager + AnimationSystem wiring; Box2D safe destruction
  */

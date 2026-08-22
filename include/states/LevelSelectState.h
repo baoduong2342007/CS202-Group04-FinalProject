@@ -1,6 +1,6 @@
 /**
  * @file LevelSelectState.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Clean, uncluttered Level / Stage selection state with rich stage preview images.
  */
 

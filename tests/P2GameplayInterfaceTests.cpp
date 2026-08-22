@@ -267,23 +267,13 @@ void testLevelFireballCleanupAndLakituSpawnerOutput() {
     mario->setFacingDirection(Direction::RIGHT);
     const float levelWidth =
         static_cast<float>(level.getTileMap().getWidth()) * TILE_SIZE;
-    setPlayerProbePosition(*mario, levelWidth - 96.0f, -128.0f);
-
-    assert(level.requestFireBallShot(*mario));
-    EntityView withFireball = level.getEntities();
-    assert(countSubtype(withFireball, Entity::EntitySubtype::FIRE_BALL) == 1);
-
-    // The shot starts near the right edge and must be removed through the
-    // normal Level lifecycle after crossing the public bounds gate.
-    for (int frame = 0; frame < 120; ++frame) {
-        level.update(FRAME_DT);
-    }
-    const EntityView afterFireball = level.getEntities();
-    assert(countSubtype(afterFireball, Entity::EntitySubtype::FIRE_BALL) == 0);
 
     // Lakitu is a configured level spawner. Teleporting Mario into its
     // reachable horizontal area activates the public Level update path;
     // after its deterministic cruise/hide/throw cadence, an egg is adopted.
+    // This phase runs first: the campaign camera never scrolls backward, so
+    // the probe must only ever move Mario forward (Lakitu's column is left
+    // of the right-edge fireball probe below).
     const EntityView beforeSpawner = level.getEntities();
     const Entity* lakituEntity =
         beforeSpawner.find(Entity::EntitySubtype::LAKITU);
@@ -307,6 +297,20 @@ void testLevelFireballCleanupAndLakituSpawnerOutput() {
     }
     assert(sawEgg);
     assert(sawSpiny);
+
+    setPlayerProbePosition(*mario, levelWidth - 96.0f, -128.0f);
+
+    assert(level.requestFireBallShot(*mario));
+    EntityView withFireball = level.getEntities();
+    assert(countSubtype(withFireball, Entity::EntitySubtype::FIRE_BALL) == 1);
+
+    // The shot starts near the right edge and must be removed through the
+    // normal Level lifecycle after crossing the public bounds gate.
+    for (int frame = 0; frame < 120; ++frame) {
+        level.update(FRAME_DT);
+    }
+    const EntityView afterFireball = level.getEntities();
+    assert(countSubtype(afterFireball, Entity::EntitySubtype::FIRE_BALL) == 0);
 
     std::cout << "[PASSED] testLevelFireballCleanupAndLakituSpawnerOutput"
               << std::endl;

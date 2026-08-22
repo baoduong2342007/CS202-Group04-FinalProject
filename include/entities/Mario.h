@@ -1,6 +1,6 @@
 /**
  * @file Mario.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Mario player character class with authentic NES movement physics and states
  * @note Sprint 6 TV3: foot-anchored fixture rebuilding, low-ceiling clearance queries, independent invincibility clocks, deterministic death/respawn, and fixture-derived bounds
  */

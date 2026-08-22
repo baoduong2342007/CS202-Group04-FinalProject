@@ -1,7 +1,7 @@
 # Sprint 7 TV3 Status Matrix & Audit Report
 
 > Updated: 2026-08-21
-> Author: TV3 (Bảo)
+> Author: TV3 (Bao)
 > Scope: verified physics, Box2D integration, collision pipelines, automated
 > release evidence, and remaining manual gates for `S7-TV3-01`..`05`.
 

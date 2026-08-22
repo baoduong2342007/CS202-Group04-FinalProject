@@ -1,6 +1,6 @@
 /**
  * @file Entity.cpp
- * @author TV1 (Dương) & TV3 (Bảo)
+ * @author TV1 (Duong) & TV3 (Bao)
  * @brief Base Entity class implementation with Box2D physics, rendering, and safe lifecycle management
  * @note Sprint 4: TextureManager + AnimationSystem functional; safe Box2D body destruction
  */

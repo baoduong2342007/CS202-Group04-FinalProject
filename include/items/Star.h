@@ -1,6 +1,6 @@
 /**
  * @file Star.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Starman — bouncing item that grants temporary invincibility
  * @note Week 5 — spawned by EntityFactory; publishes PLAYER_POWER_UP on collect.
  *       Invincibility is time-limited; the item tracks its own spawn lifetime.

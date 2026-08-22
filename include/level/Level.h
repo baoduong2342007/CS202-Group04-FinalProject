@@ -1,6 +1,6 @@
 /**
  * @file Level.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Manages all entities within a single game level
  * @note Sprint 4 — owns TileMap, Mario, Camera, TextureManager, and all spawned entities
  */
@@ -170,6 +170,9 @@ private:
     /// Co-op: bound both players inside the active camera viewport so neither
     /// player can wander off-screen or get separated beyond the shared view.
     void clampCoopPlayersToCamera();
+    /// Campaign: hold Mario at the monotonic camera's left edge — the view
+    /// never scrolls backward, so neither can the player.
+    void clampCampaignPlayerToCameraLeft();
     /// PvP: bound both fighters inside the arena viewport & ceiling so neither
     /// player can jump off the top of the frame or leave the duel boundaries.
     void clampPvpFighters();

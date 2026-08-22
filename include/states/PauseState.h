@@ -1,6 +1,6 @@
 /**
  * @file PauseState.h
- * @author TV1 (Dương) & TV2 (Nhật)
+ * @author TV1 (Duong) & TV2 (Nhat)
  * @brief Polished arcade Pause State modal dialog with unified audio controls.
  */
 #pragma once

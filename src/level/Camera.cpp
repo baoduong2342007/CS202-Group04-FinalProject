@@ -1,6 +1,6 @@
 /**
  * @file Camera.cpp
- * @author TV2 (Nhật)
+ * @author TV2 (Nhat)
  * @brief Implementation of the Camera class for tracking and boundary clamping.
  * @note Uses SFML 3's position/size vectors for FloatRect and std::clamp for
  * bounds.
@@ -46,6 +46,8 @@ void Camera::init(const sf::Vector2f &viewSize,
       levelBounds.position.x + viewSize.x / 2.0f,
       levelBounds.position.y + levelBounds.size.y - viewSize.y / 2.0f});
   m_stableCenter = m_originalCenter;
+  // A fresh view may scroll left again; the monotonic floor restarts here.
+  m_lastStableCenterX = m_stableCenter.x;
   m_view.setCenter(m_stableCenter);
 }
 
@@ -83,6 +85,15 @@ void Camera::update(float dt, const sf::Vector2f &targetPosition) {
   }
 
   m_stableCenter = clampCenter(newCenter);
+
+  // Canonical SMB1 campaign scroll: the camera never moves backward. The
+  // floor is the previously committed stable center (render-only screen
+  // shake is applied below and does not participate in the clamp).
+  if (m_monotonicScroll && m_stableCenter.x < m_lastStableCenterX) {
+    m_stableCenter.x = m_lastStableCenterX;
+  }
+  m_lastStableCenterX = m_stableCenter.x;
+
   sf::Vector2f renderCenter = m_stableCenter;
 
   // Apply screen shake if active BEFORE clamping

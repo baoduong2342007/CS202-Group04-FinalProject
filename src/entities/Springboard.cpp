@@ -1,6 +1,6 @@
 /**
  * @file Springboard.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Implementation of Springboard / Trampoline entity
  */
 

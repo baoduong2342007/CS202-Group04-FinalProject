@@ -37,6 +37,15 @@ public:
     virtual void patrol() = 0;
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
+
+    /// Canonical SMB1 ledge policy: ground-walking enemies do NOT reverse at
+    /// ledges - they walk off and fall into pits. Only ledge-aware species
+    /// (Red Koopa, Hammer Bro) override this to true and stay on their
+    /// platform. Wall collisions still turn every enemy either way.
+    virtual bool turnsAtLedge() const {
+        return false;
+    }
+
     virtual void onFireHit();
     /// Star-contact response; defaults to the fireball presentation so
     /// existing enemies keep their flipped death. Bowser overrides this to

@@ -1,6 +1,6 @@
 /**
  * @file Item.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Abstract base class for collectible items (Coin, Mushroom, etc.)
  * @note Week 4 — inherits Entity, adds pure virtual onCollect()
  */

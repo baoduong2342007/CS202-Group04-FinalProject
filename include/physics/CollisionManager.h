@@ -1,6 +1,6 @@
 /**
  * @file CollisionManager.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief CollisionManager class for resolving Box2D collision pairs safely
  * @note Week 7 implementation
  */

@@ -1,6 +1,6 @@
 /**
  * @file ElevatorTests.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Unit tests for the kinematic moving platform / lift entity
  */
 

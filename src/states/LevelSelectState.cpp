@@ -1,6 +1,6 @@
 /**
  * @file LevelSelectState.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Clean, focused Level / Stage selection state with rich stage preview screenshots.
  */
 

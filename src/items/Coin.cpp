@@ -1,6 +1,6 @@
 /**
  * @file Coin.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Concrete collectible — awards score and publishes COIN_COLLECTED via
  * EventBus
  * @note Week 4

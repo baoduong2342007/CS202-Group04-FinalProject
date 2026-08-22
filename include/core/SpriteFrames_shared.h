@@ -520,16 +520,16 @@ inline const std::vector<sf::IntRect> &peekFrames() {
  */
 namespace PiranhaPlant {
 // Overworld Palette (Y=138, 16x24)
-inline const sf::IntRect OPEN({0, 138}, {16, 24});   // STT #71: Overworld mouth open (há miệng)
-inline const sf::IntRect CLOSED({18, 138}, {16, 24}); // STT #72: Overworld mouth closed (khép miệng)
+inline const sf::IntRect OPEN({0, 138}, {16, 24});   // STT #71: Overworld mouth open
+inline const sf::IntRect CLOSED({18, 138}, {16, 24}); // STT #72: Overworld mouth closed
 
 // Underground & Castle Palette (X + 146)
-inline const sf::IntRect UG_CASTLE_OPEN({146, 138}, {16, 24});   // STT #74: Underground mouth open (há miệng)
-inline const sf::IntRect UG_CASTLE_CLOSED({164, 138}, {16, 24}); // STT #75: Underground mouth closed (khép miệng)
+inline const sf::IntRect UG_CASTLE_OPEN({146, 138}, {16, 24});   // STT #74: Underground mouth open
+inline const sf::IntRect UG_CASTLE_CLOSED({164, 138}, {16, 24}); // STT #75: Underground mouth closed
 
 // Underwater Palette (X + 292)
-inline const sf::IntRect UW_OPEN({292, 138}, {16, 24});   // STT #77: Underwater mouth open (há miệng)
-inline const sf::IntRect UW_CLOSED({310, 138}, {16, 24}); // STT #78: Underwater mouth closed (khép miệng)
+inline const sf::IntRect UW_OPEN({292, 138}, {16, 24});   // STT #77: Underwater mouth open
+inline const sf::IntRect UW_CLOSED({310, 138}, {16, 24}); // STT #78: Underwater mouth closed
 
 inline const std::vector<sf::IntRect> &openFrames() {
   static const std::vector<sf::IntRect> frames = {OPEN, UG_CASTLE_OPEN,
@@ -566,9 +566,9 @@ inline const sf::IntRect FIRE_POSE1({68, 208}, {32, 32});  // STT #115
 inline const sf::IntRect FIRE_POSE2({102, 208}, {32, 32}); // STT #116
 
 inline const sf::IntRect
-    THROW_LEFT({34, 242}, {32, 26}); // STT #125: Bowser giơ búa, quay trái
+    THROW_LEFT({34, 242}, {32, 26}); // STT #125: Bowser raising hammer, facing left
 inline const sf::IntRect
-    THROW_RIGHT({68, 242}, {32, 26}); // STT #126: Bowser giơ búa, quay phải
+    THROW_RIGHT({68, 242}, {32, 26}); // STT #126: Bowser raising hammer, facing right
 
 // Underground + Castle Palette (X + 146)
 inline const sf::IntRect UG_WALK_CLOSED({146, 208}, {32, 32}); // STT #117
@@ -577,9 +577,9 @@ inline const sf::IntRect UG_FIRE_POSE1({214, 208}, {32, 32});  // STT #119
 inline const sf::IntRect UG_FIRE_POSE2({248, 208}, {32, 32});  // STT #120
 
 inline const sf::IntRect
-    UG_THROW_LEFT({180, 242}, {32, 26}); // STT #128: Bowser giơ búa, quay trái
+    UG_THROW_LEFT({180, 242}, {32, 26}); // STT #128: Bowser raising hammer, facing left
 inline const sf::IntRect
-    UG_THROW_RIGHT({214, 242}, {32, 26}); // STT #129: Bowser giơ búa, quay phải
+    UG_THROW_RIGHT({214, 242}, {32, 26}); // STT #129: Bowser raising hammer, facing right
 
 // Underwater Palette (X + 292)
 inline const sf::IntRect UW_WALK_CLOSED({292, 208}, {32, 32}); // STT #121
@@ -981,7 +981,7 @@ inline const std::vector<sf::IntRect> &uwQuestionBlockFrames() {
 
 } // namespace Blocks
 
-// ── Modern overworld & themed backgrounds ────────────────────────────
+// -- Modern overworld & themed backgrounds ----------------------------
 namespace Backgrounds {
 inline constexpr std::string_view WORLD_PATH = "assets/ui/bg_world.png";
 inline const sf::IntRect WORLD({0, 0}, {1857, 847});

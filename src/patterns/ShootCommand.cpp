@@ -1,6 +1,6 @@
 /**
  * @file ShootCommand.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Callback-based shoot request command.
  */
 

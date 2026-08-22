@@ -1,6 +1,6 @@
 /**
  * @file SaveSessionTests.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Session-restart persistence guards for the SaveManager integration
  *        (S6-TV1-19).
  *

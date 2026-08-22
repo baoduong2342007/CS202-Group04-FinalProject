@@ -15,6 +15,7 @@
 #include "entities/Koopa.h"
 #include "entities/RedKoopa.h"
 #include "entities/Paratroopa.h"
+#include "entities/BuzzyBeetle.h"
 #include "entities/Goomba.h"
 #include "entities/Spiny.h"
 #include "entities/HammerBro.h"
@@ -306,7 +307,10 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     assert(tileMap.isEnemySupport(6, 3)); // 'o' star block
     assert(!tileMap.isEnemySupport(0, 0)); // '.' empty air
 
-    // 2. Test behavioral ledge probing on Question Blocks vs Air for Goomba, Koopa, Spiny, HammerBro
+    // 2. Canonical SMB1 ledge policy: ground walkers (Goomba, green Koopa,
+    //    Spiny, wingless Paratroopa, Buzzy Beetle) do NOT reverse at ledges -
+    //    they walk off and fall into pits. Only ledge-aware species (Red
+    //    Koopa, Hammer Bro) keep reversing and stay on their platform.
     b2World world = makeWorld();
 
     // Create a level where col 1 is '?' and col 2 is '?', col 3 is '.' (ledge)
@@ -327,35 +331,35 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     TileMap ledgeMap;
     assert(ledgeMap.loadFromFile(ledgeFile.string()));
 
-    // Koopa (32x48): tile at Y = 64 (row 2) aligns foot to row 3 (Y = 96).
-    // Facing RIGHT at col 1 (x = 32): front probe lands in col 2 ('?'), which is enemy support -> does not reverse.
-    Koopa koopa1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
-    koopa1.setTileMap(&ledgeMap);
-    koopa1.setFacingDirection(Direction::RIGHT);
-    advance(koopa1, 0.1f);
-    assert(koopa1.getFacingDirection() == Direction::RIGHT);
-
-    // Koopa facing RIGHT at col 2 (x = 64): front probe lands in col 3 ('.'), which is air -> reverses to LEFT.
-    Koopa koopa2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
-    koopa2.setTileMap(&ledgeMap);
-    koopa2.setFacingDirection(Direction::RIGHT);
-    advance(koopa2, 0.1f);
-    assert(koopa2.getFacingDirection() == Direction::LEFT);
-
     // Goomba (32x32): foot on row 3 -> position.y = 96 - 32 = 64.
+    // Support ahead ('?' in col 2): keeps walking RIGHT.
     Goomba goomba1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
     goomba1.setTileMap(&ledgeMap);
     goomba1.setFacingDirection(Direction::RIGHT);
     advance(goomba1, 0.1f);
     assert(goomba1.getFacingDirection() == Direction::RIGHT);
 
+    // Ledge ahead (air in col 3): canonical Goomba walks off - no reversal.
     Goomba goomba2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
     goomba2.setTileMap(&ledgeMap);
     goomba2.setFacingDirection(Direction::RIGHT);
     advance(goomba2, 0.1f);
-    assert(goomba2.getFacingDirection() == Direction::LEFT);
+    assert(goomba2.getFacingDirection() == Direction::RIGHT);
 
-    // Spiny (32x32): foot on row 3 -> position.y = 96 - 32 = 64.
+    // Green Koopa (32x48, ground-aligned so the foot sits on row 3): walks off.
+    Koopa koopa1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    koopa1.setTileMap(&ledgeMap);
+    koopa1.setFacingDirection(Direction::RIGHT);
+    advance(koopa1, 0.1f);
+    assert(koopa1.getFacingDirection() == Direction::RIGHT);
+
+    Koopa koopa2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    koopa2.setTileMap(&ledgeMap);
+    koopa2.setFacingDirection(Direction::RIGHT);
+    advance(koopa2, 0.1f);
+    assert(koopa2.getFacingDirection() == Direction::RIGHT);
+
+    // Spiny (32x32): foot on row 3 -> position.y = 96 - 32 = 64. Walks off.
     Spiny spiny1({32.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
     spiny1.setTileMap(&ledgeMap);
     advance(spiny1, 0.1f);
@@ -364,9 +368,52 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     Spiny spiny2({64.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
     spiny2.setTileMap(&ledgeMap);
     advance(spiny2, 0.1f);
-    assert(spiny2.getFacingDirection() == Direction::LEFT);
+    assert(spiny2.getFacingDirection() == Direction::RIGHT);
+
+    // Wingless Paratroopa (a stomp clips the wings; the Koopa core takes
+    // over): it inherits the walk-off policy.
+    Mario wingClipper({96.f, 64.f}, {28.f, 30.f});
+    wingClipper.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
+    Paratroopa wingless({64.f, 64.f}, &world, LevelTheme::OVERWORLD,
+                        ParatroopaMode::HOP);
+    wingless.setTileMap(&ledgeMap);
+    const bool wingsClipped = CollisionManager::defeatEnemy(
+        wingless, DefeatCause::STOMP, &wingClipper);
+    assert(wingsClipped);
+    assert(!wingless.hasWings());
+    wingless.setFacingDirection(Direction::RIGHT);
+    advance(wingless, 0.1f);
+    assert(wingless.getFacingDirection() == Direction::RIGHT);
+
+    // Buzzy Beetle (Koopa shell core, 32x32): walks off.
+    BuzzyBeetle buzzy1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    buzzy1.setTileMap(&ledgeMap);
+    buzzy1.setFacingDirection(Direction::RIGHT);
+    advance(buzzy1, 0.1f);
+    assert(buzzy1.getFacingDirection() == Direction::RIGHT);
+
+    BuzzyBeetle buzzy2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    buzzy2.setTileMap(&ledgeMap);
+    buzzy2.setFacingDirection(Direction::RIGHT);
+    advance(buzzy2, 0.1f);
+    assert(buzzy2.getFacingDirection() == Direction::RIGHT);
+
+    // Red Koopa is the canonical SMB1 ledge guard: support ahead keeps it
+    // walking, but a ledge reverses it.
+    RedKoopa red1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    red1.setTileMap(&ledgeMap);
+    red1.setFacingDirection(Direction::RIGHT);
+    advance(red1, 0.1f);
+    assert(red1.getFacingDirection() == Direction::RIGHT);
+
+    RedKoopa red2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
+    red2.setTileMap(&ledgeMap);
+    red2.setFacingDirection(Direction::RIGHT);
+    advance(red2, 0.1f);
+    assert(red2.getFacingDirection() == Direction::LEFT);
 
     // HammerBro (32x48): foot on row 3 -> position.y = 96 - 48 = 48.
+    // It stays on its platform: the ledge reverses it.
     HammerBro bro1({32.f, 48.f}, &world, LevelTheme::OVERWORLD);
     bro1.setTileMap(&ledgeMap);
     bro1.setFacingDirection(Direction::RIGHT);
@@ -378,6 +425,22 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     bro2.setFacingDirection(Direction::RIGHT);
     advance(bro2, 0.1f);
     assert(bro2.getFacingDirection() == Direction::LEFT);
+
+    // Wall collisions still turn EVERY walker, ledge policy notwithstanding.
+    goomba2.onWallCollision();
+    assert(goomba2.getFacingDirection() == Direction::LEFT);
+    koopa2.onWallCollision();
+    assert(koopa2.getFacingDirection() == Direction::LEFT);
+    spiny2.onWallCollision();
+    assert(spiny2.getFacingDirection() == Direction::LEFT);
+    wingless.onWallCollision();
+    assert(wingless.getFacingDirection() == Direction::LEFT);
+    buzzy2.onWallCollision();
+    assert(buzzy2.getFacingDirection() == Direction::LEFT);
+    red2.onWallCollision();
+    assert(red2.getFacingDirection() == Direction::RIGHT);
+    bro2.onWallCollision();
+    assert(bro2.getFacingDirection() == Direction::RIGHT);
 
     // Clean up temporary directory
     std::filesystem::remove_all(tempDir, ec);
@@ -414,7 +477,86 @@ void testNarrowPatrolBreakoutAI() {
     TileMap map;
     assert(map.loadFromFile(levelFile.string()));
 
-    // 1. Test Goomba on 2-tile platform with Mario approaching from the LEFT (x = 0)
+    // Canonical SMB1 ledge policy: ground walkers step off platforms, so the
+    // narrow-patrol breakout AI is exercised by the ledge-aware walkers
+    // (Red Koopa); a canonical Goomba on the same pocket simply walks off.
+    // 1. Red Koopa on 2-tile platform with Mario approaching from the LEFT (x = 0)
+    {
+        b2World world = makeWorld();
+        TileMap map;
+        assert(map.loadFromFile(levelFile.string()));
+        map.createPhysicsBodies(&world);
+
+        RedKoopa redKoopa({90.f, 64.f}, &world, LevelTheme::OVERWORLD);
+        redKoopa.setTileMap(&map);
+        redKoopa.updatePlayerPosition({0.f, 64.f}); // Mario is to the left
+
+        // Move right until it hits right ledge and turns LEFT
+        redKoopa.setFacingDirection(Direction::RIGHT);
+        for (int i = 0; i < 100 && redKoopa.getFacingDirection() == Direction::RIGHT; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        assert(redKoopa.getFacingDirection() == Direction::LEFT);
+
+        // Move left until it hits left ledge and triggers breakout AI facing LEFT
+        for (int i = 0; i < 100 && !redKoopa.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        assert(redKoopa.isEscapingNarrowRange());
+        assert(redKoopa.getFacingDirection() == Direction::LEFT);
+
+        // While escaping, the Red Koopa ignores the left ledge and steps off the platform (drops down).
+        for (int i = 0; i < 100 && redKoopa.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        // Once it is clear of the narrow platform, isEscapingNarrowRange resets to false
+        assert(!redKoopa.isEscapingNarrowRange());
+
+        // Step simulation for gravity to land it on the bottom ground (row 5)
+        for (int i = 0; i < 60; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        assert(redKoopa.getPosition().y > 80.f); // Has fallen down from the 2-tile platform
+
+        map.destroyPhysicsBodies();
+    }
+
+    // 2. Red Koopa on 2-tile platform with Mario approaching from the RIGHT (x = 300)
+    {
+        b2World world = makeWorld();
+        TileMap map;
+        assert(map.loadFromFile(levelFile.string()));
+        map.createPhysicsBodies(&world);
+
+        RedKoopa redKoopa({70.f, 64.f}, &world, LevelTheme::OVERWORLD);
+        redKoopa.setTileMap(&map);
+        redKoopa.updatePlayerPosition({300.f, 64.f}); // Mario is to the right
+
+        // Move left until it hits left ledge and turns RIGHT
+        redKoopa.setFacingDirection(Direction::LEFT);
+        for (int i = 0; i < 100 && redKoopa.getFacingDirection() == Direction::LEFT; ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        assert(redKoopa.getFacingDirection() == Direction::RIGHT);
+
+        // Move right until it hits right ledge and triggers escape mode facing RIGHT
+        for (int i = 0; i < 100 && !redKoopa.isEscapingNarrowRange(); ++i) {
+            world.Step(1.f / 60.f, 8, 3);
+            redKoopa.update(1.f / 60.f);
+        }
+        assert(redKoopa.isEscapingNarrowRange());
+        assert(redKoopa.getFacingDirection() == Direction::RIGHT);
+
+        map.destroyPhysicsBodies();
+    }
+
+    // 3. Canonical walker sanity: a Goomba on the same 2-tile pocket never
+    //    oscillates - it walks straight off the platform without reversing.
     {
         b2World world = makeWorld();
         TileMap map;
@@ -423,73 +565,23 @@ void testNarrowPatrolBreakoutAI() {
 
         Goomba goomba({90.f, 64.f}, &world, LevelTheme::OVERWORLD);
         goomba.setTileMap(&map);
-        goomba.updatePlayerPosition({0.f, 64.f}); // Mario is to the left
+        goomba.updatePlayerPosition({0.f, 64.f});
 
-        // Move right until it hits right ledge and turns LEFT
         goomba.setFacingDirection(Direction::RIGHT);
-        for (int i = 0; i < 100 && goomba.getFacingDirection() == Direction::RIGHT; ++i) {
+        for (int i = 0; i < 100; ++i) {
             world.Step(1.f / 60.f, 8, 3);
             goomba.update(1.f / 60.f);
         }
-        assert(goomba.getFacingDirection() == Direction::LEFT);
-
-        // Move left until it hits left ledge and triggers breakout AI facing LEFT
-        for (int i = 0; i < 100 && !goomba.isEscapingNarrowRange(); ++i) {
-            world.Step(1.f / 60.f, 8, 3);
-            goomba.update(1.f / 60.f);
-        }
-        assert(goomba.isEscapingNarrowRange());
-        assert(goomba.getFacingDirection() == Direction::LEFT);
-
-        // While escaping, Goomba ignores the left ledge and steps off the platform (drops down).
-        for (int i = 0; i < 100 && goomba.isEscapingNarrowRange(); ++i) {
-            world.Step(1.f / 60.f, 8, 3);
-            goomba.update(1.f / 60.f);
-        }
-        // Once Goomba is clear of the narrow platform, isEscapingNarrowRange resets to false
+        // No ledge reversal, no breakout AI: it kept facing RIGHT, walked off
+        // the platform, and fell to the bottom ground (row 5).
+        assert(goomba.getFacingDirection() == Direction::RIGHT);
         assert(!goomba.isEscapingNarrowRange());
-
-        // Step simulation for gravity to land Goomba on the bottom ground (row 5)
-        for (int i = 0; i < 60; ++i) {
-            world.Step(1.f / 60.f, 8, 3);
-            goomba.update(1.f / 60.f);
-        }
         assert(goomba.getPosition().y > 80.f); // Has fallen down from the 2-tile platform
 
         map.destroyPhysicsBodies();
     }
 
-    // 2. Test Koopa on 2-tile platform with Mario approaching from the RIGHT (x = 300)
-    {
-        b2World world = makeWorld();
-        TileMap map;
-        assert(map.loadFromFile(levelFile.string()));
-        map.createPhysicsBodies(&world);
-
-        Koopa koopa({70.f, 48.f}, &world, LevelTheme::OVERWORLD);
-        koopa.setTileMap(&map);
-        koopa.updatePlayerPosition({300.f, 64.f}); // Mario is to the right
-
-        // Move left until it hits left ledge and turns RIGHT
-        koopa.setFacingDirection(Direction::LEFT);
-        for (int i = 0; i < 100 && koopa.getFacingDirection() == Direction::LEFT; ++i) {
-            world.Step(1.f / 60.f, 8, 3);
-            koopa.update(1.f / 60.f);
-        }
-        assert(koopa.getFacingDirection() == Direction::RIGHT);
-
-        // Move right until it hits right ledge and triggers escape mode facing RIGHT
-        for (int i = 0; i < 100 && !koopa.isEscapingNarrowRange(); ++i) {
-            world.Step(1.f / 60.f, 8, 3);
-            koopa.update(1.f / 60.f);
-        }
-        assert(koopa.isEscapingNarrowRange());
-        assert(koopa.getFacingDirection() == Direction::RIGHT);
-
-        map.destroyPhysicsBodies();
-    }
-
-    // 3. Test Goomba on wide platform (5 tiles) - should NOT trigger narrow breakout
+    // 4. Red Koopa on wide platform (5 tiles) - should NOT trigger narrow breakout
     {
         b2World world = makeWorld();
         std::filesystem::path wideFile = tempDir / "wide_level.txt";
@@ -511,18 +603,18 @@ void testNarrowPatrolBreakoutAI() {
         assert(wideMap.loadFromFile(wideFile.string()));
         wideMap.createPhysicsBodies(&world);
 
-        Goomba wideGoomba({40.f, 64.f}, &world, LevelTheme::OVERWORLD);
-        wideGoomba.setTileMap(&wideMap);
-        wideGoomba.updatePlayerPosition({0.f, 64.f});
+        RedKoopa wideRed({40.f, 64.f}, &world, LevelTheme::OVERWORLD);
+        wideRed.setTileMap(&wideMap);
+        wideRed.updatePlayerPosition({0.f, 64.f});
 
         // Patrol along the 5-tile platform (width = 160px > 80px threshold)
-        wideGoomba.setFacingDirection(Direction::RIGHT);
-        for (int i = 0; i < 120; ++i) {
+        wideRed.setFacingDirection(Direction::RIGHT);
+        for (int i = 0; i < 300; ++i) {
             world.Step(1.f / 60.f, 8, 3);
-            wideGoomba.update(1.f / 60.f);
+            wideRed.update(1.f / 60.f);
         }
         // Does not enter escape mode on wide platform
-        assert(!wideGoomba.isEscapingNarrowRange());
+        assert(!wideRed.isEscapingNarrowRange());
 
         wideMap.destroyPhysicsBodies();
     }

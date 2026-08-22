@@ -1,6 +1,6 @@
 /**
  * @file QuestionBlock.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Animated Question block — 3-frame flashing & 12px bump animation on hit
  * @note Sprint 4 — uses AnimationSystem, same pattern as Coin
  */

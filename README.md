@@ -36,11 +36,11 @@ catalog metadata and progression checks are verified. Physical visual play
 
 | Member | Name | Primary area |
 |---|---|---|
-| TV1 | Dương | Architecture, states, integration |
-| TV2 | Nhật | Engine, rendering, camera, UI states |
-| TV3 | Bảo | Mario, physics, collision |
+| TV1 | Duong | Architecture, states, integration |
+| TV2 | Nhat | Engine, rendering, camera, UI states |
+| TV3 | Bao | Mario, physics, collision |
 | TV4 | Vy | Levels, enemies, persistence |
-| TV5 | Truyền | Input, sound, HUD, items |
+| TV5 | Truyen | Input, sound, HUD, items |
 
 See [roles](docs/management/ROLES.md) and the [Sprint 6 plan](docs/management/s6_plan.md) for detailed ownership.
 

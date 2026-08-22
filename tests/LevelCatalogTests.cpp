@@ -1,6 +1,6 @@
 /**
  * @file LevelCatalogTests.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Headless regression tests for the Sprint 6 level-catalog and
  *        GameProgress contracts (S6-TV1-05 / 06 / 07 / 08).
  *

@@ -311,7 +311,10 @@ void Koopa::patrol() {
         return;
     }
 
-    if (isApproachingLedge()) {
+    // Canonical SMB1: the green Koopa (and its Buzzy Beetle / wingless
+    // Paratroopa shell siblings) walks off ledges; the ledge-aware Red Koopa
+    // overrides turnsAtLedge() to keep patrolling its platform.
+    if (turnsAtLedge() && isApproachingLedge()) {
         reverseDirection();
     }
 

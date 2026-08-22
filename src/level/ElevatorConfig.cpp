@@ -1,6 +1,6 @@
 /**
  * @file ElevatorConfig.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Loads the external elevator-route registry (levels/elevators.txt)
  */
 

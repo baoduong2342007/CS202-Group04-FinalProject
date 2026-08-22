@@ -1,7 +1,7 @@
 # Sprint 6 — Full Game Loop và đóng backlog Sprint 1–6
 
 **Thời gian:** 02/08/2026–08/08/2026  
-**Nguồn đối chiếu:** `WEEKLY_PLAN.md`, `ROLES.md` và kết quả audit toàn bộ codebase ngày 05/08/2026.  
+**Nguồn đối chiếu:** the superseded weekly plan (removed 2026-08-22; see git history), `ROLES.md` và kết quả audit toàn bộ codebase ngày 05/08/2026.  
 **Mục tiêu:** Menu → Level 1 → Level 2 → Level 3 → Win hoạt động liên tục; death, GameOver, retry, pause, save, power-up, audio và HUD hoạt động; toàn bộ lỗi đã biết từ Sprint 1–6 được xử lý.
 
 > Sprint 6 sử dụng chiến lược **hoàn tất toàn bộ cam kết**. Task chưa đạt Definition of Done phải giữ trạng thái `BLOCKED` hoặc `NOT DONE`; không được âm thầm chuyển sang Sprint 7 dưới tên “polish”.
@@ -118,7 +118,7 @@ enum class DefeatCause {
 
 ### A. Traceability và điều phối
 
-- [ ] **S6-TV1-01 — Tạo Sprint 1–6 audit tracker** — Liệt kê từng deliverable trong `WEEKLY_PLAN.md`, trạng thái thực tế, task xử lý và bằng chứng kiểm thử. **DoD:** Không có deliverable nào thiếu trạng thái hoặc owner. **Ước lượng:** 45 phút.
+- [ ] **S6-TV1-01 — Tạo Sprint 1–6 audit tracker** — Liệt kê từng deliverable trong the superseded weekly plan (removed 2026-08-22; see git history), trạng thái thực tế, task xử lý và bằng chứng kiểm thử. **DoD:** Không có deliverable nào thiếu trạng thái hoặc owner. **Ước lượng:** 45 phút.
 - [ ] **S6-TV1-02 — Tạo bug register P0/P1/P2** — Gộp bug camera, progress, state, physics, enemy, item, audio, save, build và documentation. **DoD:** Mỗi bug có severity, reproduction, owner và task ID. **Ước lượng:** 45 phút.
 - [ ] **S6-TV1-03 — Khóa public interfaces** — Chốt `GameProgress`, `LevelDefinition`, `SaveData`, lifecycle và event contract với cả nhóm. **DoD:** Thay đổi interface sau khi khóa phải được TV1 approve. **Ước lượng:** 45 phút.
 - [ ] **S6-TV1-04 — Lập dependency board** — Ghi rõ task nào chặn task nào giữa năm module. **DoD:** Các task cross-module đều có producer/consumer và thời hạn bàn giao. **Ước lượng:** 30 phút.

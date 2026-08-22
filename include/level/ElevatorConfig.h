@@ -1,6 +1,6 @@
 /**
  * @file ElevatorConfig.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief External elevator-route registry read from levels/elevators.txt
  * @note Lets levels get moving platforms WITHOUT modifying the level map
  *       files. Routes are declared in a separate config file keyed by level.

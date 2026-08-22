@@ -1,6 +1,6 @@
 /**
  * @file Mushroom.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Super Mushroom — moves horizontally, grows Mario from SMALL to SUPER
  * @note Week 5 — spawned by EntityFactory; power-up logic uses Mario's current state
  *       (no EventBus payload needed — the item queries Mario directly)

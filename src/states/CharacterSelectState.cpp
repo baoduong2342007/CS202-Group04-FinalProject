@@ -1,6 +1,6 @@
 /**
  * @file CharacterSelectState.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Side-by-side modern arcade hero selection state implementation.
  */
 #include "states/CharacterSelectState.h"

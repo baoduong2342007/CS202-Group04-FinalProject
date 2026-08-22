@@ -1,8 +1,8 @@
 /**
  * @file LevelCatalog.h
- * @author TV1 (DÆ°Æ¡ng)
- * @brief Centralized level catalog â€” Sprint 7 (S7-TV1-02)
- * @note Sprint 7 locked contract â€” Level 1 -> 2 -> 3 -> 4 -> Win
+ * @author TV1 (Duong)
+ * @brief Centralized level catalog — Sprint 7 (S7-TV1-02)
+ * @note Sprint 7 locked contract — Level 1 -> 2 -> 3 -> 4 -> Win
  */
 
 #pragma once

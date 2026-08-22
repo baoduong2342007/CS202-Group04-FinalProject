@@ -1,6 +1,6 @@
 /**
  * @file GameManager.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Implementation of GameManager
  * @note Sprint 6 — deferred state operations (S6-TV1-16)
  */

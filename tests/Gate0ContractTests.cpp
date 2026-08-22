@@ -1,7 +1,7 @@
 /**
  * @file Gate0ContractTests.cpp
- * @author TV1 (Dương)
- * @brief Gate 0 release-contract regression guards (s6_fix_plan_v2.md §2).
+ * @author TV1 (Duong)
+ * @brief Gate 0 release-contract regression guards (Sprint 6 release contract, §2).
  *
  * This suite locks the Sprint 6 release contract that every other module builds
  * on top of:
@@ -777,6 +777,63 @@ void testFlagCompletionGatedOnFullFlagDrop() {
     std::cout << "[PASSED] testFlagCompletionGatedOnFullFlagDrop" << std::endl;
 }
 
+void testFlagpoleScoreByGrabHeight() {
+    std::cout << "[RUNNING] testFlagpoleScoreByGrabHeight..." << std::endl;
+
+    // Canonical SMB1 award tiers by grab height on the pole: 5000 at the
+    // very top, 2000 in the upper band, 100 at the base. Each grab needs a
+    // fresh level because the flag sequence is a one-shot latch.
+    struct GrabCase {
+        float marioTopY;
+        int expectedScore;
+    };
+
+    Level probe;
+    probe.setTheme(LevelTheme::OVERWORLD);
+    assert(probe.loadFromFile("levels/level1.txt"));
+
+    const auto finishes = probe.getTileMap().findTiles('F');
+    assert(finishes.size() == 1);
+    const sf::Vector2i finish = finishes.front();
+    const sf::Vector2f triggerTopLeft = TileMap::gridToWorldPosition(finish);
+
+    int bottomPoleRow = finish.y;
+    for (const sf::Vector2i& pole : probe.getTileMap().findTiles('|')) {
+        if (pole.x == finish.x && pole.y > bottomPoleRow) {
+            bottomPoleRow = pole.y;
+        }
+    }
+    const float poleTopY = static_cast<float>(finish.y * TILE_SIZE);
+    const float poleBottomY = static_cast<float>((bottomPoleRow + 1) * TILE_SIZE);
+    const float poleHeight = poleBottomY - poleTopY;
+
+    const GrabCase grabs[] = {
+        // Very top of the pole: Mario's top edge flush with the 'F' tile.
+        {poleTopY, 5000},
+        // Upper band: center at 75% of the pole height.
+        {poleBottomY - 0.75f * poleHeight - 16.0f, 2000},
+        // Pole base: barely above the ground row.
+        {poleBottomY - 33.0f, 100},
+    };
+
+    for (const GrabCase& grab : grabs) {
+        Level level;
+        level.setTheme(LevelTheme::OVERWORLD);
+        assert(level.loadFromFile("levels/level1.txt"));
+        Mario* mario = level.getMario();
+        assert(mario != nullptr);
+        assert(mario->getScore() == 0);
+
+        mario->setPosition(sf::Vector2f(triggerTopLeft.x, grab.marioTopY));
+        level.update(0.0f);
+
+        assert(mario->isFlagpoleSliding());
+        assert(mario->getScore() == grab.expectedScore);
+    }
+
+    std::cout << "[PASSED] testFlagpoleScoreByGrabHeight" << std::endl;
+}
+
 void testLevelAreaThemeSpawns() {
     std::cout << "[RUNNING] testLevelAreaThemeSpawns..." << std::endl;
 
@@ -836,6 +893,7 @@ int main() {
     testFlagWalkReachesCastleWithoutTeleporting();
     testFlagSequenceSnapsMarioToPoleSide();
     testFlagCompletionGatedOnFullFlagDrop();
+    testFlagpoleScoreByGrabHeight();
     testLevelAreaThemeSpawns();
 
     std::cout << "All Gate0 contract tests passed successfully!" << std::endl;

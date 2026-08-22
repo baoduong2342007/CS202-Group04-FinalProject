@@ -1,6 +1,6 @@
 /**
  * @file GameProgress.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Session progress data, independent of Level lifetime
  * @note Sprint 6 — S6-TV1-08: progress lives in the game session (PlayState),
  *       NOT inside Level, so destroying a Level never resets score/coins/lives.

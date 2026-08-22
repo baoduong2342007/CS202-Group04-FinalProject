@@ -1,6 +1,6 @@
 /**
  * @file PvpStompTests.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Player-vs-player contact tests on a real Box2D world
  * @note Covers the head-stomp duel detection, the rising-graze rejection,
  *       side-by-side neutrality and fireball ownership filtering.

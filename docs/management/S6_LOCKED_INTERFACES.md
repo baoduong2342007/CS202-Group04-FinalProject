@@ -13,6 +13,9 @@ struct GameProgress {
     int coins = 0;
     int lives = 3;
     MarioState power = MarioState::SMALL;
+    CharacterType character = CharacterType::MARIO;
+    bool isCoop = false;
+    CharacterType character2 = CharacterType::LUIGI;
 };
 
 enum class CameraVerticalMode {
@@ -30,7 +33,9 @@ struct LevelDefinition {
 };
 ```
 
-The additional camera mode was approved during Sprint 6 remediation because camera behavior is level metadata, not a global theme guess. `LevelCatalog::getAll()` contains exactly Levels 1, 2, and 3.
+The additional camera mode was approved during Sprint 6 remediation because camera behavior is level metadata, not a global theme guess. `LevelCatalog::getAll()` now contains 4 levels — Levels 1, 2, 3, and 4 (the Castle finale leading to Win).
+
+Camera scrolling now has a second axis alongside `CameraVerticalMode`: `Camera::setMonotonicScroll(bool)` locks the horizontal follow so the stable center x never decreases (canonical SMB1 campaign rule; single-player campaign only — co-op and PvP keep free two-way follow).
 
 ## Save data
 
@@ -77,7 +82,7 @@ enum class DefeatCause {
 };
 ```
 
-`CollisionManager::defeatEnemy(Enemy&, DefeatCause, Mario*)` is the single score/event commit transaction.
+`CollisionManager::defeatEnemy(Enemy&, DefeatCause, Mario*, int streakIndex = 0)` is the single score/event commit transaction.
 
 `BLOCK_BUMP` awards 100 points and publishes `ENEMY_DEFEATED_BY_BLOCK`; the
 existing stomp sound is reused. Defeated enemies may remain briefly for their

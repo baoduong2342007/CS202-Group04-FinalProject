@@ -1,6 +1,6 @@
 /**
  * @file Character.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief Character class
  * @note Week 1 skeleton setup
  */

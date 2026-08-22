@@ -1,6 +1,6 @@
 /**
  * @file PlayState.h
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Play state implementation (handles the main gameplay loop)
  * @note Sprint 6 — S6-TV1-07/08/09/10/11/12/13: one-based level progression,
  *       session GameProgress, load error handling, transition freeze,

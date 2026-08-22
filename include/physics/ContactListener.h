@@ -1,6 +1,6 @@
 /**
  * @file ContactListener.h
- * @author TV3 (Bảo)
+ * @author TV3 (Bao)
  * @brief ContactListener to resolve Box2D collisions and triggers
  * @note Week 2 Box2D integration
  */

@@ -1,6 +1,6 @@
 /**
  * @file GameOverState.cpp
- * @author TV1 (Dương)
+ * @author TV1 (Duong)
  * @brief Polished retro arcade Game Over State implementation
  */
 #include "states/GameOverState.h"

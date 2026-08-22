@@ -1,6 +1,6 @@
 /**
  * @file PvpFlowTests.cpp
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief PvP round state machine, fire-flower director and character-select
  *        phase tests, driven against the shipped arena.
  */

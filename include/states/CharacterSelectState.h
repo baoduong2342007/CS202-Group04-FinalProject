@@ -1,6 +1,6 @@
 /**
  * @file CharacterSelectState.h
- * @author TV5 (Truyền)
+ * @author TV5 (Truyen)
  * @brief Character selection state shown between the main menu and gameplay.
  */
 #pragma once

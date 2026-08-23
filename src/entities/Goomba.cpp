@@ -117,6 +117,7 @@ void Goomba::update(float dt) {
     }
 
     updateNarrowEscapeStatus();
+    updateHopCooldown(dt);
 
     if (!isDead()) {
         patrol();
@@ -173,18 +174,29 @@ void Goomba::patrol() {
         return;
     }
 
-    // Canonical SMB1: a Goomba walks off ledges (turnsAtLedge() is false);
-    // only ledge-aware species reverse before the drop.
-    if (turnsAtLedge() && isApproachingLedge()) {
+    // Dynamic aggro pursuit
+    m_aggroActive = isPlayerNearby(240.f, 140.f);
+
+    if (isApproachingLedge()) {
         reverseDirection();
     }
 
     sf::Vector2f velocity = getVelocity();
+    const float currentSpeed = m_aggroActive ? (m_patrolSpeed * getAggroSpeedMultiplier()) : m_patrolSpeed;
 
     if (getFacingDirection() == Direction::LEFT) {
-        velocity.x = -m_patrolSpeed;
+        velocity.x = -currentSpeed;
     } else {
-        velocity.x = m_patrolSpeed;
+        velocity.x = currentSpeed;
+    }
+
+    // Agile surprise hop when in close pursuit on flat ground
+    if (m_aggroActive && canAggroHop() && std::abs(velocity.y) < 2.f) {
+        const float distToPlayer = std::abs(m_playerPos.x - (m_position.x + m_size.x / 2.f));
+        if (distToPlayer <= 90.f && distToPlayer >= 24.f) {
+            velocity.y = -170.f;
+            resetHopCooldown(3.0f);
+        }
     }
 
     setVelocity(velocity);

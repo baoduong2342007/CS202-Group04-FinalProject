@@ -1,5 +1,6 @@
 /**
  * @file Lakitu.cpp
+ * @author TV4 (Vy)
  * @brief Lakitu implementation - cloud pursuit, egg drops, and respawn
  */
 
@@ -93,6 +94,10 @@ void Lakitu::update(float dt) {
             m_isFlippedDead = false;
             setHealth(1);
             allowNextStomp();
+            // The revived Lakitu is a fresh target: re-arm the terminal
+            // defeat latch or fireballs/stars/shells would bounce off it
+            // forever after the first knock-down.
+            allowNextDefeat();
 
             const float respawnX = m_marioKnown
                                        ? m_marioPosition.x - 128.f
@@ -141,8 +146,11 @@ void Lakitu::update(float dt) {
         case State::THROW:
             if (!m_eggQueued && m_world) {
                 m_eggQueued = true;
+                const float predictedX = m_marioKnown
+                    ? (m_marioPosition.x + std::clamp(m_marioVelX * 0.4f, -60.f, 60.f))
+                    : m_position.x;
                 const Direction throwDirection =
-                    (m_marioKnown && m_marioPosition.x < m_position.x)
+                    (predictedX < m_position.x)
                         ? Direction::LEFT : Direction::RIGHT;
                 m_pending.push_back(std::make_unique<SpinyEgg>(
                     m_position + sf::Vector2f{0.f, m_size.y},
@@ -204,6 +212,10 @@ void Lakitu::dieFlipped() {
 }
 
 void Lakitu::updateMarioPosition(const sf::Vector2f& marioPos) {
+    if (m_marioKnown) {
+        m_marioVelX = (marioPos.x - m_marioPosition.x) / 0.016f;
+    }
+    m_prevMarioPosition = m_marioPosition;
     m_marioPosition = marioPos;
     m_marioKnown = true;
 }

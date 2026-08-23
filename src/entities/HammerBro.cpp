@@ -120,7 +120,10 @@ void HammerBro::update(float dt) {
             m_jumpTimer = 0.f;
             m_rearmJump = true;
             sf::Vector2f velocity = getVelocity();
-            velocity.y = -JUMP_SPEED;
+            // Higher leap if Mario is on an upper tier
+            const float hopForce = (m_marioKnown && m_marioPosition.y < m_position.y - 20.f)
+                                       ? (JUMP_SPEED * 1.35f) : JUMP_SPEED;
+            velocity.y = -hopForce;
             setVelocity(velocity);
         }
     }
@@ -132,7 +135,11 @@ void HammerBro::update(float dt) {
         if (m_attackCooldown <= 0.f) {
             static std::mt19937 rng(std::random_device{}());
             std::uniform_int_distribution<int> burstSize(1, 3);
-            std::uniform_real_distribution<float> nextAttack(1.8f, 3.5f);
+            const float minCooldown = (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < 160.f)
+                                          ? 1.2f : 1.8f;
+            const float maxCooldown = (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < 160.f)
+                                          ? 2.4f : 3.5f;
+            std::uniform_real_distribution<float> nextAttack(minCooldown, maxCooldown);
 
             m_hammersLeftInBurst = burstSize(rng);
             m_hammerSpacingTimer = 0.f;
@@ -169,6 +176,11 @@ void HammerBro::update(float dt) {
 void HammerBro::patrol() {
     if (m_state != State::PATROL || isDead()) {
         return;
+    }
+
+    // Face player when close
+    if (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < 240.f && !isEscapingNarrowRange()) {
+        setFacingDirection(m_marioPosition.x < m_position.x ? Direction::LEFT : Direction::RIGHT);
     }
 
     if (isApproachingLedge()) {
@@ -226,6 +238,13 @@ bool HammerBro::isApproachingLedge() const {
 
     if (!m_tileMap) {
         return false;
+    }
+
+    // Smart step-down if chasing player on lower platforms
+    if (isPlayerNearby(240.f, 150.f) && isPlayerInFront() && isPlayerBelow()) {
+        if (isSafeDropAhead(m_tileMap, 4)) {
+            return false;
+        }
     }
 
     const float footY = m_position.y + m_size.y + EDGE_PROBE_OFFSET;

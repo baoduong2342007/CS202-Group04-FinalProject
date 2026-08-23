@@ -66,6 +66,21 @@ std::uint64_t InputState::getPressOrder(sf::Keyboard::Key key) const {
     return isValidKey(key) ? m_pressOrder[toIndex(key)] : 0;
 }
 
+void InputState::syncHardware() {
+    for (int k = 0; k < static_cast<int>(sf::Keyboard::KeyCount); ++k) {
+        const auto key = static_cast<sf::Keyboard::Key>(k);
+        const bool physicallyPressed = sf::Keyboard::isKeyPressed(key);
+        if (m_held[k] && !physicallyPressed) {
+            m_held[k] = false;
+            m_releasedThisFrame[k] = true;
+        } else if (!m_held[k] && physicallyPressed) {
+            m_held[k] = true;
+            m_pressedThisFrame[k] = true;
+            m_pressOrder[k] = ++m_nextPressOrder;
+        }
+    }
+}
+
 void InputState::clear() {
     std::fill(m_held.begin(), m_held.end(), false);
     std::fill(m_pressedThisFrame.begin(), m_pressedThisFrame.end(), false);

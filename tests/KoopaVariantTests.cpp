@@ -339,14 +339,14 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     advance(goomba1, 0.1f);
     assert(goomba1.getFacingDirection() == Direction::RIGHT);
 
-    // Ledge ahead (air in col 3): canonical Goomba walks off - no reversal.
+    // Ledge ahead (air in col 3): smart Goomba detects ledge and reverses to LEFT.
     Goomba goomba2({64.f, 64.f}, &world, LevelTheme::OVERWORLD);
     goomba2.setTileMap(&ledgeMap);
     goomba2.setFacingDirection(Direction::RIGHT);
     advance(goomba2, 0.1f);
-    assert(goomba2.getFacingDirection() == Direction::RIGHT);
+    assert(goomba2.getFacingDirection() == Direction::LEFT);
 
-    // Green Koopa (32x48, ground-aligned so the foot sits on row 3): walks off.
+    // Green Koopa (32x48, ground-aligned so the foot sits on row 3): reverses at ledge.
     Koopa koopa1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
     koopa1.setTileMap(&ledgeMap);
     koopa1.setFacingDirection(Direction::RIGHT);
@@ -357,9 +357,9 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     koopa2.setTileMap(&ledgeMap);
     koopa2.setFacingDirection(Direction::RIGHT);
     advance(koopa2, 0.1f);
-    assert(koopa2.getFacingDirection() == Direction::RIGHT);
+    assert(koopa2.getFacingDirection() == Direction::LEFT);
 
-    // Spiny (32x32): foot on row 3 -> position.y = 96 - 32 = 64. Walks off.
+    // Spiny (32x32): foot on row 3 -> position.y = 96 - 32 = 64. Reverses at ledge.
     Spiny spiny1({32.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
     spiny1.setTileMap(&ledgeMap);
     advance(spiny1, 0.1f);
@@ -368,10 +368,10 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     Spiny spiny2({64.f, 64.f}, &world, LevelTheme::OVERWORLD, Direction::RIGHT);
     spiny2.setTileMap(&ledgeMap);
     advance(spiny2, 0.1f);
-    assert(spiny2.getFacingDirection() == Direction::RIGHT);
+    assert(spiny2.getFacingDirection() == Direction::LEFT);
 
     // Wingless Paratroopa (a stomp clips the wings; the Koopa core takes
-    // over): it inherits the walk-off policy.
+    // over): reverses at ledge.
     Mario wingClipper({96.f, 64.f}, {28.f, 30.f});
     wingClipper.initPhysics(&world, b2_dynamicBody, {28.f, 30.f});
     Paratroopa wingless({64.f, 64.f}, &world, LevelTheme::OVERWORLD,
@@ -383,9 +383,9 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     assert(!wingless.hasWings());
     wingless.setFacingDirection(Direction::RIGHT);
     advance(wingless, 0.1f);
-    assert(wingless.getFacingDirection() == Direction::RIGHT);
+    assert(wingless.getFacingDirection() == Direction::LEFT);
 
-    // Buzzy Beetle (Koopa shell core, 32x32): walks off.
+    // Buzzy Beetle (Koopa shell core, 32x32): reverses at ledge.
     BuzzyBeetle buzzy1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
     buzzy1.setTileMap(&ledgeMap);
     buzzy1.setFacingDirection(Direction::RIGHT);
@@ -396,10 +396,9 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     buzzy2.setTileMap(&ledgeMap);
     buzzy2.setFacingDirection(Direction::RIGHT);
     advance(buzzy2, 0.1f);
-    assert(buzzy2.getFacingDirection() == Direction::RIGHT);
+    assert(buzzy2.getFacingDirection() == Direction::LEFT);
 
-    // Red Koopa is the canonical SMB1 ledge guard: support ahead keeps it
-    // walking, but a ledge reverses it.
+    // Red Koopa: support ahead keeps it walking, but a ledge reverses it.
     RedKoopa red1({32.f, 64.f}, &world, LevelTheme::OVERWORLD);
     red1.setTileMap(&ledgeMap);
     red1.setFacingDirection(Direction::RIGHT);
@@ -426,17 +425,17 @@ void testEnemySupportTileCoverageAndLedgeProbing() {
     advance(bro2, 0.1f);
     assert(bro2.getFacingDirection() == Direction::LEFT);
 
-    // Wall collisions still turn EVERY walker, ledge policy notwithstanding.
+    // Wall collisions still turn EVERY walker.
     goomba2.onWallCollision();
-    assert(goomba2.getFacingDirection() == Direction::LEFT);
+    assert(goomba2.getFacingDirection() == Direction::RIGHT);
     koopa2.onWallCollision();
-    assert(koopa2.getFacingDirection() == Direction::LEFT);
+    assert(koopa2.getFacingDirection() == Direction::RIGHT);
     spiny2.onWallCollision();
-    assert(spiny2.getFacingDirection() == Direction::LEFT);
+    assert(spiny2.getFacingDirection() == Direction::RIGHT);
     wingless.onWallCollision();
-    assert(wingless.getFacingDirection() == Direction::LEFT);
+    assert(wingless.getFacingDirection() == Direction::RIGHT);
     buzzy2.onWallCollision();
-    assert(buzzy2.getFacingDirection() == Direction::LEFT);
+    assert(buzzy2.getFacingDirection() == Direction::RIGHT);
     red2.onWallCollision();
     assert(red2.getFacingDirection() == Direction::RIGHT);
     bro2.onWallCollision();

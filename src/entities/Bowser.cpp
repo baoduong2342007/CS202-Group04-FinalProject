@@ -161,6 +161,16 @@ void Bowser::update(float dt) {
         case State::PATROL: {
             patrol();
 
+            // Intercept hop: if Mario is airborne attempting to vault over Bowser
+            if (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < 140.f &&
+                m_marioPosition.y < m_position.y - 10.f && std::abs(getVelocity().y) < 2.f &&
+                m_attackTimer < 1.0f) {
+                sf::Vector2f velocity = getVelocity();
+                velocity.y = -HOP_SPEED * 1.15f;
+                setVelocity(velocity);
+                m_attackTimer = 1.6f;
+            }
+
             m_attackTimer -= dt;
             if (m_attackTimer <= 0.f) {
                 static std::mt19937 rng(std::random_device{}());
@@ -327,21 +337,25 @@ void Bowser::breatheFire() {
                              ? (m_position.x - 44.f)
                              : (m_position.x + m_size.x - 4.f);
 
-    // Authentic SMB1 multi-height fire trajectory:
-    // 1. LOW (40%): Spits downward to skim the floor (Y = m_position.y + 38.f), forcing Small and Big Mario to jump.
-    // 2. MID (35%): Chest level (Y = m_position.y + 22.f), hitting Big Mario torso and Small Mario head.
-    // 3. HIGH (25%): Head level (Y = m_position.y + 8.f), allowing Small Mario to sprint underneath.
+    // Adaptive multi-height fire trajectory:
+    // When Mario is airborne, bias toward HIGH/MID. When Mario is on ground, bias toward LOW.
     static std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> heightDist(0, 99);
     const int roll = heightDist(rng);
 
     float offsetY = 8.f; // Default HIGH (Head-level)
-    if (roll < 40) {
-        offsetY = 38.f;  // LOW (Ground-skimmer)
-    } else if (roll < 75) {
-        offsetY = 22.f;  // MID (Chest-level)
+    if (m_marioKnown && m_marioPosition.y < m_position.y - 10.f) {
+        // Mario is in air: 60% HIGH, 40% MID
+        offsetY = (roll < 60) ? 8.f : 22.f;
     } else {
-        offsetY = 8.f;   // HIGH (Head-level)
+        // Mario is grounded: 50% LOW (skimmer), 35% MID, 15% HIGH
+        if (roll < 50) {
+            offsetY = 38.f;  // LOW (Ground-skimmer)
+        } else if (roll < 85) {
+            offsetY = 22.f;  // MID (Chest-level)
+        } else {
+            offsetY = 8.f;   // HIGH (Head-level)
+        }
     }
 
     const float spawnY = m_position.y + offsetY;

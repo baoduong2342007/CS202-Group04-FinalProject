@@ -1,5 +1,6 @@
 /**
  * @file Lakitu.h
+ * @author TV4 (Vy)
  * @brief Cloud-riding enemy that shadows Mario from above and drops Spiny eggs
  * @note Enemy expansion - SMB1-accurate: hides in its cloud before throwing,
  *       stomp 800 / fireball 200, and it comes back a few seconds after
@@ -50,6 +51,8 @@ private:
     State m_state{State::CRUISE};
     float m_stateTimer{0.f};
     sf::Vector2f m_marioPosition{0.f, 0.f};
+    sf::Vector2f m_prevMarioPosition{0.f, 0.f};
+    float m_marioVelX{0.f};
     bool m_marioKnown{false};
     bool m_isFlippedDead{false};
     bool m_eggQueued{false};

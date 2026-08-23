@@ -18,8 +18,10 @@
 #include <cassert>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <SFML/Window/Keyboard.hpp>
@@ -315,6 +317,7 @@ bool testCoopPlayersClampedInsideCameraViewport() {
 
     // Co-op mode must disable horizontal deadzone to prevent camera freezing
     assert(level.getCamera().getHorizontalDeadzoneRatio() == 0.0f);
+    assert(level.getCamera().getVerticalMode() == CameraVerticalMode::DEAD_ZONE);
 
     Mario* p1 = level.getMario();
     Mario* p2 = level.getMario2();
@@ -370,6 +373,322 @@ bool testCoopPlayersClampedInsideCameraViewport() {
     return true;
 }
 
+// Co-op shared-camera contract (2026-08-23 design):
+//  1. Vertical TRACK mode pans the view to a fit-both biased midpoint with
+//     edge-margin follow: the shared view only scrolls when a partner would
+//     otherwise leave the frame, so hop jitter and mid-frame elevations never
+//     drag the view around.
+//  2. Horizontal edge-stuck rule still pins a player at the screen edge when
+//     the partners try to separate wider than one viewport.
+//
+// The vertical phases need a level tall enough to leave the shared view real
+// panning room, so this test builds its own flat synthetic fixture instead of
+// relying on a shipped level whose trimmed height can be near one viewport.
+bool testCoopCameraTracksVerticalMidpointAndSticksAtEdges() {
+    std::cout << "[RUNNING] testCoopCameraTracksVerticalMidpointAndSticksAtEdges..."
+              << std::endl;
+
+    // Flat 70x30 level: thick floor across rows 12-13, flagpole at column 68,
+    // spawn 'M' at (10,11). No enemies, no pits, plenty of sky to pan through.
+    const int kCols = 70;
+    const int kRows = 30;
+    const auto fixturePath =
+        std::filesystem::temp_directory_path() / "mario_coop_camera_level.txt";
+    {
+        std::ofstream out(fixturePath);
+        assert(out.is_open());
+        out << "# Temporary fixture: tall flat co-op camera level\n";
+        for (int row = 0; row < kRows; ++row) {
+            std::string line(kCols, '.');
+            if (row == 8) {
+                line[68] = 'T';
+            } else if (row == 9) {
+                line[68] = 'F';
+            } else if (row == 10 || row == 11) {
+                line[68] = '|';
+            } else if (row == 12 || row == 13) {
+                line = std::string(kCols, '0');
+            }
+            if (row == 11) {
+                line[10] = 'M';
+            }
+            out << line << '\n';
+        }
+    }
+
+    Level level;
+    if (!level.loadFromFile(fixturePath.string(), CharacterType::MARIO,
+                            CharacterType::LUIGI)) {
+        std::cerr << "Failed to load coop camera fixture" << std::endl;
+        return false;
+    }
+
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 != nullptr && p2 != nullptr);
+
+    // Split the partners vertically: P1 parked high with gravity disabled,
+    // P2 standing on the floor. The camera must pan UP toward their midpoint.
+    p1->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{5, 0}));
+    if (b2Body* b1 = p1->getBody()) {
+        b1->SetGravityScale(0.f);
+        b1->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    }
+    p1->setVelocity({0.f, 0.f});
+    p2->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{30, 11}));
+    for (int frame = 0; frame < 60; ++frame) {
+        level.update(FRAME_DT);
+    }
+
+    const float elevatedCenterY =
+        level.getCamera().getView().getCenter().y;
+
+    // The split must have dragged the shared view far up from its initial
+    // bottom-clamped resting position to keep both partners framed.
+    constexpr int FIXTURE_TILE_PX = 32;
+    const float bottomRestY =
+        static_cast<float>(kRows * FIXTURE_TILE_PX) -
+        level.getCamera().getView().getSize().y / 2.f;
+    assert(elevatedCenterY < bottomRestY - 200.f);
+
+    // Bring P1 down onto the floor next to P2: under DEAD_ZONE mode
+    // when P1 returns down to the floor, the view tracks downward toward the players.
+    if (b2Body* b1 = p1->getBody()) {
+        b1->SetGravityScale(1.0f);
+    }
+    p1->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{19, 11}));
+    for (int frame = 0; frame < 90; ++frame) {
+        level.update(FRAME_DT);
+    }
+    const float groundedCenterY = level.getCamera().getView().getCenter().y;
+    assert(groundedCenterY > elevatedCenterY + 100.f);
+
+    // Both players must be visible inside the shared view at all times here.
+    {
+        const sf::View& view = level.getCamera().getView();
+        const float left = view.getCenter().x - view.getSize().x / 2.f;
+        const float right = view.getCenter().x + view.getSize().x / 2.f;
+        const float top = view.getCenter().y - view.getSize().y / 2.f;
+        const float bottom = view.getCenter().y + view.getSize().y / 2.f;
+        for (const Mario* player : {p1, p2}) {
+            assert(player->getPosition().x >= left - 1.f &&
+                   player->getPosition().x + player->getSize().x <=
+                       right + 1.f);
+            assert(player->getPosition().y + player->getSize().y > top - 8.f);
+            assert(player->getPosition().y < bottom + 8.f);
+        }
+    }
+
+    // Edge-stuck: park idle P2 beside P1, then run P1 right along the long
+    // floor until the separation limit pins P2 at the view's LEFT edge while
+    // the camera keeps following P1.
+    p1->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{40, 11}));
+    p2->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{20, 11}));
+    for (int frame = 0; frame < 30; ++frame) {
+        level.update(FRAME_DT);
+    }
+    for (int frame = 0; frame < 300; ++frame) {
+        p1->setMoveIntent(1.0f);
+        level.update(FRAME_DT);
+    }
+    p1->stopMoving();
+
+    const sf::View& view = level.getCamera().getView();
+    const float viewLeft = view.getCenter().x - view.getSize().x / 2.f;
+    const float viewRight = view.getCenter().x + view.getSize().x / 2.f;
+    // P2 is pinned at the left edge
+    assert(p2->getPosition().x >= viewLeft - 1.f);
+    assert(p2->getPosition().x <= viewLeft + 16.f);
+    // P1 is bounded at the right edge
+    assert(p1->getPosition().x + p1->getSize().x <= viewRight + 1.f);
+    // Camera center tracks horizontal midpoint of both players
+    const float expectedCenter =
+        (p1->getPosition().x + p1->getSize().x / 2.f +
+         p2->getPosition().x + p2->getSize().x / 2.f) / 2.f;
+    assert(std::abs(view.getCenter().x - expectedCenter) <= 5.f);
+
+    std::cout << "[PASSED] testCoopCameraTracksVerticalMidpointAndSticksAtEdges"
+              << std::endl;
+    return true;
+}
+
+bool testCoopDualPipeWarpRequiresBothPlayers() {
+    std::cout << "[RUNNING] testCoopDualPipeWarpRequiresBothPlayers..." << std::endl;
+    Level level;
+    assert(level.loadFromFile("levels/level1.txt", CharacterType::MARIO, CharacterType::LUIGI));
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 != nullptr && p2 != nullptr);
+
+    const auto& warpEntries = level.getTileMap().getWarpEntries();
+    assert(!warpEntries.empty());
+    const auto& entry = warpEntries.front();
+    const sf::Vector2f pipeWorld = TileMap::gridToWorldPosition(entry.position);
+
+    // 1. Move P1 to pipe top, P2 stands on ground beside the pipe -> Warp should NOT trigger
+    p1->setPosition(sf::Vector2f(pipeWorld.x + 8.f, pipeWorld.y - p1->getSize().y));
+    p2->setPosition(sf::Vector2f(pipeWorld.x - 40.f, pipeWorld.y)); // P2 is near but not on the pipe
+    for (int frame = 0; frame < 10; ++frame) {
+        p1->setVerticalIntent(1.0f);
+        p2->setVerticalIntent(0.0f); // P2 is not pressing down
+        level.update(FRAME_DT);
+    }
+    assert(!level.isPipeWarpActive());
+
+    // 2. Move P2 onto the pipe as well, both press Down -> Pipe warp DOES trigger
+    p1->setPosition(sf::Vector2f(pipeWorld.x + 8.f, pipeWorld.y - p1->getSize().y));
+    p2->setPosition(sf::Vector2f(pipeWorld.x + 24.f, pipeWorld.y - p2->getSize().y));
+    for (int frame = 0; frame < 20; ++frame) {
+        p1->setVerticalIntent(1.0f);
+        p2->setVerticalIntent(1.0f);
+        level.update(FRAME_DT);
+    }
+    assert(level.isPipeWarpActive());
+
+    // 3. Update until warp finishes -> Both players emerged at the destination
+    for (int frame = 0; frame < 120 && level.isPipeWarpActive(); ++frame) {
+        level.update(FRAME_DT);
+    }
+    assert(!level.isPipeWarpActive());
+    assert(p1->getPosition().x > pipeWorld.x + 200.f);
+    assert(p2->getPosition().x > pipeWorld.x + 200.f);
+
+    std::cout << "[PASSED] testCoopDualPipeWarpRequiresBothPlayers" << std::endl;
+    return true;
+}
+
+bool testCoopDualFlagpoleCompletion() {
+    std::cout << "[RUNNING] testCoopDualFlagpoleCompletion..." << std::endl;
+    Level level;
+    assert(level.loadFromFile("levels/level1.txt", CharacterType::MARIO, CharacterType::LUIGI));
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 != nullptr && p2 != nullptr);
+
+    const auto finishTiles = level.getTileMap().findTiles('F');
+    assert(!finishTiles.empty());
+    const sf::Vector2f finishPos = TileMap::gridToWorldPosition(finishTiles.front());
+
+    // 1. Only P1 reaches finish flagpole -> Flag sequence should NOT start
+    p1->setPosition(finishPos + sf::Vector2f(4.f, 4.f));
+    p2->setPosition(finishPos - sf::Vector2f(300.f, 0.f)); // P2 far away
+    level.update(FRAME_DT);
+    assert(!level.isFlagSequenceActive());
+    assert(!level.isLevelCompleted());
+
+    // 2. P2 also reaches finish flagpole -> Flag sequence starts
+    p2->setPosition(finishPos + sf::Vector2f(12.f, 4.f));
+    level.update(FRAME_DT);
+    assert(level.isFlagSequenceActive());
+
+    // 3. Update until both slide and walk into the castle -> Level is completed
+    for (int frame = 0; frame < 300 && !level.isLevelCompleted(); ++frame) {
+        level.update(FRAME_DT);
+    }
+    assert(level.isLevelCompleted());
+
+    std::cout << "[PASSED] testCoopDualFlagpoleCompletion" << std::endl;
+    return true;
+}
+
+// Co-op invisible-ceiling contract (2026-08-23 camera feel pass): the shared
+// view can only frame partners closer than one viewport height. Once the
+// vertical gap reaches that limit, the higher climber's ascent must stop so
+// neither partner can be scrolled out of the frame. Falling is never
+// interrupted and nobody is teleported.
+bool testCoopInvisibleCeilingCapsVerticalSeparation() {
+    std::cout << "[RUNNING] testCoopInvisibleCeilingCapsVerticalSeparation..."
+              << std::endl;
+
+    Level level;
+    if (!level.loadFromFile("levels/level0.txt", CharacterType::MARIO,
+                            CharacterType::LUIGI)) {
+        std::cerr << "Failed to load coop level0.txt" << std::endl;
+        return false;
+    }
+
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 != nullptr && p2 != nullptr);
+
+    // Park P2 on open ground with gravity disabled, then keep pushing P1
+    // upward past one viewport: the ceiling guard must cancel the ascent.
+    p2->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{30, 10}));
+    if (b2Body* b2 = p2->getBody()) {
+        b2->SetGravityScale(0.f);
+        b2->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    }
+    p2->setVelocity({0.f, 0.f});
+    p1->setPosition(TileMap::gridToWorldPosition(sf::Vector2i{30, 4}));
+
+    const float viewHeight =
+        level.getCamera().getView().getSize().y;
+    const float maxSeparation = viewHeight - 32.f; // 2 * COOP_VIEW_EDGE_MARGIN
+    constexpr float ASCENT_SPEED = 300.f;
+
+    float worstGap = 0.f;
+    for (int frame = 0; frame < 240; ++frame) {
+        if (b2Body* b1 = p1->getBody()) {
+            // Re-assert an upward velocity every frame, as a held jump would.
+            b1->SetLinearVelocity(b2Vec2(0.f, -PhysicsEngine::pixelsToMeters(ASCENT_SPEED)));
+        }
+        level.update(FRAME_DT);
+        const float gap = (p1->getPosition().y + p1->getSize().y / 2.f) -
+                          (p2->getPosition().y + p2->getSize().y / 2.f);
+        worstGap = std::max(worstGap, gap);
+    }
+
+    // The climber is stopped just past the limit (one-frame overshoot), and
+    // gravity keeps the gap bounded afterwards.
+    assert(worstGap <= maxSeparation + 24.f);
+
+    // Both partners stay framed: P2 never leaves through the view bottom.
+    const sf::View& view = level.getCamera().getView();
+    assert(p2->getPosition().y < view.getCenter().y + view.getSize().y / 2.f + 8.f);
+
+    std::cout << "[PASSED] testCoopInvisibleCeilingCapsVerticalSeparation"
+              << std::endl;
+    return true;
+}
+
+bool testCoopHeadBounceBoostJump() {
+    std::cout << "[RUNNING] testCoopHeadBounceBoostJump..." << std::endl;
+    CollisionManager::clearPendingPvpHits();
+
+    Level level;
+    level.setTheme(LevelTheme::OVERWORLD);
+    assert(level.loadFromFile("levels/level1.txt",
+                              CharacterType::MARIO, CharacterType::LUIGI));
+
+    Mario* p1 = level.getMario();
+    Mario* p2 = level.getMario2();
+    assert(p1 && p2);
+
+    b2Body* b1 = p1->getBody();
+    b2Body* b2 = p2->getBody();
+    assert(b1 && b2);
+
+    p1->setFixtureCollisionGroup(static_cast<int16_t>(-1));
+    p2->setFixtureCollisionGroup(static_cast<int16_t>(-2));
+
+    b1->SetTransform(b2Vec2(4.f, 10.f - 0.42f), 0.f);
+    b2->SetTransform(b2Vec2(4.f, 10.f), 0.f);
+    b1->SetLinearVelocity(b2Vec2(0.f, 5.f));
+    b2->SetLinearVelocity(b2Vec2(0.f, 0.f));
+
+    level.update(FRAME_DT);
+
+    // P1 receives upward boost bounce
+    assert(b1->GetLinearVelocity().y < 0.f);
+
+    // P2 is unharmed and fully alive
+    assert(!p2->isDying());
+    assert(p2->getLives() == 3);
+
+    std::cout << "[PASSED] testCoopHeadBounceBoostJump" << std::endl;
+    return true;
+}
+
 } // namespace
 
 int main() {
@@ -380,7 +699,12 @@ int main() {
                          testCoopGameOverOnExhaustedTeamLives() &&
                          testCoopCharacterSelectSequentialPhases() &&
                          testHUDAggregatesSecondPlayerTotals() &&
-                         testCoopPlayersClampedInsideCameraViewport();
+                         testCoopPlayersClampedInsideCameraViewport() &&
+                         testCoopCameraTracksVerticalMidpointAndSticksAtEdges() &&
+                         testCoopInvisibleCeilingCapsVerticalSeparation() &&
+                         testCoopDualPipeWarpRequiresBothPlayers() &&
+                         testCoopDualFlagpoleCompletion() &&
+                         testCoopHeadBounceBoostJump();
 
     if (success) {
         std::cout << "All CoopFlow tests passed successfully!" << std::endl;

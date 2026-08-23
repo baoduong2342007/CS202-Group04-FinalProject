@@ -6,6 +6,9 @@
 
 #include <cassert>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <string>
 
 #include "core/DisplayConfig.h"
 #include "core/SpriteFrames_ovw.h"
@@ -13,6 +16,8 @@
 #include "core/SpriteFrames_udw.h"
 #include "core/SpriteFrames_castle.h"
 #include "core/SpriteFrames_shared.h"
+#include "entities/Mario.h"
+#include "physics/PhysicsEngine.h"
 #include "level/TileFrames.h"
 #include "level/Camera.h"
 #include "level/TileMap.h"
@@ -20,6 +25,7 @@
 #include "ui/UIMenuWidget.h"
 #include "states/LevelSelectState.h"
 #include "states/MenuState.h"
+#include "states/PauseState.h"
 #include "states/CharacterSelectState.h"
 
 namespace {
@@ -280,6 +286,162 @@ void testBackgroundRendererLifecycle() {
     rt.display();
 }
 
+// Regression lock for the campaign camera design decision (2026-08-23): the
+// single-player camera follows Mario in BOTH directions — SMB1's never-
+// scroll-back rule was intentionally dropped. Walking backward pans the view
+// left so Mario stays inside the frame; the map's left boundary (Mario::
+// applyWorldBoundsClamp, body center >= 16 px) remains the only hard limit.
+void testCampaignBacktrackWithinMapBounds() {
+    // Minimal deterministic fixture: flat 40x12 level, no pits, no enemies.
+    const auto fixturePath =
+        std::filesystem::temp_directory_path() / "mario_backtrack_level.txt";
+    {
+        std::ofstream out(fixturePath);
+        assert(out.is_open());
+        out << "# Temporary fixture: flat level for the backtrack test\n";
+        for (int row = 0; row < 5; ++row) {
+            out << std::string(40, '.') << '\n';
+        }
+        // Minimal valid flag ending in the far-right column (away from the
+        // backtrack path): 'T' above 'F', pole '|' running down to the ground.
+        out << std::string(39, '.') + 'T' << '\n';
+        out << std::string(39, '.') + 'F' << '\n';
+        for (int row = 0; row < 3; ++row) {
+            out << std::string(39, '.') + '|' << '\n';
+        }
+        std::string spawnRow(39, '.');
+        spawnRow += '|';
+        spawnRow[33] = 'M';
+        out << spawnRow << '\n';
+        out << std::string(40, '0') << '\n';
+    }
+
+    Level level;
+    assert(level.loadFromFile(fixturePath.string()));
+    assert(!level.getCamera().isMonotonicScroll()); // two-way follow is on
+
+    Mario* mario = level.getMario();
+    assert(mario != nullptr);
+
+    // Let the camera settle on the far-right spawn, then walk back left.
+    for (int i = 0; i < 45; ++i) {
+        level.update(1.f / 60.f);
+    }
+    const float centerBeforeWalk =
+        level.getCamera().getView().getCenter().x;
+
+    mario->setMoveIntent(-1.0f);
+    bool stayedInFrame = true;
+    for (int i = 0; i < 900; ++i) {
+        level.update(1.f / 60.f);
+        const sf::View& view = level.getCamera().getView();
+        const float x = mario->getPosition().x;
+        if (x + mario->getSize().x <
+                view.getCenter().x - view.getSize().x / 2.f - 1.f ||
+            x > view.getCenter().x + view.getSize().x / 2.f + 1.f) {
+            stayedInFrame = false;
+        }
+        assert(view.getCenter().x <= centerBeforeWalk + 0.5f); // pans left
+    }
+    mario->stopMoving();
+    for (int i = 0; i < 60; ++i) {
+        level.update(1.f / 60.f);
+    }
+
+    // applyWorldBoundsClamp pins Mario's body CENTER at x = 16 px, so his
+    // left edge rests around x = 2 px for the 28 px wide hitbox.
+    const float restX = mario->getPosition().x;
+    assert(!mario->isDying());
+    assert(stayedInFrame);       // the view followed him the whole way back
+    assert(level.getCamera().getView().getCenter().x <
+           centerBeforeWalk - 100.f); // camera really traveled backward
+    assert(restX >= 0.5f && restX <= 4.5f); // rests exactly at the map boundary
+}
+
+// Regression lock for the airborne-hold contract (2026-08-23 camera feel
+// pass): while Mario is in the air, the campaign view applies NO vertical
+// motion — jump arcs and falls never scroll the screen. The frame only
+// re-anchors through the edge-margin rule after he lands somewhere new.
+void testCampaignAirborneVerticalHold() {
+    const auto fixturePath =
+        std::filesystem::temp_directory_path() / "mario_airborne_hold_level.txt";
+    {
+        std::ofstream out(fixturePath);
+        assert(out.is_open());
+        out << "# Temporary fixture: flat level for the airborne hold test\n";
+        for (int row = 0; row < 5; ++row) {
+            out << std::string(40, '.') << '\n';
+        }
+        out << std::string(39, '.') + 'T' << '\n';
+        out << std::string(39, '.') + 'F' << '\n';
+        for (int row = 0; row < 3; ++row) {
+            out << std::string(39, '.') + '|' << '\n';
+        }
+        std::string spawnRow(39, '.');
+        spawnRow += '|';
+        spawnRow[20] = 'M';
+        out << spawnRow << '\n';
+        out << std::string(40, '0') << '\n';
+    }
+
+    Level level;
+    assert(level.loadFromFile(fixturePath.string()));
+
+    Mario* mario = level.getMario();
+    assert(mario != nullptr);
+
+    for (int i = 0; i < 45; ++i) {
+        level.update(1.f / 60.f);
+    }
+
+    // Launch Mario with jump-strength upward velocity mid-frame (as a real
+    // jump would) — he is now airborne and rising.
+    b2Body* body = mario->getBody();
+    assert(body != nullptr);
+    constexpr float JUMP_SPEED_PX = 460.f;
+    body->SetLinearVelocity(
+        b2Vec2(0.f, -PhysicsEngine::pixelsToMeters(JUMP_SPEED_PX)));
+
+    const float centerBeforeJump =
+        level.getCamera().getView().getCenter().y;
+
+    bool wasAirborne = false;
+    for (int i = 0; i < 30; ++i) {
+        level.update(1.f / 60.f);
+        if (!mario->isGrounded()) {
+            wasAirborne = true;
+        }
+        // The view must not move vertically by even a fraction of a pixel
+        // while the jump arc is in progress.
+        assert(std::abs(level.getCamera().getView().getCenter().y -
+                        centerBeforeJump) <= 0.001f);
+    }
+    assert(wasAirborne); // the fixture actually exercised the airborne state
+}
+
+// Regression: a missing or corrupt UI font used to leave m_menuTexts empty
+// while processEvents() still indexed items [0..3] — out-of-bounds UB on the
+// first mouse move or click while paused. The state must degrade gracefully
+// instead (overlay + panel render, ESC resume still works via processInput).
+void testPauseStateSurvivesMissingFont() {
+    PauseState pause("assets/fonts/__missing_for_test__.ttf");
+    assert(!pause.hasInteractiveMenu()); // degradation contract is active
+
+    sf::RenderTexture rt({DisplayConfig::LOGICAL_WIDTH, DisplayConfig::LOGICAL_HEIGHT});
+    rt.clear(sf::Color::Black);
+
+    // Pre-fix these indexed an empty vector (out-of-bounds UB); the hardened
+    // loops must process both events without touching menu items.
+    pause.processEvents(sf::Event(sf::Event::MouseMoved{{10, 10}}));
+    pause.processEvents(sf::Event(sf::Event::MouseButtonPressed{
+        sf::Mouse::Button::Left, {10, 10}}));
+    assert(!pause.hasInteractiveMenu());
+
+    pause.update(0.016f);
+    pause.render(rt);
+    rt.display();
+}
+
 } // namespace
 
 int main() {
@@ -291,5 +453,8 @@ int main() {
     testMenuStateRenderSnapshot();
     testLevel4SectionSnapshots();
     testBackgroundRendererLifecycle();
+    testCampaignBacktrackWithinMapBounds();
+    testCampaignAirborneVerticalHold();
+    testPauseStateSurvivesMissingFont();
     return 0;
 }

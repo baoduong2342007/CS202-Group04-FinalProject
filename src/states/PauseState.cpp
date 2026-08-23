@@ -44,8 +44,10 @@ std::string makeProgressBar(float percent, int totalBars = 8) {
 }
 } // namespace
 
-PauseState::PauseState() : m_font(), m_fontLoaded(false) {
-    m_fontLoaded = m_font.openFromFile(FONT_PATH);
+PauseState::PauseState() : PauseState(std::string(FONT_PATH)) {}
+
+PauseState::PauseState(const std::string& fontPath) : m_font(), m_fontLoaded(false) {
+    m_fontLoaded = m_font.openFromFile(fontPath);
     if (m_fontLoaded) {
         m_font.setSmooth(false);
     }
@@ -225,10 +227,17 @@ void PauseState::onEnter() {
 void PauseState::onExit() {}
 
 void PauseState::processEvents(const sf::Event& event) {
+    // Without a font the menu items were never created; mouse hit-testing
+    // must not index into the empty vector (ESC still works via processInput).
+    if (m_menuTexts.size() < 4) {
+        return;
+    }
+
     if (const auto* mouseMoved = event.getIf<sf::Event::MouseMoved>()) {
         const sf::Vector2f pos{static_cast<float>(mouseMoved->position.x),
                                static_cast<float>(mouseMoved->position.y)};
-        for (int i = 0; i < 4; ++i) {
+        const int itemCount = static_cast<int>(m_menuTexts.size());
+        for (int i = 0; i < itemCount; ++i) {
             sf::FloatRect bounds = m_menuTexts[i].getGlobalBounds();
             sf::FloatRect itemRect(
                 {bounds.position.x - 14.f, bounds.position.y - 4.f},
@@ -249,7 +258,8 @@ void PauseState::processEvents(const sf::Event& event) {
         if (mouseButton->button == sf::Mouse::Button::Left) {
             const sf::Vector2f pos{static_cast<float>(mouseButton->position.x),
                                    static_cast<float>(mouseButton->position.y)};
-            for (int i = 0; i < 4; ++i) {
+            const int itemCount = static_cast<int>(m_menuTexts.size());
+            for (int i = 0; i < itemCount; ++i) {
                 sf::FloatRect bounds = m_menuTexts[i].getGlobalBounds();
                 sf::FloatRect itemRect(
                     {bounds.position.x - 14.f, bounds.position.y - 4.f},

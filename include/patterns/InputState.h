@@ -29,6 +29,9 @@ public:
     /// Monotonically increasing order of the last physical press for a key.
     std::uint64_t getPressOrder(sf::Keyboard::Key key) const;
 
+    /// Synchronize held key states with physical keyboard hardware to prevent stuck keys.
+    void syncHardware();
+
     /// Forget all key states, used when the window loses focus.
     void clear();
 

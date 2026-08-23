@@ -388,6 +388,17 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
 
+    # Enemy respawn contract: a revived Lakitu must be defeatable again
+    # (fireball / star / shell), not immortal after its first knock-down.
+    add_executable(lakitu_respawn_tests
+        tests/LakituRespawnTests.cpp
+    )
+    target_link_libraries(lakitu_respawn_tests PRIVATE game_lib)
+    add_test(NAME lakitu_respawn_tests COMMAND lakitu_respawn_tests)
+    set_tests_properties(lakitu_respawn_tests PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+
     add_executable(stomp_score_tests
         tests/StompScoreTests.cpp
     )
@@ -472,6 +483,7 @@ if(BUILD_TESTING)
         p2_gameplay_interface_tests
         display_camera_ui_tests
         character_flow_tests
+        lakitu_respawn_tests
         stomp_score_tests
         pvp_arena_tests
         pvp_stomp_tests

@@ -5,6 +5,7 @@
  */
 
 #include "entities/Enemy.h"
+#include "level/TileMap.h"
 
 #include <cmath>
 #include <algorithm>
@@ -15,6 +16,57 @@ Enemy::Enemy(const sf::Vector2f& position, const sf::Vector2f& size, int health)
 void Enemy::updatePlayerPosition(const sf::Vector2f& playerPos) {
     m_playerPos = playerPos;
     m_hasPlayerPos = true;
+}
+
+bool Enemy::isPlayerNearby(float horizontalRadius, float verticalRadius) const {
+    if (!m_hasPlayerPos) {
+        return false;
+    }
+    const float dx = std::abs(m_playerPos.x - (m_position.x + m_size.x / 2.f));
+    const float dy = std::abs(m_playerPos.y - (m_position.y + m_size.y / 2.f));
+    return (dx <= horizontalRadius && dy <= verticalRadius);
+}
+
+bool Enemy::isPlayerInFront() const {
+    if (!m_hasPlayerPos) {
+        return false;
+    }
+    const float enemyMidX = m_position.x + m_size.x / 2.f;
+    if (getFacingDirection() == Direction::LEFT) {
+        return m_playerPos.x < enemyMidX;
+    } else {
+        return m_playerPos.x > enemyMidX;
+    }
+}
+
+bool Enemy::isPlayerBelow() const {
+    if (!m_hasPlayerPos) {
+        return false;
+    }
+    return (m_playerPos.y + 16.f >= m_position.y);
+}
+
+bool Enemy::isSafeDropAhead(const TileMap* tileMap, int maxDropTiles) const {
+    if (!tileMap) {
+        return false;
+    }
+    constexpr float TILE_SIZE = 32.f;
+    constexpr float EDGE_PROBE_OFFSET = 2.f;
+
+    const float frontX = (getFacingDirection() == Direction::LEFT)
+        ? (m_position.x - EDGE_PROBE_OFFSET)
+        : (m_position.x + m_size.x + EDGE_PROBE_OFFSET);
+    const int frontColumn = static_cast<int>(std::floor(frontX / TILE_SIZE));
+
+    const float footY = m_position.y + m_size.y + EDGE_PROBE_OFFSET;
+    const int startRow = static_cast<int>(std::floor(footY / TILE_SIZE));
+
+    for (int r = startRow; r < startRow + maxDropTiles; ++r) {
+        if (tileMap->isEnemySupport(frontColumn, r)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Enemy::isEscapingNarrowRange() const {
@@ -117,4 +169,8 @@ bool Enemy::tryCommitStomp() {
 
 void Enemy::allowNextStomp() {
     m_stompCommitted = false;
+}
+
+void Enemy::allowNextDefeat() {
+    m_defeatCommitted = false;
 }

@@ -104,6 +104,8 @@ public:
     bool isLevelCompleted() const;
     /// True while the flagpole slide and the automatic walk into the exit are running.
     bool isFlagSequenceActive() const { return m_flagSequenceActive; }
+    /// True while pipe warp transition is active.
+    bool isPipeWarpActive() const { return m_pipeWarpPhase != PipeWarpPhase::NONE; }
     BackgroundRenderer* getBackgroundRenderer() { return m_backgroundRenderer.get(); }
     const BackgroundRenderer* getBackgroundRenderer() const { return m_backgroundRenderer.get(); }
 
@@ -145,6 +147,7 @@ private:
     void updatePvp(float dt);
     void updateCoop(float dt);
     void processPendingPvpHits();
+    void processCoopPlayerHits();
     void updateEntities(float dt);
     void updateExplosions();
     void removeDeadEntities();
@@ -162,6 +165,7 @@ private:
     
     void checkPipeWarps();
     void startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);
+    void startPipeWarpCoop(char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);
     void updatePipeWarp(float dt);
     void warpMarioToReturn(char warpId);
     /// Co-op: after a warp finished for m_warpPlayer, relocate the partner
@@ -170,6 +174,12 @@ private:
     /// Co-op: bound both players inside the active camera viewport so neither
     /// player can wander off-screen or get separated beyond the shared view.
     void clampCoopPlayersToCamera();
+    /// Co-op: shared-view follow target. Horizontally the players' midpoint;
+    /// vertically the midpoint clamped into the center range that keeps BOTH
+    /// partners on screen, favoring the lower one when they are farther apart
+    /// than one viewport can cover (fit-both bias).
+    sf::Vector2f computeCoopCameraTarget(const sf::Vector2f& center1,
+                                         const sf::Vector2f& center2) const;
     /// Campaign: hold Mario at the monotonic camera's left edge — the view
     /// never scrolls backward, so neither can the player.
     void clampCampaignPlayerToCameraLeft();
@@ -187,6 +197,9 @@ private:
     void checkToadEnding();
     void updateToadDialogue(float dt);
     void renderToadDialogue(sf::RenderTarget& target) const;
+    /// Co-op: arrow above the higher partner when the vertical gap nears the
+    /// invisible-ceiling separation limit (world-space overlay).
+    void renderCoopSeparationWarning(sf::RenderTarget& target) const;
     
     void applyAreaTheme(LevelTheme theme);
     LevelTheme getThemeForGridPosition(int gridX) const;
@@ -209,6 +222,7 @@ private:
     /// Player driving the flagpole sequence (m_mario unless co-op player two
     /// touched the pole first).
     Mario* m_flagPlayer = nullptr;
+    Mario* m_flagPlayer2 = nullptr;
     /// Non-owning handle to the contested fire flower (owned by m_entities).
     FireFlower* m_pvpFireFlower = nullptr;
     /// Fireball hits drained from the duel queue, forwarded to the round FSM.
@@ -218,20 +232,23 @@ private:
     bool m_flagWalkActive = false;
     FlagPhase m_flagPhase = FlagPhase::NONE;
     float m_flagWalkTargetX = 0.0f;
+    float m_flagWalkTargetX2 = 0.0f;
     float m_flagPoleCenterX = 0.0f;
     float m_flagTurnTargetX = 0.0f;
     float m_flagSlideStartMarioY = 0.0f;
+    float m_flagSlideStartMarioY2 = 0.0f;
     float m_flagSlideStartDropDistance = 0.0f;
     std::string m_levelPath;
     float m_physicsAccumulator = 0.0f;
     CharacterType m_characterType = CharacterType::MARIO;
     LevelTheme m_theme{LevelTheme::OVERWORLD};
-    CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::LOCKED};
+    CameraVerticalMode m_cameraVerticalMode{CameraVerticalMode::DEAD_ZONE};
     float m_pipeWarpCooldown = 0.0f;
     PipeWarpPhase m_pipeWarpPhase = PipeWarpPhase::NONE;
     /// Player currently inside the pipe-warp state machine (m_mario in
     /// single-player; either player in co-op).
     Mario* m_warpPlayer = nullptr;
+    Mario* m_warpPlayer2 = nullptr;
     float m_pipeWarpTimer = 0.0f;
     float m_pipeWarpExitTargetY = 0.0f;
     char m_pendingWarpId = '0';

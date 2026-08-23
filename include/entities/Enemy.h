@@ -38,12 +38,10 @@ public:
     virtual void onStomp() = 0;
     virtual void onWallCollision() = 0;
 
-    /// Canonical SMB1 ledge policy: ground-walking enemies do NOT reverse at
-    /// ledges - they walk off and fall into pits. Only ledge-aware species
-    /// (Red Koopa, Hammer Bro) override this to true and stay on their
-    /// platform. Wall collisions still turn every enemy either way.
+    /// Smart ledge policy: ground-walking enemies detect ledges and reverse
+    /// at edges to stay on platforms/solid ground, unless breaking out towards the player.
     virtual bool turnsAtLedge() const {
-        return false;
+        return true;
     }
 
     virtual void onFireHit();
@@ -95,6 +93,24 @@ public:
     /// Updates nearest player position for breakout AI and player awareness.
     virtual void updatePlayerPosition(const sf::Vector2f& playerPos);
 
+    /// Aggro and awareness query methods
+    bool isPlayerNearby(float horizontalRadius = 220.f, float verticalRadius = 120.f) const;
+    bool isPlayerInFront() const;
+    bool isPlayerBelow() const;
+    bool isSafeDropAhead(const TileMap* tileMap, int maxDropTiles = 4) const;
+
+    bool isAggroActive() const { return m_aggroActive; }
+    void setAggroActive(bool active) { m_aggroActive = active; }
+    float getAggroSpeedMultiplier() const { return 1.30f; }
+
+    bool canAggroHop() const { return m_hopCooldown <= 0.f; }
+    void resetHopCooldown(float cooldown = 3.0f) { m_hopCooldown = cooldown; }
+    void updateHopCooldown(float dt) {
+        if (m_hopCooldown > 0.f) {
+            m_hopCooldown -= dt;
+        }
+    }
+
     /// Whether this enemy is currently breaking out of a narrow 1-2 tile patrol pocket towards the player.
     bool isEscapingNarrowRange() const;
 
@@ -120,8 +136,16 @@ protected:
     /// transition.
     void allowNextStomp();
 
+    /// Re-arm the one-shot defeat transaction. Species that legitimately come
+    /// back from a terminal defeat (Lakitu's SMB1-style respawning corpse)
+    /// must call this during respawn so fireballs, stars, and shells can
+    /// claim a fresh defeat; skipping it leaves the enemy immune forever.
+    void allowNextDefeat();
+
     sf::Vector2f m_playerPos{0.f, 0.f};
     bool m_hasPlayerPos = false;
+    bool m_aggroActive = false;
+    float m_hopCooldown = 0.f;
 
 private:
     bool m_activated = false;

@@ -235,6 +235,7 @@ protected:
 
     float m_inputDirX = 0.0f;
     bool m_jumpRequested = false;
+    float m_jumpBufferTimer = 0.0f;
     bool m_jumpReleased = false;
 
     float m_fireCooldown = 0.0f;

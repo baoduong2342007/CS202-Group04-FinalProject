@@ -109,7 +109,12 @@ void Blooper::update(float dt) {
 
     if (m_state == State::RISE) {
         velocity.y = -RISE_SPEED;
-        velocity.x = 0.f;
+        if (m_marioKnown) {
+            const float dx = m_marioPosition.x - m_position.x;
+            velocity.x = (std::abs(dx) < 6.f) ? 0.f : (dx > 0.f ? 60.f : -60.f);
+        } else {
+            velocity.x = 0.f;
+        }
         if (m_stateTimer >= RISE_TIME) {
             m_state = State::DRIFT;
             m_stateTimer = 0.f;
@@ -122,9 +127,10 @@ void Blooper::update(float dt) {
         float targetVx = -DRIFT_TRACK_SPEED;
         if (m_marioKnown) {
             const float dx = m_marioPosition.x - m_position.x;
+            const float trackSpeed = (std::abs(dx) < 180.f) ? (DRIFT_TRACK_SPEED * 1.35f) : DRIFT_TRACK_SPEED;
             targetVx = (std::abs(dx) < 4.f)
                            ? 0.f
-                           : (dx > 0.f ? DRIFT_TRACK_SPEED : -DRIFT_TRACK_SPEED);
+                           : (dx > 0.f ? trackSpeed : -trackSpeed);
         }
         velocity.x = targetVx;
 

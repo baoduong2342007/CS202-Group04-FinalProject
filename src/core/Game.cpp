@@ -119,6 +119,10 @@ void Game::processEvents() {
       GameManager::getInstance().processEvents(*mapped);
     }
   }
+
+  if (m_window.hasFocus()) {
+    m_inputState.syncHardware();
+  }
 }
 
 void Game::update(float dt) {

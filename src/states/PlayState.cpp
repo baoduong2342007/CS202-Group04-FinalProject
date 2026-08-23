@@ -137,7 +137,7 @@ void PlayState::rebindCoopCommands() {
     Mario* p1 = m_level ? m_level->getMario() : nullptr;
     Mario* p2 = m_level ? m_level->getMario2() : nullptr;
 
-    // Player one: A/D move, W jump, S pipe-down, X shoot, LShift run.
+    // Player one: A/D move, W/Space jump, S pipe-down, X/F shoot, LShift/J run.
     if (p1) {
         m_inputHandler.bindKey(sf::Keyboard::Key::A,
                                std::make_unique<MoveLeftCommand>(p1),
@@ -148,6 +148,9 @@ void PlayState::rebindCoopCommands() {
                                InputTrigger::Held,
                                InputGroup::Horizontal);
         m_inputHandler.bindKey(sf::Keyboard::Key::W,
+                               std::make_unique<JumpCommand>(p1),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::Space,
                                std::make_unique<JumpCommand>(p1),
                                InputTrigger::Pressed);
 
@@ -166,8 +169,18 @@ void PlayState::rebindCoopCommands() {
         m_inputHandler.bindKey(sf::Keyboard::Key::LShift,
                                std::make_unique<RunCommand>(requestRun),
                                InputTrigger::Held);
+        m_inputHandler.bindKey(sf::Keyboard::Key::J,
+                               std::make_unique<RunCommand>(requestRun),
+                               InputTrigger::Held);
 
         m_inputHandler.bindKey(sf::Keyboard::Key::X,
+                               std::make_unique<ShootCommand>([this, p1] {
+                                   if (m_level && p1) {
+                                       m_level->requestFireBallShot(*p1);
+                                   }
+                               }),
+                               InputTrigger::Pressed);
+        m_inputHandler.bindKey(sf::Keyboard::Key::F,
                                std::make_unique<ShootCommand>([this, p1] {
                                    if (m_level && p1) {
                                        m_level->requestFireBallShot(*p1);
@@ -177,6 +190,7 @@ void PlayState::rebindCoopCommands() {
     }
 
     // Player two: arrows move, Up jump, Down pipe-down, '/' shoot, RShift run.
+    // Also bind alternative Numpad / period / enter / control keys to prevent hardware matrix conflicts.
     if (p2) {
         m_inputHandler2.bindKey(sf::Keyboard::Key::Left,
                                 std::make_unique<MoveLeftCommand>(p2),
@@ -186,7 +200,25 @@ void PlayState::rebindCoopCommands() {
                                 std::make_unique<MoveRightCommand>(p2),
                                 InputTrigger::Held,
                                 InputGroup::Horizontal);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad4,
+                                std::make_unique<MoveLeftCommand>(p2),
+                                InputTrigger::Held,
+                                InputGroup::Horizontal);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad6,
+                                std::make_unique<MoveRightCommand>(p2),
+                                InputTrigger::Held,
+                                InputGroup::Horizontal);
+
         m_inputHandler2.bindKey(sf::Keyboard::Key::Up,
+                                std::make_unique<JumpCommand>(p2),
+                                InputTrigger::Pressed);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad8,
+                                std::make_unique<JumpCommand>(p2),
+                                InputTrigger::Pressed);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad0,
+                                std::make_unique<JumpCommand>(p2),
+                                InputTrigger::Pressed);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Enter,
                                 std::make_unique<JumpCommand>(p2),
                                 InputTrigger::Pressed);
 
@@ -198,6 +230,8 @@ void PlayState::rebindCoopCommands() {
         };
         m_inputHandler2.bindKey(sf::Keyboard::Key::Up, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
         m_inputHandler2.bindKey(sf::Keyboard::Key::Down, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad8, std::make_unique<RunCommand>(requestUp), InputTrigger::Held, InputGroup::Vertical);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad2, std::make_unique<RunCommand>(requestDown), InputTrigger::Held, InputGroup::Vertical);
 
         const auto requestRun = [p2] {
             if (p2) p2->setRunIntent(true);
@@ -205,8 +239,31 @@ void PlayState::rebindCoopCommands() {
         m_inputHandler2.bindKey(sf::Keyboard::Key::RShift,
                                 std::make_unique<RunCommand>(requestRun),
                                 InputTrigger::Held);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad1,
+                                std::make_unique<RunCommand>(requestRun),
+                                InputTrigger::Held);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::RControl,
+                                std::make_unique<RunCommand>(requestRun),
+                                InputTrigger::Held);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::M,
+                                std::make_unique<RunCommand>(requestRun),
+                                InputTrigger::Held);
 
         m_inputHandler2.bindKey(sf::Keyboard::Key::Slash,
+                                std::make_unique<ShootCommand>([this, p2] {
+                                    if (m_level && p2) {
+                                        m_level->requestFireBallShot(*p2);
+                                    }
+                                }),
+                                InputTrigger::Pressed);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Period,
+                                std::make_unique<ShootCommand>([this, p2] {
+                                    if (m_level && p2) {
+                                        m_level->requestFireBallShot(*p2);
+                                    }
+                                }),
+                                InputTrigger::Pressed);
+        m_inputHandler2.bindKey(sf::Keyboard::Key::Numpad3,
                                 std::make_unique<ShootCommand>([this, p2] {
                                     if (m_level && p2) {
                                         m_level->requestFireBallShot(*p2);
@@ -262,10 +319,30 @@ void PlayState::onExit() {
 void PlayState::onPause() {
     // S6-TV1-15/17: freeze gameplay — pause music; timer/input handled by PauseState overlay.
     SoundManager::getInstance().pauseMusic();
+    if (m_level && m_level->getMario()) {
+        m_level->getMario()->setMoveIntent(0.f);
+        m_level->getMario()->setVerticalIntent(0.f);
+        m_level->getMario()->setRunIntent(false);
+    }
+    if (m_isCoop && m_level && m_level->getMario2()) {
+        m_level->getMario2()->setMoveIntent(0.f);
+        m_level->getMario2()->setVerticalIntent(0.f);
+        m_level->getMario2()->setRunIntent(false);
+    }
 }
 
 void PlayState::onResume() {
     // S6-TV1-15/17: restore music and resume updates.
+    if (m_level && m_level->getMario()) {
+        m_level->getMario()->setMoveIntent(0.f);
+        m_level->getMario()->setVerticalIntent(0.f);
+        m_level->getMario()->setRunIntent(false);
+    }
+    if (m_isCoop && m_level && m_level->getMario2()) {
+        m_level->getMario2()->setMoveIntent(0.f);
+        m_level->getMario2()->setVerticalIntent(0.f);
+        m_level->getMario2()->setRunIntent(false);
+    }
     EventBus::getInstance().notify(EventType::GAME_RESUMED);
 }
 
@@ -398,7 +475,8 @@ void PlayState::processCoopInput(const InputState& inputState) {
 
     const auto dispatchPlayer = [&inputState](
         Mario* player, InputHandler& handler,
-        sf::Keyboard::Key runKey, sf::Keyboard::Key jumpKey) {
+        const std::vector<sf::Keyboard::Key>& runKeys,
+        const std::vector<sf::Keyboard::Key>& jumpKeys) {
         // Reset per-frame intents first so held keys cannot bleed through a
         // pause or a scripted sequence.
         player->setMoveIntent(0.0f);
@@ -410,23 +488,32 @@ void PlayState::processCoopInput(const InputState& inputState) {
             return;
         }
 
-        if (inputState.isHeld(runKey)) {
-            player->setRunIntent(true);
+        for (const auto key : runKeys) {
+            if (inputState.isHeld(key)) {
+                player->setRunIntent(true);
+                break;
+            }
         }
+
         handler.handleInput(inputState);
 
-        if (inputState.wasReleased(jumpKey)) {
-            player->releaseJump();
+        for (const auto key : jumpKeys) {
+            if (inputState.wasReleased(key)) {
+                player->releaseJump();
+                break;
+            }
         }
     };
 
     if (p1) {
         dispatchPlayer(p1, m_inputHandler,
-                       sf::Keyboard::Key::LShift, sf::Keyboard::Key::W);
+                       {sf::Keyboard::Key::LShift, sf::Keyboard::Key::J},
+                       {sf::Keyboard::Key::W, sf::Keyboard::Key::Space});
     }
     if (p2) {
         dispatchPlayer(p2, m_inputHandler2,
-                       sf::Keyboard::Key::RShift, sf::Keyboard::Key::Up);
+                       {sf::Keyboard::Key::RShift, sf::Keyboard::Key::Numpad1, sf::Keyboard::Key::RControl, sf::Keyboard::Key::M},
+                       {sf::Keyboard::Key::Up, sf::Keyboard::Key::Numpad8, sf::Keyboard::Key::Numpad0, sf::Keyboard::Key::Enter});
     }
 }
 

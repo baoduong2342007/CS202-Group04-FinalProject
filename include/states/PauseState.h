@@ -8,12 +8,18 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 class PauseState : public IGameState {
 public:
     // 1. Constructor / Destructor
+    /// Loads the standard UI font; degrades to a text-free modal when the
+    /// asset is missing (e.g. incomplete deployment) instead of crashing.
     PauseState();
+    /// Test/injection seam: build the state against an explicit font path so
+    /// the missing-font degradation path is exercisable on every platform.
+    explicit PauseState(const std::string& fontPath);
     ~PauseState() override = default;
 
     // 2. Override methods
@@ -25,6 +31,11 @@ public:
     void render(sf::RenderTarget& target) override;
 
     bool isOverlay() const override { return true; }
+
+    /// Whether the interactive volume/selection menu items exist. False when
+    /// the UI font failed to load: mouse hit-testing is then disabled and
+    /// only the keyboard resume path stays active.
+    bool hasInteractiveMenu() const { return m_menuTexts.size() >= 4; }
 
 private:
     void initLayout();

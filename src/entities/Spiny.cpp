@@ -67,6 +67,7 @@ void Spiny::update(float dt) {
     }
 
     updateNarrowEscapeStatus();
+    updateHopCooldown(dt);
 
     if (!isDead()) {
         patrol();
@@ -81,13 +82,27 @@ void Spiny::patrol() {
         return;
     }
 
-    // Canonical SMB1: a Spiny walks off ledges like every ground walker.
-    if (turnsAtLedge() && isApproachingLedge()) {
+    // Dynamic aggro pursuit
+    m_aggroActive = isPlayerNearby(240.f, 140.f);
+
+    if (isApproachingLedge()) {
         reverseDirection();
     }
 
     sf::Vector2f velocity = getVelocity();
-    velocity.x = getFacingDirection() == Direction::LEFT ? -m_patrolSpeed : m_patrolSpeed;
+    const float currentSpeed = m_aggroActive ? (m_patrolSpeed * getAggroSpeedMultiplier()) : m_patrolSpeed;
+
+    velocity.x = getFacingDirection() == Direction::LEFT ? -currentSpeed : currentSpeed;
+
+    // Agile surprise hop when in close pursuit on flat ground
+    if (m_aggroActive && canAggroHop() && std::abs(velocity.y) < 2.f) {
+        const float distToPlayer = std::abs(m_playerPos.x - (m_position.x + m_size.x / 2.f));
+        if (distToPlayer <= 90.f && distToPlayer >= 24.f) {
+            velocity.y = -170.f;
+            resetHopCooldown(3.2f);
+        }
+    }
+
     setVelocity(velocity);
 }
 

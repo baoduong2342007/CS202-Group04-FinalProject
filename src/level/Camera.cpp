@@ -85,15 +85,6 @@ void Camera::update(float dt, const sf::Vector2f &targetPosition) {
   }
 
   m_stableCenter = clampCenter(newCenter);
-
-  // Canonical SMB1 campaign scroll: the camera never moves backward. The
-  // floor is the previously committed stable center (render-only screen
-  // shake is applied below and does not participate in the clamp).
-  if (m_monotonicScroll && m_stableCenter.x < m_lastStableCenterX) {
-    m_stableCenter.x = m_lastStableCenterX;
-  }
-  m_lastStableCenterX = m_stableCenter.x;
-
   sf::Vector2f renderCenter = m_stableCenter;
 
   // Apply screen shake if active BEFORE clamping

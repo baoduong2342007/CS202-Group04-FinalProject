@@ -499,6 +499,13 @@ void Mario::update(float dt) {
 }
 
 void Mario::preparePhysics(float dt) {
+  if (m_jumpBufferTimer > 0.0f) {
+    m_jumpBufferTimer = std::max(0.0f, m_jumpBufferTimer - dt);
+    if (m_jumpBufferTimer <= 0.0f) {
+      m_jumpRequested = false;
+    }
+  }
+
   if (!m_active || !m_body || m_isDying || m_isSpawning || m_isTransforming ||
       m_isFlagpoleSliding) {
     if (m_body && m_isDying) {
@@ -510,13 +517,15 @@ void Mario::preparePhysics(float dt) {
       m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
     }
     m_jumpRequested = false;
+    m_jumpBufferTimer = 0.0f;
     m_jumpReleased = false;
     return;
   }
 
   // Apply player input before Box2D advances so the current frame reacts
   // immediately.
-  applyMovementPhysics(dt, m_inputDirX, m_isRunning, m_jumpRequested,
+  const bool jumpTrigger = m_jumpRequested || (m_jumpBufferTimer > 0.0f);
+  applyMovementPhysics(dt, m_inputDirX, m_isRunning, jumpTrigger,
                        m_jumpReleased);
 
   if (m_automaticWalkSpeed > 0.0f && m_body) {
@@ -566,10 +575,12 @@ void Mario::applyGroundPhysics(float dt, float inputDirX, bool isRunningInput,
     }
   }
 
-  if (jumpKeyPressed) {
+  if (jumpKeyPressed && isGrounded()) {
     float jumpVelocityMeters = -PhysicsEngine::pixelsToMeters(m_jumpForce);
     currentVy = jumpVelocityMeters;
     clearGroundedState();
+    m_jumpRequested = false;
+    m_jumpBufferTimer = 0.0f;
 
 #ifdef DEBUG
     std::cout << "[DEBUG][Mario] Jump executed with velocity: "
@@ -785,10 +796,8 @@ void Mario::jump() {
     return;
   }
 
-  if (!isGrounded())
-    return;
-
   m_jumpRequested = true;
+  m_jumpBufferTimer = 0.12f;
 }
 
 void Mario::releaseJump() { m_jumpReleased = true; }

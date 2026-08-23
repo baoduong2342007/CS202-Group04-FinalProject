@@ -456,6 +456,12 @@ void Mario::update(float dt) {
     m_fireCooldown = std::max(0.0f, m_fireCooldown - dt);
   }
 
+  if (m_stunTimer > 0.0f) {
+    m_stunTimer = std::max(0.0f, m_stunTimer - dt);
+    m_stunStarAngle += dt * 360.f;
+    m_inputDirX = 0.0f;
+  }
+
   if (m_pendingGrowthState != MarioState::SMALL) {
     const bool worldLocked =
         m_body && m_body->GetWorld() && m_body->GetWorld()->IsLocked();
@@ -515,6 +521,17 @@ void Mario::preparePhysics(float dt) {
       m_body->SetLinearVelocity(b2Vec2(0.f, velocity.y));
     } else if (m_body && (m_isSpawning || m_isTransforming)) {
       m_body->SetLinearVelocity(b2Vec2(0.f, 0.f));
+    }
+    m_jumpRequested = false;
+    m_jumpBufferTimer = 0.0f;
+    m_jumpReleased = false;
+    return;
+  }
+
+  if (m_stunTimer > 0.0f) {
+    if (m_body) {
+      b2Vec2 velocity = m_body->GetLinearVelocity();
+      m_body->SetLinearVelocity(b2Vec2(0.f, velocity.y));
     }
     m_jumpRequested = false;
     m_jumpBufferTimer = 0.0f;
@@ -1173,6 +1190,7 @@ void Mario::loseLife() {
   m_invincibilityTimer = 0.0f;
   m_isStarInvincible = false;
   m_starInvincibilityTimer = 0.0f;
+  m_stunTimer = 0.0f;
 
   if (m_lives > 0) {
     m_lives--;
@@ -1209,10 +1227,6 @@ void Mario::loseLife() {
   EventBus::getInstance().notify(EventType::PLAYER_DIED);
 }
 
-bool Mario::isDeathAnimationFinished() const {
-  return m_deathAnimationFinished;
-}
-
 void Mario::respawn(const sf::Vector2f &spawnPosition) {
   m_marioState = MarioState::SMALL;
   m_pendingGrowthState = MarioState::SMALL;
@@ -1230,6 +1244,8 @@ void Mario::respawn(const sf::Vector2f &spawnPosition) {
   m_isStarInvincible = false;
   m_invincibilityTimer = 0.f;
   m_starInvincibilityTimer = 0.f;
+  m_stunTimer = 0.f;
+  m_stunStarAngle = 0.f;
   m_fireCooldown = 0.f;
   m_isTransforming = false;
   m_transformTimer = 0.f;
@@ -1488,6 +1504,10 @@ bool Mario::isSkidding() const { return m_isSkidding; }
 
 bool Mario::isDying() const { return m_isDying; }
 
+bool Mario::isDeathAnimationFinished() const {
+  return m_deathAnimationFinished;
+}
+
 void Mario::refreshGroundedState() {
   if (!m_body) {
     setGrounded(false);
@@ -1552,4 +1572,41 @@ void Mario::onCollisionBegin(Entity *other, b2Contact *contact,
 void Mario::onCollisionEnd(Entity *other, b2Contact *contact) {
   (void)other;
   (void)contact;
+}
+
+void Mario::stun(float duration) {
+  if (!m_isDying && !m_isTransforming && m_active) {
+    m_stunTimer = duration;
+    stopMoving();
+  }
+}
+
+void Mario::draw(sf::RenderTarget &target, sf::RenderStates states) const {
+  Entity::draw(target, states);
+
+  // Draw orbiting dizzy stun stars above Mario's head
+  if (m_stunTimer > 0.0f && m_active && !m_isDying && !m_isTransforming) {
+    const float headCenterX = m_position.x + m_size.x / 2.f;
+    const float headTopY = m_position.y - 8.f;
+    const float fadeFactor = std::min(1.0f, m_stunTimer / 0.25f);
+    const uint8_t alpha = static_cast<uint8_t>(255 * fadeFactor);
+
+    for (int i = 0; i < 3; ++i) {
+      const float angleRad =
+          (m_stunStarAngle + i * 120.f) * 3.14159265358979323846f / 180.f;
+      const float starX = headCenterX + 14.f * std::cos(angleRad);
+      const float starY = headTopY + 5.f * std::sin(angleRad);
+
+      sf::ConvexShape star(4);
+      star.setPoint(0, sf::Vector2f(0.f, -4.f));
+      star.setPoint(1, sf::Vector2f(3.f, 0.f));
+      star.setPoint(2, sf::Vector2f(0.f, 4.f));
+      star.setPoint(3, sf::Vector2f(-3.f, 0.f));
+      star.setPosition({starX, starY});
+      star.setFillColor(sf::Color(255, 235, 50, alpha));
+      star.setOutlineColor(sf::Color(180, 120, 10, alpha));
+      star.setOutlineThickness(1.f);
+      target.draw(star, states);
+    }
+  }
 }

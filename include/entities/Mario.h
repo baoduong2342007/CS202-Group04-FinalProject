@@ -61,9 +61,12 @@ public:
     // 2. Override methods
     void initPhysics(b2World* world, b2BodyType type, const sf::Vector2f& size, bool isSensor = false) override;
     void update(float dt) override;
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
     void syncPhysics() override;
 
     // 3. Public methods
+    void stun(float duration = 1.0f);
+    bool isStunned() const { return m_stunTimer > 0.f; }
     void jump();
     void releaseJump();
     void moveLeft();
@@ -254,6 +257,9 @@ protected:
     float m_flagpoleTargetX = 0.0f;
     float m_automaticWalkSpeed = 0.0f;
     float m_verticalIntent = 0.0f;
+
+    float m_stunTimer = 0.0f;
+    float m_stunStarAngle = 0.0f;
 
 public:
     void setPitThreshold(float threshold) { m_pitThreshold = threshold; }

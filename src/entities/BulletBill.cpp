@@ -38,20 +38,30 @@ const sf::IntRect& bulletFrame(LevelTheme theme) {
 BulletBill::BulletBill(const sf::Vector2f& position,
                        b2World* world,
                        LevelTheme theme,
-                       Direction direction)
+                       Direction direction,
+                       float angleDegrees)
     : Enemy(position, BULLET_SIZE, 1),
-      m_direction(direction) {
+      m_direction(direction),
+      m_angleDegrees(angleDegrees) {
     setSprite(BULLET_TEXTURE_PATH);
 
+    // If default angle 0 was passed with LEFT direction, orient to 180 (facing left)
+    if (m_angleDegrees == 0.f && m_direction == Direction::LEFT) {
+        m_angleDegrees = 180.f;
+    }
+
     // A pure projectile body: sensor fixtures so terrain and enemies never
-    // deflect it, and no gravity so it flies level.
+    // deflect it, and no gravity so it flies level or diagonally straight.
     initPhysics(world, b2_dynamicBody, BULLET_SIZE, true);
 
     if (m_body) {
         m_body->SetGravityScale(0.f);
     }
 
-    setVelocity({m_direction == Direction::LEFT ? -SPEED : SPEED, 0.f});
+    const float rad = m_angleDegrees * 3.14159265358979323846f / 180.f;
+    const float vx = SPEED * std::cos(rad);
+    const float vy = SPEED * std::sin(rad);
+    setVelocity({vx, vy});
 
     m_animationSystem = std::make_unique<AnimationSystem>();
     m_animationSystem->addAnimation(
@@ -69,6 +79,7 @@ void BulletBill::update(float dt) {
             m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
             m_sprite->setOrigin({8.f, 8.f});
             m_sprite->setScale({2.f, -2.f});
+            m_sprite->setRotation(sf::degrees(0.f));
         }
         if (m_position.y > PIT_CLEANUP_Y) {
             markForRemoval();
@@ -76,25 +87,25 @@ void BulletBill::update(float dt) {
         return;
     }
 
-    // The bullet never changes course; the level-bounds cleanup removes it
-    // once it flies off the far edge.
-    sf::Vector2f velocity = getVelocity();
-    velocity.x = m_direction == Direction::LEFT ? -SPEED : SPEED;
-    velocity.y = 0.f;
-    setVelocity(velocity);
+    // Maintain straight trajectory in the launch direction
+    const float rad = m_angleDegrees * 3.14159265358979323846f / 180.f;
+    const float vx = SPEED * std::cos(rad);
+    const float vy = SPEED * std::sin(rad);
+    setVelocity({vx, vy});
 
     updateAnimation(dt);
 
     if (m_sprite) {
-        m_sprite->setPosition(m_position);
-        // The atlas bullet faces left; mirror it when flying right.
-        m_sprite->setScale(m_direction == Direction::RIGHT ? sf::Vector2f{-2.f, 2.f}
-                                                           : sf::Vector2f{2.f, 2.f});
-        if (m_direction == Direction::RIGHT) {
-            m_sprite->setOrigin({16.f, 0.f});
-            m_sprite->setPosition({m_position.x + m_size.x, m_position.y});
+        m_sprite->setOrigin({8.f, 8.f});
+        m_sprite->setPosition(m_position + sf::Vector2f(m_size.x / 2.f, m_size.y / 2.f));
+
+        const bool facesLeft = std::cos(rad) <= 0.f;
+        if (facesLeft) {
+            m_sprite->setScale({2.f, 2.f});
+            m_sprite->setRotation(sf::degrees(m_angleDegrees - 180.f));
         } else {
-            m_sprite->setOrigin({0.f, 0.f});
+            m_sprite->setScale({-2.f, 2.f});
+            m_sprite->setRotation(sf::degrees(m_angleDegrees));
         }
     }
 }

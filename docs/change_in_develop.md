@@ -1481,16 +1481,29 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
  - 
  
  \ s r c / e n t i t i e s / K o o p a . c p p \ " 
- 
- -   * * D e t a i l e d   L o g i c   C h a n g e s : * * 
- 
-     1 .   * * F i x   I s L o c k e d   B o x 2 D   A s s e r t i o n * * :   C h a n g e d   G o o m b a : : o n S t o m p ( )   t o   u p d a t e   \ m _ p o s i t i o n \   d i r e c t l y   w i t h o u t   c a l l i n g   \ s e t P o s i t i o n ( ) \   i n s i d e   t h e   B o x 2 D   c o l l i s i o n   c a l l b a c k .   T h i s   p r e v e n t s   m o d i f y i n g   B o x 2 D   t r a n s f o r m s   w h i l e   t h e   w o r l d   i s   l o c k e d   d u r i n g   S t e p ( ) ,   f i x i n g   t h e   1 0 0 %   c r a s h   r a t e   i n   t e s t s   l i k e   \ 	 v 5 _ i n t e g r a t i o n _ t e s t s \ . 
- 
-     2 .   * * F i x   K o o p a / B u z z y   B e e t l e   S h e l l   V e l o c i t y * * :   R e s t o r e d   \ s e t V e l o c i t y ( ) \   l o g i c   i n s i d e   K o o p a : : k i c k ( )   a n d   r e v e r s e D i r e c t i o n ( ) .   T h e   e a r l i e r   p h y s i c s   r e f a c t o r   h a d   a c c i d e n t a l l y   s t r i p p e d   o u t   s h e l l   s l i d e   s p e e d s ,   c a u s i n g   k i c k e d   s h e l l s   t o   s t a n d   c o m p l e t e l y   s t i l l   i n s t e a d   o f   s l i d i n g   a c r o s s   t h e   s c r e e n . 
- 
- 
- 
- 
+  1. **Sá»­a lá»—i Goomba ná»•i lÃªn 8px khi bá»‹ giáº«m:** Thay vÃ¬ chá»‰ cáº­p nháº­t m_position.y báº±ng phÃ©p tÃ­nh thá»§ cÃ´ng trong onStomp(), há»‡ thá»‘ng giá»  gá» i trá»±c tiáº¿p setPosition() Ä‘á»ƒ Ä‘á»“ng bá»™ vá»‹ trÃ­ y má»›i vá»›i Box2D transform. Viá»‡c nÃ y ngÄƒn syncPhysics() á»Ÿ frame tiáº¿p theo sá»­ dá»¥ng láº¡i tÃ¢m (center) cÅ© cá»§a Box2D, tá»« Ä‘Ã³ tÃ­nh toÃ¡n sai Ä‘áº©y sprite ná»•i lÃªn trá» i 8 pixel sau khi m_size bá»‹ giáº£m tá»« 32 xuá»‘ng 16.
+### 67. Fix Box2D IsLocked Assertion Crash & Shell Velocity
+ 
+ - **Date:** 2026-08-20
+ 
+ - **Author:** Agent
+ 
+ - **Status:** Completed; 31/31 CTest suites passed.
+ 
+ - **Modified Files:**
+ 
+     - `src/entities/Goomba.cpp`
+     - `src/entities/Koopa.cpp`
+ 
+ - **Detailed Logic Changes:**
+ 
+     1. **Fix IsLocked Box2D Assertion**: Changed `Goomba::onStomp()` to update `m_position` directly without calling `setPosition()` inside the Box2D collision callback. This prevents modifying Box2D transforms while the world is locked during `Step()`, fixing the 100% crash rate in tests like `v5_integration_tests`.
+ 
+     2. **Fix Koopa/Buzzy Beetle Shell Velocity**: Restored `setVelocity()` logic inside `Koopa::kick()` and `reverseDirection()`. The earlier physics refactor had accidentally stripped out shell slide speeds, causing kicked shells to stand completely still instead of sliding across the screen.
+ 
+ 
+ 
+ 
 ### 68. Map Geometries and Theme Sync (Level 3 & 4)
 - **Date:** 2026-08-20
 - **Author:** TV4
@@ -1644,3 +1657,313 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   1. Documentation only; no code or assets changed. Added a 5-minute demo video recording script aligned with the 20-scenario matrix in `docs/testing/TV4_PLAYTHROUGH_LOG.md`, so one recording session on one immutable RC commit yields both the required spec deliverable (demo video) and the human playthrough evidence.
   2. The script contains: pre-flight checklist (release build, RC commit citation, capture/audio setup, two-pass save plan), a chaptered main timeline with exact key actions and per-chapter rubric mapping (menu/character select, 1-1 overworld mechanics showcase including the new canonical ledge walk-off and flagpole tiers, 1-2 underground, 1-3 underwater, 1-4 castle with both Bowser kill routes, save/load persistence proof, 2-player co-op, 2-player versus, pause), an off-camera Part B list covering the remaining matrix rows (no-damage, death-respawn, low-flag, GameOver paths, pause stress, continuous run), a controls cheat sheet sourced from `src/states/PlayState.cpp` bindings, and editing notes (1280x720/60fps, keep game audio, cut only between chapters).
   3. Entry #75 correction: replaced the false claim that `Evaluate.md`'s live content is `docs/management/Evaluate_v4.md` — that file never existed (verified during the audit); `Evaluate.md` was a stale Sprint-6 grading snapshot with dead links.
+
+### 77. Level 4 Castle Finale Boss AI 2.0 & Turtle Cannon Platforming Integration
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - src/entities/BulletBillLauncher.cpp
+  - levels/level4.txt
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Bowser Boss AI 2.0 - Adaptive Multi-Phase & Tactical Combat (Bowser.h, Bowser.cpp)**:
+     - Added isEnraged() phase transition when Bowser's HP drops to <= 2 or when Mario moves behind Bowser (X_mario > X_bowser + 32px).
+     - **Phase 1 (Tactical Pacing)**: Maintains distance, performs anti-air intercept hops (-HOP_SPEED * 1.2f) when Mario tries to vault over via elevator/springboard, and fires multi-height flames (BowserFire).
+     - **Phase 2 (Enraged Berserk)**: Attack timer accelerates from 1.8s-3.0s down to 0.9s-1.6s. Bowser gains the ability to throw arcing hammer barrages (	hrowHammer()), turns rapidly to confront Mario, leaps with increased velocity (-HOP_SPEED * 1.35f), and displays an enraged fiery red pulsating visual aura.
+  2. **Bullet Bill Launcher Theme Support & Accurate Muzzle Spawn (BulletBillLauncher.cpp)**:
+     - Replaced hardcoded CANNON_PARTS with dynamic getCannonParts(LevelTheme theme) supporting all 4 authentic NES tileset palettes (Overworld, Underground, Castle, Underwater).
+     - Fixed bullet spawn point to exit from the top muzzle barrel (Y = m_position.y) rather than the lower base.
+  3. **Level 4 Castle Layout Enhancement (levels/level4.txt)**:
+     - Strategically integrated Turtle Cannons ('D') into the Castle boss gauntlet: a ground-level cannon before the springboard (J) and an upper ceiling turret overlooking the elevator traverse (^ ~ ~).
+     - Validated all map rows to maintain the strict 160-tile length contract.
+  4. **Verification**:
+     - Rebuilt full game binary and ran test suite: all 38/38 CTest suites passed 100% with 0 regressions.
+### 78. Swivel Turret Cannon AI & Dynamic Angled Bullet Bill Integration
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/BulletBill.h
+  - src/entities/BulletBill.cpp
+  - include/entities/BulletBillLauncher.h
+  - src/entities/BulletBillLauncher.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Swivel Turret Cannon AI (BulletBillLauncher.h, BulletBillLauncher.cpp)**:
+     - Upgraded the Turtle Cannon into a dynamic 2D aiming turret that tracks Mario's live position relative to the cannon's top barrel center:
+       \theta = \text{atan2}(y_{\text{mario}} - y_{\text{top}}, |x_{\text{mario}} - x_{\text{top}}|)
+     - Clamped the dynamic vertical turret elevation to $\pm 25^\circ$, ensuring realistic retro turret rotation without clipping or escaping level boundaries.
+     - Separated visual rendering: the base and skull body remain firmly planted upright on the ground while the top muzzle barrel rotates smoothly around its center pivot $\{8\text{px}, 8\text{px}\}$ oriented towards Mario.
+     - Positioned the launch muzzle flash smoke puff at the rotated barrel opening.
+  2. **Angled Vector Bullet Bill Projectile (BulletBill.h, BulletBill.cpp)**:
+     - Extended BulletBill to accept an ngleDegrees launch parameter, computing linear velocity along the launch vector:  = \text{SPEED} \cdot \cos\theta$,  = \text{SPEED} \cdot \sin\theta$.
+     - Sprite rotation dynamically matches the flight angle ($\theta$) with its nose pointing towards the trajectory, maintaining full compatibility with Mario stomp interactions.
+  3. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% with 0 regressions.
+### 79. Turtle Cannon Mechanical Swivel Collar Joint & Pivot Refinement
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/entities/BulletBillLauncher.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Mechanical Swivel Collar Cushion Plate (BulletBillLauncher.cpp)**:
+     - Added a dual-tone mechanical swivel collar (dark base plate + theme-matching metallic highlight ring) rendered directly at the joint intersection between the skull body and the top muzzle barrel.
+     - Adjusted the top turret rotation pivot to the authentic hinge eyelet circle {8px, 12px} at the base of the top tile.
+     - Eliminates visual gaps and awkward sharp-edge floating during elevation changes, resulting in a cohesive, solid, and seamless arcade turret look.
+  2. **Verification**:
+     - Verified with 38/38 CTest suites passing 100% with 0 regressions.
+### 80. Bowser Combat Refinement: Pure Twin Fire Wave & Hammer Throw Removal
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Pure Flame Combat & Twin Fire Wave (Bowser.h, Bowser.cpp)**:
+     - Removed hammer throwing attacks (	hrowHammer()) and hammer-variant references from Bowser to prevent graphical asset clipping.
+     - In Phase 1: Bowser executes calculated multi-tier flame breath (ground-skimming low flames, chest-level mid flames, head-level high flames) and anti-air hops.
+     - In Phase 2 (Enraged): Bowser unleashes a devastating **Twin Fire Wave** (two concurrent fire waves at distinct elevation tiers, e.g. low + high) at accelerated intervals (.9\text{s} - 1.6\text{s}$).
+  2. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% in 17.25s.
+### 81. Bowser Boss AI: Seismic Ground Stomp Shockwave & Evade Jump Mechanics
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - src/level/Level.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Seismic Ground Stomp Shockwave Attack (Bowser.h, Bowser.cpp)**:
+     - Added airborne-to-ground landing detection (m_wasAirborne to grounded transition).
+     - When Bowser lands from a jump, 	riggerGroundStomp() fires:
+       - Plays ground impact rumble sound (SoundId::BUMP).
+       - Triggers a .35\text{s}$ dynamic shockwave effect expanding across a \text{px}$ radius.
+       - **Jump-To-Evade Platformer Mechanic**: Checks if Mario is within the shockwave radius ( \le 240\text{px}$) AND grounded (mario->isGrounded()). If Mario is standing on the ground, he takes shockwave damage (powerDown()). If Mario jumps in the air when Bowser lands, he successfully evades the attack unharmed.
+  2. **Shockwave Visual Effects (Bowser::draw)**:
+     - Renders dual expanding energy crests (bright yellow/white) and multi-layered dust smoke puffs radiating outward along the floor from Bowser's landing point.
+  3. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% with 0 regressions.
+### 82. Bowser Ground Stomp Shockwave Rebalancing & Mario Stun Status Integration
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV3 (Bao), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Mario.h
+  - src/entities/Mario.cpp
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Shockwave Nerf & Concentric Ripple Waves (Bowser.h, Bowser.cpp)**:
+     - Reduced effective shockwave radius from \text{px}$ down to \text{px}$ ($\approx 4.5$ tiles).
+     - Renders 3 concentric ripple shockwave crests expanding outward in successive phases with fading alpha and dust smoke particles.
+     - Changed combat impact from lethal damage/powerdown to **Stun Status Effect**: Bowser's shockwave now inflicts a .2\text{s}$ stun (mario->stun(1.2f)) rather than stripping lives/power-ups.
+  2. **Mario Stun Mechanism & Orbiting Dizzy Stars (Mario.h, Mario.cpp)**:
+     - Added stun(float duration) and isStunned() to Mario: freezes horizontal player movement intent and disables jump triggers for the stun duration while maintaining full physics gravity/grounding.
+     - Implemented Mario::draw override to render 3 rotating golden dizzy stars (â˜…) orbiting in an elliptical trajectory around Mario's head while stunned.
+  3. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% in 17.79s.
+### 83. Bowser Boss: 2D Horizontal Ground Shockwave Wave Crests & Energy Beam VFX
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/entities/Bowser.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **2D Horizontal Ground Shockwave Presentation (Bowser::draw)**:
+     - Upgraded the ground stomp VFX to an authentic 2D platformer horizontal wave rush:
+       - Renders a ground-level glowing golden energy beam connecting from the impact epicenter outwards along the floor.
+       - Generates 3 concentric triangular energy spikes/wave crests rushing flat along the ground line in both directions ( \pm \text{spread}$).
+       - Features an inner hot-white core energy spike for the leading wave and low-profile ground dust puffs billowing along the floor.
+  2. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% in 18.46s.
+### 84. Bowser Boss: Pure Procedural Concentric Propagating Ground Wave Shockwave VFX
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - CMakeLists.txt
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Algorithmic Concentric Wave Propagation (Bowser::draw)**:
+     - Developed a 100% procedural vector rendering algorithm for Bowser's ground stomp shockwave:
+       - **Phase 1 (Impact Burst)**: Renders a 8-pointed golden star flash at the stomp contact point for the first \%$ of the animation.
+       - **Phase 2 (Ground Energy Rail)**: Renders a glowing golden ground-level energy beam stretching outward as the wave expands.
+       - **Phase 3 (3 Successive Propagating Waves)**: 3 concentric wave crests propagate outward with staggered time delays (.00\text{s}$, .12\text{s}$, .16\text{s}$):
+         - Triangular golden energy spikes oriented outward along the floor.
+         - Hot-white interior core spikes for the leading wave.
+         - Billowing low-ground dust puff particles trailing each wave crest with alpha fade.
+  2. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% in 17.80s.
+### 85. Bowser Boss: Exact Touch-down Landing Ground Stomp Trigger & Enhanced Floor Wave VFX
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Strict Touch-down Landing Detection (Bowser.h, Bowser.cpp)**:
+     - Added m_previousVy tracking to guarantee the ground stomp shockwave **only** triggers when Bowser actively launched into the air (y < -80.f) and makes physical impact with the bridge floor (m_previousVy > 30.f && std::abs(vy) < 2.f).
+     - Prevents accidental triggers during normal walking/patrolling on flat terrain.
+  2. **Enhanced 2D Ground Wave Propagation Presentation (Bowser::draw)**:
+     - Upgraded the procedural ground wave graphics:
+       - Renders a multi-layer glowing energy rail on the bridge surface (outer golden rail + bright core).
+       - Features sharp 2-tone energy wave crests (outer orange/gold spike + inner hot-white core blade).
+       - Realistic smoke puffs billow upward and backward ( - 4\text{px}$ to  - 15\text{px}$) behind each surge wave with smooth alpha fading.
+  3. **Verification**:
+     - Verified with full CTest suite: all 38/38 test suites passed 100% in 17.44s.
+### 86. Bullet Bill Artillery: Long-range Elevator Tracking & Multi-Tier Cannon Battery
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/BulletBillLauncher.h
+  - src/entities/BulletBillLauncher.cpp
+  - levels/level4.txt
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Long-Range Elevator AI Tracking (BulletBillLauncher.h, BulletBillLauncher.cpp)**:
+     - Expanded horizontal activation reach (RANGE) from \text{px} \to 850\text{px}$ ($\sim 26.5$ tiles), allowing the cannon to detect and engage Mario across the entire elevator corridor and boss approach.
+     - Tuned dynamic pitch elevation tracking (awPitch clamped to $\pm 20^\circ$) to aim at Mario riding the elevator or vaulting across platforms while keeping bullet trajectories fully bounded within the level.
+  2. **Multi-Tier Cannon Defense System in Level 4 (levels/level4.txt)**:
+     - Added a second Turtle Cannon battery D at column 99 overlooking the elevator entrance, paired with the rampart cannon at column 143 to create a 2-tier crossfire fortress covering both the elevator route and the Bowser bridge.
+  3. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.74s.
+### 87. Bullet Bill Lethality: Instant Death on Direct Hit
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV3 (Bao)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/physics/CollisionManager.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Instant Death on Bullet Bill Impact (CollisionManager::handleMarioCollision)**:
+     - Updated Mario vs. Enemy lateral/direct collision handling:
+       - If the colliding enemy is BULLET_BILL and Mario is not invincible (!mario->isInvincible() && !mario->isStarInvincible()), it directly invokes mario->loseLife() (instant death), bypassing normal tiered power-down degradation.
+       - Stomping from above remains functional to defeat the Bullet Bill and bounce safely.
+  2. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.99s.
+### 88. Bullet Bill: Absolute Omnidirectional Lethality (Cá»© TrÃºng LÃ  Cháº¿t LuÃ´n)
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV3 (Bao)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/physics/CollisionManager.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Omnidirectional Lethality on Bullet Bill Contact (CollisionManager::handleMarioCollision)**:
+     - Updated Mario vs. Enemy contact resolution:
+       - If the collided entity is BULLET_BILL and Mario does not have Starman invincibility (!mario->isStarInvincible()), ANY contact angle (stomping from above, lateral collision, running into it, or being hit from behind/below) immediately triggers mario->loseLife() (instant fatal death).
+       - Only active Starman invincibility can destroy the Bullet Bill safely.
+  2. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.70s.
+### 89. Bullet Bill: Realistic Front-Nose / Warhead Lethality vs. Stomp & Rear Contact
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV3 (Bao)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/physics/CollisionManager.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Directional Front-Nose Lethality (CollisionManager::handleMarioCollision)**:
+     - Modeled realistic collision physics for Bullet Bill:
+       - **Front Nose / Warhead Hit**: When colliding head-on into the front face of the flying bullet along its forward trajectory vector, it inflicts instant death via mario->loseLife().
+       - **Top Stomp**: Landing on top of the bullet (isStomp) allows Mario to defeat the bullet, receive 200 points, and bounce off safely.
+       - **Rear / Exhaust Brush**: Brushing against the rear end or tail of the bullet applies normal power-down degradation via mario->queuePowerDown().
+       - **Starman Invincibility**: Touching the bullet while in Starman state instantly crushes the bullet safely.
+  2. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.27s.
+### 90. Bowser Stomp Shockwave: Expanded Arena Stun Radius & Visual Range
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/Bowser.h
+  - src/entities/Bowser.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Expanded Shockwave Radius (Bowser.h, Bowser.cpp)**:
+     - Increased SHOCKWAVE_RADIUS from \text{px} \to 220\text{px}$ ($\sim 7$ full tiles), enabling Bowser's ground shockwave to cover nearly the entire bridge arena when landing in the central zone.
+     - Adjusted shockwave ripple duration from .45\text{s} \to 0.50\text{s}$ to allow the visual horizontal concentric waves and trailing smoke dust to propagate smoothly across the wider radius.
+  2. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 16.22s.
+### 91. Bullet Bill & Elevator Collision: Strict Airborne Descent Check for Stomps
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV3 (Bao)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/physics/CollisionManager.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Strict Stomp Guard for Bullet Bill (CollisionManager::handleMarioCollision)**:
+     - Fixed an issue where Mario standing on an elevated surface (such as moving elevators in Level 4) was falsely recognized by the geometric bounding box check as performing a top stomp on oncoming Bullet Bills because Mario's feet were higher than the bullet's centerline.
+     - Added strict guard: to stomp a Bullet Bill, Mario **must be airborne (!mario->isGrounded()) and descending downwards (marioVel.y >= -0.1f)**.
+     - If Mario is grounded on an elevator platform or moving horizontally without falling, collisions with oncoming Bullet Bills are properly recognized as dangerous direct strikes (mario->loseLife() on front nose).
+  2. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.09s.
+### 92. Level 4 Finale: Castle Toad Ending & Victory Trigger Robustness
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV2 (Nhat)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - src/level/Level.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Direct Toad Chamber Victory (Level::checkToadEnding)**:
+     - Fixed an issue where reaching Toad (N) at the end of Level 4 did not trigger game completion if Mario bypassed Bowser without touching the Axe or defeated Bowser via fireballs.
+     - Removed the rigid prerequisite lock m_castleExitReady from checkToadEnding(), enabling Toad's ending cutscene and dialogue (*"THANK YOU MARIO! BUT OUR PRINCESS IS IN ANOTHER CASTLE!"*) to trigger whenever Mario or Luigi reaches Toad's chamber.
+  2. **Co-op Mode Castle Finale Support (Level::updateCoop)**:
+     - Added updateToadDialogue(dt), updateBridgeCollapse(dt), and checkToadEnding() into updateCoop(dt) so that 2-player mode properly executes the Castle finale sequence.
+     - Supported Bowser Axe bridge collapse triggering for both Player 1 and Player 2.
+  3. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 17.70s.
+### 93. Castle Finale: Mandatory Bowser Defeat Gate & Artillery Ceasefire
+
+- **Date:** 2026-08-23
+- **Author:** TV1 (Duong), TV4 (Vy)
+- **Status:** Completed; 38/38 CTest suites passed (100% pass rate).
+- **Modified Files:**
+  - include/entities/BulletBillLauncher.h
+  - src/entities/BulletBillLauncher.cpp
+  - include/level/Level.h
+  - src/level/Level.cpp
+  - docs/change_in_develop.md
+- **Detailed Logic Changes:**
+  1. **Mandatory Bowser Defeat Before Toad Rescue (Level::checkToadEnding, Level::isBowserDefeated)**:
+     - Added isBowserDefeated() and hasBowserInLevel() to query Bowser's status across all elimination methods (Axe bridge collapse, 5 Fireball impacts, or falling into lava).
+     - In levels containing Bowser encounters (e.g. Level 4), reaching Toad will only trigger the victory dialogue and complete the game **after** Bowser has been defeated.
+  2. **Artillery Ceasefire on Bowser Defeat (BulletBillLauncher, Level::updateEntities)**:
+     - Added setCeaseFire(bool) state to BulletBillLauncher.
+     - Whenever Bowser is defeated by any method, Level::updateEntities() automatically commands all Turtle Cannons / Bullet Bill Launchers to cease fire immediately (setCeaseFire(true)), silencing all artillery and ensuring a peaceful victory path to Toad.
+  3. **Verification**:
+     - Full CTest suite executed: all 38/38 test suites passed 100% in 16.70s.

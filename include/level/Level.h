@@ -193,6 +193,8 @@ private:
     /// Bowser arena: touching the axe starts the bridge-collapse sequence.
     void beginBridgeCollapse(Mario* scorer);
     void updateBridgeCollapse(float dt);
+    bool isBowserDefeated() const;
+    bool hasBowserInLevel() const;
 
     void checkToadEnding();
     void updateToadDialogue(float dt);
@@ -257,6 +259,7 @@ private:
     std::vector<float> m_generatorTimers;
 
     // Bowser bridge-collapse sequence state.
+    bool m_hasBowserEncounter = false;
     bool m_bridgeCollapseActive = false;
     float m_bridgeCollapseTimer = 0.f;
     /// Bridge tiles still standing, ordered axe-side first.

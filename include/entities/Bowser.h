@@ -12,6 +12,8 @@
 #include "core/ScoreRules.h"
 #include "entities/Enemy.h"
 
+class Mario;
+
 class Bowser : public Enemy {
 public:
     enum class State {
@@ -27,6 +29,7 @@ public:
     ~Bowser() override = default;
 
     void update(float dt) override;
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
     void patrol() override;
     void onStomp() override;
@@ -49,9 +52,13 @@ public:
 
     State getState() const { return m_state; }
     int getHealth() const { return Character::getHealth(); }
+    bool isEnraged() const {
+        return getHealth() <= 2 || (m_marioKnown && m_marioPosition.x > m_position.x + 32.f);
+    }
 
     /// Feed Mario's position; fire breath and hops aim at the player.
     void updateMarioPosition(const sf::Vector2f& marioPos);
+    void updateMarioTarget(Mario* mario) { m_marioTarget = mario; }
 
     /// The axe was touched: the bridge is gone, sink no matter the health.
     void collapseIntoLava();
@@ -61,12 +68,19 @@ public:
 private:
     void enterDie();
     void breatheFire();
+    void triggerGroundStomp();
 
     State m_state{State::PATROL};
     float m_stateTimer{0.f};
     float m_attackTimer{2.f};
     bool m_fireReleased{false};
     bool m_hammerVariant{false};
+    float m_enragedPulseTimer{0.f};
+    bool m_wasAirborne{false};
+    float m_previousVy{0.f};
+    float m_stompEffectTimer{0.f};
+    sf::Vector2f m_stompEffectPos{0.f, 0.f};
+    Mario* m_marioTarget{nullptr};
 
     Direction m_patrolMoveDir{Direction::LEFT};
     float m_patrolTurnTimer{2.f};
@@ -78,6 +92,8 @@ private:
     b2World* m_world = nullptr;
     LevelTheme m_theme{LevelTheme::CASTLE};
     std::vector<std::unique_ptr<Entity>> m_pending;
+
+    static constexpr float SHOCKWAVE_RADIUS = 220.f;
 
     static constexpr int FIREBALL_HITS_TO_KILL = 5;
     static constexpr float PATROL_SPEED = 50.f;

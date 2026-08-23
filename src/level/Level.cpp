@@ -438,8 +438,32 @@ void Level::updateBridgeCollapse(float dt) {
     m_bridgeCompletionDelay = 1.2f;
 }
 
+bool Level::hasBowserInLevel() const {
+    return m_hasBowserEncounter;
+}
+
+bool Level::isBowserDefeated() const {
+    if (!m_hasBowserEncounter) {
+        return true;
+    }
+    for (const auto& entity : m_entities) {
+        if (entity && entity->isBowser()) {
+            const Bowser* b = static_cast<const Bowser*>(entity.get());
+            if (!b->isDying() && !b->isDead() && b->isActive()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void Level::checkToadEnding() {
-    if (!m_castleExitReady || m_toadDialogueActive || m_levelCompleted || !m_mario) {
+    if (m_toadDialogueActive || m_levelCompleted || !m_mario) {
+        return;
+    }
+
+    // Require Bowser to be defeated before completing through Toad!
+    if (hasBowserInLevel() && !isBowserDefeated()) {
         return;
     }
 
@@ -448,7 +472,11 @@ void Level::checkToadEnding() {
             continue;
         }
 
-        if (!m_mario->getBoundingBox().findIntersection(entity->getBoundingBox())) {
+        const sf::FloatRect toadBounds = entity->getBoundingBox();
+        const bool p1Hit = m_mario && m_mario->getBoundingBox().findIntersection(toadBounds).has_value();
+        const bool p2Hit = m_coopMode && m_mario2 && m_mario2->getBoundingBox().findIntersection(toadBounds).has_value();
+
+        if (!p1Hit && !p2Hit) {
             continue;
         }
 
@@ -703,6 +731,9 @@ void Level::spawnEntitiesFromTileMap() {
                 entity->setTextureManager(m_textureManager);
                 if (entity->isEnemy()) {
                     static_cast<Enemy*>(entity.get())->setTileMap(&m_tileMap);
+                }
+                if (code == 'X') {
+                    m_hasBowserEncounter = true;
                 }
                 m_entities.push_back(std::move(entity));
             }
@@ -1082,11 +1113,14 @@ void Level::updateEntities(float dt) {
         // before update(). This keeps a target change effective on the frame
         // the cadence expires instead of one frame later.
         if (entity->isBulletBillLauncher()) {
+            auto* launcher = static_cast<BulletBillLauncher*>(entity.get());
+            if (hasBowserInLevel() && isBowserDefeated()) {
+                launcher->setCeaseFire(true);
+            }
             if (const Mario* target = nearestEligiblePlayer(
                     m_mario.get(), m_mario2.get(), m_coopMode,
                     entity->getPosition())) {
-                static_cast<BulletBillLauncher*>(entity.get())
-                    ->updateMarioPosition(target->getPosition());
+                launcher->updateMarioPosition(target->getPosition());
             }
         }
 
@@ -1121,7 +1155,9 @@ void Level::updateEntities(float dt) {
             } else if (enemy->isHammerBro()) {
                 static_cast<HammerBro*>(enemy)->updateMarioPosition(nearestPos);
             } else if (enemy->isBowser()) {
-                static_cast<Bowser*>(enemy)->updateMarioPosition(nearestPos);
+                auto* b = static_cast<Bowser*>(enemy);
+                b->updateMarioPosition(nearestPos);
+                b->updateMarioTarget(const_cast<Mario*>(target));
             }
         }
 
@@ -1152,13 +1188,19 @@ void Level::updateEntities(float dt) {
 
     // Bowser's axe: a body-less pickup, so the overlap is watched here
     // rather than routed through the contact listener.
-    if (!m_bridgeCollapseActive && !m_levelCompleted && m_mario) {
+    if (!m_bridgeCollapseActive && !m_levelCompleted) {
         for (auto& entity : m_entities) {
             if (!entity || !entity->isBowserAxe()) {
                 continue;
             }
-            if (m_mario->getBoundingBox().findIntersection(entity->getBoundingBox())) {
+            const sf::FloatRect axeBounds = entity->getBoundingBox();
+            const bool p1Hit = m_mario && m_mario->getBoundingBox().findIntersection(axeBounds).has_value();
+            const bool p2Hit = m_coopMode && m_mario2 && m_mario2->getBoundingBox().findIntersection(axeBounds).has_value();
+            if (p1Hit) {
                 beginBridgeCollapse(m_mario.get());
+                break;
+            } else if (p2Hit) {
+                beginBridgeCollapse(m_mario2.get());
                 break;
             }
         }
@@ -1387,6 +1429,12 @@ void Level::updateCoop(float dt) {
 
     updateFlagSequence(dt);
 
+    // Freeze gameplay while Toad delivers the Castle ending dialogue.
+    if (m_toadDialogueActive) {
+        updateToadDialogue(dt);
+        return;
+    }
+
     if (m_pipeWarpPhase != PipeWarpPhase::NONE) {
         updatePipeWarp(dt);
         if (m_warpPlayer) {
@@ -1457,8 +1505,12 @@ void Level::updateCoop(float dt) {
     updateCheepCheepGenerators(dt);
     updateEntities(dt);
 
+    // Bowser arena: advance the bridge-collapse sequence once started.
+    updateBridgeCollapse(dt);
+
     checkItemCollisions();
     checkFinishFlag();
+    checkToadEnding();
     updateExplosions();
     removeDeadEntities();
     processPendingStompScorePopups();

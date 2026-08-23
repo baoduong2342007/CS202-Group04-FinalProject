@@ -14,6 +14,7 @@
 #include "entities/Koopa.h"
 #include "entities/CheepCheep.h"
 #include "entities/FireBall.h"
+#include "entities/BulletBill.h"
 #include "items/Item.h"
 #include "items/Mushroom.h"
 #include "items/Star.h"
@@ -1131,6 +1132,14 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                 }
             }
         }
+
+        // Bullet Bill strict stomp guard: Mario must be airborne and descending.
+        // If Mario is grounded on a platform/elevator, any collision with Bullet Bill is a direct hit!
+        if (isStomp && enemy->getSubtype() == Entity::EntitySubtype::BULLET_BILL) {
+            if (mario->isGrounded() || marioVel.y < -0.1f) {
+                isStomp = false;
+            }
+        }
     }
 
     if (isStomp) {
@@ -1191,8 +1200,30 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                         koopa->setDefeatOwner(mario);
                         koopa->kick(kickDir);
                     }
-                    // If walking, Mario gets hit
-                    else {
+                } else if (Enemy* enemy = otherParticipant.enemy()) {
+                    if (enemy->getSubtype() == Entity::EntitySubtype::BULLET_BILL) {
+                        auto* bullet = static_cast<BulletBill*>(enemy);
+                        const float rad = bullet->getAngle() * 3.14159265358979323846f / 180.f;
+                        const float forwardX = std::cos(rad);
+
+                        // Vector from Bullet center to Mario center
+                        const float bulletCenterX = bullet->getPosition().x + bullet->getSize().x / 2.f;
+                        const float marioCenterX = mario->getPosition().x + mario->getSize().x / 2.f;
+                        const float relX = marioCenterX - bulletCenterX;
+
+                        // Mario hit the front nose if Mario is located on the forward travel side
+                        const bool hitNose = (forwardX < 0.f && relX <= 4.f) || (forwardX > 0.f && relX >= -4.f);
+
+                        if (!mario->isInvincible() && !mario->isStarInvincible()) {
+                            if (hitNose) {
+                                // Front Nose / Warhead Impact causes instant death!
+                                mario->loseLife();
+                            } else {
+                                // Brushing against rear/exhaust causes normal power-down
+                                mario->queuePowerDown();
+                            }
+                        }
+                    } else {
                         mario->queuePowerDown();
                     }
                 } else {

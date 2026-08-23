@@ -15,7 +15,8 @@ public:
     BulletBill(const sf::Vector2f& position,
                b2World* world,
                LevelTheme theme,
-               Direction direction);
+               Direction direction,
+               float angleDegrees = 0.f);
     ~BulletBill() override = default;
 
     void update(float dt) override;
@@ -35,12 +36,14 @@ public:
     }
 
     Direction getDirection() const { return m_direction; }
+    float getAngle() const { return m_angleDegrees; }
 
 private:
     /// Shared flipped-and-falling death presentation (stomp or star).
     void dieFlipped();
 
     Direction m_direction;
+    float m_angleDegrees{180.f};
     bool m_isFlippedDead = false;
 
     static constexpr float SPEED = 240.f;

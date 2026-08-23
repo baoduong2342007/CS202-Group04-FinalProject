@@ -30,6 +30,11 @@ public:
     /// inside its horizontal range.
     void updateMarioPosition(const sf::Vector2f& marioPos);
 
+    float getAimAngle() const { return m_currentAimAngle; }
+
+    void setCeaseFire(bool cease) { m_ceaseFire = cease; }
+    bool isCeaseFire() const { return m_ceaseFire; }
+
     std::vector<std::unique_ptr<Entity>> takePendingSpawns() override;
 
 private:
@@ -37,7 +42,9 @@ private:
     LevelTheme m_theme;
     sf::Vector2f m_marioPosition{0.f, 0.f};
     bool m_marioKnown = false;
+    bool m_ceaseFire = false;
     float m_fireTimer{0.f};
+    float m_currentAimAngle{180.f};
     std::vector<std::unique_ptr<Entity>> m_pending;
 
     // The cannon is drawn from three stacked tileset cells (top, body, base).
@@ -45,5 +52,5 @@ private:
     mutable std::optional<sf::Sprite> m_parts[3];
 
     static constexpr float FIRE_INTERVAL = 3.f;
-    static constexpr float RANGE = 256.f; ///< 8 tiles of horizontal reach
+    static constexpr float RANGE = 850.f; ///< ~26.5 tiles of detection reach across the elevator arena
 };

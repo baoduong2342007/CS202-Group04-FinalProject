@@ -198,7 +198,7 @@ A working-tree result may support review, but release sign-off requires one immu
 - **[level3.txt](../levels/level3.txt)**:
   - Kháº¯c phá»¥c cáº¥u trÃºc cá»™t cá» vá» Ä‘Ã­ch (`F` vÃ  `|` cá»™t cá») bá»‹ thiáº¿u ná»‘i xuá»‘ng Ã´ Ä‘áº¥t `1`, lÃ m hÃ m `TileMap::loadFromFile()` nÃ©m lá»—i validation vÃ  thoÃ¡t vá» Menu thay vÃ¬ vÃ o mÃ n Level 3 / YOU WIN.
 - **[blocks_all_components_atlas_full.png](assets/reference/blocks_all_components_atlas_full.png)**:
-  - Tá»‡p áº£nh Atlas minh há»a trá»±c quan (880Ã—1050 px) hiá»ƒn thá»‹ 120 Ã´ khá»‘i Ä‘Æ°á»£c trÃ­ch xuáº¥t vÃ  gÃ¡n nhÃ£n chá»‰ sá»‘ #1â€“#120 trá»±c tiáº¿p tá»« tá»‡p **`assets/textures/items/items_blocks.png`**.
+  - Tá»‡p áº£nh Atlas minh há»a trá»±c quan (880Ã—1050 px) hiá»ƒn thá»‹ 120 Ã´ khá»‘i Ä‘Æ°á»£c trÃ­ch xuáº¥t vÃ  gÃ¡n nhÃ£n chá»‰ sá»‘ #1–#120 trá»±c tiáº¿p tá»« tá»‡p **`assets/textures/items/items_blocks.png`**.
 - **[Mario.h](../include/entities/Mario.h)**:
   - ThÃªm enum `CharacterType` (`MARIO`, `LUIGI`), thiáº¿t láº­p nhÃ¢n váº­t máº·c Ä‘á»‹nh lÃ  `CharacterType::LUIGI`, bá»• sung `getCharacterType()` vÃ  `setCharacterType()`.
 - **[Mario.cpp](../src/entities/Mario.cpp)**:
@@ -383,7 +383,7 @@ A working-tree result may support review, but release sign-off requires one immu
   2. **Báº£o tá»“n 100% cÃ¡c tile ná»™i dung**: Giá»¯ nguyÃªn toÃ n bá»™ Ä‘á»“ há»a náº¥m, thÃ¢n náº¥m, Ä‘á»“i nÃºi cÅ©ng nhÆ° khu vá»±c Underwater (san hÃ´, Ä‘á»“i nÆ°á»›c, á»‘ng nÆ°á»›c dÆ°á»›i nÆ°á»›c).
   3. BiÃªn dá»‹ch vÃ  kiá»ƒm thá»­ tá»± Ä‘á»™ng thÃ nh cÃ´ng 100% (13/13 CTest passed).
 
-### Superseding audit â€” Tileset coordinates and assembled scenery (2026-08-10)
+### Superseding audit — Tileset coordinates and assembled scenery (2026-08-10)
 
 Entry #35 below is historical and is superseded by the current audit in
 [`docs/tileset_coordinate.md`](tileset_coordinate.md). The current contract
@@ -398,7 +398,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **File áº£nh hÆ°á»Ÿng:** `docs/tileset_coordinate.md`, `include/level/TileFrames.h`, `docs/assets/tileset/object_001.png` -> `object_345.png`
 - **MÃ´ táº£:**
   1. Tiáº¿n hÃ nh rÃ  soÃ¡t trá»±c quan toÃ n bá»™ 340 object cá»§a `tileset.png` ($680 \times 776 \text{ px}$) Ä‘á»‘i soÃ¡t vá»›i `TileFrames.h` trong C++ engine.
-  2. PhÃ¡t hiá»‡n vÃ  sá»­a lá»—i nhÃ£n sai trong `tileset_coordinate.md` Ä‘á»‘i vá»›i nhÃ³m STT #1â€“#4 (vá»‘n bá»‹ ghi nháº§m lÃ  4 khá»‘i Ground cho 4 mÃ´i trÆ°á»ng, thá»±c táº¿ lÃ  4 khá»‘i Overworld: Ground, Brick, Stone, Hard) vÃ  nhÃ³m STT #9â€“#12 (khá»‘i Underground: Ground Teal, Brick Teal, Stone, Used Block).
+  2. PhÃ¡t hiá»‡n vÃ  sá»­a lá»—i nhÃ£n sai trong `tileset_coordinate.md` Ä‘á»‘i vá»›i nhÃ³m STT #1–#4 (vá»‘n bá»‹ ghi nháº§m lÃ  4 khá»‘i Ground cho 4 mÃ´i trÆ°á»ng, thá»±c táº¿ lÃ  4 khá»‘i Overworld: Ground, Brick, Stone, Hard) vÃ  nhÃ³m STT #9–#12 (khá»‘i Underground: Ground Teal, Brick Teal, Stone, Used Block).
   3. Kháº³ng Ä‘á»‹nh code C++ (`TileFrames.h`) Ä‘Ã£ chá»n chuáº©n xÃ¡c $100\%$ tá»a Ä‘á»™ cá»§a toÃ n bá»™ cÃ¡c tile (Ground, Brick, Question Block, Castle Window/Door, Pipes, Finish Pole).
   4. ÄÃ£ dá»n dáº¹p cÃ¡c script Python phá»¥ trá»£.
 
@@ -483,7 +483,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   2. **Contract hiá»‡n táº¡i:** FireFlower luÃ´n Ä‘Æ°a Mario vá» state `FIRE`; khÃ´ng cÃ³ state thá»­ nghiá»‡m riÃªng trong release.
 
 ### Entry #11: [LEGACY] FireBall capability theo Mario state
-- **Tráº¡ng thÃ¡i:** LEGACY â€” Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng release contract `SMALL/SUPER/FIRE`.
+- **Tráº¡ng thÃ¡i:** LEGACY — Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng release contract `SMALL/SUPER/FIRE`.
 - **File áº£nh hÆ°á»Ÿng:** [Mario.cpp](../src/entities/Mario.cpp)
 - **MÃ´ táº£:** Release chá»‰ cho phÃ©p `canShootFireBall()` khi `m_marioState == MarioState::FIRE`.
 
@@ -495,7 +495,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   2. **[LEGACY] Physics logging claim**: MÃ´ táº£ logging cÅ© khÃ´ng Ä‘Æ°á»£c dÃ¹ng Ä‘á»ƒ káº¿t luáº­n DoD hiá»‡n táº¡i; FireBall/physics contract thuá»™c owner TV3.
 
 ### Entry #13: [LEGACY] Giá»›i háº¡n FireBall thá»­ nghiá»‡m
-- **Tráº¡ng thÃ¡i:** LEGACY â€” con sá»‘ trong entry cÅ© khÃ´ng pháº£i release contract.
+- **Tráº¡ng thÃ¡i:** LEGACY — con sá»‘ trong entry cÅ© khÃ´ng pháº£i release contract.
 - **File áº£nh hÆ°á»Ÿng:** [Level.cpp](../src/level/Level.cpp)
 - **MÃ´ táº£:** Release contract FireBall Ä‘Æ°á»£c khÃ³a riÃªng trong tÃ i liá»‡u Sprint 6; entry cÅ© khÃ´ng Ä‘Æ°á»£c dÃ¹ng lÃ m báº±ng chá»©ng DoD.
 
@@ -509,7 +509,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 
 
 ### Entry #15: [LEGACY] Merge TV5 branch vÃ  assertion cÅ©
-- **Tráº¡ng thÃ¡i:** LEGACY â€” assertion cÅ© Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng má»™t state `FIRE` duy nháº¥t.
+- **Tráº¡ng thÃ¡i:** LEGACY — assertion cÅ© Ä‘Ã£ Ä‘Æ°á»£c thay báº±ng má»™t state `FIRE` duy nháº¥t.
 - **File áº£nh hÆ°á»Ÿng:** [develop branch], [TV5IntegrationTests.cpp](../tests/TV5IntegrationTests.cpp), [TV5_CHANGES_SUMMARY.md](management/TV5_CHANGES_SUMMARY.md)
 - **MÃ´ táº£:** 
   1. **Merge nhÃ¡nh TV5**: Chuyá»ƒn sang nhÃ¡nh `develop` vÃ  merge phiÃªn báº£n má»›i nháº¥t tá»« `origin/feature/sound-input` cá»§a TV5 (bao gá»“m SoundManager, HUD, Audio/SFX Pool, ScoreRules vÃ  bá»™ test tÃ­ch há»£p TV5).
@@ -545,7 +545,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **MÃ´ táº£:** Loáº¡i bá» cÃ¡c cÃ¢u lá»‡nh `#include "core/DisplayConfig.h"` thá»«a khÃ´ng Ä‘Æ°á»£c sá»­ dá»¥ng trá»±c tiáº¿p trong `GameOverState.cpp`, `PauseState.cpp`, vÃ  `WinState.cpp`, dá»n sáº¡ch cáº£nh bÃ¡o IDE vÃ  tá»‘i Æ°u hÃ³a biÃªn dá»‹ch.
 
 ### Entry #19: [LEGACY] Clean code cho HUD state label
-- **Tráº¡ng thÃ¡i:** LEGACY â€” HUD hiá»‡n chá»‰ switch qua cÃ¡c state release.
+- **Tráº¡ng thÃ¡i:** LEGACY — HUD hiá»‡n chá»‰ switch qua cÃ¡c state release.
 - **File áº£nh hÆ°á»Ÿng:** [HUD.cpp](../src/ui/HUD.cpp)
 - **MÃ´ táº£:** HUD hiá»‡n hiá»ƒn thá»‹ `SMALL`, `SUPER`, `FIRE` vÃ  overlay `STAR`; khÃ´ng cÃ³ nhÃ¡nh state ngoÃ i contract.
 
@@ -622,16 +622,16 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   2. **CÄƒn Chá»‰nh Background & Camera**: Äiá»u chá»‰nh thuáº­t toÃ¡n `calculateBackgroundTop` dá»±a trÃªn hÃ ng máº·t Ä‘áº¥t `findGroundSurfaceRow` trong `Level.cpp`, render cÃ¡c dáº£i ná»n Ä‘an xen láº­t gÆ°Æ¡ng (`mirrored scale`) phá»§ kÃ­n chiá»u rá»™ng level. Cáº­p nháº­t `BOTTOM_TILE_PADDING` trong `Camera.cpp` vá» `0.0f` Ä‘á»ƒ mÃ©p dÆ°á»›i camera vá»«a khÃ­t máº·t map.
   3. **MÃ u Ná»n Trá»i TÆ°Æ¡i SÃ¡ng**: Cáº­p nháº­t `BACKGROUND_COLOR` trong `DisplayConfig.h` tá»« CornflowerBlue `(100, 149, 237)` thÃ nh Sky Blue `(69, 197, 250)`.
   4. **Merge Tá»± Äá»™ng**: Merge hoÃ n toÃ n tá»± Ä‘á»™ng khÃ´ng xung Ä‘á»™t (`ort strategy`) nhÃ¡nh `feature/sound-input` cá»§a TV5 vÃ o `develop`. BiÃªn dá»‹ch thÃ nh cÃ´ng 100%, táº¥t cáº£ 10/10 bá»™ ctest Ä‘á»u passed.
-### Entry #29: [Round 2 â€” Gate 0 Contract Tests + Docs Sync] - TV1 evidences the release contract and refreshes stale management docs
+### Entry #29: [Round 2 — Gate 0 Contract Tests + Docs Sync] - TV1 evidences the release contract and refreshes stale management docs
 - **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
 - **Task liÃªn quan:** S6-TV1-01/02/03/14/18/19/28/30/31/32/33/35 + Gate 0 test contract.
 - **File áº£nh hÆ°á»Ÿng:** `CMakeLists.txt`, `tests/Gate0ContractTests.cpp` (má»›i), `tests/PlayStateTests.cpp` (má»Ÿ rá»™ng), `tests/SaveSessionTests.cpp` (má»›i), `README.md`, `FILE_STRUCTURE.md`, `docs/class_diagram.md`, `docs/management/S6_AUDIT_TRACKER.md`, `docs/management/S6_BUG_REGISTER.md`
 - **MÃ´ táº£:**
-  1. **Gate 0 test contract (`gate0_contract_tests`)**: `static_assert` khÃ³a `MarioState = {SMALL, SUPER, FIRE}` (FIRE_SMALL tÃ¡i xuáº¥t â‡’ build fail); FireFlower luÃ´n cho `FIRE` tá»« cáº£ SMALL vÃ  SUPER; Mushroom khÃ´ng downgrade (SUPER/FIRE giá»¯ nguyÃªn); `CharacterType` máº·c Ä‘á»‹nh `MARIO`; cáº£ 3 release level load Ä‘Æ°á»£c qua validator + tileset, Ä‘Ãºng 1 `M` vÃ  1 `F`. LÆ°u Ã½: guard giá»›i háº¡n FireBall = 2 chá» TV3-19 (dÃ²ng NOTE trong file).
-  2. **PlayState death/Win regression (`play_state_tests`)**: má»™t death phÃ¡t Ä‘Ãºng 1 `PLAYER_DIED` vÃ  trá»« Ä‘Ãºng 1 life; death thá»© hai khi Ä‘ang dying bá»‹ cháº·n; respawn re-arm death chain; Win-decision (Level 3 â†’ háº¿t level â†’ Win) Ä‘i Ä‘Ãºng má»™t Ä‘Æ°á»ng (`m_transitionIsWin`). Playthrough full-loop chá» TV4 (S6-TV4-40).
-  3. **Save restart-session validation (`save_session_tests`)**: hai phiÃªn SaveManager Ä‘á»™c láº­p trÃªn cÃ¹ng file táº¡m â€” má»i field (high score, unlock, hai volume) cÃ²n Ä‘Ãºng sau "restart"; monotonic score/unlock giá»¯ sau restart; `GameManager::getSaveManager()` luÃ´n tráº£ vá» cÃ¹ng má»™t instance (composition root).
+  1. **Gate 0 test contract (`gate0_contract_tests`)**: `static_assert` khÃ³a `MarioState = {SMALL, SUPER, FIRE}` (FIRE_SMALL tÃ¡i xuáº¥t ⇒ build fail); FireFlower luÃ´n cho `FIRE` tá»« cáº£ SMALL vÃ  SUPER; Mushroom khÃ´ng downgrade (SUPER/FIRE giá»¯ nguyÃªn); `CharacterType` máº·c Ä‘á»‹nh `MARIO`; cáº£ 3 release level load Ä‘Æ°á»£c qua validator + tileset, Ä‘Ãºng 1 `M` vÃ  1 `F`. LÆ°u Ã½: guard giá»›i háº¡n FireBall = 2 chá» TV3-19 (dÃ²ng NOTE trong file).
+  2. **PlayState death/Win regression (`play_state_tests`)**: má»™t death phÃ¡t Ä‘Ãºng 1 `PLAYER_DIED` vÃ  trá»« Ä‘Ãºng 1 life; death thá»© hai khi Ä‘ang dying bá»‹ cháº·n; respawn re-arm death chain; Win-decision (Level 3 → háº¿t level → Win) Ä‘i Ä‘Ãºng má»™t Ä‘Æ°á»ng (`m_transitionIsWin`). Playthrough full-loop chá» TV4 (S6-TV4-40).
+  3. **Save restart-session validation (`save_session_tests`)**: hai phiÃªn SaveManager Ä‘á»™c láº­p trÃªn cÃ¹ng file táº¡m — má»i field (high score, unlock, hai volume) cÃ²n Ä‘Ãºng sau "restart"; monotonic score/unlock giá»¯ sau restart; `GameManager::getSaveManager()` luÃ´n tráº£ vá» cÃ¹ng má»™t instance (composition root).
   4. **Docs sync**: README controls Ä‘Ãºng `Shift = Run`, `X = Shoot` vÃ  Ä‘á»§ 12 test suite; FILE_STRUCTURE bá» file phantom (`implementation_plan_sprint5_error.md`, `docs/PLAN_TV1.md`, `ui/Button.*`) vÃ  khá»›p cÃ¢y file tháº­t; class_diagram bá»• sung `GameManager::getSaveManager()`/`m_saveManager`, `SaveManager` API tháº­t, default character MARIO; tracker/bug register cáº­p nháº­t báº±ng chá»©ng tháº­t (12/12, target `SuperMario`, SaveManager REVIEW).
-  5. **S6-TV1-33**: Sprint 5 error plan khÃ´ng tá»“n táº¡i trong repo â€” Ä‘Ã£ gá»¡ má»i link/claim (FILE_STRUCTURE) vÃ  ghi lÃ½ do vÃ o tracker, khÃ´ng bá»‹a file/banner.
+  5. **S6-TV1-33**: Sprint 5 error plan khÃ´ng tá»“n táº¡i trong repo — Ä‘Ã£ gá»¡ má»i link/claim (FILE_STRUCTURE) vÃ  ghi lÃ½ do vÃ o tracker, khÃ´ng bá»‹a file/banner.
 
 ### Entry #30: [Fix Death & Completion High Score Persistence + Save Logging] - Save high score immediately on death/completion (BUG-027 / S6-TV1-19)
 - **Tráº¡ng thÃ¡i:** ÄÃ£ hoÃ n thÃ nh, build & test pass 100% (12/12 ctest passed).
@@ -833,7 +833,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   1. Replaced background pixels matching color `RGB(108, 106, 255)` with fully transparent pixels `RGBA(0, 0, 0, 0)` in `items_objects.png` (2,019 pixels) and `MarioLuigi.png` (1,327 pixels). `items_blocks.png` was verified to already be free of `(108, 106, 255)` background pixels.
   2. Verified all 3 texture files contain 0 remaining opaque pixels with color `(108, 106, 255)`.
 
-> Entries 43â€“46 below are dated implementation snapshots. Their 20/20 and
+> Entries 43–46 below are dated implementation snapshots. Their 20/20 and
 > four-level-completion statements are historical and are not current RC
 > evidence; the current 21/21 Debug result and remaining gates are recorded in
 > Entry 47.
@@ -841,7 +841,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 43. Sprint 7 TV1 4-Level Release Contract & Test Synchronization (`S7-TV1-01`..`04`)
 - **Date:** 2026-08-15
 - **Author:** TV1 (DÆ°Æ¡ng)
-- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/core/LevelCatalog.h`
   - `levels/level4.txt`
@@ -860,7 +860,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 44. Level / Stage Select UI & Navigation Integration (`LevelSelectState`)
 - **Date:** 2026-08-15
 - **Author:** TV1 (DÆ°Æ¡ng)
-- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -869,7 +869,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 45. Stage Select UI Polish: Clean Snapshot Previews & Streamlined Layout
 - **Date:** 2026-08-15
 - **Author:** TV1 (DÆ°Æ¡ng)
-- **Status:** Historical snapshot â€” completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
+- **Status:** Historical snapshot — completed then; clean build and 20/20 CTest suites passed. Not current RC evidence.
 - **Modified Files:**
   - `include/states/LevelSelectState.h`
   - `src/states/LevelSelectState.cpp`
@@ -889,7 +889,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 ### 46. Code Review Remediation for Commit `cc80466` (P0/P1/P2 Quality & Performance Fixes)
 - **Date:** 2026-08-15
 - **Author:** TV1 (DÆ°Æ¡ng)
-- **Status:** Historical snapshot â€” completed then; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate). Not current RC evidence.
+- **Status:** Historical snapshot — completed then; clean build with 0 warnings, 20/20 CTest suites passed (100% pass rate). Not current RC evidence.
 - **Modified Files:**
   - `include/items/Item.h`
   - `include/items/Coin.h`
@@ -905,24 +905,24 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
   - `tests/LevelValidatorTests.cpp`
   - `docs/change_in_develop.md`
 - **Logic Changes:**
-  1. **P0/P1 â€” Dynamic Cast Elimination in Hot Loop (`Level.cpp`)**:
+  1. **P0/P1 — Dynamic Cast Elimination in Hot Loop (`Level.cpp`)**:
      - Added `virtual bool isCoin() const { return false; }` in `include/items/Item.h`.
      - Overrode `bool isCoin() const override { return true; }` in `include/items/Coin.h`.
      - Replaced `dynamic_cast<const Coin*>` inside `Level::checkItemCollisions()` with `item->isCoin()` virtual check and safe `static_cast<const Coin*>`, completely removing RTTI overhead in the hot collision loop (adhering to `AGENTS.md` Rule #5).
-  2. **P0/P1 â€” Mario Update Function Length & Physics Sync Order (`Mario.cpp`)**:
+  2. **P0/P1 — Mario Update Function Length & Physics Sync Order (`Mario.cpp`)**:
      - Moved `syncPhysics()` unconditionally to line 1 of `Mario::update(float dt)`, ensuring Box2D physics solver state is always synchronized before any movement logic runs (adhering to `AGENTS.md` Rule #3).
      - Decomposed the ~176-line `Mario::update()` into 5 clean, focused helper methods: `handleDeathPhase(dt)`, `handleTransformPhase(dt)`, `handleSpawnPhase(dt)`, `updateMovementAnimations(dt)`, and `applyWorldBoundsClamp()`.
      - Reduced `Mario::update()` to ~40 lines, strictly complying with the 40-50 line convention.
-  3. **P0/P1 â€” Level Update Function Length Deconstruction (`Level.cpp`)**:
+  3. **P0/P1 — Level Update Function Length Deconstruction (`Level.cpp`)**:
      - Decomposed the ~235-line `Level::update()` by extracting `updateFlagSequence(dt)`, `updateEntities(dt)`, and `updateExplosions()`.
      - Reduced `Level::update()` to ~45 lines.
-  4. **P2 â€” Decomposed `onEnter()` in Select States (`LevelSelectState.cpp`, `CharacterSelectState.cpp`)**:
+  4. **P2 — Decomposed `onEnter()` in Select States (`LevelSelectState.cpp`, `CharacterSelectState.cpp`)**:
      - Split `LevelSelectState::onEnter()` into `initStageTextures()`, `initBackdropPanel()`, `initTextLabels()`, and `initStageCards()`.
      - Split `CharacterSelectState::onEnter()` into `initBackdropPanel()`, `initCards()`, `initAvatars()`, `initTextLabels()`, and `initMenu()`.
      - Silenced nodiscard compiler warning for image loading in fallback preview path.
-  5. **P2 â€” Cleaned Trailing Empty Lines in `levels/level4.txt`**:
+  5. **P2 — Cleaned Trailing Empty Lines in `levels/level4.txt`**:
      - Removed trailing empty lines 26-27 so `level4.txt` conforms cleanly to rectangular map bounds.
-  6. **P2 â€” Extended `LevelValidatorTests.cpp` Coverage**:
+  6. **P2 — Extended `LevelValidatorTests.cpp` Coverage**:
      - Added `testProductionLevelsLoad()` ensuring all 4 release levels (`level1.txt`, `level2.txt`, `level3.txt`, `level4.txt`) are validated for valid non-zero dimensions, single Mario spawn (`M`), single Flagpole (`F`/`T`), and valid parsing.
   7. **Release Gate Verification**:
      - Ran full CTest suite: all 20/20 test suites passed in 8.79s with 0 failures at that historical snapshot; this is not current RC evidence.
@@ -1332,13 +1332,13 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Integrated `Firebar` damage overlap loops in `Level::updateEntities` for both Player 1 (`m_mario`) and Player 2 (`m_mario2`).
   3. **Authentic NES World 1-4 Map Recreation (`levels/level4.txt`)**:
      - Rebuilt the full 168x16 Castle World 1-4 layout matching Ian Albert's verified NES level map:
-       - **Section 1 (Cols 0â€“17)**: Low ceiling entry chamber, downward stone staircase, lava pit with leaping Podoboo (`P`), and post-pit platform.
-       - **Section 2 (Cols 18â€“36)**: High chamber, Question block (`?`), ceiling Firebar (`e`), double lava pits with Podoboos, and central stone island with Firebar mount.
-       - **Section 3 (Cols 37â€“74)**: Long stone corridor with alternating ceiling and floor Firebars (`e`), patrolling Koopa (`K`), and Fire Flower block (`f`).
-       - **Section 4 (Cols 75â€“110)**: Stepping stone platforms (`B`) over double lava pits with leaping Podoboos, 1-Up Mushroom (`U`), Starman (`O`), and springboard (`J`).
-       - **Section 5 (Cols 111â€“125)**: Low ceiling narrow entryway to the boss arena.
-       - **Section 6 (Cols 126â€“153)**: High-vaulted Bowser Boss Chamber with wide lava pit, authentic 11-tile suspended collapsible bridge (`===========`), Bowser boss (`X`), and Bowser Axe (`A`).
-       - **Section 7 (Cols 154â€“168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
+       - **Section 1 (Cols 0–17)**: Low ceiling entry chamber, downward stone staircase, lava pit with leaping Podoboo (`P`), and post-pit platform.
+       - **Section 2 (Cols 18–36)**: High chamber, Question block (`?`), ceiling Firebar (`e`), double lava pits with Podoboos, and central stone island with Firebar mount.
+       - **Section 3 (Cols 37–74)**: Long stone corridor with alternating ceiling and floor Firebars (`e`), patrolling Koopa (`K`), and Fire Flower block (`f`).
+       - **Section 4 (Cols 75–110)**: Stepping stone platforms (`B`) over double lava pits with leaping Podoboos, 1-Up Mushroom (`U`), Starman (`O`), and springboard (`J`).
+       - **Section 5 (Cols 111–125)**: Low ceiling narrow entryway to the boss arena.
+       - **Section 6 (Cols 126–153)**: High-vaulted Bowser Boss Chamber with wide lava pit, authentic 11-tile suspended collapsible bridge (`===========`), Bowser boss (`X`), and Bowser Axe (`A`).
+       - **Section 7 (Cols 154–168)**: Royal end chamber with Toad / Princess Peach room and flagpole exit sequence markers (`T`, `F`, `|`).
   4. **Release Gate Verification**:
      - Clean build succeeded and all 31/31 CTest test suites passed with 0 errors (100% pass rate).
 
@@ -1792,7 +1792,7 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
      - Changed combat impact from lethal damage/powerdown to **Stun Status Effect**: Bowser's shockwave now inflicts a .2\text{s}$ stun (mario->stun(1.2f)) rather than stripping lives/power-ups.
   2. **Mario Stun Mechanism & Orbiting Dizzy Stars (Mario.h, Mario.cpp)**:
      - Added stun(float duration) and isStunned() to Mario: freezes horizontal player movement intent and disables jump triggers for the stun duration while maintaining full physics gravity/grounding.
-     - Implemented Mario::draw override to render 3 rotating golden dizzy stars (â˜…) orbiting in an elliptical trajectory around Mario's head while stunned.
+     - Implemented Mario::draw override to render 3 rotating golden dizzy stars (★) orbiting in an elliptical trajectory around Mario's head while stunned.
   3. **Verification**:
      - Verified with full CTest suite: all 38/38 test suites passed 100% in 17.79s.
 ### 83. Bowser Boss: 2D Horizontal Ground Shockwave Wave Crests & Energy Beam VFX
@@ -1865,7 +1865,8 @@ uploading the tileset; it does not remove gameplay colors such as castle holes.
 - **Detailed Logic Changes:**
   1. **Long-Range Elevator AI Tracking (BulletBillLauncher.h, BulletBillLauncher.cpp)**:
      - Expanded horizontal activation reach (RANGE) from \text{px} \to 850\text{px}$ ($\sim 26.5$ tiles), allowing the cannon to detect and engage Mario across the entire elevator corridor and boss approach.
-     - Tuned dynamic pitch elevation tracking (awPitch clamped to $\pm 20^\circ$) to aim at Mario riding the elevator or vaulting across platforms while keeping bullet trajectories fully bounded within the level.
+     - Tuned dynamic pitch elevation tracking (
+awPitch clamped to $\pm 20^\circ$) to aim at Mario riding the elevator or vaulting across platforms while keeping bullet trajectories fully bounded within the level.
   2. **Multi-Tier Cannon Defense System in Level 4 (levels/level4.txt)**:
      - Added a second Turtle Cannon battery D at column 99 overlooking the elevator entrance, paired with the rampart cannon at column 143 to create a 2-tier crossfire fortress covering both the elevator route and the Bowser bridge.
   3. **Verification**:

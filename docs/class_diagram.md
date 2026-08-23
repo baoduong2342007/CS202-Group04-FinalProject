@@ -10,7 +10,7 @@ relations with usage relations.
 - `*--` is composition: the left object owns the component's lifetime
   (usually a by-value member or a `std::unique_ptr`).
 - `o--` is aggregation/non-owning recording; `-->` and `..>` are references,
-  calls, or return types â€” they transfer no ownership.
+  calls, or return types — they transfer no ownership.
 - Cardinality labels (`1`, `0..1`, `0..*`, `2`) reflect the runtime
   members/collections, not the number of statically created C++ classes.
   `<<RAII token>>` is a role declared or shown directly in the code.

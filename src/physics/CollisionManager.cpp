@@ -1200,7 +1200,10 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                         koopa->setDefeatOwner(mario);
                         koopa->kick(kickDir);
                     }
-                } else if (Enemy* enemy = otherParticipant.enemy()) {
+                } else {
+                    // The outer guard above already confirmed an enemy
+                    // participant, so this pointer is never null here.
+                    Enemy* enemy = otherParticipant.enemy();
                     if (enemy->getSubtype() == Entity::EntitySubtype::BULLET_BILL) {
                         auto* bullet = static_cast<BulletBill*>(enemy);
                         const float rad = bullet->getAngle() * 3.14159265358979323846f / 180.f;
@@ -1226,8 +1229,6 @@ void CollisionManager::handleMarioCollision(Mario* mario,
                     } else {
                         mario->queuePowerDown();
                     }
-                } else {
-                    mario->queuePowerDown();
                 }
             }
         }

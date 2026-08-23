@@ -86,6 +86,19 @@ The source sheet is a composited image without alpha. The three background color
 
 `#214...#279` are Palette 0 Overworld/Underground components (pipes and scenery), and `#280...#345` are Palette 0 Castle/Underwater components. Therefore the old labels such as "White Slopes" and "Peach/Toad Room" for those regions are no longer used. The sheet has a bush in the assembled Overworld region, but `levels/level3.txt` is a Castle level with no bush symbol; do not add bushes to Level 3 merely because they appear on the reference sheet.
 
+### 7. Bullet Bill Cannon (Turtle Cannon) themed cells
+
+The launcher renders three stacked 16 x 16 cells (top turret, body, base) selected per `LevelTheme` at runtime by `BulletBillLauncher::getCannonParts()` (`src/entities/BulletBillLauncher.cpp`). Legacy rows #74-#76 above cover only the Overworld column; the themed variants live in separate atlas columns and are listed here because they have no legacy crop numbers:
+
+| Theme | Top turret | Body | Base |
+|---|---|---|---|
+| Overworld | (119, 17) | (119, 34) | (119, 51) |
+| Underground | (266, 17) | (266, 34) | (266, 51) |
+| Castle | (119, 102) | (119, 119) | (119, 136) |
+| Underwater | (266, 102) | (266, 119) | (266, 136) |
+
+All cells are 16 x 16 px from `assets/textures/tiles/tileset.png`, drawn at 2x scale. The top turret rotates around the hinge `{8.f, 12.f}` to track the player's aim angle.
+
 ---
 
 ## Legacy component crop table (coordinates kept; the legacy-meaning column is not used)
@@ -165,9 +178,9 @@ The source sheet is a composited image without alpha. The three background color
 | **#71** | (637, 33) | 16 x 16 px | `object_071.png` | Underwater Fence / Gate |
 | **#72** | (654, 33) | 16 x 16 px | `object_072.png` | Underwater Fence / Gate |
 | **#73** | (0, 50) | 16 x 16 px | `object_073.png` | Stone Stair Block |
-| **#74** | (17, 50) | 16 x 16 px | `object_074.png` | Bullet Bill Cannon - top, barrel, base |
-| **#75** | (34, 50) | 16 x 16 px | `object_075.png` | Bullet Bill Cannon - top, barrel, base |
-| **#76** | (51, 50) | 16 x 16 px | `object_076.png` | Bullet Bill Cannon - top, barrel, base |
+| **#74** | (17, 50) | 16 x 16 px | `object_074.png` | Bullet Bill Cannon - top, barrel, base (Overworld variant, see Themed Cannon Cells) |
+| **#75** | (34, 50) | 16 x 16 px | `object_075.png` | Bullet Bill Cannon - top, barrel, base (Overworld variant, see Themed Cannon Cells) |
+| **#76** | (51, 50) | 16 x 16 px | `object_076.png` | Bullet Bill Cannon - top, barrel, base (Overworld variant, see Themed Cannon Cells) |
 | **#77** | (68, 50) | 16 x 16 px | `object_077.png` | Trampoline / Spring - (owned by an Entity) |
 | **#79** | (147, 50) | 16 x 16 px | `object_079.png` | Flag Pole - Flag (scaled down) |
 | **#80** | (164, 50) | 16 x 16 px | `object_080.png` | Pipe - rim, barrel and base pieces (green/white) |

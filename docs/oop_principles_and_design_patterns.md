@@ -1,4 +1,4 @@
-# OOP and Design Patterns in SuperMario
+﻿# OOP and Design Patterns in SuperMario
 
 ## Scope, audience, and how to read
 
@@ -6,7 +6,7 @@ This document is a quick entry point for new or junior developers who want to
 understand **why** the code is organized the way it is and which classes an
 in-game operation passes through. The content describes the implementation
 that exists in the repository; wherever something is a design benefit or an
-inference, it is called out explicitly — this is not a promise that every
+inference, it is called out explicitly â€” this is not a promise that every
 class is textbook-perfect.
 
 Read in the following order if you are new to the codebase:
@@ -94,7 +94,7 @@ private and provides `getEntities()` as a read-only `EntityView`.
 A runtime example: input code never edits Mario's Box2D velocity directly.
 A command calls `Mario::moveRight()` or sets an intent; only
 `Mario::update/preparePhysics` applies the physics invariants. Similarly,
-`PlayState` never `delete`s an entity itself — it hands the `unique_ptr` to
+`PlayState` never `delete`s an entity itself â€” it hands the `unique_ptr` to
 `Level`.
 
 **Limits to remember:** some getters return non-owning raw pointers (e.g.
@@ -183,18 +183,18 @@ following level of support:
 
 | Principle | Evidence in the repository | Bounded conclusion |
 | --- | --- | --- |
-| **S — Single Responsibility**: a class should have one reason to change | `InputHandler` handles binding/dispatch; `EventBus` handles subscription/notify; `SaveManager` handles save read/write. | Good separation at these boundaries, but `PlayState` and `Level` remain large orchestrators (input, transitions, gameplay/render), so do not claim perfect SRP. |
-| **O — Open/Closed**: extend through seams, limit client edits | `ICommand` for new commands; `EntityCreator` for new creator families; `EntityFactory` returns the `Entity` base. | A new enemy/item still requires adding an enum and a `switch` case in a creator; `SpawnRequest` is a closed `variant`. Extensible, but not fully closed against mapping edits. |
-| **L — Liskov Substitution**: subclasses usable wherever the base is | `Level` runs every `unique_ptr<Entity>` through `update`; states run through `IGameState`; enemies/items keep the virtual contracts. | True for the shared contract, but the code still uses subtype/capability checks and casts when specific policy is needed. Do not assume every base method is equally meaningful in every subclass. |
-| **I — Interface Segregation**: small interfaces, clients not forced to depend on extra methods | `ICommand::execute`, `IObserver::onNotify`, `IMarioState` split by role; `IGameState` has only lifecycle/frame APIs. | These are useful narrow boundaries. In contrast `Entity` carries physics, render, identity, collision, and spawn hooks; that interface is wide because of current needs. |
-| **D — Dependency Inversion**: depend on abstractions, not concretions | `GameManager` holds `unique_ptr<IGameState>`, EventBus calls `IObserver`, the factory calls `EntityCreator`. | `PlayState` still includes concrete commands/states; `Level` includes concrete entities and `GameManager` reaches Singletons. DIP is applied selectively, not as system-wide dependency injection. |
+| **S â€” Single Responsibility**: a class should have one reason to change | `InputHandler` handles binding/dispatch; `EventBus` handles subscription/notify; `SaveManager` handles save read/write. | Good separation at these boundaries, but `PlayState` and `Level` remain large orchestrators (input, transitions, gameplay/render), so do not claim perfect SRP. |
+| **O â€” Open/Closed**: extend through seams, limit client edits | `ICommand` for new commands; `EntityCreator` for new creator families; `EntityFactory` returns the `Entity` base. | A new enemy/item still requires adding an enum and a `switch` case in a creator; `SpawnRequest` is a closed `variant`. Extensible, but not fully closed against mapping edits. |
+| **L â€” Liskov Substitution**: subclasses usable wherever the base is | `Level` runs every `unique_ptr<Entity>` through `update`; states run through `IGameState`; enemies/items keep the virtual contracts. | True for the shared contract, but the code still uses subtype/capability checks and casts when specific policy is needed. Do not assume every base method is equally meaningful in every subclass. |
+| **I â€” Interface Segregation**: small interfaces, clients not forced to depend on extra methods | `ICommand::execute`, `IObserver::onNotify`, `IMarioState` split by role; `IGameState` has only lifecycle/frame APIs. | These are useful narrow boundaries. In contrast `Entity` carries physics, render, identity, collision, and spawn hooks; that interface is wide because of current needs. |
+| **D â€” Dependency Inversion**: depend on abstractions, not concretions | `GameManager` holds `unique_ptr<IGameState>`, EventBus calls `IObserver`, the factory calls `EntityCreator`. | `PlayState` still includes concrete commands/states; `Level` includes concrete entities and `GameManager` reaches Singletons. DIP is applied selectively, not as system-wide dependency injection. |
 
 When reviewing a change, ask "which seam must stay stable?" instead of adding
 interfaces just to spell SOLID. If you truly need to swap physics or the
 EventBus, that is the moment to consider injection; do not casually change a
 public contract during a small entity task.
 
-## 5. The Singleton pattern — one access point for shared services
+## 5. The Singleton pattern â€” one access point for shared services
 
 ### Meaning and the real participants
 
@@ -252,7 +252,7 @@ The simple workflow:
 `src/core/TextureManager.cpp:15-21`,
 `include/core/SaveManager.h:22-26`.
 
-## 6. The Command pattern — turning input into swappable requests
+## 6. The Command pattern â€” turning input into swappable requests
 
 ### Problem and participants
 
@@ -266,7 +266,7 @@ Command wraps a request into an object.
 | Invoker/registry | `InputHandler`, mapping keys to `vector<Binding>` in `include/patterns/InputHandler.h:40-80` |
 | Concrete commands | `JumpCommand`, `MoveLeftCommand`, `MoveRightCommand`, `PauseCommand`; `RunCommand`/`ShootCommand` wrap callbacks |
 | Receiver | `Mario` for move/jump; a `PlayState` callback invoking `Level::requestFireBallShot`; Pause publishes an event |
-| Wiring/client | `PlayState::rebindCommands()` in `src/states/PlayState.cpp:62-132` |
+| Wiring/client | `PlayState::rebindCommands()` in `src/states/PlayState.cpp:62-134` |
 
 ### One-frame workflow
 
@@ -276,7 +276,7 @@ Command wraps a request into an object.
 2. `PlayState::processInput()` resets intents so stale input does not "leak"
    across pause or transitions, then calls
    `m_inputHandler.handleInput(inputState)`
-   (`src/states/PlayState.cpp:339-380`).
+   (`src/states/PlayState.cpp:416-457`).
 3. `InputHandler` checks triggers. For a bound key it calls
    `binding.command->execute()` (`src/patterns/InputHandler.cpp:34-95`).
    `Horizontal`/`Vertical` bindings additionally pick the key with the newest
@@ -300,7 +300,7 @@ State/Observer decide how the system reacts.
   only a non-owning pointer. Commands hold a raw `Mario*`/callback, so they
   must be rebound after every `Level` reload.
 - This is not an undo/redo system: `ICommand` currently has only
-  `execute()` — no `undo()`, history, or request queue.
+  `execute()` â€” no `undo()`, history, or request queue.
   `gameplayEnabled=false` drops the current input; it does not buffer it.
 - To add an action: create a class implementing `ICommand` (or reuse a
   callback command), bind it with the proper trigger/group in
@@ -313,7 +313,7 @@ State/Observer decide how the system reacts.
 `src/patterns/JumpCommand.cpp:15-23`,
 `src/patterns/PauseCommand.cpp:18-23`.
 
-## 7. The Observer pattern — one event, many reactions
+## 7. The Observer pattern â€” one event, many reactions
 
 ### Problem and participants
 
@@ -375,12 +375,12 @@ observers register themselves.
 `include/patterns/IObserver.h:14-26`,
 `include/patterns/GameEvent.h:38-61`,
 `src/patterns/EventBus.cpp:210-271`,
-`src/states/PlayState.cpp:224-258`,
+`src/states/PlayState.cpp:281-312`,
 `src/ui/HUD.cpp:112-146`,
 `src/core/SoundManager.cpp:45-109`,
-`src/physics/CollisionManager.cpp:522-595`.
+`src/physics/CollisionManager.cpp:521-594`.
 
-## 8. The State pattern — swapping the rule set based on the current state
+## 8. The State pattern â€” swapping the rule set based on the current state
 
 The project has **two State layers** that are related but must not be
 confused:
@@ -441,7 +441,7 @@ pushed into the four state classes. `Mario` still holds the enum, the state
 transitions, timers, animation setup, the fixture, and much of the
 movement/damage policy; the states' `update()` is still minimal. So describe
 it as "Mario has a State seam for forms, of which production currently uses
-the brick-breaking capability" — not as a promise that each form is an
+the brick-breaking capability" â€” not as a promise that each form is an
 independent gameplay engine.
 
 **Evidence:** `include/states/IGameState.h:19-35`,
@@ -449,11 +449,11 @@ independent gameplay engine.
 `src/core/GameManager.cpp:44-113`,
 `include/states/IMarioState.h:17-33`,
 `include/entities/Mario.h:54-63`, `include/entities/Mario.h:187-205`,
-`src/entities/Mario.cpp:937-989`, `src/entities/Mario.cpp:1050-1134`,
-`src/entities/Mario.cpp:1461-1467`,
+`src/entities/Mario.cpp:963-1015`, `src/entities/Mario.cpp:1076-1161`,
+`src/entities/Mario.cpp:1486-1493`,
 `include/states/SmallMarioState.h:10-24`.
 
-## 9. The Factory Method pattern — creating objects through a creator seam
+## 9. The Factory Method pattern â€” creating objects through a creator seam
 
 ### Problem and participants
 
@@ -476,7 +476,7 @@ abstraction.
 
 1. `Level::spawnEntitiesFromTileMap()` creates an `EntityFactory`, walks
    `SPAWN_CODES`, converts tiles to world position/theme and builds
-   `SpawnRequest::tile(code, worldPos)` (`src/level/Level.cpp:625-677`).
+   `SpawnRequest::tile(code, worldPos)` (`src/level/Level.cpp:685-750`).
 2. `EntityFactory::create` uses `std::visit` on the payload. Enemies pick
    `EnemyCreator`, items pick `ItemCreator`, char/tile picks
    `WorldObjectCreator` (`src/patterns/EntityFactory.cpp:18-34`).
@@ -487,7 +487,7 @@ abstraction.
 4. When an entity exists, Level sets the `TextureManager`; enemies get the
    `TileMap` attached; then
    `m_entities.push_back(std::move(entity))`. From then on Level is the
-   single owner — update/render/remove go through the base interface and the
+   single owner â€” update/render/remove go through the base interface and the
    destructor cleans up.
 
 Mario is a deliberate exception: `Level` creates Mario directly at line 634
@@ -518,7 +518,7 @@ centralizes enemy, item, and world-object spawning from the map.
 `src/patterns/EnemyCreator.cpp:24-76`,
 `src/patterns/ItemCreator.cpp:16-36`,
 `src/patterns/WorldObjectCreator.cpp:31-116`,
-`src/level/Level.cpp:625-677`.
+`src/level/Level.cpp:685-750`.
 
 ## 10. Workflows connecting OOP and the patterns
 
@@ -570,6 +570,13 @@ A publisher may still call direct methods (e.g. Level calling
 `item->onCollect`), but the global notification part is Observer. Do not
 label the entire call graph as EventBus.
 
+**Direct-damage exception:** the Bullet Bill contact policy in
+`CollisionManager::handleMarioCollision()` calls `Mario::loseLife()` or
+`queuePowerDown()` straight from the lateral-collision branch (front-nose
+impact = instant death, rear brush = power-down) without creating a defeat
+transaction. The Observer flow still starts afterwards, because `loseLife()`
+itself publishes `PLAYER_DIED`.
+
 ### 10.4 Power-up -> Mario State -> event
 
 The item calls `Mario::powerUp`; Mario validates the upgrade, queues if the
@@ -587,17 +594,17 @@ SMALL, `loseLife()` decrements a life then publishes `PLAYER_DIED`.
 There are two terminal flows to keep clearly separated:
 
 1. `Mario::loseLife()` publishes `PLAYER_DIED` at
-   `src/entities/Mario.cpp:1143-1200`. `PlayState::onNotify()` only shakes
+   `src/entities/Mario.cpp:1169-1228`. `PlayState::onNotify()` only shakes
    the camera, saves the score, and sets `m_isReloadPending` or
-   `m_isGameOverPending` (`src/states/PlayState.cpp:279-309`). After the
+   `m_isGameOverPending` (`src/states/PlayState.cpp:349-386`). After the
    death animation completes or the fallback timer expires,
    `PlayState::update()` sets `m_needsReload`/`m_needsGameOver` and calls
    `navigateToLevel()` or queues `changeState(GameOverState)`
-   (`src/states/PlayState.cpp:569-606`).
+   (`src/states/PlayState.cpp:656-694`).
 2. `LEVEL_COMPLETED` reaches `PlayState::onNotify()` to snapshot progress and
-   start the fade (`src/states/PlayState.cpp:314-329`). Inside
+   start the fade (`src/states/PlayState.cpp:391-406`). Inside
    `updateTransition()`, only passing the final level queues `WinState`;
-   otherwise the next level loads (`src/states/PlayState.cpp:640-660`).
+   otherwise the next level loads (`src/states/PlayState.cpp:727-732`).
 
 `GameManager` applies these requests only at safe points. The chain
 illustrates State + Observer + composition ownership + deferred mutation; do
@@ -610,7 +617,7 @@ not call `changeState` directly from code iterating `m_stateStack`.
 1. Identify the receiver and its lifetime: the current Mario, Level, or a
    safe callback.
 2. Create a class deriving from `ICommand`, implement `execute()`; hold
-   non-owning dependencies or a small callback — never manage the receiver
+   non-owning dependencies or a small callback â€” never manage the receiver
    yourself.
 3. Bind with a `unique_ptr` inside `PlayState::rebindCommands()` using the
    right `Pressed/Held/Released` and `InputGroup`.
@@ -722,14 +729,14 @@ not call `changeState` directly from code iterating `m_stateStack`.
 | Topic | Read first |
 | --- | --- |
 | Entity hierarchy, virtual contract, capability | `include/entities/Entity.h:31-42`; `include/entities/Entity.h:116-135`; `include/entities/Character.h:17-31`; `include/entities/Enemy.h:21-42`; `include/items/Item.h:14-42` |
-| Level/entity ownership | `include/level/Level.h:192-201`; `src/level/Level.cpp:625-677`; `src/level/Level.cpp:986-1065`; `src/level/Level.cpp:1643-1651` |
-| Game loop/State manager | `src/core/Game.cpp:105-140`; `include/core/GameManager.h:26-74`; `src/core/GameManager.cpp:32-113` |
+| Level/entity ownership | `include/level/Level.h:210-218`; `src/level/Level.cpp:685-750`; `src/level/Level.cpp:1102-1238`; `src/level/Level.cpp:1174-1182` |
+| Game loop/State manager | `src/core/Game.cpp:78-103`; `include/core/GameManager.h:26-74`; `src/core/GameManager.cpp:32-113` |
 | Singleton services | `include/core/GameManager.h:19-50`; `include/patterns/EventBus.h:36-58`; `include/core/SoundManager.h:116-130`; `include/core/TextureManager.h:23-33`; `include/core/TextureManager.h:64-84`; `src/core/TextureManager.cpp:15-21` |
-| Command input | `include/patterns/ICommand.h:16-20`; `include/patterns/InputHandler.h:40-80`; `src/patterns/InputHandler.cpp:10-95`; `src/states/PlayState.cpp:339-380` |
+| Command input | `include/patterns/ICommand.h:16-20`; `include/patterns/InputHandler.h:40-80`; `src/patterns/InputHandler.cpp:10-95`; `src/states/PlayState.cpp:416-457` |
 | Observer/event lifetime | `include/patterns/EventBus.h:36-57`; `include/patterns/Subscription.h:23-48`; `src/patterns/EventBus.cpp:210-271` |
-| Game/Mario State | `include/states/IGameState.h:19-35`; `include/states/IMarioState.h:17-33`; `src/entities/Mario.cpp:937-989` |
-| Factory Method | `include/patterns/EntityFactory.h:20-50`; `include/patterns/EntityCreator.h:14-20`; `src/patterns/EntityFactory.cpp:18-59`; `src/level/Level.cpp:625-677` |
-| Collision -> event | `src/physics/ContactListener.cpp:14-25`; `src/physics/CollisionManager.cpp:724-763`; `src/physics/CollisionManager.cpp:522-595` |
+| Game/Mario State | `include/states/IGameState.h:19-35`; `include/states/IMarioState.h:17-33`; `src/entities/Mario.cpp:963-1015` |
+| Factory Method | `include/patterns/EntityFactory.h:20-50`; `include/patterns/EntityCreator.h:14-20`; `src/patterns/EntityFactory.cpp:18-59`; `src/level/Level.cpp:685-750` |
+| Collision -> event | `src/physics/ContactListener.cpp:14-25`; `src/physics/CollisionManager.cpp:724-763`; `src/physics/CollisionManager.cpp:521-594` |
 | Save ownership correction | `include/core/SaveManager.h:22-40`; `include/core/GameManager.h:42-42`; `include/core/GameManager.h:72-74` |
 
 ## Short glossary

@@ -26,7 +26,6 @@ constexpr const char* BOWSER_TEXTURE_PATH = "assets/textures/enemies/enemies.png
 constexpr const char* WALK_ANIMATION = "walk";
 constexpr const char* FIRE_WINDUP_ANIMATION = "fire_windup";
 constexpr const char* FIRE_EXHALE_ANIMATION = "fire_exhale";
-constexpr const char* THROW_ANIMATION = "throw";
 constexpr float BOWSER_FRAME_DURATION = 0.18f;
 
 const std::vector<sf::IntRect>& walkFrames(LevelTheme theme) {
@@ -69,33 +68,12 @@ const sf::IntRect& fireExhaleFrame(LevelTheme theme) {
     return SpriteFrames::legacy::Enemies::Bowser::UG_FIRE_POSE2;
 }
 
-const std::vector<sf::IntRect>& throwFrames(LevelTheme theme) {
-    if (theme == LevelTheme::UNDERWATER) {
-        static const std::vector<sf::IntRect> frames = {
-            SpriteFrames::legacy::Enemies::Bowser::UW_THROW_LEFT,
-            SpriteFrames::legacy::Enemies::Bowser::UW_THROW_RIGHT};
-        return frames;
-    }
-    if (theme == LevelTheme::OVERWORLD) {
-        static const std::vector<sf::IntRect> frames = {
-            SpriteFrames::legacy::Enemies::Bowser::THROW_LEFT,
-            SpriteFrames::legacy::Enemies::Bowser::THROW_RIGHT};
-        return frames;
-    }
-    static const std::vector<sf::IntRect> frames = {
-        SpriteFrames::legacy::Enemies::Bowser::UG_THROW_LEFT,
-        SpriteFrames::legacy::Enemies::Bowser::UG_THROW_RIGHT};
-    return frames;
-}
-
 } // namespace
 
 Bowser::Bowser(const sf::Vector2f& position,
                b2World* world,
-               LevelTheme theme,
-               bool hammerVariant)
+               LevelTheme theme)
     : Enemy(position, BOWSER_SIZE, FIREBALL_HITS_TO_KILL),
-      m_hammerVariant(hammerVariant),
       m_spawnOriginX(position.x),
       m_world(world),
       m_theme(theme) {
@@ -115,10 +93,6 @@ Bowser::Bowser(const sf::Vector2f& position,
     m_animationSystem->addAnimation(
         FIRE_EXHALE_ANIMATION,
         AnimationSystem::createManualAnimation({fireExhaleFrame(theme)},
-                                                BOWSER_FRAME_DURATION, true));
-    m_animationSystem->addAnimation(
-        THROW_ANIMATION,
-        AnimationSystem::createManualAnimation(throwFrames(theme),
                                                 BOWSER_FRAME_DURATION, true));
     playAnimation(WALK_ANIMATION);
 }

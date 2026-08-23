@@ -1,4 +1,4 @@
-# Design patterns running in Super Mario
+﻿# Design patterns running in Super Mario
 
 ## Scope and how to read
 
@@ -44,7 +44,7 @@ Notably, `SaveManager` is **not a Singleton**: its constructor is public
 
 ---
 
-## 1. Command — turning input into gameplay intent
+## 1. Command â€” turning input into gameplay intent
 
 ### Scenario: one frame with `X` pressed and `Right` held
 
@@ -140,17 +140,17 @@ sequenceDiagram
 | Concrete Command | `MoveRightCommand`, `ShootCommand`, `PauseCommand`, `RunCommand` | Encapsulates one action or callback; does not own `Mario`/`Level`. |
 | Receiver | `Mario`, `Level` | Receive the intent or request and decide the actual gameplay/physics. |
 
-`PlayState::rebindCommands()` installs the bindings (`src/states/PlayState.cpp:62-132`),
+`PlayState::rebindCommands()` installs the bindings (`src/states/PlayState.cpp:62-134`),
 `Game::update()` and `GameManager::processInput()` push input down
-(`src/core/Game.cpp:124-126`, `src/core/GameManager.cpp:103-106`). The dispatch
+(`src/core/Game.cpp:129-130`, `src/core/GameManager.cpp:103-106`). The dispatch
 loop, the `gameplayEnabled` branch, and the `pressOrder` selection live at
 `src/patterns/InputHandler.cpp:43-102`. `MoveRightCommand::execute()` calls
 `Mario::moveRight()` (`src/patterns/MoveRightCommand.cpp:17-21`), while the
 `ShootCommand` callback goes to `Level::requestFireBallShot()`
-(`src/states/PlayState.cpp:123-129`, `src/level/Level.cpp:1708-1749`).
+(`src/states/PlayState.cpp:123-129`, `src/level/Level.cpp:2000-2042`).
 Inside `Level::update()`, the subsequent physics beat preserves the order
 `m_mario->preparePhysics(dt) -> PhysicsEngine::update(...) ->
-processPendingFireballs()` (`src/level/Level.cpp:1169-1189`); the diagram calls
+processPendingFireballs()` (`src/level/Level.cpp:1294-1317`); the diagram calls
 `Mario::preparePhysics()` explicitly so it is not mistaken for a non-existent
 method of `Level`.
 
@@ -166,7 +166,7 @@ cooldown, Box2D lock, and entity ownership remain with `Level`.
 
 ---
 
-## 2. Factory Method — creating entities from a polymorphic request
+## 2. Factory Method â€” creating entities from a polymorphic request
 
 ### Scenario: tile `G` creates a `Goomba`
 
@@ -245,7 +245,7 @@ goes through the `char` payload and then `WorldObjectCreator`.
 | Orchestrator | `EntityFactory` | `std::visit` selects the creator at `src/patterns/EntityFactory.cpp:19-35`. |
 
 The real call-site is `Level::spawnEntitiesFromTileMap()`
-(`src/level/Level.cpp:625-677`). The `G -> Goomba` mapping lives at
+(`src/level/Level.cpp:685-750`). The `G -> Goomba` mapping lives at
 `src/patterns/WorldObjectCreator.cpp:32-47`, after which
 `src/patterns/EnemyCreator.cpp:24-78` calls the concrete constructor. The item
 mapping (`COIN`, `MUSHROOM`, `FIRE_FLOWER`, `STAR`) lives at
@@ -270,7 +270,7 @@ promise that every entity self-registers dynamically.
 
 ---
 
-## 3. Observer — gameplay events reaching the HUD and audio
+## 3. Observer â€” gameplay events reaching the HUD and audio
 
 ### Scenario: coin pickup, synchronous dispatch to two subscribers
 
@@ -362,10 +362,10 @@ HUD registration and the token lifecycle live at `src/ui/HUD.cpp:112-142`;
 audio registers for `COIN_COLLECTED` at `src/core/SoundManager.cpp:45-91`.
 `HUD::onNotify()` refreshes the display at `src/ui/HUD.cpp:146-190`, while
 SoundManager maps events to SFX at `src/core/SoundManager.cpp:109-184`. The
-coin pickup flow is invoked from `src/level/Level.cpp:1504-1550` (with a Box2D
+coin pickup flow is invoked from `src/level/Level.cpp:1714-1731` (with a Box2D
 fallback at `src/physics/CollisionManager.cpp:938-949`), then
 `Coin::awardTo()` -> `Mario::collectCoin()` at `src/items/Coin.cpp:147-168`
-and `src/entities/Mario.cpp:1367-1377`.
+and `src/entities/Mario.cpp:1392-1402`.
 
 `EventBus::notify()` snapshots then revalidates the lease before each callback
 (`src/patterns/EventBus.cpp:242-272`), so a callback may reset a subscription
@@ -383,12 +383,12 @@ Gameplay code does not need to include or call HUD/SoundManager directly;
 adding a new observer does not change `Mario::collectCoin()`. The event payload
 is value-only, so publishers exchange no ownership. The costs are indirection
 in the control flow and callback ordering that depends on registration order;
-dispatch remains synchronous — it is not a message queue or a background
+dispatch remains synchronous â€” it is not a message queue or a background
 thread. The token must outlive its observer and be kept by a suitable owner.
 
 ---
 
-## 4. Game State — state stack with deferred transitions
+## 4. Game State â€” state stack with deferred transitions
 
 ### Scenario: `Escape` opens `PauseState` at a safe point
 
@@ -488,9 +488,9 @@ sequenceDiagram
 only then `processPendingOps()` (`src/core/GameManager.cpp:76-95`);
 `applyOp(PUSH)` calls `onPause`, pushes the object, and calls `onEnter`
 (`src/core/GameManager.cpp:44-73`). `PlayState` registers `GAME_PAUSED`/enqueues
-the push at `src/states/PlayState.cpp:224-237` and
-`src/states/PlayState.cpp:272-332`; `PauseState` resumes via `popState()` at
-`src/states/PauseState.cpp:276-281`.
+the push at `src/states/PlayState.cpp:281-296` and
+`src/states/PlayState.cpp:349-410`; `PauseState` resumes via `popState()` at
+`src/states/PauseState.cpp:287-291`.
 
 `Bus -> SoundManager -> PlayState` in the diagram reflects the production
 registration order: `SoundManager` receives `GAME_PAUSED` first, then
@@ -513,7 +513,7 @@ state operation is delayed at least until the end of `update()`.
 
 ---
 
-## 5. Mario State — power-up states change capabilities
+## 5. Mario State â€” power-up states change capabilities
 
 ### Scenario: picking up a Mushroom, either growing immediately or waiting for clearance
 
@@ -639,17 +639,17 @@ sequenceDiagram
 | Concrete states | `SmallMarioState`, `SuperMarioState`, `SmallFireMarioState`, `SuperFireMarioState` | Return different capabilities and represent power tiers. |
 | Transition policy | `Mario::applyStateTransition()` | Checks body/clearance, builds the state object, fixture, and presentation. |
 
-The item pickup path lives at `src/level/Level.cpp:1523-1548`; the target
+The item pickup path lives at `src/level/Level.cpp:1714-1731`; the target
 state and re-entry branches live at `src/items/Mushroom.cpp:106-140`. Building
 the concrete state, growth deferral, and fixture rebuild live at
-`src/entities/Mario.cpp:937-1047`; the next-frame loop flushes pending growth
-at `src/entities/Mario.cpp:443-468`. Level asks for the capability before
-handling the tile hit at `src/level/Level.cpp:1197-1204`, while
+`src/entities/Mario.cpp:963-1074`; the next-frame loop flushes pending growth
+at `src/entities/Mario.cpp:465-475`. Level asks for the capability before
+handling the tile hit at `src/level/Level.cpp:1325-1329`, while
 `Mario::canBreakBricks()` delegates to `m_statePattern` at
-`src/entities/Mario.cpp:1465-1467`. In contrast,
+`src/entities/Mario.cpp:1490-1493`. In contrast,
 `Mario::canShootFireBall()` does not call `IMarioState::canShootFireBall()`;
 it checks `usesFire(m_marioState)` and `m_fireCooldown <= 0.0f` directly
-(`src/entities/Mario.cpp:1461-1463`).
+(`src/entities/Mario.cpp:1486-1488`).
 
 `IMarioState` declares `onEnter`, `onExit`, and `update` in the interface
 (`include/states/IMarioState.h:17-33`), but the current transitions **do not
@@ -670,7 +670,7 @@ A Mushroom picked up while Mario is already `SUPER`/`FIRE_SUPER` does not call
 damage, `Mario::powerDown()` is ignored while immune/star-powered/dying/
 transforming; the valid transitions are `FIRE_SUPER -> SUPER`,
 `FIRE_SMALL -> SMALL`, `SUPER -> SMALL`, while `SMALL` calls `loseLife()`
-(`src/entities/Mario.cpp:1111-1134`). This is why not every collision should
+(`src/entities/Mario.cpp:1137-1161`). This is why not every collision should
 be interpreted as a state change.
 
 ### Why the pattern helps
@@ -682,11 +682,11 @@ allows new tiers without changing callers. The trade-off is that body/fixture
 and animation must stay in sync with the state; blocked growth needs a
 pending marker so Box2D is not mutated while the world is locked. This state
 is also not an async state machine: swapping the concrete object is usually
-synchronous — only growth is held back until a safe `Mario::update()`.
+synchronous â€” only growth is held back until a safe `Mario::update()`.
 
 ---
 
-## 6. Singleton — shared infrastructure with a bounded lifetime
+## 6. Singleton â€” shared infrastructure with a bounded lifetime
 
 ### Scenario: the composition root grabs managers, then `Level` gets the resource manager
 
@@ -786,7 +786,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Instance/accessor | `GameManager`, `SoundManager`, `TextureManager`, `EventBus` | `getInstance()` returns a function-local `static` at `src/core/GameManager.cpp:27-30`, `src/core/SoundManager.cpp:40-43`, `src/core/TextureManager.cpp:15-18`, `src/patterns/EventBus.cpp:196-208`. |
 | Construction/copy guard | The four participants above | `GameManager` has a private constructor/destructor and deleted copies (`include/core/GameManager.h:23-50`); `SoundManager` has the accessor, deleted copy/move, and private constructor/destructor (`include/core/SoundManager.h:116-125`, `include/core/SoundManager.h:211-214`); `TextureManager` has deleted copies and a private constructor/destructor (`include/core/TextureManager.h:25-35`, `include/core/TextureManager.h:70-80`); `EventBus` has a private constructor/destructor and deleted copies (`include/patterns/EventBus.h:36-55`). |
-| Instance clients | `Game`, `PlayState`, `Level`, `main` | `Game` gets the Sound/Game managers and the first state (`src/core/Game.cpp:62-76`); `PlayState::onEnter()` calls `loadLevel()` (`src/states/PlayState.cpp:224-247`) then creates `Level` (`src/states/PlayState.cpp:490-504`); `Level` takes the texture reference (`src/level/Level.cpp:148-150`); `main` calls shutdown (`src/main.cpp:10-16`). |
+| Instance clients | `Game`, `PlayState`, `Level`, `main` | `Game` gets the Sound/Game managers and the first state (`src/core/Game.cpp:62-76`); `PlayState::onEnter()` calls `loadLevel()` (`src/states/PlayState.cpp:281-304`) then creates `Level` (`src/states/PlayState.cpp:583-601`); `Level` takes the texture reference (`src/level/Level.cpp:174-175`); `main` calls shutdown (`src/main.cpp:10-16`). |
 | Lifetime/resource boundary | `SoundManager`, `TextureManager` | The Sound destructor clears subscription tokens (`src/core/SoundManager.cpp:105-107`); `TextureManager::shutdown()` clears GPU resources under an `sf::Context` (`src/core/TextureManager.cpp:123-132`). |
 
 The flow above shows the concrete benefit: states/entities do not have to

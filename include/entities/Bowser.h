@@ -24,8 +24,7 @@ public:
 
     Bowser(const sf::Vector2f& position,
            b2World* world,
-           LevelTheme theme,
-           bool hammerVariant = false);
+           LevelTheme theme);
     ~Bowser() override = default;
 
     void update(float dt) override;
@@ -74,7 +73,6 @@ private:
     float m_stateTimer{0.f};
     float m_attackTimer{2.f};
     bool m_fireReleased{false};
-    bool m_hammerVariant{false};
     float m_enragedPulseTimer{0.f};
     bool m_wasAirborne{false};
     float m_previousVy{0.f};

@@ -112,16 +112,15 @@ bool shouldActivateEnemy(const Enemy& enemy, const sf::View& cameraView) {
 
 // Enemy and launcher targeting share the same horizontal proximity rule.
 // Player one is considered first and equal-distance ties stay with him.
-const Mario* nearestEligiblePlayer(const Mario* playerOne,
-                                   const Mario* playerTwo,
-                                   bool coopMode,
-                                   const sf::Vector2f& origin) {
-    const Mario* fallback = playerOne ? playerOne
-                                      : (coopMode ? playerTwo : nullptr);
-    const Mario* nearest = nullptr;
+Mario* nearestEligiblePlayer(Mario* playerOne,
+                             Mario* playerTwo,
+                             bool coopMode,
+                             const sf::Vector2f& origin) {
+    Mario* fallback = playerOne ? playerOne : (coopMode ? playerTwo : nullptr);
+    Mario* nearest = nullptr;
     float nearestDistance = 0.0f;
 
-    const auto consider = [&](const Mario* player) {
+    const auto consider = [&](Mario* player) {
         if (!player || !player->isActive() || player->isDying() ||
             player->isDead()) {
             return;
@@ -1139,7 +1138,7 @@ void Level::updateEntities(float dt) {
             enemy->activate();
         }
 
-        if (const Mario* target = nearestEligiblePlayer(
+        if (Mario* target = nearestEligiblePlayer(
                 m_mario.get(), m_mario2.get(), m_coopMode,
                 enemy->getPosition())) {
             const sf::Vector2f nearestPos = target->getPosition();
@@ -1157,7 +1156,7 @@ void Level::updateEntities(float dt) {
             } else if (enemy->isBowser()) {
                 auto* b = static_cast<Bowser*>(enemy);
                 b->updateMarioPosition(nearestPos);
-                b->updateMarioTarget(const_cast<Mario*>(target));
+                b->updateMarioTarget(target);
             }
         }
 

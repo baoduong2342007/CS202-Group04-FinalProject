@@ -1,5 +1,6 @@
 /**
  * @file BulletBill.h
+ * @author TV1, TV4
  * @brief Cannon-fired bullet enemy that flies in a straight line
  * @note Enemy expansion - SMB1-accurate: stompable for 200 points,
  *       fireball-proof, star kills it, never deflects from its path.
@@ -44,8 +45,10 @@ private:
 
     Direction m_direction;
     float m_angleDegrees{180.f};
-    bool m_isFlippedDead = false;
+    bool m_isFlippedDead{false};
 
+    static constexpr float PI = 3.14159265358979323846f;
     static constexpr float SPEED = 240.f;
+    static constexpr float DEATH_HOP_VELOCITY = -8.f;
     static constexpr float PIT_CLEANUP_Y = 800.f;
 };

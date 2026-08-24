@@ -25,7 +25,7 @@ CS202-Group04-FinalProject/
 
 Local-only, untracked directories also present in a working checkout — `build*/`, `Testing/` (CTest output), `agent_docs/`, `saves/` (runtime save files), `.cache/` — are generated/local state, not source (see the final section).
 
-- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 37 CTest suites.
+- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 38 CTest suites.
 - `CMakePresets.json` defines `mingw-debug`, `mingw-release`, and `mingw-tests`.
 - Sprint-6 evaluation notes (`Evaluate.md`) and the superseded weekly plan were removed on 2026-08-22; they remain historical artifacts recoverable from git history.
 
@@ -147,6 +147,7 @@ tests/
 |-- P2GameplayInterfaceTests.cpp
 |-- DisplayCameraUITests.cpp
 |-- CharacterFlowTests.cpp
+|-- LakituRespawnTests.cpp
 |-- StompScoreTests.cpp
 |-- PvpArenaTests.cpp
 |-- PvpStompTests.cpp

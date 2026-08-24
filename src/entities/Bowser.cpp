@@ -1,12 +1,10 @@
 /**
  * @file Bowser.cpp
+ * @author TV1, TV4
  * @brief Bowser boss implementation - pacing, hops, fire breath, lava sink
  */
 
 #include "entities/Bowser.h"
-#include "entities/BowserFire.h"
-#include "entities/Mario.h"
-#include "entities/FireballExplosion.h"
 
 #include <algorithm>
 #include <cmath>
@@ -18,6 +16,8 @@
 #include "core/ScoreRules.h"
 #include "core/SoundManager.h"
 #include "core/SpriteFrames_shared.h"
+#include "entities/BowserFire.h"
+#include "entities/Mario.h"
 
 namespace {
 
@@ -99,6 +99,7 @@ Bowser::Bowser(const sf::Vector2f& position,
 
 void Bowser::update(float dt) {
     syncPhysics();
+    m_lastDt = dt;
 
     if (m_state == State::DIE) {
         if (m_sprite) {
@@ -143,8 +144,8 @@ void Bowser::update(float dt) {
             patrol();
 
             // Anti-Air Intercept hop: if Mario is airborne attempting to vault over Bowser (e.g. from Springboard / Elevator)
-            if (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < 220.f &&
-                m_marioPosition.y < m_position.y - 15.f && std::abs(getVelocity().y) < 2.f &&
+            if (m_marioKnown && std::abs(m_marioPosition.x - m_position.x) < ANTI_AIR_RANGE &&
+                m_marioPosition.y < m_position.y - 15.f && std::abs(getVelocity().y) < GROUNDED_VY_MAX &&
                 m_attackTimer < 1.2f) {
                 sf::Vector2f velocity = getVelocity();
                 velocity.y = -HOP_SPEED * (enraged ? 1.35f : 1.2f);
@@ -160,7 +161,7 @@ void Bowser::update(float dt) {
                 m_attackTimer = nextAttack(rng);
 
                 // Attack choice:
-                // Enraged: 30% jump, 35% fire breath, 35% hammer toss
+                // Enraged: 30% jump, 70% fire breath
                 // Normal: 25% jump, 75% fire breath
                 std::uniform_int_distribution<int> attackDist(0, 99);
                 const int roll = attackDist(rng);
@@ -206,9 +207,9 @@ void Bowser::update(float dt) {
     // Only activates if Bowser actively jumped/hopped into the air (vy < -80.f)
     // and triggers the ground shockwave at the exact instant of impact with the floor
     const float vy = getVelocity().y;
-    if (vy < -80.f) {
+    if (vy < AIRBORNE_VY_THRESHOLD) {
         m_wasAirborne = true;
-    } else if (m_wasAirborne && m_previousVy > 30.f && std::abs(vy) < 2.f) {
+    } else if (m_wasAirborne && m_previousVy > LANDING_VY_MIN && std::abs(vy) < GROUNDED_VY_MAX) {
         triggerGroundStomp();
         m_wasAirborne = false;
     }
@@ -246,15 +247,17 @@ void Bowser::triggerGroundStomp() {
     m_stompEffectTimer = 0.50f;
     m_stompEffectPos = sf::Vector2f{m_position.x + m_size.x / 2.f, m_position.y + m_size.y};
 
-    // Seismic shockwave stun: stuns Mario if within radius and touching the ground
-    if (m_marioTarget && m_marioTarget->isActive() && !m_marioTarget->isDying() && !m_marioTarget->isDead()) {
-        const float dx = std::abs(m_marioTarget->getPosition().x - m_stompEffectPos.x);
-        const float dy = std::abs((m_marioTarget->getPosition().y + m_marioTarget->getSize().y) - m_stompEffectPos.y);
-
-        if (dx <= SHOCKWAVE_RADIUS && dy <= 48.f && m_marioTarget->isGrounded()) {
-            m_marioTarget->stun(1.2f);
+    // Seismic shockwave stun: stuns nearby grounded players within radius
+    auto tryStun = [this](Mario* target) {
+        if (!target || !target->isActive() || target->isDying() || target->isDead()) return;
+        const float dx = std::abs(target->getPosition().x - m_stompEffectPos.x);
+        const float dy = std::abs((target->getPosition().y + target->getSize().y) - m_stompEffectPos.y);
+        if (dx <= SHOCKWAVE_RADIUS && dy <= SHOCKWAVE_HEIGHT_TOLERANCE && target->isGrounded()) {
+            target->stun(SHOCKWAVE_STUN_DURATION);
         }
-    }
+    };
+    tryStun(m_marioTarget);
+    tryStun(m_marioTarget2);
 }
 
 void Bowser::draw(sf::RenderTarget& target, sf::RenderStates states) const {
@@ -361,7 +364,7 @@ void Bowser::patrol() {
     }
 
     // Direction swap timer for lively pacing
-    m_patrolTurnTimer -= 0.016f;
+    m_patrolTurnTimer -= m_lastDt;
     if (m_patrolTurnTimer <= 0.f) {
         static std::mt19937 rng(std::random_device{}());
         std::uniform_real_distribution<float> turnTime(1.5f, 3.0f);

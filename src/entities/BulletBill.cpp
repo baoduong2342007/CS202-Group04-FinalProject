@@ -1,5 +1,6 @@
 /**
  * @file BulletBill.cpp
+ * @author TV1, TV4
  * @brief Bullet Bill implementation - straight sensor flight, flip-out death
  */
 
@@ -58,7 +59,7 @@ BulletBill::BulletBill(const sf::Vector2f& position,
         m_body->SetGravityScale(0.f);
     }
 
-    const float rad = m_angleDegrees * 3.14159265358979323846f / 180.f;
+    const float rad = m_angleDegrees * PI / 180.f;
     const float vx = SPEED * std::cos(rad);
     const float vy = SPEED * std::sin(rad);
     setVelocity({vx, vy});
@@ -88,7 +89,7 @@ void BulletBill::update(float dt) {
     }
 
     // Maintain straight trajectory in the launch direction
-    const float rad = m_angleDegrees * 3.14159265358979323846f / 180.f;
+    const float rad = m_angleDegrees * PI / 180.f;
     const float vx = SPEED * std::cos(rad);
     const float vy = SPEED * std::sin(rad);
     setVelocity({vx, vy});
@@ -135,6 +136,6 @@ void BulletBill::dieFlipped() {
 
     if (m_body) {
         m_body->SetGravityScale(1.f);
-        m_body->SetLinearVelocity(b2Vec2(0.f, -8.f));
+        m_body->SetLinearVelocity(b2Vec2(0.f, DEATH_HOP_VELOCITY));
     }
 }

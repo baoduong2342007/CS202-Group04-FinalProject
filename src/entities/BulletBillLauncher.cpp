@@ -1,16 +1,16 @@
 /**
  * @file BulletBillLauncher.cpp
+ * @author TV1, TV4
  * @brief Bullet Bill launcher - proximity-triggered cannon spawner
  */
 
 #include "entities/BulletBillLauncher.h"
-#include "entities/BulletBill.h"
-#include "entities/FireballExplosion.h"
 
 #include <algorithm>
 #include <cmath>
 
 #include "core/TextureManager.h"
+#include "entities/BulletBill.h"
 
 namespace {
 

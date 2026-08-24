@@ -5,6 +5,7 @@ This file summarizes important integration checkpoints. Git history remains the 
 
 | Date | Checkpoint | Result | Notes |
 |---|---|---|---|
+| 2026-08-24 | [TV1] Documentation remediation: fix em-dash mojibake and anchor links | CTest 38/38 PASS | Fixed corrupted em-dash byte sequences (`â€”` -> `—`) across `docs/design_patterns.md`, `docs/oop_principles_and_design_patterns.md`, and `docs/class_diagram.md`. Fixed stale anchor link `#L224` -> `#L281` for `PlayState::onEnter` evidence in `docs/class_diagram.md`. All 38/38 CTest suites pass 100%. |
 | 2026-08-23 | [TV1] Review remediation: Bowser hammer-residue cleanup, dead branch removal, const-correctness, docs resync | CTest 38/38 PASS | (1) `include/entities/Bowser.h` + `src/entities/Bowser.cpp`: removed the write-only `m_hammerVariant` field/constructor parameter and the orphaned `THROW_ANIMATION` registration plus `throwFrames()` helper; zero callers passed the variant and no code played the animation, so behavior is unchanged. (2) `src/physics/CollisionManager.cpp`: collapsed the always-true `else if (Enemy* enemy = otherParticipant.enemy())` re-check into a plain `else` and deleted the unreachable trailing power-down branch in the Mario lateral-collision path. (3) `src/level/Level.cpp`: `nearestEligiblePlayer()` now returns the non-owning `Mario*` directly, eliminating the `const_cast` formerly needed to feed `Bowser::updateMarioTarget()`. (4) Docs: `docs/tileset_coordinate.md` gains a Themed Cannon Cells table matching `BulletBillLauncher::getCannonParts()`; `docs/DEMO_VIDEO_SCRIPT.md` World 1-4 chapter rewritten for the current boss fight (rotating cannons, directional Bullet Bills, shockwave stun, enrage twin fire, boss-gated Toad ending); re-synced all drifted `file:line` evidence anchors in `design_patterns.md`, `oop_principles_and_design_patterns.md`, and `class_diagram.md`; documented the Bullet Bill direct-damage exception. No gameplay changes; 38/38 CTest suites pass. |
 | 2026-08-23 | [TV4/TV3/TV1] Advanced Enemy AI (Aggro Pursuit, Agile Hops, Predictive Drops, Boss Trajectories) & Co-op Boost Jump | CTest 38/38 PASS | (1) Advanced Enemy AI: Implemented proximity/LoS-based aggro chase mode across ground enemies (`Goomba`, `Spiny`) with +30% pursuit speed boost and agile surprise hops within close range; enhanced `HammerBro` with dynamic multi-tier jumping and faster defensive throwing cadence; enhanced `Lakitu` with velocity tracking and predictive lead egg tossing; enhanced `Blooper` with diagonal swoop pulses towards Mario; enhanced `Bowser` with player altitude-adaptive multi-height fire trajectories and airborne interception jumping. (2) Co-op Head-Bounce Boost Jump: Integrated cooperative boost jumping in `Level::updateCoop` and `CollisionManager`: landing on a co-op partner's head grants full upward jump velocity without friendly-fire damage, accompanied by jump audio. Added regression tests in `tests/CoopFlowTests.cpp` (`testCoopHeadBounceBoostJump`). (38/38 CTest suites pass 100%). |
 | 2026-08-23 | [TV2/TV1] Revert Camera System to Clean Original Baseline (Pre-6e78353) | CTest 38/38 PASS | Restored clean original Camera baseline (`include/level/Camera.h`, `src/level/Camera.cpp`, `include/core/LevelCatalog.h`, `src/level/Level.cpp`): (1) Restored `CameraVerticalMode` enum to `LOCKED` (bottom-pinned) and `DEAD_ZONE` (`TOP_FOLLOW_DISTANCE = 32.0f`, pans upward when Mario/target rises within 32px of the top edge and returns smoothly to original bottom resting view upon landing). (2) Restored 2-way horizontal follow with standard 5% horizontal deadzone (`CAMPAIGN_HORIZONTAL_DEADZONE = 0.05f`) in single-player and 0.0f in co-op. (3) Removed complex experimental modes (`TRACK`, `setVerticalEdgeMarginRatio`, `setVerticalSettleEnabled`, `setVerticalFrozen`) and monotonic backward scroll locking. (4) Updated test suite assertions across `tests/LevelCatalogTests.cpp`, `tests/CoopFlowTests.cpp`, and `tests/DisplayCameraUITests.cpp`. All 38/38 CTest test suites pass (100%). |
@@ -89,9 +90,17 @@ The active status is maintained in:
 - [TV5 audio/HUD/item checklist](management/TV5_AUDIO_HUD_ITEM_CHECKLIST.md)
 
 A working-tree result may support review, but release sign-off requires one immutable commit hash shared by clean builds and every manual evidence record.
----
 
 ## 3. MODIFIED FILES LOG (Chi tiết các file đã sửa)
+
+### 2026-08-24: Documentation Remediation -- Em-dash Mojibake Fix & Anchor Link Synchronization
+- **`docs/design_patterns.md`**:
+  - Replaced corrupted ANSI em-dash character sequences (`â€”`) with clean UTF-8 em-dash (`—`) across H2 section headers and prose paragraphs (sections 1–6).
+- **`docs/oop_principles_and_design_patterns.md`**:
+  - Fixed corrupted em-dash sequences across introductory text, SOLID heuristic table rows (S, O, L, I, D), pattern headers, Command limits, State capabilities, and developer extension recipes.
+- **`docs/class_diagram.md`**:
+  - Replaced corrupted em-dash in section notes.
+  - Re-synced the `Source evidence` table anchor link for `PlayState::onEnter` from `#L224` to `#L281` matching the updated line number.
 
 ### 2026-08-23: Review Remediation -- Hammer Residue Cleanup, Dead Branch Removal, Const-Correctness, Docs Resync
 - **`include/entities/Bowser.h` & `src/entities/Bowser.cpp`**:

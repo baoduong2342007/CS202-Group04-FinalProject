@@ -1,4 +1,4 @@
-﻿# Design patterns running in Super Mario
+# Design patterns running in Super Mario
 
 ## Scope and how to read
 
@@ -44,7 +44,7 @@ Notably, `SaveManager` is **not a Singleton**: its constructor is public
 
 ---
 
-## 1. Command â€” turning input into gameplay intent
+## 1. Command — turning input into gameplay intent
 
 ### Scenario: one frame with `X` pressed and `Right` held
 
@@ -166,7 +166,7 @@ cooldown, Box2D lock, and entity ownership remain with `Level`.
 
 ---
 
-## 2. Factory Method â€” creating entities from a polymorphic request
+## 2. Factory Method — creating entities from a polymorphic request
 
 ### Scenario: tile `G` creates a `Goomba`
 
@@ -270,7 +270,7 @@ promise that every entity self-registers dynamically.
 
 ---
 
-## 3. Observer â€” gameplay events reaching the HUD and audio
+## 3. Observer — gameplay events reaching the HUD and audio
 
 ### Scenario: coin pickup, synchronous dispatch to two subscribers
 
@@ -383,12 +383,12 @@ Gameplay code does not need to include or call HUD/SoundManager directly;
 adding a new observer does not change `Mario::collectCoin()`. The event payload
 is value-only, so publishers exchange no ownership. The costs are indirection
 in the control flow and callback ordering that depends on registration order;
-dispatch remains synchronous â€” it is not a message queue or a background
+dispatch remains synchronous — it is not a message queue or a background
 thread. The token must outlive its observer and be kept by a suitable owner.
 
 ---
 
-## 4. Game State â€” state stack with deferred transitions
+## 4. Game State — state stack with deferred transitions
 
 ### Scenario: `Escape` opens `PauseState` at a safe point
 
@@ -513,7 +513,7 @@ state operation is delayed at least until the end of `update()`.
 
 ---
 
-## 5. Mario State â€” power-up states change capabilities
+## 5. Mario State — power-up states change capabilities
 
 ### Scenario: picking up a Mushroom, either growing immediately or waiting for clearance
 
@@ -682,11 +682,11 @@ allows new tiers without changing callers. The trade-off is that body/fixture
 and animation must stay in sync with the state; blocked growth needs a
 pending marker so Box2D is not mutated while the world is locked. This state
 is also not an async state machine: swapping the concrete object is usually
-synchronous â€” only growth is held back until a safe `Mario::update()`.
+synchronous — only growth is held back until a safe `Mario::update()`.
 
 ---
 
-## 6. Singleton â€” shared infrastructure with a bounded lifetime
+## 6. Singleton — shared infrastructure with a bounded lifetime
 
 ### Scenario: the composition root grabs managers, then `Level` gets the resource manager
 

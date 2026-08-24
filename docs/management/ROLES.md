@@ -105,7 +105,7 @@ CollisionManager::defeatEnemy(Enemy& victim, DefeatCause cause, Mario* owner, in
 - Data files: `levels/level1.txt`, `level2.txt`, `level3.txt`
 
 **Level file format (defined by TV4, followed by the team):**
-```txt
+
 Each level is stored as a `.txt` file inside the `levels/` folder.
 
 Rules:

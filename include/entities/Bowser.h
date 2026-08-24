@@ -1,5 +1,6 @@
 /**
  * @file Bowser.h
+ * @author TV1, TV4
  * @brief Castle boss: patrols the bridge, hops, and breathes wavy fire
  * @note Enemy expansion - SMB1-accurate: five fireballs defeat him, star
  *       contact cannot harm him, stomping him hurts Mario, and the axe that
@@ -58,6 +59,8 @@ public:
     /// Feed Mario's position; fire breath and hops aim at the player.
     void updateMarioPosition(const sf::Vector2f& marioPos);
     void updateMarioTarget(Mario* mario) { m_marioTarget = mario; }
+    void updateMarioTarget2(Mario* mario) { m_marioTarget2 = mario; }
+    void clearMarioTargets() { m_marioTarget = nullptr; m_marioTarget2 = nullptr; }
 
     /// The axe was touched: the bridge is gone, sink no matter the health.
     void collapseIntoLava();
@@ -79,6 +82,8 @@ private:
     float m_stompEffectTimer{0.f};
     sf::Vector2f m_stompEffectPos{0.f, 0.f};
     Mario* m_marioTarget{nullptr};
+    Mario* m_marioTarget2{nullptr};
+    float m_lastDt{0.016f};
 
     Direction m_patrolMoveDir{Direction::LEFT};
     float m_patrolTurnTimer{2.f};
@@ -87,11 +92,17 @@ private:
 
     sf::Vector2f m_marioPosition{0.f, 0.f};
     bool m_marioKnown{false};
-    b2World* m_world = nullptr;
+    b2World* m_world{nullptr};
     LevelTheme m_theme{LevelTheme::CASTLE};
     std::vector<std::unique_ptr<Entity>> m_pending;
 
     static constexpr float SHOCKWAVE_RADIUS = 220.f;
+    static constexpr float SHOCKWAVE_HEIGHT_TOLERANCE = 48.f;
+    static constexpr float SHOCKWAVE_STUN_DURATION = 1.2f;
+    static constexpr float ANTI_AIR_RANGE = 220.f;
+    static constexpr float AIRBORNE_VY_THRESHOLD = -80.f;
+    static constexpr float LANDING_VY_MIN = 30.f;
+    static constexpr float GROUNDED_VY_MAX = 2.f;
 
     static constexpr int FIREBALL_HITS_TO_KILL = 5;
     static constexpr float PATROL_SPEED = 50.f;

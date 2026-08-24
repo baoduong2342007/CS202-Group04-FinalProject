@@ -1,5 +1,6 @@
 /**
  * @file BulletBillLauncher.h
+ * @author TV1, TV4
  * @brief Decorative Turtle Cannon that fires Bullet Bills at approaching players
  * @note Enemy expansion - no physics body of its own; it hands spawned
  *       bullets to Level through the pending-spawns outbox.

@@ -117,8 +117,8 @@ release contract:
 - `pvp_stomp_tests`
 - `pvp_flow_tests`
 
-The current source registers 37 CTest suites. Fresh external Debug and
-Release `BUILD_TESTING=ON` runs each passed 37/37. These automated results do
+The current source registers 38 CTest suites. Fresh external Debug and
+Release `BUILD_TESTING=ON` runs each passed 38/38. These automated results do
 not replace manual GUI, audio, or video acceptance; those activities remain
 separate evidence recorded in [the release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md).
 The complete registration source is [CMakeLists.txt](CMakeLists.txt).

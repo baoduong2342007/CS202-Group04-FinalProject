@@ -1,4 +1,4 @@
-﻿# OOP and Design Patterns in SuperMario
+# OOP and Design Patterns in SuperMario
 
 ## Scope, audience, and how to read
 
@@ -490,7 +490,7 @@ abstraction.
    single owner — update/render/remove go through the base interface and the
    destructor cleans up.
 
-Mario is a deliberate exception: `Level` creates Mario directly at line 634
+Mario is a deliberate exception: `Level` creates Mario directly at lines 693-702
 because Mario has its own lifecycle/player wiring; the factory currently
 centralizes enemy, item, and world-object spawning from the map.
 

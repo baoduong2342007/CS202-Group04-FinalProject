@@ -309,6 +309,7 @@ bool Level::loadFromFile(const std::string& path, CharacterType characterType) {
     m_castleExitReady = false;
     m_toadDialogueActive = false;
     m_toadDialogueTimer = 0.f;
+    m_hasBowserEncounter = false;
 
     m_flagSequenceActive = false;
     m_flagWalkActive = false;
@@ -1157,6 +1158,14 @@ void Level::updateEntities(float dt) {
                 auto* b = static_cast<Bowser*>(enemy);
                 b->updateMarioPosition(nearestPos);
                 b->updateMarioTarget(target);
+                // Co-op: pass second player for shockwave stun coverage
+                if (m_coopMode && m_mario2 && m_mario2.get() != target) {
+                    b->updateMarioTarget2(m_mario2.get());
+                } else if (m_coopMode && m_mario && m_mario.get() != target) {
+                    b->updateMarioTarget2(m_mario.get());
+                } else {
+                    b->updateMarioTarget2(nullptr);
+                }
             }
         }
 

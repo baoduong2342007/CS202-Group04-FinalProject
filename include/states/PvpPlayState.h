@@ -48,9 +48,9 @@ public:
     void update(float dt) override;
     void render(sf::RenderTarget& target) override;
 
-    // 3. Introspection (tests / tuning)
+    // 3. Getters and Helpers
     Phase getPhase() const { return m_phase; }
-    /// Non-owning access to the duel arena (tests and HUD helpers).
+    /// Non-owning access to the duel arena.
     Level* getLevel() { return m_level.get(); }
     const Level* getLevel() const { return m_level.get(); }
     int getRoundNumber() const { return m_roundNumber; }
@@ -62,7 +62,7 @@ public:
     /// Remaining FIRE seconds for a fighter; 0 when he is not on fire.
     float getFireTimer(int playerIndex) const;
     bool isStunned(int playerIndex) const;
-    /// Override the next fire-flower spawn countdown (tests / tuning).
+    /// Override the next fire-flower spawn countdown.
     void setNextFlowerCountdown(float seconds);
 
 private:

@@ -103,8 +103,7 @@ public:
     /// @param contact Pointer to Box2D contact object
     static void resolve(b2Contact* contact, TileMap& tileMap);
 
-    /// Genuine two-participant gameplay dispatch, also usable by focused
-    /// tests with a typed context.
+    /// Genuine two-participant gameplay dispatch with a typed context.
     static void dispatch(CollisionContext& context, TileMap& tileMap);
 
     /// Completes the entity callback lifecycle for a Box2D EndContact.

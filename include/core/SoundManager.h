@@ -137,7 +137,7 @@ public:
     bool loadSound(SoundId id);
 
     /// Load a typed sound effect from an explicit path (for controlled
-    /// replacement/testing).  Default registration always uses the manifest.
+    /// replacement).  Default registration always uses the manifest.
     bool loadSound(SoundId id, const std::string& filepath);
 
     /// Compatibility loader for canonical keys and the two legacy aliases.

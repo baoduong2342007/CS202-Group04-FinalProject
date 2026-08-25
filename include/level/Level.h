@@ -25,7 +25,6 @@
 #include <box2d/box2d.h>
 class ContactListener;
 class FireFlower;
-class LevelTestAccess;
 
 class Level {
 public:
@@ -111,8 +110,6 @@ public:
 
 
 private:
-    friend class LevelTestAccess;
-
     /// Flagpole outcome sequence driven by actual Mario/flag state instead of
     /// a rough time estimate (so a large dt spike cannot skip the slide).
     enum class FlagPhase {
@@ -156,12 +153,6 @@ private:
     void checkFinishFlag();
     void processPendingFireballs();
     void processPendingStompScorePopups();
-
-    /// Narrow test-only seam used by FireBall request fixtures.  The friend
-    /// helper supplies the requested subtype and receives only success; no
-    /// entity pointer or container reference crosses the production boundary.
-    bool deactivateFirstEntityOfSubtypeForTest(
-        Entity::EntitySubtype subtype) noexcept;
     
     void checkPipeWarps();
     void startPipeWarp(Mario* player, char warpId, PipeWarpPhase phase, const sf::Vector2i& pipeTile);

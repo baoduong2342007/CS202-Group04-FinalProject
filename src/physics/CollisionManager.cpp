@@ -46,8 +46,8 @@ bool CollisionParticipant::has(Entity::Capability capability) const noexcept {
 
 // Typed accessors below keep dynamic_cast on purpose (D7 audit): the O(1)
 // discriminator (EntityType / EntitySubtype / Capability bit) is a virtual
-// that ANY Entity subclass can spoof — tests/CollisionMatrixTests.cpp
-// (IdentitySpoof) pins the fail-closed contract that a lying identity must
+// that ANY Entity subclass can spoof. This enforces that
+// NO entity responds true to multiple identities.
 // yield nullptr here. The enum check performs the type test per AGENTS.md
 // rule 5; the dynamic_cast validates the concrete base, not the type.
 Mario* CollisionParticipant::mario() const noexcept {

@@ -19,15 +19,11 @@ CS202-Group04-FinalProject/
 |-- include/
 |-- levels/
 |-- src/
-|-- tests/
 `-- thirdparty/
 ```
 
-Local-only, untracked directories also present in a working checkout — `build*/`, `Testing/` (CTest output), `agent_docs/`, `saves/` (runtime save files), `.cache/` — are generated/local state, not source (see the final section).
-
-- `CMakeLists.txt` defines `game_lib`, `SuperMario`, asset synchronization, and 38 CTest suites.
-- `CMakePresets.json` defines `mingw-debug`, `mingw-release`, and `mingw-tests`.
-- Sprint-6 evaluation notes (`Evaluate.md`) and the superseded weekly plan were removed on 2026-08-22; they remain historical artifacts recoverable from git history.
+- `CMakeLists.txt` defines `game_lib`, `SuperMario`, and asset synchronization.
+- `CMakePresets.json` defines `mingw-debug` and `mingw-release`.
 
 ## Production code
 
@@ -84,7 +80,6 @@ Important ownership rules:
 
 | File | Classification | Purpose |
 |---|---|---|
-| `levels/level0.txt` | Test | Non-release fixture; New Game cannot load it |
 | `levels/level1.txt` | Runtime | Overworld, world 1-1 |
 | `levels/level2.txt` | Runtime | Starts Overworld, then transitions to dominant Underground, world 1-2 |
 | `levels/level3.txt` | Runtime | Starts Overworld, then transitions to dominant Underwater, world 1-3 |
@@ -113,50 +108,6 @@ PvP-only arena markers (valid only with `TileMap::LayoutMode::PVP_ARENA`):
 - `m`: Player two spawn point (exactly one)
 - `W`: Fire flower pedestal (exactly one; `PvpPlayState` spawns the contested flower here)
 
-## Automated tests
-
-```text
-tests/
-|-- InputStateTests.cpp
-|-- TileCollisionSpanTests.cpp
-|-- MarioPhysicsTests.cpp
-|-- PlayStateTests.cpp
-|-- GameManagerTests.cpp
-|-- EventBusTests.cpp
-|-- TV5IntegrationTests.cpp
-|-- FactoryMethodTests.cpp
-|-- SoundManagerManifestTests.cpp
-|-- LevelCatalogTests.cpp
-|-- SaveManagerTests.cpp
-|-- LevelValidatorTests.cpp
-|-- SpringboardTests.cpp
-|-- ElevatorTests.cpp
-|-- CheepCheepTests.cpp
-|-- KoopaVariantTests.cpp
-|-- BuzzyBeetleTests.cpp
-|-- BlooperPodobooTests.cpp
-|-- SpawnerEnemyTests.cpp
-|-- HammerBroTests.cpp
-|-- BowserTests.cpp
-|-- Gate0ContractTests.cpp
-|-- SaveSessionTests.cpp
-|-- SpriteFramesThemeTests.cpp
-|-- CollisionMatrixTests.cpp
-|-- FireBallRequestTests.cpp
-|-- EntityViewTests.cpp
-|-- P2GameplayInterfaceTests.cpp
-|-- DisplayCameraUITests.cpp
-|-- CharacterFlowTests.cpp
-|-- LakituRespawnTests.cpp
-|-- StompScoreTests.cpp
-|-- PvpArenaTests.cpp
-|-- PvpStompTests.cpp
-|-- PvpFlowTests.cpp
-`-- CoopFlowTests.cpp
-```
-
-The final two CTest registrations, `sound_manager_manifest_package_tests` and `runtime_package_inventory_tests`, are CMake/package checks rather than test source files.
-
 ## Assets
 
 ```text
@@ -176,44 +127,19 @@ assets/
 `-- ui/bg_world.png
 ```
 
-The authoritative path, dimension, and `Runtime`/`Reference`/`Future` classification is [assets/ASSETS_LIST.md](assets/ASSETS_LIST.md). CMake packages runtime assets but documentation reference atlases remain under `docs/assets/reference/`.
+The authoritative path, dimension, and `Runtime`/`Future` classification is [assets/ASSETS_LIST.md](assets/ASSETS_LIST.md).
 
 ## Documentation
 
 ```text
 docs/
-|-- blocks_coordinate.md
-|-- change_in_develop.md
 |-- class_diagram.md
 |-- design_patterns.md
-|-- DEMO_VIDEO_SCRIPT.md
-|-- enemies_coordinate.md
-|-- items_objects_coordinate.md
 |-- oop_principles_and_design_patterns.md
-|-- tileset_coordinate.md
-|-- management/
-|   |-- ROLES.md
-|   |-- s6_plan.md
-|   |-- s7_plan.md
-|   |-- S6_AUDIT_TRACKER.md
-|   |-- S6_BUG_REGISTER.md
-|   |-- S6_LOCKED_INTERFACES.md
-|   |-- S7_TV1_TV5_STATUS.md
-|   |-- S7_TV2_VISUAL_SIGN_OFF.md
-|   |-- S7_TV3_STATUS.md
-|   |-- S7_TV5_PACKAGE_MANIFEST.md
-|   |-- TV1_CHANGES_SUMMARY.md
-|   |-- TV4_CHANGES_SUMMARY.md
-|   |-- TV5_CHANGES_SUMMARY.md
-|   `-- TV5_AUDIO_HUD_ITEM_CHECKLIST.md
-|-- testing/TV4_PLAYTHROUGH_LOG.md
-|-- specs/CS202-FinalProject_SuperMario.md
-|-- assets/ASSET_MAPPING.md
-`-- assets/reference/
+|-- DEMO_VIDEO_SCRIPT.md
+`-- specs/CS202-FinalProject_SuperMario.md
 ```
-
-`docs/management/s7_plan.md` is planned work. Sprint 6 acceptance must not rely on it to defer an unfinished Sprint 6 requirement.
 
 ## Generated and local-only paths
 
-Directories such as `build-*`, `Testing/`, `.cache/`, CMake caches, executables, copied runtime assets, save files (`saves/`), IDE settings, agent working notes (`agent_docs/`), and temporary test output are generated/local state and must not be treated as source files.
+Directories such as `build-*`, `.cache/`, CMake caches, executables, copied runtime assets, save files (`saves/`), and IDE settings are generated/local state and must not be treated as source files.

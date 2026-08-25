@@ -31,7 +31,7 @@ public:
     void update(float dt) override;
     void render(sf::RenderTarget& target) override;
 
-    // 3. Introspection (tests)
+    // 3. Getters
     /// Which fighter is currently picking: 0 = player one, 1 = player two,
     /// 2 = confirm splash before the match starts.
     int getCurrentPicker() const { return static_cast<int>(m_phase); }

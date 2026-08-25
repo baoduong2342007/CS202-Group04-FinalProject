@@ -36,7 +36,7 @@ public:
     void update(float dt);
     void render(sf::RenderTarget& target);
 
-    /// Number of states currently on the stack (used by regression tests).
+    /// Number of states currently on the stack.
     int stackDepth() const { return static_cast<int>(m_stateStack.size()); }
 
     SaveManager& getSaveManager() { return m_saveManager; }

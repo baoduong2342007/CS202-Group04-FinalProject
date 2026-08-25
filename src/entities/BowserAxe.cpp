@@ -21,8 +21,8 @@ BowserAxe::BowserAxe(const sf::Vector2f& position, LevelTheme theme)
     : Entity(position, AXE_SIZE) {
     (void)theme;
 
-    // The axe cells live in the tileset atlas (docs/tileset_coordinate.md
-    // #180-186); the shared catalog re-exports the first one.
+    // The axe cells live in the tileset atlas (see SMB1 sprite resources
+    // for exact cell mapping).
     setSprite(TILESET_TEXTURE_PATH);
 
     m_animationSystem = std::make_unique<AnimationSystem>();

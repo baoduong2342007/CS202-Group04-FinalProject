@@ -96,7 +96,7 @@ public:
      */
     void update(float dt, sf::Sprite& sprite);
 
-    /// Advances animation state without a sprite (headless/runtime lifecycle tests).
+    /// Advances animation state without a sprite.
     void update(float dt);
 
     /**
@@ -105,7 +105,7 @@ public:
      */
     bool isFinished() const;
 
-    /// Read-only diagnostic hook used by gameplay regression tests.
+    /// Returns the currently active animation name.
     const std::string& getCurrentAnimationName() const { return m_currentAnimation; }
 
     // 4. Getters / Setters

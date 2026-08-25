@@ -43,7 +43,7 @@ public:
 
     void onNotify(const GameEvent& event) override;
 
-    // 4. Introspection (tests)
+    // 4. Getters
     Level* getLevel() { return m_level.get(); }
     const Level* getLevel() const { return m_level.get(); }
     bool isCoopSession() const { return m_isCoop; }

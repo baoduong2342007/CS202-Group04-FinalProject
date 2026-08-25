@@ -2071,30 +2071,6 @@ void Level::processPendingFireballs() {
     m_pendingFireBallRequests.clear();
 }
 
-bool Level::deactivateFirstEntityOfSubtypeForTest(
-    Entity::EntitySubtype subtype) noexcept {
-    // This seam is intentionally limited to the existing FireBall fixture
-    // setup.  It is private and callable only by the test-defined
-    // LevelTestAccess friend; production callers have no mutation API.
-    if (subtype != Entity::EntitySubtype::FIRE_BALL) {
-        return false;
-    }
-
-    for (auto& entity : m_entities) {
-        if (!entity || entity->getSubtype() != subtype) {
-            continue;
-        }
-
-        auto* fireball = dynamic_cast<FireBall*>(entity.get());
-        if (fireball == nullptr) {
-            return false;
-        }
-        fireball->deactivate(false);
-        return true;
-    }
-    return false;
-}
-
 std::size_t Level::getActiveFireBallCount() const {
     return static_cast<std::size_t>(std::count_if(
         m_entities.begin(), m_entities.end(),

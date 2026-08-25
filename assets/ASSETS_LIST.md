@@ -1,27 +1,20 @@
-# S7 Runtime Asset Inventory and Attribution Gate
+# Runtime Asset Inventory and Attribution Gate
 
-> Updated: 2026-08-21
+> Updated: 2026-08-25
 
 This is the authoritative repository-relative runtime asset and usage inventory.
 Runtime paths are relative to the executable directory after CMake
-synchronization; reference paths are relative to the repository root. The S7
+synchronization; reference paths are relative to the repository root. The
 package allowlist is generated from `CMakeLists.txt` and
-`include/core/SoundManifest.def`; see [S7-TV5 package manifest](../docs/management/S7_TV5_PACKAGE_MANIFEST.md).
+`include/core/SoundManifest.def`.
 Runtime classification records loader/package inclusion only and does not grant
 redistribution permission. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)
 for the current attribution/legal gate.
 
-The P4 package audit recorded exactly 50 files in both Debug and Release: 43
-runtime assets (including this metadata file) plus 7 level/config files. The
-required `fire.wav`, `bowserfall.wav`, `goomba.png`, `koopa.png`, and
-`hammer.png` paths were present; no Future or Reference extras were present.
-
 | Label | Meaning |
 |---|---|
 | `Runtime` | Loaded by current code or packaged for a current game-loop path |
-| `Reference` | Source/measurement/documentation material outside the runtime package |
 | `Future` | Valid asset with no current release gameplay path |
-| `Remove` | Must not remain in the repository or package |
 
 Per-file provenance, license, and redistribution permission are not established
 by this inventory. Until each packaged asset has a source/license record, the
@@ -32,8 +25,7 @@ use is not treated as permission.
 paths. CMake validates and deduplicates its rows while configuring the package;
 shared samples remain separate logical manifest entries. Non-audio runtime
 paths and runtime level/config files are explicit CMake authorities, and this
-document records their roles. The package inventory test compares the copied
-files with that configured authority.
+document records their roles.
 
 ## Package metadata
 
@@ -47,8 +39,8 @@ files with that configured authority.
 |---|---:|---|---|
 | `assets/fonts/mario.ttf` | 116,008 bytes | `Runtime` | HUD and state UI font |
 | `assets/textures/enemies/enemies.png` | 436×530 | `Runtime` | Goomba/Koopa atlas cropped through `SpriteFrames` |
-| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Deterministic enemy fixture/package coverage |
-| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Deterministic enemy fixture/package coverage |
+| `assets/textures/enemies/goomba.png` | 96×32 | `Runtime` | Enemy fixture/package coverage |
+| `assets/textures/enemies/koopa.png` | 128×48 | `Runtime` | Enemy fixture/package coverage |
 | `assets/textures/enemies/hammer.png` | — | `Runtime` | Hammer projectile texture loaded by `Hammer` |
 | `assets/textures/items/items_blocks.png` | 448×256 | `Runtime` | QuestionBlock and block frames |
 | `assets/textures/items/items_objects.png` | 592×572 | `Runtime` | Mushroom, Coin, FireFlower, and Star frames |
@@ -70,8 +62,7 @@ files with that configured authority.
 
 Underground, Underwater, and Castle are distinct renderer branches; they do not reuse
 `bg_world.png`. Underwater music and all four Level Select previews are included in the
-S7 runtime package. The S7 package manifest records the corresponding level/config files;
-`levels/level0.txt` remains a test fixture and is excluded.
+runtime package.
 
 `.gitkeep` files only preserve intentionally empty directories and are not runtime assets.
 
@@ -102,14 +93,11 @@ S7 runtime package. The S7 package manifest records the corresponding level/conf
 | `assets/sounds/effects/stompswim.wav` | `Runtime` — `ENEMY_STOMPED` |
 | `assets/sounds/effects/vine.wav` | `Future` — no event mapping |
 
-SoundManager is the only SFX playback authority. Event and request-counter tests protect one logical cue per accepted gameplay transaction.
+SoundManager is the only SFX playback authority.
 
 The runtime package's WAV/FLAC files, font, sprites, backgrounds, and
 Nintendo-inspired textures have no per-file provenance/license record in this
-repository. The tileset comparison link in
-[docs/tileset_coordinate.md](../docs/tileset_coordinate.md) is an analysis
-reference only and does not grant permission to redistribute the compared or
-derived assets. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md); the
+repository. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md); the
 asset redistribution/sign-off gate remains `BLOCKED` until provenance and
 license/permission are supplied for every packaged file.
 
@@ -134,22 +122,3 @@ license/permission are supplied for every packaged file.
 - Coin uses `items_objects.png`: four 8×16 frames at `(180,36)`, `(190,36)`, `(200,36)`, `(210,36)`.
 - Tile catalog uses `assets/textures/tiles/tileset.png`; `TileMap` selects named ground, stone, brick, used, question, pipe, and flag frames from `TileFrames.h`.
 - Do not create standalone crop files such as `idle.png`, `coin.png`, `mushroom.png`, or `star.png`; runtime animation uses named spritesheet rectangles.
-
-## Reference files outside the runtime package
-
-| Path | Dimensions | Usage |
-|---|---:|---|
-| `docs/assets/reference/enemies.png` | 436×530 | `Reference` — source enemy atlas |
-| `docs/assets/reference/enemies_all_components_atlas.png` | 1072×1160 | `Reference` — indexed enemy analysis |
-| `docs/assets/reference/enemies_all_components_atlas_full.png` | 1072×1160 | `Reference` — historical component atlas |
-| `docs/assets/reference/enemies_candidate.png` | 128×96 | `Reference` — candidate without runtime loader |
-| `docs/assets/reference/blocks_all_components_atlas_full.png` | 800×800 | `Reference` — block analysis |
-| `docs/assets/reference/items_objects_all_components_atlas_full.png` | 960×1840 | `Reference` — item analysis |
-| `docs/assets/reference/items_blocks_candidate.png` | 96×96 | `Reference` — candidate without runtime loader |
-| `docs/assets/reference/items_objects_candidate.png` | 128×64 | `Reference` — candidate without runtime loader |
-| `docs/assets/reference/tileset_candidate.png` | 160×32 | `Reference` — unselected candidate |
-| `docs/assets/reference/tileset_all_components_atlas_full.png` | 720×2448 | `Reference` — indexed component atlas |
-| `docs/assets/reference/bg_world_candidate.png` | 1857×847 | `Reference` — background candidate/source |
-| `docs/assets/reference/general_tile.png` | 680×776 | `Reference` — duplicate/source tile sheet |
-
-Production code must not use absolute asset paths, and CMake must not copy `docs/assets/reference/` into the runtime package.

@@ -17,7 +17,7 @@ public:
     /// Loads the standard UI font; degrades to a text-free modal when the
     /// asset is missing (e.g. incomplete deployment) instead of crashing.
     PauseState();
-    /// Test/injection seam: build the state against an explicit font path so
+    /// Build the state against an explicit font path so
     /// the missing-font degradation path is exercisable on every platform.
     explicit PauseState(const std::string& fontPath);
     ~PauseState() override = default;

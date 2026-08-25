@@ -42,7 +42,7 @@ public:
     // 3. Public methods
     /// Triggers block hit reaction: 12px bump animation, spawns item & changes sprite to empty block
     void onHit(Mario& mario, std::vector<std::unique_ptr<Entity>>* entities = nullptr, TextureManager* textureManager = nullptr);
-    /// Resolve a normal '?' result from a deterministic 0-199 test roll.
+    /// Resolve a normal '?' result from a deterministic 0-199 roll.
     /// 0-139 = Coin, 140-169 = Mushroom, 170-199 = FireFlower.
     static QuestionBlockContent chooseRandomContent(unsigned int roll);
     /// Resolve a normal '?' result using the gameplay random source.

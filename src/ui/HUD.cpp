@@ -345,7 +345,7 @@ void HUD::refreshText() {
   m_coinText->setString(coinStream.str());
 
     // Format world indicator as "WORLD W-L" and timer consistently with the
-    // renderer-independent accessors used by headless integration tests.
+    // renderer-independent accessors.
     m_worldText->setString(getWorldLabel());
     m_timeText->setString(getTimeLabel());
     m_timeText->setFillColor(isTimeWarningActive() ? sf::Color::Red : sf::Color::White);

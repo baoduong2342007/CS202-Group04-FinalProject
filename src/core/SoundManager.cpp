@@ -275,8 +275,7 @@ bool SoundManager::playSound(SoundId id) {
             return true;
         }
         // All voices are busy. Drop this request instead of restarting one
-        // and cutting off an already audible sound. The request itself was
-        // accepted and is still counted for deterministic gameplay tests.
+        // and cutting off an already audible sound.
         return true;
     } catch (const sf::Exception& e) {
         return failSound("Failed to play sound '" + std::string(entry->key) +

@@ -24,10 +24,10 @@ No repository evidence currently establishes the owner, source, license, or
 redistribution permission for the packaged `mario.ttf`, WAV/FLAC recordings,
 sprites, backgrounds, or other Nintendo-inspired textures. The usage and
 dimensions in [assets/ASSETS_LIST.md](assets/ASSETS_LIST.md) are inventory facts,
-not rights evidence. The tileset comparison link in
-[docs/tileset_coordinate.md](docs/tileset_coordinate.md) is an analysis
-reference and does not grant permission to use or redistribute the compared or
-derived assets.
+not rights evidence. The tileset sprites were compared against the
+[SMB1 Tileset on The Spriters Resource](https://www.spriters-resource.com/nes/supermariobros/asset/52571/?source=genre)
+as an analysis reference; this does not grant permission to use or redistribute
+the compared or derived assets.
 
 Status: **BLOCKED**. Before external redistribution or final release sign-off,
 record per-file provenance, source URL or owner, applicable license/permission,

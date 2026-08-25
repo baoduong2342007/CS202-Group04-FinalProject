@@ -2,35 +2,17 @@
 
 A C++17 platform game built with SFML 3.0.0 and Box2D 2.4.1.
 
-## Sprint 6 release contract (historical)
+## Game Overview
 
-The following graph was the Sprint 6 candidate contract and is retained for
-history. It is superseded by the Sprint 7 addendum below; it is not current RC
-evidence.
+A faithful Super Mario Bros recreation featuring 4 worlds with distinct themes:
 
-The release flow is locked to:
+`Menu -> 1-1 (Overworld) -> 1-2 (Underground) -> 1-3 (Underwater) -> 1-4 (Castle) -> Win`
 
-`Menu -> Level 1 (Overworld) -> Level 2 (Underground) -> Level 3 (Castle) -> Win`
+### Game Modes
 
-`levels/level0.txt` is a test fixture. In this historical snapshot,
-`levels/level4.txt` and the underwater theme were future/reference content.
-
-## Sprint 7 current contract addendum (2026-08-16)
-
-The current catalog metadata contract has four public entries:
-
-`Menu -> 1 (1-1 Overworld) -> 2 (1-2 Underground) -> 3 (1-3 Underwater) -> 4 (1-4 Castle) -> Win`
-
-Exact file, world-label, theme, music, and camera metadata are covered by
-[`LevelCatalogTests.cpp`](tests/LevelCatalogTests.cpp) and
-[`Gate0ContractTests.cpp`](tests/Gate0ContractTests.cpp). Retry restarts a
-failed level (1–4), Level Select enforces `highestUnlockedLevel`, and the v1
-save schema keeps level bounds monotonic; see [`S7_TV1_TV5_STATUS.md`](docs/management/S7_TV1_TV5_STATUS.md).
-
-Level 2 and Level 3 start in the Overworld before their warp/area transition;
-their dominant themes are Underground and Underwater respectively. Automated
-catalog metadata and progression checks are verified. Physical visual play
-(GUI, audio, and video) remains a separate manual acceptance activity.
+- **Single Player**: Classic Mario campaign through 4 levels
+- **2-Player Co-op**: Two players cooperate through the campaign
+- **2-Player Versus**: Best-of-3 stomp duel on a shared arena
 
 ## Team
 
@@ -41,8 +23,6 @@ catalog metadata and progression checks are verified. Physical visual play
 | TV3 | Bao | Mario, physics, collision |
 | TV4 | Vy | Levels, enemies, persistence |
 | TV5 | Truyen | Input, sound, HUD, items |
-
-See [roles](docs/management/ROLES.md) and the [Sprint 6 plan](docs/management/s6_plan.md) for detailed ownership.
 
 ## Requirements
 
@@ -58,17 +38,17 @@ On Windows, the repository can bootstrap the pinned SFML archive if `thirdparty/
 ### Windows with MinGW
 
 ```powershell
-cmake --preset mingw-debug
-cmake --build --preset mingw-debug --parallel 2
-.\build-debug\SuperMario.exe
-```
-
-Release build:
-
-```powershell
 cmake --preset mingw-release
 cmake --build --preset mingw-release --parallel 2
 .\build-release\SuperMario.exe
+```
+
+Debug build:
+
+```powershell
+cmake --preset mingw-debug
+cmake --build --preset mingw-debug --parallel 2
+.\build-debug\SuperMario.exe
 ```
 
 ### macOS or Linux
@@ -76,56 +56,16 @@ cmake --build --preset mingw-release --parallel 2
 Install SFML with the platform package manager, then run:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/SuperMario
 ```
 
 The build copies the runtime `assets` and `levels` directories next to the executable. The incremental copy step only reruns when its inputs change.
 
-## Tests
-
-```powershell
-cmake --preset mingw-tests
-cmake --build --preset mingw-tests --parallel 2
-ctest --preset mingw-tests --output-on-failure
-```
-
-The Sprint 6 candidate's test inventory is historical and is not the current
-release contract:
-
-- `input_state_tests`
-- `tile_collision_span_tests`
-- `mario_physics_tests`
-- `play_state_tests`
-- `game_manager_tests`
-- `event_bus_tests`
-- `tv5_integration_tests`
-- `level_catalog_tests`
-- `save_manager_tests`
-- `level_validator_tests`
-- `springboard_tests`
-- `gate0_contract_tests`
-- `save_session_tests`
-- `sprite_frames_theme_tests`
-- `collision_matrix_tests`
-- `fireball_request_tests`
-- `display_camera_ui_tests`
-- `character_flow_tests`
-- `stomp_score_tests`
-- `pvp_arena_tests`
-- `pvp_stomp_tests`
-- `pvp_flow_tests`
-
-The current source registers 38 CTest suites. Fresh external Debug and
-Release `BUILD_TESTING=ON` runs each passed 38/38. These automated results do
-not replace manual GUI, audio, or video acceptance; those activities remain
-separate evidence recorded in [the release playthrough log](docs/testing/TV4_PLAYTHROUGH_LOG.md).
-The complete registration source is [CMakeLists.txt](CMakeLists.txt).
-
 ## Controls
 
-Single player:
+### Single Player
 
 | Action | Input |
 |---|---|
@@ -138,7 +78,9 @@ Single player:
 | Navigate menus | Arrow keys |
 | Confirm menu selection | Enter or logical mouse click |
 
-2 PLAYER VERSUS (best-of-3 stomp duel, both players on one keyboard):
+### 2-Player Versus
+
+Best-of-3 stomp duel, both players on one keyboard:
 
 | Action | Player 1 | Player 2 |
 |---|---|---|
@@ -149,9 +91,8 @@ Single player:
 | Pause | `Esc` | `Esc` |
 
 Only landing on the opponent's head wins a round. The fire flower spawns on
-the center pedestal after a random 6-12s (never while a flower is on the
-field or someone is on fire) and grants a 5-second fire state; fireballs
-launch the victim airborne with a short stun instead of scoring.
+the center pedestal after a random 6-12s and grants a 5-second fire state;
+fireballs launch the victim airborne with a short stun instead of scoring.
 
 Clicks in letterbox bars are intentionally ignored. The game renders to a logical 640x360 canvas using centered integer scaling.
 
@@ -160,24 +101,17 @@ Clicks in letterbox bars are intentionally ignored. The game renders to a logica
 | Path | Purpose |
 |---|---|
 | `include/` | Public C++ headers grouped by module |
-| `src/` | Production implementations and a separately excluded demo |
-| `levels/` | Release level data plus labeled test/future fixtures |
+| `src/` | Production implementations |
+| `levels/` | Release level data |
 | `assets/` | Runtime textures, font, sounds, and asset manifest |
-| `tests/` | Automated CTest executables |
-| `docs/` | Design, management, specification, and acceptance evidence |
+| `docs/` | Class diagram, design patterns, and project documentation |
 | `thirdparty/` | Local third-party binaries when present |
-
-The detailed, current tree is in [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 
 ## Project documentation
 
 - [Coding rules](CODING_RULES.md)
+- [File structure](FILE_STRUCTURE.md)
 - [Class diagram](docs/class_diagram.md)
 - [Design patterns](docs/design_patterns.md)
+- [OOP principles and design patterns](docs/oop_principles_and_design_patterns.md)
 - [Asset manifest](assets/ASSETS_LIST.md)
-- [Sprint 6 audit tracker](docs/management/S6_AUDIT_TRACKER.md)
-- [Sprint 6 bug register](docs/management/S6_BUG_REGISTER.md)
-- [Sprint 6 integration report](docs/management/TV1_CHANGES_SUMMARY.md)
-- [Sprint 6 plan](docs/management/s6_plan.md)
-- [Sprint 7 TV1/TV5 status matrix](docs/management/S7_TV1_TV5_STATUS.md)
-- [Sprint 7 runtime package manifest](docs/management/S7_TV5_PACKAGE_MANIFEST.md)

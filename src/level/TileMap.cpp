@@ -766,8 +766,8 @@ sf::IntRect getTilesetRect(char symbol, LevelTheme theme) {
             return TileFrames::FINISH_POLE;
 
         case '=':
-            // Bowser's bridge: the Castle Platform cell of the tileset atlas
-            // (docs/tileset_coordinate.md #191). One palette serves every theme.
+            // Chain anchors live in the castle terrain crop section.
+            // One palette serves every theme.
             return sf::IntRect({558, 33}, {16, 16});
 
         default:

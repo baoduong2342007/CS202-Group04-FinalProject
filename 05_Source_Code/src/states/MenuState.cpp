@@ -228,7 +228,7 @@ void MenuState::initMenu() {
     }, 13);
 
     m_menu->setSpacing(20.f);
-    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 172.f}, UIAnchor::Center);
+    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 160.f}, UIAnchor::Center);
 }
 
 void MenuState::onEnter() {

@@ -269,6 +269,21 @@ bool SaveManager::deleteGameRecord(std::size_t index) {
         return false;
     }
     m_data.matchHistory.erase(m_data.matchHistory.begin() + index);
+
+    // Recompute per-stage and overall high scores incrementally from remaining match history
+    m_data.levelHighScores = {0, 0, 0, 0};
+    m_data.highScore = 0;
+    for (const auto& rec : m_data.matchHistory) {
+        if (rec.level >= 1 && rec.level <= 4) {
+            if (rec.score > m_data.levelHighScores[rec.level - 1]) {
+                m_data.levelHighScores[rec.level - 1] = rec.score;
+            }
+        }
+        if (rec.score > m_data.highScore) {
+            m_data.highScore = rec.score;
+        }
+    }
+
     return save();
 }
 
@@ -277,6 +292,8 @@ bool SaveManager::clearMatchHistory() {
         return false;
     }
     m_data.matchHistory.clear();
+    m_data.levelHighScores = {0, 0, 0, 0};
+    m_data.highScore = 0;
     return save();
 }
 

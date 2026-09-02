@@ -172,7 +172,7 @@
 | 94 | Atomic save-file replacement for data safety (.tmp -> .txt atomic rename) | ✅ |
 | 95 | Overall & Per-Stage High Score persistence (World 1-1 to 1-4 individual bests) | ✅ |
 | 96 | Level unlock progression (clearing stage unlocks next stage) | ✅ |
-| 97 | Hall of Fame & Match History state (`RecordsState`) with multi-mode scrollable match log and full data reset keybinding (`C`) | ✅ |
+| 97 | Hall of Fame & Match History state (`RecordsState`) with multi-mode scrollable match log, individual entry deletion (`X` / `Delete`) with incremental high score re-synchronization, and full data reset keybinding (`C`) | ✅ |
 | 98 | Global Screenshot Capture system (`F12` / `P`) exporting timestamped PNGs to `screenshots/` | ✅ |
 | 99 | Stomp combo scoring (100→200→400→800→1000→2000→4000→5000→8000→1-Up) | ✅ |
 | 100 | Animated score popups | ✅ |

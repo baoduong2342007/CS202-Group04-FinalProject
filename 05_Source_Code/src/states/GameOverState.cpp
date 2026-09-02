@@ -81,14 +81,14 @@ GameOverState::GameOverState(const GameProgress& progress)
         // Score Text
         std::string scoreStr = std::to_string(m_progress.score);
         while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
-        m_scoreText.emplace(m_font, "FINAL SCORE   : " + scoreStr, STAT_FONT_SIZE);
+        m_scoreText.emplace(m_font, "STAGE SCORE   : " + scoreStr, STAT_FONT_SIZE);
         m_scoreText->setFillColor(BODY_COLOR);
         m_scoreText->setOutlineColor(sf::Color::Black);
         m_scoreText->setOutlineThickness(1.f);
-        m_scoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 84.f});
+        m_scoreText->setPosition({PANEL_X + 61.f, PANEL_Y + 84.f});
 
         // High Score Text
-        const int stageHighScore = GameManager::getInstance().getSaveManager().getHighScore(m_progress.currentLevel);
+        const int stageHighScore = GameManager::getInstance().getSaveManager().getLevelHighScore(m_progress.currentLevel);
         const int highScore = std::max(m_progress.score, stageHighScore);
         std::string highStr = std::to_string(highScore);
         while (highStr.length() < 6) highStr = "0" + highStr;
@@ -96,14 +96,14 @@ GameOverState::GameOverState(const GameProgress& progress)
         m_highScoreText->setFillColor(GOLD_COLOR);
         m_highScoreText->setOutlineColor(sf::Color::Black);
         m_highScoreText->setOutlineThickness(1.f);
-        m_highScoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 108.f});
+        m_highScoreText->setPosition({PANEL_X + 61.f, PANEL_Y + 108.f});
 
         // Level Text
         m_levelText.emplace(m_font, "STAGE REACHED : WORLD 1-" + std::to_string(m_progress.currentLevel), STAT_FONT_SIZE);
         m_levelText->setFillColor(sf::Color(130, 200, 255));
         m_levelText->setOutlineColor(sf::Color::Black);
         m_levelText->setOutlineThickness(1.f);
-        m_levelText->setPosition({PANEL_X + 46.f, PANEL_Y + 132.f});
+        m_levelText->setPosition({PANEL_X + 61.f, PANEL_Y + 132.f});
 
         // Hint Text
         m_hintText.emplace(m_font, "[UP / DOWN] CHOOSE    [ENTER / CLICK] SELECT", HINT_FONT_SIZE);
@@ -147,8 +147,8 @@ GameOverState::GameOverState(const GameProgress& progress)
 void GameOverState::onEnter() {
     m_animTimer = 0.f;
     SoundManager::getInstance().playMusic(MusicId::GAME_OVER);
-    const int stageScore = m_progress.score - m_progress.levelStartScore;
-    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, m_progress.currentLevel);
+    const int stageScore = m_progress.score;
+    GameManager::getInstance().getSaveManager().updateHighScore(stageScore, stageScore, m_progress.currentLevel);
 
     GameRecord rec;
     rec.date = TimeUtils::getCurrentDateTimeString();

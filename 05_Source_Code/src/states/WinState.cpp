@@ -83,31 +83,30 @@ WinState::WinState(const GameProgress& progress)
         // Score Text
         std::string scoreStr = std::to_string(m_progress.score);
         while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
-        m_scoreText.emplace(m_font, "VICTORY SCORE : " + scoreStr, STAT_FONT_SIZE);
+        m_scoreText.emplace(m_font, "STAGE 4 SCORE : " + scoreStr, STAT_FONT_SIZE);
         m_scoreText->setFillColor(GOLD_COLOR);
         m_scoreText->setOutlineColor(sf::Color::Black);
         m_scoreText->setOutlineThickness(1.f);
-        m_scoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 84.f});
+        m_scoreText->setPosition({PANEL_X + 67.f, PANEL_Y + 84.f});
 
-        // High Score Text — currentLevel is past-final (e.g. 5) so use
-        // LevelCatalog::count() to look up the last stage's best record.
+        // High Score Text — lookup the final stage's (World 1-4) best record.
         const int lastLevel = LevelCatalog::count();
-        const int stageHighScore = GameManager::getInstance().getSaveManager().getHighScore(lastLevel);
+        const int stageHighScore = GameManager::getInstance().getSaveManager().getLevelHighScore(lastLevel);
         const int highScore = std::max(m_progress.score, stageHighScore);
         std::string highStr = std::to_string(highScore);
         while (highStr.length() < 6) highStr = "0" + highStr;
-        m_highScoreText.emplace(m_font, "BEST RECORD   : " + highStr, STAT_FONT_SIZE);
+        m_highScoreText.emplace(m_font, "STAGE 4 BEST  : " + highStr, STAT_FONT_SIZE);
         m_highScoreText->setFillColor(BODY_COLOR);
         m_highScoreText->setOutlineColor(sf::Color::Black);
         m_highScoreText->setOutlineThickness(1.f);
-        m_highScoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 108.f});
+        m_highScoreText->setPosition({PANEL_X + 67.f, PANEL_Y + 108.f});
 
         // Level / World status
         m_levelText.emplace(m_font, "WORLD STATUS  : CLEARED!", STAT_FONT_SIZE);
         m_levelText->setFillColor(GREEN_ACCENT);
         m_levelText->setOutlineColor(sf::Color::Black);
         m_levelText->setOutlineThickness(1.f);
-        m_levelText->setPosition({PANEL_X + 46.f, PANEL_Y + 132.f});
+        m_levelText->setPosition({PANEL_X + 67.f, PANEL_Y + 132.f});
 
         // Hint Text
         m_hintText.emplace(m_font, "[UP / DOWN] CHOOSE    [ENTER / CLICK] SELECT", HINT_FONT_SIZE);
@@ -164,8 +163,8 @@ void WinState::onEnter() {
     m_transitioning = false;
     SoundManager::getInstance().playMusic(MusicId::WIN);
     GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(LevelCatalog::count() + 1);
-    const int stageScore = m_progress.score - m_progress.levelStartScore;
-    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, LevelCatalog::count());
+    const int stageScore = m_progress.score;
+    GameManager::getInstance().getSaveManager().updateHighScore(stageScore, stageScore, LevelCatalog::count());
 }
 
 void WinState::onExit() {

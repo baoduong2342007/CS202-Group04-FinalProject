@@ -47,12 +47,12 @@ const sf::Color THEME_COLORS[4] = {
 
 // Column X Positions for the 7 columns in the table (Total W=574, Start X=33)
 constexpr float COL_STAGE = 44.f;  // WORLD 1-1 / ARENA
-constexpr float COL_MODE  = 124.f; // SOLO / CO-OP / PVP
-constexpr float COL_HERO  = 180.f; // MARIO / LUIGI / P1 MARIO
-constexpr float COL_RES   = 264.f; // CLEARED / GAME OVER / P1 WIN
-constexpr float COL_SCORE = 348.f; // 014500
-constexpr float COL_COINS = 414.f; // X08
-constexpr float COL_DATE  = 464.f; // 2026-09-02 17:05
+constexpr float COL_MODE  = 136.f; // SOLO / CO-OP / PVP
+constexpr float COL_HERO  = 192.f; // MARIO / LUIGI / P1 MARIO
+constexpr float COL_RES   = 270.f; // CLEARED / GAME OVER / P1 WIN
+constexpr float COL_SCORE = 364.f; // 014500
+constexpr float COL_COINS = 426.f; // X08
+constexpr float COL_DATE  = 472.f; // 2026-09-02 17:05
 
 void centerText(sf::Text& text, float centerX, float centerY) {
     sf::FloatRect bounds = text.getLocalBounds();
@@ -117,20 +117,20 @@ void RecordsState::initTextLabels() {
     // Section 1 Header
     m_section1Title.emplace(m_font, "STAGE BEST SCORES:", 8);
     m_section1Title->setFillColor(MUTED_GOLD_COLOR);
-    m_section1Title->setPosition({32.f, 52.f});
+    m_section1Title->setPosition({33.f, 52.f});
 
     // Section 2 Header
     m_section2Title.emplace(m_font, "RECENT ADVENTURES LOG:", 8);
     m_section2Title->setFillColor(MUTED_GOLD_COLOR);
-    m_section2Title->setPosition({32.f, 130.f});
+    m_section2Title->setPosition({33.f, 130.f});
 
     // Empty History Message
     m_emptyText.emplace(m_font, "[ NO MATCH RECORDS YET. PLAY A GAME TO RECORD YOUR RUN! ]", 8);
     m_emptyText->setFillColor(sf::Color(140, 175, 220));
     centerText(*m_emptyText, DisplayConfig::LOGICAL_WIDTH / 2.f, 228.f);
 
-    // Footer Hint
-    m_hintText.emplace(m_font, "[UP / DN] SELECT   [X / DEL] DELETE ENTRY   [C] RESET ALL   [P] SCREENSHOT   [ESC] BACK", 8);
+    // Footer Hint (fits cleanly within 640px)
+    m_hintText.emplace(m_font, "[UP/DN] SELECT   [X] DELETE   [C] RESET ALL   [P] SNAP   [ESC] BACK", 8);
     m_hintText->setFillColor(sf::Color(180, 210, 250));
     centerText(*m_hintText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
 
@@ -148,7 +148,7 @@ void RecordsState::initStageCards() {
 
     constexpr float CARD_W = 136.f;
     constexpr float CARD_H = 58.f;
-    constexpr float START_X = 32.f;
+    constexpr float START_X = 33.f;
     constexpr float SPACING = 10.f;
     constexpr float CARD_Y = 64.f;
 
@@ -402,6 +402,7 @@ void RecordsState::processInput(const InputState& inputState) {
                     if (m_selectedIndex >= static_cast<int>(newHistory.size())) {
                         m_selectedIndex = std::max(0, static_cast<int>(newHistory.size()) - 1);
                     }
+                    initStageCards();
                     updateMatchRows();
                     SoundManager::getInstance().playSound(SoundId::BRICK);
                     if (m_notificationText) {
@@ -419,7 +420,7 @@ void RecordsState::processInput(const InputState& inputState) {
             if (m_notificationText && m_selectedIndex >= 0 && m_selectedIndex < total) {
                 std::string scoreStr = std::to_string(history[m_selectedIndex].score);
                 while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
-                m_notificationText->setString("DELETE ENTRY #" + std::to_string(m_selectedIndex + 1) + " (SCORE: " + scoreStr + ")? PRESS [X/DEL] AGAIN  /  [ESC] CANCEL");
+                m_notificationText->setString("DELETE ENTRY #" + std::to_string(m_selectedIndex + 1) + " (SCORE: " + scoreStr + ")? PRESS [X] AGAIN  /  [ESC] CANCEL");
                 m_notificationText->setFillColor(RED_COLOR);
                 centerText(*m_notificationText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
             }

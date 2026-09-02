@@ -162,18 +162,28 @@ void PauseState::refreshVolumeDisplay() {
             m_menuTexts[i].setOutlineThickness(1.f);
         }
 
-        // Center origin horizontally and vertically
         sf::FloatRect bounds = m_menuTexts[i].getLocalBounds();
-        m_menuTexts[i].setOrigin({
-            bounds.position.x + bounds.size.x / 2.f,
-            bounds.position.y + bounds.size.y / 2.f
-        });
-        m_menuTexts[i].setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, startY + i * spacing});
+
+        if (i < 2) {
+            // Left-align audio control rows so slider columns line up with pixel perfection
+            m_menuTexts[i].setOrigin({
+                bounds.position.x,
+                bounds.position.y + bounds.size.y / 2.f
+            });
+            m_menuTexts[i].setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f - 143.f, startY + i * spacing});
+        } else {
+            // Center origin horizontally and vertically for action items
+            m_menuTexts[i].setOrigin({
+                bounds.position.x + bounds.size.x / 2.f,
+                bounds.position.y + bounds.size.y / 2.f
+            });
+            m_menuTexts[i].setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, startY + i * spacing});
+        }
     }
 
-    // Adaptive highlight box that wraps symmetrically around the selected item with balanced margins
+    // Highlight box that wraps symmetrically around the selected item with balanced margins
     const sf::FloatRect selBounds = m_menuTexts[m_selectedIndex].getLocalBounds();
-    const float boxW = selBounds.size.x + 36.f;
+    const float boxW = (m_selectedIndex < 2) ? 310.f : (selBounds.size.x + 36.f);
     const float boxH = 24.f;
 
     m_highlightBar.setSize({boxW, boxH});

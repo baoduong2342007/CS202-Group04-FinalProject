@@ -376,7 +376,7 @@ void PlayState::onNotify(const GameEvent& eventData) {
                 sessionScore += m_level->getMario2()->getScore();
                 teamLives = std::min(teamLives, m_level->getMario2()->getLives());
             }
-            const int stageScore = sessionScore - m_progress.levelStartScore;
+            const int stageScore = sessionScore;
             GameManager::getInstance().getSaveManager()
                 .updateHighScore(sessionScore, stageScore, m_progress.currentLevel);
             if (teamLives > 0) {
@@ -398,9 +398,9 @@ void PlayState::onNotify(const GameEvent& eventData) {
         snapshotProgress();
         const int completedLevel = m_progress.currentLevel;
 
-        // Persist per-stage and overall high scores for the completed level
-        const int stageScore = m_progress.score - m_progress.levelStartScore;
-        GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, completedLevel);
+        // Persist per-stage high score for the completed level
+        const int stageScore = m_progress.score;
+        GameManager::getInstance().getSaveManager().updateHighScore(stageScore, stageScore, completedLevel);
 
         // Record a CLEARED match history entry for this completed level
         GameRecord rec;
@@ -425,12 +425,14 @@ void PlayState::onNotify(const GameEvent& eventData) {
         // S6-TV1-12: start the transition state machine (freeze → fade → load → fade in).
         m_transitionIsWin = LevelCatalog::isPastFinalLevel(m_progress.currentLevel);
 
-        // Record the current score/coins as the baseline for the NEXT stage.
-        // This allows the per-stage high score to correctly measure only the
-        // points earned in the next stage (by taking the delta), without breaking
-        // the cumulative 'Global High Score' for the entire run.
-        m_progress.levelStartScore = m_progress.score;
-        m_progress.levelStartCoins = m_progress.coins;
+        // Reset score and coins to 0 when advancing to a new stage (per-stage scores and coins only, no accumulation).
+        // If it's a win, retain the final stage's score and coins so WinState can display it.
+        if (!m_transitionIsWin) {
+            m_progress.score = 0;
+            m_progress.levelStartScore = 0;
+            m_progress.coins = 0;
+            m_progress.levelStartCoins = 0;
+        }
 
         m_transitionTargetLevel = m_progress.currentLevel;
         m_transitionPhase = TransitionPhase::FADE_OUT;

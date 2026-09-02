@@ -2,7 +2,7 @@
 
 ## Scope, audience, and how to read
 
-This document is a quick entry point for new or junior developers who want to
+This document is a quick entry point for people who want to
 understand **why** the code is organized the way it is and which classes an
 in-game operation passes through. The content describes the implementation
 that exists in the repository; wherever something is a design benefit or an

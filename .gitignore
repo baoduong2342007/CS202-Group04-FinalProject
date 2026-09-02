@@ -30,3 +30,6 @@ Thumbs.db
 # Temporary files
 *.temp.*
 *.bak
+
+#Third-party library
+thirdparty/

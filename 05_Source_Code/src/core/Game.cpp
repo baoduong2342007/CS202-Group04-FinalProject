@@ -9,8 +9,13 @@
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
 #include "states/MenuState.h"
+#include <chrono>
+#include <ctime>
+#include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 namespace {
     /**
@@ -113,6 +118,33 @@ void Game::processEvents() {
       return;
     }
     
+    if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+      if (key->code == sf::Keyboard::Key::F12 ||
+          key->code == sf::Keyboard::Key::P ||
+          key->code == sf::Keyboard::Key::F10) {
+        sf::Texture tex;
+        if (tex.resize(m_renderTexture.getSize())) {
+          tex.update(m_renderTexture.getTexture());
+          sf::Image screenshot = tex.copyToImage();
+          std::filesystem::create_directories("screenshots");
+          auto now = std::chrono::system_clock::now();
+          std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+          std::tm tm{};
+#if defined(_WIN32)
+          localtime_s(&tm, &now_c);
+#else
+          localtime_r(&now_c, &tm);
+#endif
+          std::ostringstream oss;
+          oss << std::put_time(&tm, "screenshots/mario_%Y%m%d_%H%M%S.png");
+          if (screenshot.saveToFile(oss.str())) {
+            SoundManager::getInstance().playSound(SoundId::COIN);
+            std::cout << "[Screenshot] Captured to " << oss.str() << std::endl;
+          }
+        }
+      }
+    }
+
     // States consume logical mouse coordinates. A mouse event in a black bar
     // is rejected, while keyboard/window events pass through unchanged.
     if (const auto mapped = mapMouseEventToLogical(*event, m_window.getSize())) {

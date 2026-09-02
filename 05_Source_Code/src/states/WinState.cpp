@@ -11,8 +11,12 @@
 #include "ui/UILayoutHelper.h"
 #include "states/PlayState.h"
 #include <algorithm>
-#include <iostream>
+#include <chrono>
 #include <cmath>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 namespace {
     constexpr unsigned int TITLE_FONT_SIZE = 26;
@@ -85,13 +89,14 @@ WinState::WinState(const GameProgress& progress)
         m_scoreText->setOutlineThickness(1.f);
         m_scoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 84.f});
 
-        // High Score Text
-        const int highScore = std::max(
-            m_progress.score,
-            GameManager::getInstance().getSaveManager().getData().highScore);
+        // High Score Text — currentLevel is past-final (e.g. 5) so use
+        // LevelCatalog::count() to look up the last stage's best record.
+        const int lastLevel = LevelCatalog::count();
+        const int stageHighScore = GameManager::getInstance().getSaveManager().getHighScore(lastLevel);
+        const int highScore = std::max(m_progress.score, stageHighScore);
         std::string highStr = std::to_string(highScore);
         while (highStr.length() < 6) highStr = "0" + highStr;
-        m_highScoreText.emplace(m_font, "RECORD SCORE  : " + highStr, STAT_FONT_SIZE);
+        m_highScoreText.emplace(m_font, "BEST RECORD   : " + highStr, STAT_FONT_SIZE);
         m_highScoreText->setFillColor(BODY_COLOR);
         m_highScoreText->setOutlineColor(sf::Color::Black);
         m_highScoreText->setOutlineThickness(1.f);
@@ -158,7 +163,9 @@ void WinState::onEnter() {
     m_animTimer = 0.f;
     m_transitioning = false;
     SoundManager::getInstance().playMusic(MusicId::WIN);
-    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
+    GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(LevelCatalog::count() + 1);
+    const int stageScore = m_progress.score - m_progress.levelStartScore;
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, LevelCatalog::count());
 }
 
 void WinState::onExit() {

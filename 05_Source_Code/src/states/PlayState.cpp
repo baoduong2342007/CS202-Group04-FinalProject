@@ -25,8 +25,10 @@
 
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
+#include "core/TimeUtils.h"
 
 namespace {
+
     const sf::Color FADE_START_COLOR(0, 0, 0, 0);
 
     // Death/Damage Camera Shake configuration
@@ -374,8 +376,9 @@ void PlayState::onNotify(const GameEvent& eventData) {
                 sessionScore += m_level->getMario2()->getScore();
                 teamLives = std::min(teamLives, m_level->getMario2()->getLives());
             }
+            const int stageScore = sessionScore - m_progress.levelStartScore;
             GameManager::getInstance().getSaveManager()
-                .updateHighScore(sessionScore);
+                .updateHighScore(sessionScore, stageScore, m_progress.currentLevel);
             if (teamLives > 0) {
                 m_isReloadPending = true;
             } else {
@@ -393,14 +396,42 @@ void PlayState::onNotify(const GameEvent& eventData) {
         // S6-TV1-09: snapshot BEFORE destroying the level so we never read
         // data from a Mario that is about to be destroyed.
         snapshotProgress();
+        const int completedLevel = m_progress.currentLevel;
+
+        // Persist per-stage and overall high scores for the completed level
+        const int stageScore = m_progress.score - m_progress.levelStartScore;
+        GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, completedLevel);
+
+        // Record a CLEARED match history entry for this completed level
+        GameRecord rec;
+        rec.date = TimeUtils::getCurrentDateTimeString();
+        rec.level = completedLevel;
+        rec.mode = m_isCoop ? "CO-OP" : "SOLO";
+        if (m_isCoop) {
+            rec.character = "CO-OP";
+        } else if (m_progress.character == CharacterType::LUIGI) {
+            rec.character = "LUIGI";
+        } else {
+            rec.character = "MARIO";
+        }
+        rec.result = "CLEARED";
+        rec.score = stageScore;
+        rec.coins = m_progress.coins - m_progress.levelStartCoins;
+        GameManager::getInstance().getSaveManager().addGameRecord(rec);
+
         m_progress.currentLevel++;
         GameManager::getInstance().getSaveManager().updateHighestUnlockedLevel(
-            std::min(m_progress.currentLevel, LevelCatalog::count()));
-        // S6-TV1-19: persist the high score at level completion too, so reaching
-        // the finish right before quitting is never lost.
-        GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
+            std::min(m_progress.currentLevel, LevelCatalog::count() + 1));
         // S6-TV1-12: start the transition state machine (freeze → fade → load → fade in).
         m_transitionIsWin = LevelCatalog::isPastFinalLevel(m_progress.currentLevel);
+
+        // Record the current score/coins as the baseline for the NEXT stage.
+        // This allows the per-stage high score to correctly measure only the
+        // points earned in the next stage (by taking the delta), without breaking
+        // the cumulative 'Global High Score' for the entire run.
+        m_progress.levelStartScore = m_progress.score;
+        m_progress.levelStartCoins = m_progress.coins;
+
         m_transitionTargetLevel = m_progress.currentLevel;
         m_transitionPhase = TransitionPhase::FADE_OUT;
         m_fadeAlpha = 0.f;

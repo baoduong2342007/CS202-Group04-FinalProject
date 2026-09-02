@@ -25,4 +25,6 @@ struct GameProgress {
     // contract unchanged.
     bool isCoop = false;
     CharacterType character2 = CharacterType::LUIGI;
+    int levelStartScore = 0; // Score at the start of the current level
+    int levelStartCoins = 0; // Coins at the start of the current level
 };

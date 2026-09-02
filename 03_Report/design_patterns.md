@@ -479,7 +479,7 @@ sequenceDiagram
 | State role | Actual object | Responsibility |
 | --- | --- | --- |
 | State interface | `IGameState` | `onEnter/onExit/onPause/onResume` lifecycle and frame methods. |
-| Concrete states | `MenuState`, `PlayState`, `PauseState`, `GameOverState`, `WinState`, ... | Encapsulate the behavior of each mode. |
+| Concrete states | `MenuState`, `LevelSelectState`, `CharacterSelectState`, `CoopCharacterSelectState`, `PvpCharacterSelectState`, `PlayState`, `PvpPlayState`, `PauseState`, `GameOverState`, `WinState`, `RecordsState` | Encapsulate the behavior of each mode. |
 | Context/owner | `GameManager` | Forwards event/input/update to the top state and owns the stack. |
 | Transition policy | `PendingOp { CHANGE, PUSH, POP }` | Separates the state-change request from the moment objects are destroyed. |
 

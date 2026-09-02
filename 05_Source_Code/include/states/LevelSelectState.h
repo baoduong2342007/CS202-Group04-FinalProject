@@ -49,6 +49,7 @@ private:
         std::optional<sf::Text> themeText;
         std::optional<sf::Text> descText;
         std::optional<sf::Text> statusBadgeText;
+        std::optional<sf::Text> highScoreText;
         std::optional<sf::Text> actionText;
         std::optional<sf::Sprite> previewSprite;
     };

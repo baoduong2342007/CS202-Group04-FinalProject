@@ -19,6 +19,7 @@
 #include "core/GameManager.h"
 #include "core/LevelCatalog.h"
 #include "core/SoundManager.h"
+#include "core/TimeUtils.h"
 #include "patterns/EventBus.h"
 #include "patterns/EventType.h"
 #include "patterns/JumpCommand.h"
@@ -376,6 +377,21 @@ void PvpPlayState::updateRoundFlow(float dt) {
                     m_roundWins[m_roundWinner] >= WINS_TO_TAKE_MATCH) {
                     m_matchWinner = m_roundWinner;
                     m_phase = Phase::MATCH_END;
+
+                    // Record PvP Match to Hall of Fame
+                    GameRecord rec;
+                    rec.date = TimeUtils::getCurrentDateTimeString();
+                    rec.level = 1;
+                    rec.mode = "PVP";
+                    const CharacterType winnerChar = (m_matchWinner >= 0 && m_matchWinner < 2)
+                        ? m_playerTypes[m_matchWinner]
+                        : CharacterType::MARIO;
+                    rec.character = (m_matchWinner == 0 ? "P1 " : "P2 ") +
+                        std::string(winnerChar == CharacterType::LUIGI ? "LUIGI" : "MARIO");
+                    rec.result = (m_matchWinner == 0) ? "P1 WIN" : "P2 WIN";
+                    rec.score = m_roundWins[0] * 1000 + m_roundWins[1] * 500;
+                    rec.coins = (m_matchWinner >= 0 && m_matchWinner < 2) ? m_roundWins[m_matchWinner] : 0;
+                    GameManager::getInstance().getSaveManager().addGameRecord(rec);
                 } else {
                     ++m_roundNumber;
                     resetRound();

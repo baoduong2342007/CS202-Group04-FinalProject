@@ -123,7 +123,7 @@
 | 71 | Factory Method | EntityFactory with polymorphic Creator hierarchy | ✅ |
 | 72 | Singleton | GameManager, SoundManager | ✅ |
 | 73 | Observer | EventBus with RAII Subscription tokens | ✅ |
-| 74 | State | IGameState → MenuState/PlayState/PauseState/GameOverState/WinState | ✅ |
+| 74 | State | IGameState → MenuState/LevelSelectState/CharacterSelectState/PlayState/PvpPlayState/PauseState/GameOverState/WinState/RecordsState | ✅ |
 | 75 | Command | ICommand → JumpCommand/MoveLeftCommand/MoveRightCommand/etc. + InputHandler | ✅ |
 
 ---
@@ -164,16 +164,18 @@
 
 | # | Feature | Status |
 |---|---|:---:|
-| 89 | Menu → Play → Pause → GameOver → Win state transitions | ✅ |
+| 89 | Menu → LevelSelect → CharacterSelect → Play → Pause → GameOver → Win state transitions | ✅ |
 | 90 | Score tracking and display via HUD | ✅ |
 | 91 | Lives counter display | ✅ |
 | 92 | Level countdown timer (400s) with timeout death | ✅ |
 | 93 | Save/Load game progress (SaveManager) | ✅ |
-| 94 | Atomic save-file replacement for data safety | ✅ |
-| 95 | High score persistence | ✅ |
-| 96 | Level unlock progression | ✅ |
-| 97 | Stomp combo scoring (100→200→400→800→1000→2000→4000→5000→8000→1-Up) | ✅ |
-| 98 | Animated score popups | ✅ |
+| 94 | Atomic save-file replacement for data safety (.tmp -> .txt atomic rename) | ✅ |
+| 95 | Overall & Per-Stage High Score persistence (World 1-1 to 1-4 individual bests) | ✅ |
+| 96 | Level unlock progression (clearing stage unlocks next stage) | ✅ |
+| 97 | Hall of Fame & Match History state (`RecordsState`) with multi-mode scrollable match log and full data reset keybinding (`C`) | ✅ |
+| 98 | Global Screenshot Capture system (`F12` / `P`) exporting timestamped PNGs to `screenshots/` | ✅ |
+| 99 | Stomp combo scoring (100→200→400→800→1000→2000→4000→5000→8000→1-Up) | ✅ |
+| 100 | Animated score popups | ✅ |
 
 ---
 
@@ -181,12 +183,12 @@
 
 | # | Feature | Status |
 |---|---|:---:|
-| 99 | NES-style sprite atlas system (consolidated tileset) | ✅ |
-| 100 | Animation system with frame-based sprite sequences | ✅ |
-| 101 | Parallax background rendering | ✅ |
-| 102 | Integer-scaling letterbox display (640×360 logical canvas) | ✅ |
-| 103 | Camera with horizontal deadzone and vertical edge-margin follow | ✅ |
-| 104 | Theme-aware tile/entity rendering across 4 world themes | ✅ |
+| 101 | NES-style sprite atlas system (consolidated tileset) | ✅ |
+| 102 | Animation system with frame-based sprite sequences | ✅ |
+| 103 | Parallax background rendering | ✅ |
+| 104 | Integer-scaling letterbox display (640×360 logical canvas) | ✅ |
+| 105 | Camera with horizontal deadzone and vertical edge-margin follow | ✅ |
+| 106 | Theme-aware tile/entity rendering across 4 world themes | ✅ |
 
 ---
 

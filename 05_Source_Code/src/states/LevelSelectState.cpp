@@ -244,6 +244,18 @@ void LevelSelectState::initStageCards() {
             card.statusBadgeText->setOutlineColor(sf::Color::Black);
             card.statusBadgeText->setOutlineThickness(1.f);
 
+            // High Score Text for this level
+            const int stageScore = GameManager::getInstance().getSaveManager().getLevelHighScore(def.number);
+            std::string scoreStr = std::to_string(stageScore);
+            while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
+            card.highScoreText.emplace(m_font, "BEST: " + scoreStr, 8);
+            card.highScoreText->setFillColor(MUTED_GOLD_COLOR);
+            card.highScoreText->setOutlineColor(sf::Color::Black);
+            card.highScoreText->setOutlineThickness(1.f);
+            sf::FloatRect hiB = card.highScoreText->getLocalBounds();
+            card.highScoreText->setOrigin({hiB.position.x + hiB.size.x / 2.f, 0.f});
+            card.highScoreText->setPosition({centerX, CARD_Y + 192.f});
+
             // Bottom Action Tag
             card.actionText.emplace(m_font, (i == 0) ? "> PLAY <" : "STAGE " + std::to_string(def.number), ACTION_FONT_SIZE);
             card.actionText->setFillColor((i == 0) ? GOLD_COLOR : MUTED_GOLD_COLOR);
@@ -269,7 +281,7 @@ void LevelSelectState::onEnter() {
         m_highestUnlockedLevel = std::clamp(
             GameManager::getInstance().getSaveManager().getData().highestUnlockedLevel,
             1,
-            levelCount);
+            levelCount + 1);
     } else {
         m_highestUnlockedLevel = 0;
     }
@@ -284,7 +296,8 @@ void LevelSelectState::onEnter() {
     initTextLabels();
     initStageCards();
 
-    selectCard(0);
+    // Default cursor to the highest unlocked level
+    selectCard(std::clamp(m_highestUnlockedLevel - 1, 0, static_cast<int>(m_cards.size()) - 1));
 }
 
 void LevelSelectState::onExit() {}
@@ -476,6 +489,7 @@ void LevelSelectState::render(sf::RenderTarget& target) {
             if (card.themeText) target.draw(*card.themeText);
             if (card.descText) target.draw(*card.descText);
             if (card.statusBadgeText) target.draw(*card.statusBadgeText);
+            if (card.highScoreText) target.draw(*card.highScoreText);
             if (card.actionText) target.draw(*card.actionText);
         }
     }

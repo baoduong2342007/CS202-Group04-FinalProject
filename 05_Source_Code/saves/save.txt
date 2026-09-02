@@ -1,0 +1,9 @@
+version 1
+highScore 0
+levelHighScore1 0
+levelHighScore2 0
+levelHighScore3 0
+levelHighScore4 0
+highestUnlockedLevel 1
+soundVolume 80
+musicVolume 70

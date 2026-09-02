@@ -12,7 +12,8 @@ This document describes the source code organization of the Super Mario Bros. pr
 |-- assets/                 # Runtime textures, sounds, fonts
 |-- include/                # C++ header files
 |-- levels/                 # Level data files
-|-- saves/                  # Auto-generated save directory
+|-- saves/                  # Auto-generated save directory (stores saves/save.txt)
+|-- screenshots/            # Auto-generated directory for captured PNG screenshots
 |-- src/                    # C++ source implementations
 `-- thirdparty/             # Local third-party binaries (SFML auto-downloaded)
 ```
@@ -23,13 +24,13 @@ This document describes the source code organization of the Super Mario Bros. pr
 
 ```text
 include/
-|-- core/       # Game loop, catalog, display, save, score, sound, animation, textures
+|-- core/       # Game loop, catalog, display, save, score, sound, animation, textures, time utilities
 |-- entities/   # Mario, enemies, blocks, FireBall, explosion, shared entity types
 |-- items/      # Coin, Mushroom, FireFlower, Star
 |-- level/      # Level ownership, TileMap, Camera, tile semantics and frames
 |-- patterns/   # Commands, InputState, EventBus, Factory Method, observer interfaces
 |-- physics/    # Box2D engine, listener, collision manager and tile resolver
-|-- states/     # Menu, Play, Pause, GameOver, Win, PvP duel states and Mario State pattern classes
+|-- states/     # Menu, LevelSelect, CharacterSelect, Play, Pause, GameOver, Win, Records, PvP duel states
 `-- ui/         # HUD, layout anchors and shared menu widget
 
 src/

@@ -15,6 +15,7 @@
 #include "patterns/InputState.h"
 #include "states/LevelSelectState.h"
 #include "states/PvpCharacterSelectState.h"
+#include "states/RecordsState.h"
 #include "ui/UILayoutHelper.h"
 
 #include <cmath>
@@ -219,9 +220,15 @@ void MenuState::initMenu() {
         SoundManager::getInstance().playSound(SoundId::COIN);
         GameManager::getInstance().changeState(std::make_unique<PvpCharacterSelectState>());
     }, 13);
+    m_menu->addItem("HALL OF FAME", [this]() {
+        if (m_transitioning) return;
+        m_transitioning = true;
+        SoundManager::getInstance().playSound(SoundId::COIN);
+        GameManager::getInstance().changeState(std::make_unique<RecordsState>());
+    }, 13);
 
-    m_menu->setSpacing(24.f);
-    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 178.f}, UIAnchor::Center);
+    m_menu->setSpacing(20.f);
+    m_menu->setPosition({DisplayConfig::LOGICAL_WIDTH / 2.f, 172.f}, UIAnchor::Center);
 }
 
 void MenuState::onEnter() {

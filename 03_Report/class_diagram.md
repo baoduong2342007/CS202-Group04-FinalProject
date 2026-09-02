@@ -82,9 +82,15 @@ classDiagram
         +load(): bool
         +save(): bool
         +resetToDefaults()
-        +updateHighScore(score): bool
+        +updateHighScore(globalScore, stageScore, level): bool
         +updateHighestUnlockedLevel(level): bool
         +updateAudioSettings(soundVolume, musicVolume): bool
+        +addGameRecord(record): bool
+        +clearMatchHistory(): bool
+        +resetAllData(): bool
+        +getHighScore(level): int
+        +getLevelHighScore(level): int
+        +getMatchHistory(): vector
     }
 
     class IGameState {
@@ -112,6 +118,7 @@ classDiagram
     }
     class GameOverState
     class WinState
+    class RecordsState
 
     Game --> GameManager : delegates frame work
     GameManager "1" *-- "0..*" IGameState : owns stack entries
@@ -127,6 +134,7 @@ classDiagram
     IGameState <|-- PauseState
     IGameState <|-- GameOverState
     IGameState <|-- WinState
+    IGameState <|-- RecordsState
 
 ```
 

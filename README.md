@@ -15,7 +15,7 @@
 | `01_AI_Usage_Declaration/` | AI usage report (Markdown + PDF) |
 | `02_Demo_Video/` | Demo video link |
 | `03_Report/` | Class diagram, Design patterns, OOP principles (Markdown + PDF) |
-| `04_Feature_List/` | Complete list of 104 features |
+| `04_Feature_List/` | Complete list of 106 features |
 | `05_Source_Code/` | Full C++ source code with assets |
 | `06_Member_Contribution/` | Member contribution spreadsheet |
 
@@ -149,6 +149,7 @@ Use **arrow keys** to select a mode, press **Enter** to confirm.
 | Shoot fireball (Fire Mario) | `X` |
 | Enter pipe | `S` or ↓ |
 | Pause | `Esc` |
+| **Take Screenshot** | **`F12`** or **`P`** (saved to `screenshots/`) |
 
 ### 2-Player Co-op
 
@@ -161,6 +162,7 @@ Both players share one keyboard and cooperate through 4 levels:
 | Run | `Left Shift` / `J` | `Right Shift` / `Numpad 1` |
 | Shoot fireball | `X` / `F` | `/` / `Numpad 3` |
 | Enter pipe | `S` | ↓ / `Numpad 2` |
+| Screenshot | `F12` / `P` | `F12` / `P` |
 
 ### 2-Player Versus
 
@@ -172,6 +174,7 @@ Best-of-3 stomp duel — land on your opponent's head to score!
 | Jump | `W` | ↑ |
 | Run | `Left Shift` | `Right Shift` |
 | Shoot fireball | `X` | `/` |
+| Screenshot | `F12` / `P` | `F12` / `P` |
 
 A Fire Flower spawns on the center pedestal after 6–12 seconds. Fireballs only stun — you must stomp to score!
 
@@ -185,7 +188,9 @@ A Fire Flower spawns on the center pedestal after 6–12 seconds. Fireballs only
 - **Fire Flower** → Shoot fireballs to defeat enemies (Fire Mario)
 - **Star** → Temporary invincibility, run through enemies
 - **Level 4** features Boss Bowser — reach the axe at the end of the bridge to defeat him!
-- The game **auto-saves** progress (high score, unlocked levels)
+- **Hall of Fame & Records**: View stage high scores and match history from the Main Menu.
+- **Auto-save system**: Automatically preserves per-stage records, highest unlocked level, and match logs in `saves/save.txt`.
+- **Screenshot capture**: Press `P` or `F12` anytime to export timestamped PNG captures to the `screenshots/` directory.
 
 ---
 
@@ -206,5 +211,5 @@ A Fire Flower spawns on the center pedestal after 6–12 seconds. Fireballs only
 1. **Factory Method** — `EntityFactory` dynamically creates entities from level files
 2. **Singleton** — `GameManager`, `SoundManager` ensure a single global instance
 3. **Observer** — `EventBus` publishes/subscribes to game events (jump, coin, death...)
-4. **State** — `IGameState` manages Menu / Play / Pause / GameOver / Win transitions
+4. **State** — `IGameState` manages Menu / LevelSelect / CharacterSelect / Play / Pause / GameOver / Win / Records / PvP transitions
 5. **Command** — `ICommand` + `InputHandler` maps keyboard input to player actions

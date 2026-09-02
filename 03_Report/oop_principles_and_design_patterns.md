@@ -385,8 +385,9 @@ observers register themselves.
 The project has **two State layers** that are related but must not be
 confused:
 
-1. **Game state:** `IGameState` with `MenuState`, `PlayState`, `PauseState`,
-   `GameOverState`, `WinState`, ... representing big screens/flows.
+1. **Game state:** `IGameState` with `MenuState`, `LevelSelectState`, `CharacterSelectState`,
+   `PlayState`, `PauseState`, `GameOverState`, `WinState`, `RecordsState`, `PvpPlayState`, ...
+   representing big screens/flows.
 2. **Mario power-up state:** `IMarioState` with `SmallMarioState`,
    `SuperMarioState`, `SmallFireMarioState`, `SuperFireMarioState`, owned by
    `Mario` through a `unique_ptr`.

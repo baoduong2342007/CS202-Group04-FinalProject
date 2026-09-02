@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(SuperMario VERSION 1.0 LANGUAGES CXX)
 
@@ -36,11 +36,12 @@ if(WIN32 AND NOT EXISTS "${CMAKE_SOURCE_DIR}/thirdparty/SFML/lib/cmake/SFML/SFML
         set(EXPECTED_SFML_HASH "SHA256=4D83F919BD9356CD8C9C7B542BF70E4F6E542A51FB0FD1B6DE7AFFC81ED919FB")
     endif()
     set(SFML_ZIP_PATH "${CMAKE_BINARY_DIR}/sfml-3.0.0-win.zip")
-    # S6-TV1-27: TLS verification is ON and the archive integrity is verified via
-    # EXPECTED_SFML_HASH (real SHA256 of the downloaded zip, confirmed by TV1).
+    # S6-TV1-27: TLS_VERIFY is set to OFF to avoid missing CA root cert bundle issues
+    # on Windows, while archive integrity and authenticity are strictly verified via
+    # EXPECTED_SFML_HASH (SHA256 of the official release zip).
     file(DOWNLOAD "${SFML_URL}"
                   "${SFML_ZIP_PATH}"
-                  TLS_VERIFY ON
+                  TLS_VERIFY OFF
                   EXPECTED_HASH "${EXPECTED_SFML_HASH}"
                   SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
@@ -147,8 +148,6 @@ target_compile_definitions(game_lib PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(WIN32)
         set_property(TARGET SuperMario PROPERTY WIN32_EXECUTABLE TRUE)
-    elseif(APPLE)
-        set_property(TARGET SuperMario PROPERTY MACOSX_BUNDLE TRUE)
     endif()
 endif()
 

@@ -7,14 +7,16 @@
 #include "states/MenuState.h"
 #include "core/GameManager.h"
 #include "core/SoundManager.h"
+#include "core/TimeUtils.h"
 #include "patterns/InputState.h"
 #include "ui/UILayoutHelper.h"
 #include "states/PlayState.h"
 #include <algorithm>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 namespace {
+
     constexpr unsigned int TITLE_FONT_SIZE = 26;
     constexpr unsigned int SUBTITLE_FONT_SIZE = 10;
     constexpr unsigned int STAT_FONT_SIZE = 11;
@@ -86,12 +88,11 @@ GameOverState::GameOverState(const GameProgress& progress)
         m_scoreText->setPosition({PANEL_X + 46.f, PANEL_Y + 84.f});
 
         // High Score Text
-        const int highScore = std::max(
-            m_progress.score,
-            GameManager::getInstance().getSaveManager().getData().highScore);
+        const int stageHighScore = GameManager::getInstance().getSaveManager().getHighScore(m_progress.currentLevel);
+        const int highScore = std::max(m_progress.score, stageHighScore);
         std::string highStr = std::to_string(highScore);
         while (highStr.length() < 6) highStr = "0" + highStr;
-        m_highScoreText.emplace(m_font, "HIGH SCORE    : " + highStr, STAT_FONT_SIZE);
+        m_highScoreText.emplace(m_font, "STAGE BEST    : " + highStr, STAT_FONT_SIZE);
         m_highScoreText->setFillColor(GOLD_COLOR);
         m_highScoreText->setOutlineColor(sf::Color::Black);
         m_highScoreText->setOutlineThickness(1.f);
@@ -146,7 +147,24 @@ GameOverState::GameOverState(const GameProgress& progress)
 void GameOverState::onEnter() {
     m_animTimer = 0.f;
     SoundManager::getInstance().playMusic(MusicId::GAME_OVER);
-    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score);
+    const int stageScore = m_progress.score - m_progress.levelStartScore;
+    GameManager::getInstance().getSaveManager().updateHighScore(m_progress.score, stageScore, m_progress.currentLevel);
+
+    GameRecord rec;
+    rec.date = TimeUtils::getCurrentDateTimeString();
+    rec.level = m_progress.currentLevel;
+    rec.mode = m_progress.isCoop ? "CO-OP" : "SOLO";
+    if (m_progress.isCoop) {
+        rec.character = "CO-OP";
+    } else if (m_progress.character == CharacterType::LUIGI) {
+        rec.character = "LUIGI";
+    } else {
+        rec.character = "MARIO";
+    }
+    rec.result = "GAME OVER";
+    rec.score = stageScore;
+    rec.coins = m_progress.coins - m_progress.levelStartCoins;
+    GameManager::getInstance().getSaveManager().addGameRecord(rec);
 }
 
 void GameOverState::onExit() {

@@ -1,117 +1,210 @@
-# Super Mario — CS202 Group 04 Final Project
+# Super Mario Bros. — CS202 Group 04 Final Project
 
-A C++17 platform game built with SFML 3.0.0 and Box2D 2.4.1.
+**Course**: CS202 — Object-Oriented Programming (APCS)  
+**Semester**: HK3 2025-2026  
+**Language**: C++17 | **Libraries**: SFML 3.0.0 + Box2D 2.4.1  
+**GitHub Repository**: [https://github.com/baoduong2342007/CS202-Group04-FinalProject](https://github.com/baoduong2342007/CS202-Group04-FinalProject)  
+**Demo Video**: [https://youtu.be/trNv75ICXMg](https://youtu.be/trNv75ICXMg)  
 
-## Game Overview
+---
 
-A faithful Super Mario Bros recreation featuring 4 worlds with distinct themes:
+## Submission Contents
 
-`Menu -> 1-1 (Overworld) -> 1-2 (Underground) -> 1-3 (Underwater) -> 1-4 (Castle) -> Win`
+| Folder | Content |
+|---|---|
+| `01_AI_Usage_Declaration/` | AI usage report (Markdown + PDF) |
+| `02_Demo_Video/` | Demo video link |
+| `03_Report/` | Class diagram, Design patterns, OOP principles (Markdown + PDF) |
+| `04_Feature_List/` | Complete list of 104 features |
+| `05_Source_Code/` | Full C++ source code with assets |
+| `06_Member_Contribution/` | Member contribution spreadsheet |
 
-### Game Modes
+---
 
-- **Single Player**: Classic Mario campaign through 4 levels
-- **2-Player Co-op**: Two players cooperate through the campaign
-- **2-Player Versus**: Best-of-3 stomp duel on a shared arena
+## How to Build & Play
 
-## Team
+### System Requirements
 
-| Member | Name | Primary area |
-|---|---|---|
-| TV1 | Duong | Architecture, states, integration |
-| TV2 | Nhat | Engine, rendering, camera, UI states |
-| TV3 | Bao | Mario, physics, collision |
-| TV4 | Vy | Levels, enemies, persistence |
-| TV5 | Truyen | Input, sound, HUD, items |
+- **CMake**: 3.16 or newer
+- **C++ Compiler**: Supporting C++17
+  - **Windows**: MinGW-w64 GCC 14.2+ or MSVC (Visual Studio 2022)
+  - **macOS**: Apple Clang / LLVM (Xcode Command Line Tools)
+  - **Linux**: GCC 9+ or Clang 10+
+- **SFML 3.0.0 & Box2D 2.4.1**: Downloaded and linked automatically via CMake on first build! (Internet connection required for initial configure).
 
-## Requirements
+---
 
-- CMake 3.16 or newer
-- A C++17 compiler; MinGW-w64 GCC 14.2 or newer is the supported Windows toolchain
-- SFML 3.0.0
-- Box2D 2.4.1, obtained through CMake FetchContent
+### Windows Build Instructions
 
-On Windows, the repository can bootstrap the pinned SFML archive if `thirdparty/SFML` is absent. CMake verifies TLS and the archive hash.
+#### Option A: Using MinGW-w64 (Recommended)
 
-## Configure, build, and run
-
-### Windows with MinGW
-
-```powershell
-cmake --preset mingw-release
-cmake --build --preset mingw-release --parallel 2
-.\build-release\SuperMario.exe
-```
-
-Debug build:
+Open **PowerShell** or **Command Prompt**:
 
 ```powershell
-cmake --preset mingw-debug
-cmake --build --preset mingw-debug --parallel 2
-.\build-debug\SuperMario.exe
+# Navigate to source code directory
+cd "05_Source_Code"
+
+# Generate build files
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+
+# Compile
+cmake --build build --parallel 4
+
+# Run the game
+.\build\SuperMario.exe
 ```
 
-### macOS or Linux
+#### Option B: Using Visual Studio / MSVC
 
-Install SFML with the platform package manager, then run:
+```powershell
+cd "05_Source_Code"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release --parallel 4
+.\build\Release\SuperMario.exe
+```
+
+---
+
+### macOS Build Instructions
+
+#### Step 1: Install prerequisites via Homebrew
 
 ```bash
+brew install cmake sfml
+```
+
+#### Step 2: Build and run
+
+```bash
+# Navigate to source code directory
+cd 05_Source_Code
+
+# Generate build files
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+
+# Compile
+cmake --build build -j$(sysctl -n hw.ncpu)
+
+# Run the game
 ./build/SuperMario
 ```
 
-The build copies the runtime `assets` and `levels` directories next to the executable. The incremental copy step only reruns when its inputs change.
+---
+
+### Linux Build Instructions (Ubuntu / Debian / Arch / Fedora)
+
+#### Step 1: Install dependencies
+
+**Ubuntu / Debian**:
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake libxrandr-dev libxcursor-dev libudev-dev \
+    libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev
+```
+
+**Fedora**:
+```bash
+sudo dnf install -y gcc-c++ cmake SFML-devel libXrandr-devel libXcursor-devel \
+    systemd-devel openal-soft-devel flac-devel libvorbis-devel mesa-libGL-devel freetype-devel
+```
+
+**Arch Linux**:
+```bash
+sudo pacman -S --needed base-devel cmake sfml
+```
+
+#### Step 2: Build and run
+
+```bash
+# Navigate to source code directory
+cd 05_Source_Code
+
+# Generate build files
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+# Compile
+cmake --build build -j$(nproc)
+
+# Run the game
+./build/SuperMario
+```
+
+> **Note**: Assets (`assets/`) and level maps (`levels/`) are automatically copied into the `build/` directory during compilation on all platforms.
+
+---
 
 ## Controls
 
+### Main Menu
+
+Use **arrow keys** to select a mode, press **Enter** to confirm.
+
 ### Single Player
 
-| Action | Input |
+| Action | Key |
 |---|---|
-| Move left | `A` or Left Arrow, held |
-| Move right | `D` or Right Arrow, held |
-| Jump | `W`, Up Arrow, or Space |
-| Run | Left Shift or Right Shift, held |
-| Shoot as Fire Mario | `X`, pressed |
+| Move left / right | `A` / `D` or ← / → |
+| Jump | `W`, ↑, or `Space` |
+| Run (sprint) | `Shift` (hold) |
+| Shoot fireball (Fire Mario) | `X` |
+| Enter pipe | `S` or ↓ |
 | Pause | `Esc` |
-| Navigate menus | Arrow keys |
-| Confirm menu selection | Enter or logical mouse click |
 
-### 2-Player Versus
+### 2-Player Co-op
 
-Best-of-3 stomp duel, both players on one keyboard:
+Both players share one keyboard and cooperate through 4 levels:
 
 | Action | Player 1 | Player 2 |
 |---|---|---|
-| Move | `A` / `D` | Left / Right Arrow |
-| Jump (tap for short hop) | `W` | Up Arrow |
-| Run | Left Shift, held | Right Shift, held |
-| Shoot fireball (while on fire) | `X` | `/` |
-| Pause | `Esc` | `Esc` |
+| Move | `A` / `D` | ← / → |
+| Jump | `W` / `Space` | ↑ / `Numpad 8` |
+| Run | `Left Shift` / `J` | `Right Shift` / `Numpad 1` |
+| Shoot fireball | `X` / `F` | `/` / `Numpad 3` |
+| Enter pipe | `S` | ↓ / `Numpad 2` |
 
-Only landing on the opponent's head wins a round. The fire flower spawns on
-the center pedestal after a random 6-12s and grants a 5-second fire state;
-fireballs launch the victim airborne with a short stun instead of scoring.
+### 2-Player Versus
 
-Clicks in letterbox bars are intentionally ignored. The game renders to a logical 640x360 canvas using centered integer scaling.
+Best-of-3 stomp duel — land on your opponent's head to score!
 
-## Repository map
+| Action | Player 1 | Player 2 |
+|---|---|---|
+| Move | `A` / `D` | ← / → |
+| Jump | `W` | ↑ |
+| Run | `Left Shift` | `Right Shift` |
+| Shoot fireball | `X` | `/` |
 
-| Path | Purpose |
-|---|---|
-| `include/` | Public C++ headers grouped by module |
-| `src/` | Production implementations |
-| `levels/` | Release level data |
-| `assets/` | Runtime textures, font, sounds, and asset manifest |
-| `docs/` | Class diagram, design patterns, and project documentation |
-| `thirdparty/` | Local third-party binaries when present |
+A Fire Flower spawns on the center pedestal after 6–12 seconds. Fireballs only stun — you must stomp to score!
 
-## Project documentation
+---
 
-- [Coding rules](CODING_RULES.md)
-- [File structure](FILE_STRUCTURE.md)
-- [Class diagram](docs/class_diagram.md)
-- [Design patterns](docs/design_patterns.md)
-- [OOP principles and design patterns](docs/oop_principles_and_design_patterns.md)
-- [Asset manifest](assets/ASSETS_LIST.md)
+## Gameplay Tips
+
+- **Stomp on enemies** to defeat them (Goomba, Koopa)
+- **Hit `?` blocks** from below to receive items (Coin, Mushroom, Fire Flower)
+- **Mushroom** → Mario grows bigger (Super Mario)
+- **Fire Flower** → Shoot fireballs to defeat enemies (Fire Mario)
+- **Star** → Temporary invincibility, run through enemies
+- **Level 4** features Boss Bowser — reach the axe at the end of the bridge to defeat him!
+- The game **auto-saves** progress (high score, unlocked levels)
+
+---
+
+## Team Members
+
+| ID | Student ID | Name | Responsibility |
+|---|---|---|---|
+| TV1 | 25125009 | Truong Quang Bao Duong | Architecture, states, integration, Factory & Observer patterns |
+| TV2 | 25125033 | Nguyen Phan Minh Nhat | Engine, rendering, camera, UI states |
+| TV3 | 25125079 | Nguyen Quoc Bao | Mario, physics, collision |
+| TV4 | 25125049 | Tran Hong Vy | Levels, enemies, save system |
+| TV5 | 25125068 | Le Phi Truyen | Input, sound, HUD, items, Command pattern |
+
+---
+
+## Design Patterns (5/5)
+
+1. **Factory Method** — `EntityFactory` dynamically creates entities from level files
+2. **Singleton** — `GameManager`, `SoundManager` ensure a single global instance
+3. **Observer** — `EventBus` publishes/subscribes to game events (jump, coin, death...)
+4. **State** — `IGameState` manages Menu / Play / Pause / GameOver / Win transitions
+5. **Command** — `ICommand` + `InputHandler` maps keyboard input to player actions

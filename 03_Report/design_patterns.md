@@ -100,7 +100,7 @@ sequenceDiagram
                     Level->>Bus: notify(FIREBALL_SHOT)
                 end
             end
-            Note over Shoot,Level: ShootCommand holds a void callback; the bool request is internal to Level
+            Note over Shoot,Level: ShootCommand holds a void callback - the bool request is internal to Level
             deactivate Level
             deactivate Shoot
         end
@@ -777,7 +777,7 @@ sequenceDiagram
         Note over Texture: shutdown() returns, nothing to clear
     end
     deactivate Texture
-    Note over Sound,GM: the function-local statics above live until process teardown; SaveManager remains a member of GM
+    Note over Sound,GM: The function-local statics live until teardown - SaveManager is a member of GM
 ```
 
 ### Roles and where they live in the source

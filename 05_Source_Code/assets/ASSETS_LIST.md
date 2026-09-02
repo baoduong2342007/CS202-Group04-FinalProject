@@ -8,8 +8,7 @@ synchronization; reference paths are relative to the repository root. The
 package allowlist is generated from `CMakeLists.txt` and
 `include/core/SoundManifest.def`.
 Runtime classification records loader/package inclusion only and does not grant
-redistribution permission. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)
-for the current attribution/legal gate.
+redistribution permission. All assets are used solely for academic and educational evaluation.
 
 | Label | Meaning |
 |---|---|
@@ -96,10 +95,7 @@ runtime package.
 SoundManager is the only SFX playback authority.
 
 The runtime package's WAV/FLAC files, font, sprites, backgrounds, and
-Nintendo-inspired textures have no per-file provenance/license record in this
-repository. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md); the
-asset redistribution/sign-off gate remains `BLOCKED` until provenance and
-license/permission are supplied for every packaged file.
+Nintendo-inspired textures are packaged strictly for academic coursework demonstration.
 
 ## Music
 

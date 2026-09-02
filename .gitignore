@@ -1,59 +1,32 @@
-# Build and Output directories
-build*/
-out/
+# Build artifacts
+build/
 bin/
-lib/
-
-# Executables, objects, and libraries
-*.exe
+out/
 *.o
 *.obj
+*.exe
+*.dll
+*.so
+*.dylib
 *.a
 *.lib
-*.so
-*.dll
-*.dylib
-SuperMario
 
-# CMake generated files
+# CMake generated
 CMakeCache.txt
 CMakeFiles/
-CMakeSettings.json
-CMakeUserPresets.json
-Makefile
 cmake_install.cmake
+Makefile
 compile_commands.json
-.ninja_deps
-.ninja_log
 
-# IDEs & Editor configurations
+# IDE & OS
 .vscode/
 .idea/
 .vs/
-.cache/
-.history/
-*.suo
-*.user
-*.sln
-*.vcxproj
-*.filters
-.agents/
-.agent/
-.gemini/
-
-# OS files
 .DS_Store
 Thumbs.db
-Desktop.ini
+*.swp
+*~
 
-# Game saves & logs
-saves/*
-!saves/.gitkeep
-*.log
-
-# Third-party libraries
-thirdparty/*
-!thirdparty/.gitkeep
-
-# Temporary workspace files
-tmp_folder/
+# Temporary files
+*.temp.*
+*.bak

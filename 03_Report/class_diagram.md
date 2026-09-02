@@ -128,12 +128,6 @@ classDiagram
     IGameState <|-- GameOverState
     IGameState <|-- WinState
 
-    classDef core fill:#fff7ed,stroke:#c2410c,color:#431407
-    classDef state fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    cssClass "Game,GameManager,SaveManager" core
-    cssClass "IGameState" contract
-    cssClass "MenuState,LevelSelectState,CharacterSelectState,CoopCharacterSelectState,PvpCharacterSelectState,PlayState,PvpPlayState,PauseState,GameOverState,WinState" state
 ```
 
 `GameManager::changeState`, `pushState`, and `popState` only enqueue a
@@ -271,14 +265,6 @@ classDiagram
     PvpPlayState "1" *-- "2" InputHandler : p1 and p2
     HUD "1" --> "1" Mario : reads authoritative values
 
-    classDef state fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef gameplay fill:#ecfdf5,stroke:#059669,color:#064e3b
-    classDef pattern fill:#fdf4ff,stroke:#a21caf,color:#701a75
-    cssClass "IGameState,IObserver" contract
-    cssClass "PlayState,PvpPlayState,GameManager" state
-    cssClass "Level,HUD,Mario,GameProgress" gameplay
-    cssClass "InputHandler,Subscription,EventBus" pattern
 ```
 
 In `PlayState::onEnter()`, four subscriptions are kept in
@@ -386,14 +372,6 @@ classDiagram
     TileMap "1" --> "0..1" b2World : physics pointer
     ContactListener --> TileMap : constructor reference
 
-    classDef owner fill:#ecfdf5,stroke:#059669,color:#064e3b
-    classDef physics fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef service fill:#fff7ed,stroke:#c2410c,color:#431407
-    classDef view fill:#f8fafc,stroke:#64748b,color:#1e293b
-    cssClass "Level,Mario,Entity,FireFlower,BackgroundRenderer" owner
-    cssClass "b2World,ContactListener,TileMap,Camera" physics
-    cssClass "TextureManager" service
-    cssClass "EntityView" view
 ```
 
 `Level::spawnEntitiesFromTileMap()` creates a local `EntityFactory`, calls
@@ -468,12 +446,6 @@ classDiagram
     CollisionManager ..> Enemy : defeat policy
     CollisionManager ..> Item : pickup policy
 
-    classDef physics fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef entity fill:#ecfdf5,stroke:#059669,color:#064e3b
-    cssClass "ContactListener,CollisionManager,TileMap" physics
-    cssClass "CollisionContext,CollisionParticipant" contract
-    cssClass "Entity,Mario,Enemy,Item" entity
 ```
 
 This is dependency/callback, not a new object graph: `ContactListener`'s
@@ -614,16 +586,6 @@ classDiagram
     Item --> Mario : onCollect reference
     FireBall --> Mario : owner pointer not owner
 
-    classDef base fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef player fill:#fff7ed,stroke:#c2410c,color:#431407
-    classDef enemy fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
-    classDef item fill:#f0fdf4,stroke:#16a34a,color:#14532d
-    classDef projectile fill:#eff6ff,stroke:#2563eb,color:#172554
-    cssClass "Entity,Character,Enemy,Item,QuestionBlock,FireballExplosion" base
-    cssClass "Mario" player
-    cssClass "Goomba,Koopa,PiranhaPlant,CheepCheep,Blooper,Podoboo,BulletBill,Lakitu,SpinyEgg,Spiny,HammerBro,Bowser,Firebar,BuzzyBeetle,RedKoopa,Paratroopa" enemy
-    cssClass "Coin,Mushroom,FireFlower,Star" item
-    cssClass "EnemyProjectile,FireBall,Hammer,BowserFire" projectile
 ```
 
 `Entity` receives a non-owning `TextureManager*`; `AnimationSystem` is the
@@ -688,10 +650,6 @@ classDiagram
     IMarioState <|.. SuperFireMarioState
     IMarioState ..> Mario : interface signature dependency only
 
-    classDef player fill:#fff7ed,stroke:#c2410c,color:#431407
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    cssClass "Mario,SmallMarioState,SuperMarioState,SmallFireMarioState,SuperFireMarioState" player
-    cssClass "MarioState,IMarioState" contract
 ```
 
 These are two different state seams: `IGameState` controls the lifecycle of
@@ -777,12 +735,6 @@ classDiagram
     EntityCreator --> Entity : factory method result
     Level ..> EntityFactory : local orchestrator
 
-    classDef factory fill:#fdf4ff,stroke:#a21caf,color:#701a75
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef value fill:#fff7ed,stroke:#c2410c,color:#431407
-    cssClass "EntityFactory,EnemyCreator,ItemCreator,WorldObjectCreator" factory
-    cssClass "EntityCreator" contract
-    cssClass "SpawnRequest,SpawnContext,Entity,Level" value
 ```
 
 In `Level::spawnEntitiesFromTileMap()`, the factory creates the object and
@@ -877,12 +829,6 @@ classDiagram
     SoundManager "1" *-- "0..*" Subscription : vector tokens
     SoundManager --> EventBus : subscribes in constructor
 
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef event fill:#fdf4ff,stroke:#a21caf,color:#701a75
-    classDef subscriber fill:#eff6ff,stroke:#2563eb,color:#172554
-    cssClass "ISubject,IObserver" contract
-    cssClass "EventBus,Subscription,EventBusState,SubscriptionLease,GameEvent" event
-    cssClass "PlayState,HUD,SoundManager" subscriber
 ```
 
 `EventBus::notify(const GameEvent&)` snapshots the listeners and re-checks
@@ -973,12 +919,6 @@ classDiagram
     MoveLeftCommand --> Mario : non-owning target
     MoveRightCommand --> Mario : non-owning target
 
-    classDef contract fill:#f8fafc,stroke:#475569,color:#0f172a
-    classDef input fill:#eff6ff,stroke:#2563eb,color:#172554
-    classDef command fill:#fdf4ff,stroke:#a21caf,color:#701a75
-    cssClass "InputHandler,InputState,Mario" input
-    cssClass "ICommand" contract
-    cssClass "JumpCommand,MoveLeftCommand,MoveRightCommand,RunCommand,ShootCommand,PauseCommand" command
 ```
 
 `PlayState::rebindCommands()` builds the concrete commands with
@@ -991,22 +931,22 @@ site, not field ownership from the command to Level.
 
 | Diagram relation/contract | Current evidence |
 | --- | --- |
-| `Game` loop delegates to the manager | [`include/core/Game.h:14`](../include/core/Game.h#L14), [`src/core/Game.cpp:78`](../src/core/Game.cpp#L78), [`src/core/Game.cpp:105`](../src/core/Game.cpp#L105), [`src/core/Game.cpp:129`](../src/core/Game.cpp#L129) |
-| Singleton, deferred state stack, value `SaveManager` | [`include/core/GameManager.h:23`](../include/core/GameManager.h#L23), [`include/core/GameManager.h:72`](../include/core/GameManager.h#L72), [`include/core/GameManager.h:74`](../include/core/GameManager.h#L74), [`include/core/SaveManager.h:22`](../include/core/SaveManager.h#L22), [`src/core/GameManager.cpp:27`](../src/core/GameManager.cpp#L27), [`src/core/GameManager.cpp:76`](../src/core/GameManager.cpp#L76), [`src/core/GameManager.cpp:88`](../src/core/GameManager.cpp#L88) |
-| change/push/pop lifecycle and overlay rendering | [`src/core/GameManager.cpp:44`](../src/core/GameManager.cpp#L44), [`src/core/GameManager.cpp:57`](../src/core/GameManager.cpp#L57), [`src/core/GameManager.cpp:64`](../src/core/GameManager.cpp#L64), [`src/core/GameManager.cpp:109`](../src/core/GameManager.cpp#L109) |
-| Concrete game states and the state contract | [`include/states/IGameState.h:19`](../include/states/IGameState.h#L19), [`include/states/PlayState.h:23`](../include/states/PlayState.h#L23), [`include/states/PvpPlayState.h:24`](../include/states/PvpPlayState.h#L24), [`include/states/PauseState.h:13`](../include/states/PauseState.h#L13) |
-| `PlayState` owns Level/HUD/handlers/tokens | [`include/states/PlayState.h:77`](../include/states/PlayState.h#L77), [`include/states/PlayState.h:78`](../include/states/PlayState.h#L78), [`include/states/PlayState.h:82`](../include/states/PlayState.h#L82), [`include/states/PlayState.h:106`](../include/states/PlayState.h#L106), [`include/ui/HUD.h:37`](../include/ui/HUD.h#L37), [`src/states/PlayState.cpp:281`](../src/states/PlayState.cpp#L281) |
-| Level ownership and non-owning handles | [`include/level/Level.h:30`](../include/level/Level.h#L30), [`include/level/Level.h:210`](../include/level/Level.h#L210), [`include/level/Level.h:211`](../include/level/Level.h#L211), [`include/level/Level.h:212`](../include/level/Level.h#L212), [`include/level/Level.h:215`](../include/level/Level.h#L215), [`include/level/Level.h:218`](../include/level/Level.h#L218), [`src/level/Level.cpp:174`](../src/level/Level.cpp#L174), [`src/level/Level.cpp:175`](../src/level/Level.cpp#L175) |
-| Level factory call and entity adoption | [`src/level/Level.cpp:685`](../src/level/Level.cpp#L685), [`src/level/Level.cpp:705`](../src/level/Level.cpp#L705), [`src/level/Level.cpp:730`](../src/level/Level.cpp#L730), [`src/level/Level.cpp:737`](../src/level/Level.cpp#L737) |
-| Entity/Character/Mario/Enemy hierarchy | [`include/entities/Entity.h:31`](../include/entities/Entity.h#L31), [`include/entities/Character.h:17`](../include/entities/Character.h#L17), [`include/entities/Mario.h:54`](../include/entities/Mario.h#L54), [`include/entities/Enemy.h:21`](../include/entities/Enemy.h#L21), [`include/entities/Goomba.h:17`](../include/entities/Goomba.h#L17), [`include/entities/Koopa.h:26`](../include/entities/Koopa.h#L26), [`include/entities/PiranhaPlant.h:15`](../include/entities/PiranhaPlant.h#L15), [`include/entities/BuzzyBeetle.h:13`](../include/entities/BuzzyBeetle.h#L13) |
-| Item hierarchy and collection contract | [`include/items/Item.h:14`](../include/items/Item.h#L14), [`include/items/Item.h:26`](../include/items/Item.h#L26), [`include/items/Coin.h:18`](../include/items/Coin.h#L18), [`include/items/Mushroom.h:19`](../include/items/Mushroom.h#L19), [`include/items/FireFlower.h:12`](../include/items/FireFlower.h#L12), [`include/items/Star.h:13`](../include/items/Star.h#L13) |
-| Mario power-up State Pattern | [`include/states/IMarioState.h:17`](../include/states/IMarioState.h#L17), [`include/entities/Mario.h:205`](../include/entities/Mario.h#L205), [`src/entities/Mario.cpp:252`](../src/entities/Mario.cpp#L252), [`src/entities/Mario.cpp:963`](../src/entities/Mario.cpp#L963), [`src/entities/Mario.cpp:1486`](../src/entities/Mario.cpp#L1486), [`src/entities/Mario.cpp:1490`](../src/entities/Mario.cpp#L1490) |
-| Read-only `EntityView` lookup results | [`include/level/EntityView.h:25`](../include/level/EntityView.h#L25), [`include/level/EntityView.h:133`](../include/level/EntityView.h#L133), [`include/level/EntityView.h:143`](../include/level/EntityView.h#L143), [`include/level/EntityView.h:156`](../include/level/EntityView.h#L156), [`include/level/EntityView.h:171`](../include/level/EntityView.h#L171) |
-| Collision callback and typed context | [`include/physics/ContactListener.h:14`](../include/physics/ContactListener.h#L14), [`include/physics/CollisionManager.h:33`](../include/physics/CollisionManager.h#L33), [`include/physics/CollisionManager.h:61`](../include/physics/CollisionManager.h#L61), [`include/physics/CollisionManager.h:95`](../include/physics/CollisionManager.h#L95), [`src/physics/ContactListener.cpp:10`](../src/physics/ContactListener.cpp#L10), [`src/physics/ContactListener.cpp:14`](../src/physics/ContactListener.cpp#L14) |
-| Factory Method creator composition | [`include/patterns/EntityFactory.h:20`](../include/patterns/EntityFactory.h#L20), [`include/patterns/EntityFactory.h:48`](../include/patterns/EntityFactory.h#L48), [`include/patterns/EntityCreator.h:14`](../include/patterns/EntityCreator.h#L14), [`include/patterns/WorldObjectCreator.h:13`](../include/patterns/WorldObjectCreator.h#L13), [`src/patterns/EntityFactory.cpp:19`](../src/patterns/EntityFactory.cpp#L19) |
-| EventBus, Observer, and the RAII token | [`include/patterns/EventBus.h:36`](../include/patterns/EventBus.h#L36), [`include/patterns/IObserver.h:17`](../include/patterns/IObserver.h#L17), [`include/patterns/Subscription.h:23`](../include/patterns/Subscription.h#L23), [`src/patterns/EventBus.cpp:17`](../src/patterns/EventBus.cpp#L17), [`src/patterns/EventBus.cpp:51`](../src/patterns/EventBus.cpp#L51), [`src/patterns/EventBus.cpp:196`](../src/patterns/EventBus.cpp#L196), [`src/patterns/EventBus.cpp:210`](../src/patterns/EventBus.cpp#L210), [`src/patterns/EventBus.cpp:242`](../src/patterns/EventBus.cpp#L242) |
-| `SoundManager` Singleton observer and subscription seam | [`include/core/SoundManager.h:116`](../include/core/SoundManager.h#L116), [`include/core/SoundManager.h:127`](../include/core/SoundManager.h#L127), [`include/core/SoundManager.h:251`](../include/core/SoundManager.h#L251), [`src/core/SoundManager.cpp:40`](../src/core/SoundManager.cpp#L40), [`src/core/SoundManager.cpp:45`](../src/core/SoundManager.cpp#L45), [`src/core/SoundManager.cpp:48`](../src/core/SoundManager.cpp#L48), [`src/core/SoundManager.cpp:105`](../src/core/SoundManager.cpp#L105), [`src/core/SoundManager.cpp:109`](../src/core/SoundManager.cpp#L109), [`src/core/Game.cpp:62`](../src/core/Game.cpp#L62), [`src/core/Game.cpp:65`](../src/core/Game.cpp#L65) |
-| Command ownership and dispatch | [`include/patterns/InputHandler.h:40`](../include/patterns/InputHandler.h#L40), [`include/patterns/InputHandler.h:86`](../include/patterns/InputHandler.h#L86), [`include/patterns/ICommand.h:16`](../include/patterns/ICommand.h#L16), [`src/patterns/InputHandler.cpp:18`](../src/patterns/InputHandler.cpp#L18), [`src/patterns/InputHandler.cpp:46`](../src/patterns/InputHandler.cpp#L46), [`src/states/PlayState.cpp:62`](../src/states/PlayState.cpp#L62) |
+| `Game` loop delegates to the manager | [`include/core/Game.h:14`](../05_Source_Code/include/core/Game.h#L14), [`src/core/Game.cpp:78`](../05_Source_Code/src/core/Game.cpp#L78), [`src/core/Game.cpp:105`](../05_Source_Code/src/core/Game.cpp#L105), [`src/core/Game.cpp:129`](../05_Source_Code/src/core/Game.cpp#L129) |
+| Singleton, deferred state stack, value `SaveManager` | [`include/core/GameManager.h:23`](../05_Source_Code/include/core/GameManager.h#L23), [`include/core/GameManager.h:72`](../05_Source_Code/include/core/GameManager.h#L72), [`include/core/GameManager.h:74`](../05_Source_Code/include/core/GameManager.h#L74), [`include/core/SaveManager.h:22`](../05_Source_Code/include/core/SaveManager.h#L22), [`src/core/GameManager.cpp:27`](../05_Source_Code/src/core/GameManager.cpp#L27), [`src/core/GameManager.cpp:76`](../05_Source_Code/src/core/GameManager.cpp#L76), [`src/core/GameManager.cpp:88`](../05_Source_Code/src/core/GameManager.cpp#L88) |
+| change/push/pop lifecycle and overlay rendering | [`src/core/GameManager.cpp:44`](../05_Source_Code/src/core/GameManager.cpp#L44), [`src/core/GameManager.cpp:57`](../05_Source_Code/src/core/GameManager.cpp#L57), [`src/core/GameManager.cpp:64`](../05_Source_Code/src/core/GameManager.cpp#L64), [`src/core/GameManager.cpp:109`](../05_Source_Code/src/core/GameManager.cpp#L109) |
+| Concrete game states and the state contract | [`include/states/IGameState.h:19`](../05_Source_Code/include/states/IGameState.h#L19), [`include/states/PlayState.h:23`](../05_Source_Code/include/states/PlayState.h#L23), [`include/states/PvpPlayState.h:24`](../05_Source_Code/include/states/PvpPlayState.h#L24), [`include/states/PauseState.h:13`](../05_Source_Code/include/states/PauseState.h#L13) |
+| `PlayState` owns Level/HUD/handlers/tokens | [`include/states/PlayState.h:77`](../05_Source_Code/include/states/PlayState.h#L77), [`include/states/PlayState.h:78`](../05_Source_Code/include/states/PlayState.h#L78), [`include/states/PlayState.h:82`](../05_Source_Code/include/states/PlayState.h#L82), [`include/states/PlayState.h:106`](../05_Source_Code/include/states/PlayState.h#L106), [`include/ui/HUD.h:37`](../05_Source_Code/include/ui/HUD.h#L37), [`src/states/PlayState.cpp:281`](../05_Source_Code/src/states/PlayState.cpp#L281) |
+| Level ownership and non-owning handles | [`include/level/Level.h:30`](../05_Source_Code/include/level/Level.h#L30), [`include/level/Level.h:210`](../05_Source_Code/include/level/Level.h#L210), [`include/level/Level.h:211`](../05_Source_Code/include/level/Level.h#L211), [`include/level/Level.h:212`](../05_Source_Code/include/level/Level.h#L212), [`include/level/Level.h:215`](../05_Source_Code/include/level/Level.h#L215), [`include/level/Level.h:218`](../05_Source_Code/include/level/Level.h#L218), [`src/level/Level.cpp:174`](../05_Source_Code/src/level/Level.cpp#L174), [`src/level/Level.cpp:175`](../05_Source_Code/src/level/Level.cpp#L175) |
+| Level factory call and entity adoption | [`src/level/Level.cpp:685`](../05_Source_Code/src/level/Level.cpp#L685), [`src/level/Level.cpp:705`](../05_Source_Code/src/level/Level.cpp#L705), [`src/level/Level.cpp:730`](../05_Source_Code/src/level/Level.cpp#L730), [`src/level/Level.cpp:737`](../05_Source_Code/src/level/Level.cpp#L737) |
+| Entity/Character/Mario/Enemy hierarchy | [`include/entities/Entity.h:31`](../05_Source_Code/include/entities/Entity.h#L31), [`include/entities/Character.h:17`](../05_Source_Code/include/entities/Character.h#L17), [`include/entities/Mario.h:54`](../05_Source_Code/include/entities/Mario.h#L54), [`include/entities/Enemy.h:21`](../05_Source_Code/include/entities/Enemy.h#L21), [`include/entities/Goomba.h:17`](../05_Source_Code/include/entities/Goomba.h#L17), [`include/entities/Koopa.h:26`](../05_Source_Code/include/entities/Koopa.h#L26), [`include/entities/PiranhaPlant.h:15`](../05_Source_Code/include/entities/PiranhaPlant.h#L15), [`include/entities/BuzzyBeetle.h:13`](../05_Source_Code/include/entities/BuzzyBeetle.h#L13) |
+| Item hierarchy and collection contract | [`include/items/Item.h:14`](../05_Source_Code/include/items/Item.h#L14), [`include/items/Item.h:26`](../05_Source_Code/include/items/Item.h#L26), [`include/items/Coin.h:18`](../05_Source_Code/include/items/Coin.h#L18), [`include/items/Mushroom.h:19`](../05_Source_Code/include/items/Mushroom.h#L19), [`include/items/FireFlower.h:12`](../05_Source_Code/include/items/FireFlower.h#L12), [`include/items/Star.h:13`](../05_Source_Code/include/items/Star.h#L13) |
+| Mario power-up State Pattern | [`include/states/IMarioState.h:17`](../05_Source_Code/include/states/IMarioState.h#L17), [`include/entities/Mario.h:205`](../05_Source_Code/include/entities/Mario.h#L205), [`src/entities/Mario.cpp:252`](../05_Source_Code/src/entities/Mario.cpp#L252), [`src/entities/Mario.cpp:963`](../05_Source_Code/src/entities/Mario.cpp#L963), [`src/entities/Mario.cpp:1486`](../05_Source_Code/src/entities/Mario.cpp#L1486), [`src/entities/Mario.cpp:1490`](../05_Source_Code/src/entities/Mario.cpp#L1490) |
+| Read-only `EntityView` lookup results | [`include/level/EntityView.h:25`](../05_Source_Code/include/level/EntityView.h#L25), [`include/level/EntityView.h:133`](../05_Source_Code/include/level/EntityView.h#L133), [`include/level/EntityView.h:143`](../05_Source_Code/include/level/EntityView.h#L143), [`include/level/EntityView.h:156`](../05_Source_Code/include/level/EntityView.h#L156), [`include/level/EntityView.h:171`](../05_Source_Code/include/level/EntityView.h#L171) |
+| Collision callback and typed context | [`include/physics/ContactListener.h:14`](../05_Source_Code/include/physics/ContactListener.h#L14), [`include/physics/CollisionManager.h:33`](../05_Source_Code/include/physics/CollisionManager.h#L33), [`include/physics/CollisionManager.h:61`](../05_Source_Code/include/physics/CollisionManager.h#L61), [`include/physics/CollisionManager.h:95`](../05_Source_Code/include/physics/CollisionManager.h#L95), [`src/physics/ContactListener.cpp:10`](../05_Source_Code/src/physics/ContactListener.cpp#L10), [`src/physics/ContactListener.cpp:14`](../05_Source_Code/src/physics/ContactListener.cpp#L14) |
+| Factory Method creator composition | [`include/patterns/EntityFactory.h:20`](../05_Source_Code/include/patterns/EntityFactory.h#L20), [`include/patterns/EntityFactory.h:48`](../05_Source_Code/include/patterns/EntityFactory.h#L48), [`include/patterns/EntityCreator.h:14`](../05_Source_Code/include/patterns/EntityCreator.h#L14), [`include/patterns/WorldObjectCreator.h:13`](../05_Source_Code/include/patterns/WorldObjectCreator.h#L13), [`src/patterns/EntityFactory.cpp:19`](../05_Source_Code/src/patterns/EntityFactory.cpp#L19) |
+| EventBus, Observer, and the RAII token | [`include/patterns/EventBus.h:36`](../05_Source_Code/include/patterns/EventBus.h#L36), [`include/patterns/IObserver.h:17`](../05_Source_Code/include/patterns/IObserver.h#L17), [`include/patterns/Subscription.h:23`](../05_Source_Code/include/patterns/Subscription.h#L23), [`src/patterns/EventBus.cpp:17`](../05_Source_Code/src/patterns/EventBus.cpp#L17), [`src/patterns/EventBus.cpp:51`](../05_Source_Code/src/patterns/EventBus.cpp#L51), [`src/patterns/EventBus.cpp:196`](../05_Source_Code/src/patterns/EventBus.cpp#L196), [`src/patterns/EventBus.cpp:210`](../05_Source_Code/src/patterns/EventBus.cpp#L210), [`src/patterns/EventBus.cpp:242`](../05_Source_Code/src/patterns/EventBus.cpp#L242) |
+| `SoundManager` Singleton observer and subscription seam | [`include/core/SoundManager.h:116`](../05_Source_Code/include/core/SoundManager.h#L116), [`include/core/SoundManager.h:127`](../05_Source_Code/include/core/SoundManager.h#L127), [`include/core/SoundManager.h:251`](../05_Source_Code/include/core/SoundManager.h#L251), [`src/core/SoundManager.cpp:40`](../05_Source_Code/src/core/SoundManager.cpp#L40), [`src/core/SoundManager.cpp:45`](../05_Source_Code/src/core/SoundManager.cpp#L45), [`src/core/SoundManager.cpp:48`](../05_Source_Code/src/core/SoundManager.cpp#L48), [`src/core/SoundManager.cpp:105`](../05_Source_Code/src/core/SoundManager.cpp#L105), [`src/core/SoundManager.cpp:109`](../05_Source_Code/src/core/SoundManager.cpp#L109), [`src/core/Game.cpp:62`](../05_Source_Code/src/core/Game.cpp#L62), [`src/core/Game.cpp:65`](../05_Source_Code/src/core/Game.cpp#L65) |
+| Command ownership and dispatch | [`include/patterns/InputHandler.h:40`](../05_Source_Code/include/patterns/InputHandler.h#L40), [`include/patterns/InputHandler.h:86`](../05_Source_Code/include/patterns/InputHandler.h#L86), [`include/patterns/ICommand.h:16`](../05_Source_Code/include/patterns/ICommand.h#L16), [`src/patterns/InputHandler.cpp:18`](../05_Source_Code/src/patterns/InputHandler.cpp#L18), [`src/patterns/InputHandler.cpp:46`](../05_Source_Code/src/patterns/InputHandler.cpp#L46), [`src/states/PlayState.cpp:62`](../05_Source_Code/src/states/PlayState.cpp#L62) |
 
 The diagrams do not attempt to list every private field, every tile object,
 or every gameplay enum. What is omitted is implementation detail that does

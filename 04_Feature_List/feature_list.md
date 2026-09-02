@@ -111,7 +111,7 @@
 | # | Feature | Status |
 |---|---|:---:|
 | 66 | Inheritance: Entity → Character → Mario/Enemy hierarchy | ✅ |
-| 67 | Polymorphism: std::vector\<Entity*\> with virtual update/render | ✅ |
+| 67 | Polymorphism: `std::vector<std::unique_ptr<Entity>>` with virtual `update`/`draw` | ✅ |
 | 68 | Encapsulation: private m_ members with getters/setters | ✅ |
 | 69 | Abstraction: IGameState, ICommand, IObserver interfaces | ✅ |
 | 70 | Item hierarchy: Item → Coin/Mushroom/FireFlower/Star | ✅ |
@@ -172,7 +172,7 @@
 | 94 | Atomic save-file replacement for data safety | ✅ |
 | 95 | High score persistence | ✅ |
 | 96 | Level unlock progression | ✅ |
-| 97 | Stomp combo scoring (100→200→400→800→1-Up) | ✅ |
+| 97 | Stomp combo scoring (100→200→400→800→1000→2000→4000→5000→8000→1-Up) | ✅ |
 | 98 | Animated score popups | ✅ |
 
 ---

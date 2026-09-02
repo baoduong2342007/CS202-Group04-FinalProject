@@ -21,8 +21,8 @@ Read in the following order if you are new to the codebase:
 5. **Extension recipes**, then check the **pitfall/glossary** before editing
    code.
 
-The full diagrams live in the [class diagram](class_diagram.md). Summary-style
-pattern descriptions live in [design patterns](design_patterns.md); the
+The full diagrams live in the [class diagram](https://github.com/baoduong2342007/CS202-Group04-FinalProject/blob/main/03_Report/class_diagram.md). Summary-style
+pattern descriptions live in [design patterns](https://github.com/baoduong2342007/CS202-Group04-FinalProject/blob/main/03_Report/design_patterns.md); the
 present document explains things more deeply using real flows and limits
 verified against the source.
 

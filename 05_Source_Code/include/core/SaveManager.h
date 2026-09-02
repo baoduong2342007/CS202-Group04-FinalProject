@@ -47,6 +47,7 @@ public:
     bool updateHighScore(int globalScore, int stageScore, int level = 0);
     bool updateHighestUnlockedLevel(int level);
     bool addGameRecord(const GameRecord& record);
+    bool deleteGameRecord(std::size_t index);
     bool clearMatchHistory();
     bool resetAllData();
 

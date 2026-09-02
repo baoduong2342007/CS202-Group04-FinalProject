@@ -264,6 +264,14 @@ bool SaveManager::addGameRecord(const GameRecord& record) {
     return save();
 }
 
+bool SaveManager::deleteGameRecord(std::size_t index) {
+    if (index >= m_data.matchHistory.size()) {
+        return false;
+    }
+    m_data.matchHistory.erase(m_data.matchHistory.begin() + index);
+    return save();
+}
+
 bool SaveManager::clearMatchHistory() {
     if (m_data.matchHistory.empty()) {
         return false;

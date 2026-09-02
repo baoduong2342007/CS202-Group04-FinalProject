@@ -71,6 +71,9 @@ void RecordsState::onEnter() {
     m_animTimer = 0.f;
     m_notificationTimer = 0.f;
     m_scrollOffset = 0;
+    m_selectedIndex = 0;
+    m_confirmingReset = false;
+    m_confirmingDeleteSingle = false;
 
     m_fontLoaded = m_font.openFromFile(FONT_PATH);
     if (m_fontLoaded) {
@@ -127,7 +130,7 @@ void RecordsState::initTextLabels() {
     centerText(*m_emptyText, DisplayConfig::LOGICAL_WIDTH / 2.f, 228.f);
 
     // Footer Hint
-    m_hintText.emplace(m_font, "[UP / DOWN] SCROLL    [C] CLEAR DATA    [P / F12] SCREENSHOT    [ESC] BACK", 8);
+    m_hintText.emplace(m_font, "[UP / DN] SELECT   [X / DEL] DELETE ENTRY   [C] RESET ALL   [P] SCREENSHOT   [ESC] BACK", 8);
     m_hintText->setFillColor(sf::Color(180, 210, 250));
     centerText(*m_hintText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
 
@@ -223,26 +226,48 @@ void RecordsState::updateMatchRows() {
     constexpr float TABLE_W = 574.f;
 
     const int total = static_cast<int>(history.size());
+    m_selectedIndex = std::clamp(m_selectedIndex, 0, std::max(0, total - 1));
+
+    // Keep selected row visible within the 5 visible rows
+    if (m_selectedIndex < m_scrollOffset) {
+        m_scrollOffset = m_selectedIndex;
+    } else if (m_selectedIndex >= m_scrollOffset + VISIBLE_ROWS) {
+        m_scrollOffset = m_selectedIndex - VISIBLE_ROWS + 1;
+    }
     m_scrollOffset = std::clamp(m_scrollOffset, 0, std::max(0, total - VISIBLE_ROWS));
 
     for (int i = 0; i < VISIBLE_ROWS && (m_scrollOffset + i) < total; ++i) {
-        const auto& rec = history[m_scrollOffset + i];
+        const int recordIdx = m_scrollOffset + i;
+        const auto& rec = history[recordIdx];
         const float rowY = ROW_START_Y + i * (ROW_H + 2.f);
+        const bool isSelected = (recordIdx == m_selectedIndex);
 
         MatchRow row;
         row.rowBg.setSize({TABLE_W - 2.f, ROW_H});
         row.rowBg.setPosition({TABLE_X + 1.f, rowY});
-        row.rowBg.setFillColor((i % 2 == 0) ? ROW_BG_1 : ROW_BG_2);
-        row.rowBg.setOutlineColor(sf::Color(30, 45, 85));
-        row.rowBg.setOutlineThickness(0.5f);
+        if (isSelected) {
+            row.rowBg.setFillColor(sf::Color(25, 42, 85));
+            row.rowBg.setOutlineColor(GOLD_COLOR);
+            row.rowBg.setOutlineThickness(1.5f);
+        } else {
+            row.rowBg.setFillColor((i % 2 == 0) ? ROW_BG_1 : ROW_BG_2);
+            row.rowBg.setOutlineColor(sf::Color(30, 45, 85));
+            row.rowBg.setOutlineThickness(0.5f);
+        }
 
         const float textY = rowY + 5.f;
 
         // Stage
         std::string stageLabel = (rec.mode == "PVP") ? "ARENA" : ("WORLD 1-" + std::to_string(rec.level));
-        row.stageText.emplace(m_font, stageLabel, 8);
-        row.stageText->setFillColor(CYAN_COLOR);
-        row.stageText->setPosition({COL_STAGE, textY});
+        if (isSelected) {
+            row.stageText.emplace(m_font, "> " + stageLabel, 8);
+            row.stageText->setFillColor(GOLD_COLOR);
+            row.stageText->setPosition({COL_STAGE - 8.f, textY});
+        } else {
+            row.stageText.emplace(m_font, stageLabel, 8);
+            row.stageText->setFillColor(CYAN_COLOR);
+            row.stageText->setPosition({COL_STAGE, textY});
+        }
 
         // Mode (SOLO, CO-OP, PVP)
         std::string modeUpper = rec.mode.empty() ? "SOLO" : rec.mode;
@@ -298,14 +323,43 @@ void RecordsState::processEvents(const sf::Event& event) {
     if (m_transitioning) return;
 
     if (const auto* wheel = event.getIf<sf::Event::MouseWheelScrolled>()) {
-        if (wheel->delta > 0) {
-            m_scrollOffset = std::max(0, m_scrollOffset - 1);
-            updateMatchRows();
-        } else if (wheel->delta < 0) {
-            const auto& history = GameManager::getInstance().getSaveManager().getMatchHistory();
-            if (m_scrollOffset + 5 < static_cast<int>(history.size())) {
-                m_scrollOffset++;
-                updateMatchRows();
+        const auto& history = GameManager::getInstance().getSaveManager().getMatchHistory();
+        const int total = static_cast<int>(history.size());
+        if (total > 0) {
+            if (wheel->delta > 0) {
+                if (m_selectedIndex > 0) {
+                    m_selectedIndex--;
+                    m_confirmingDeleteSingle = false;
+                    m_confirmingReset = false;
+                    updateMatchRows();
+                    SoundManager::getInstance().playSound(SoundId::BUMP);
+                }
+            } else if (wheel->delta < 0) {
+                if (m_selectedIndex + 1 < total) {
+                    m_selectedIndex++;
+                    m_confirmingDeleteSingle = false;
+                    m_confirmingReset = false;
+                    updateMatchRows();
+                    SoundManager::getInstance().playSound(SoundId::BUMP);
+                }
+            }
+        }
+    }
+
+    if (const auto* mouseButton = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (mouseButton->button == sf::Mouse::Button::Left) {
+            const sf::Vector2f logicalPos{
+                static_cast<float>(mouseButton->position.x),
+                static_cast<float>(mouseButton->position.y)};
+            for (std::size_t i = 0; i < m_matchRows.size(); ++i) {
+                if (m_matchRows[i].rowBg.getGlobalBounds().contains(logicalPos)) {
+                    m_selectedIndex = m_scrollOffset + static_cast<int>(i);
+                    m_confirmingDeleteSingle = false;
+                    m_confirmingReset = false;
+                    updateMatchRows();
+                    SoundManager::getInstance().playSound(SoundId::BUMP);
+                    break;
+                }
             }
         }
     }
@@ -314,24 +368,70 @@ void RecordsState::processEvents(const sf::Event& event) {
 void RecordsState::processInput(const InputState& inputState) {
     if (m_transitioning) return;
 
+    const auto& history = GameManager::getInstance().getSaveManager().getMatchHistory();
+    const int total = static_cast<int>(history.size());
+
     if (inputState.wasPressed(sf::Keyboard::Key::Up) || inputState.wasPressed(sf::Keyboard::Key::W)) {
-        if (m_scrollOffset > 0) {
-            m_scrollOffset--;
+        if (total > 0 && m_selectedIndex > 0) {
+            m_selectedIndex--;
+            m_confirmingDeleteSingle = false;
+            m_confirmingReset = false;
             updateMatchRows();
             SoundManager::getInstance().playSound(SoundId::BUMP);
         }
     } else if (inputState.wasPressed(sf::Keyboard::Key::Down) || inputState.wasPressed(sf::Keyboard::Key::S)) {
-        const auto& history = GameManager::getInstance().getSaveManager().getMatchHistory();
-        if (m_scrollOffset + 5 < static_cast<int>(history.size())) {
-            m_scrollOffset++;
+        if (total > 0 && m_selectedIndex + 1 < total) {
+            m_selectedIndex++;
+            m_confirmingDeleteSingle = false;
+            m_confirmingReset = false;
             updateMatchRows();
             SoundManager::getInstance().playSound(SoundId::BUMP);
         }
-    } else if (inputState.wasPressed(sf::Keyboard::Key::C) || inputState.wasPressed(sf::Keyboard::Key::Delete)) {
+    } else if (inputState.wasPressed(sf::Keyboard::Key::X) || inputState.wasPressed(sf::Keyboard::Key::Delete)) {
+        if (history.empty()) {
+            SoundManager::getInstance().playSound(SoundId::BUMP);
+            return;
+        }
+        m_confirmingReset = false;
+        if (m_confirmingDeleteSingle) {
+            // Second press — actually delete selected entry
+            m_confirmingDeleteSingle = false;
+            if (m_selectedIndex >= 0 && m_selectedIndex < total) {
+                if (GameManager::getInstance().getSaveManager().deleteGameRecord(static_cast<std::size_t>(m_selectedIndex))) {
+                    const auto& newHistory = GameManager::getInstance().getSaveManager().getMatchHistory();
+                    if (m_selectedIndex >= static_cast<int>(newHistory.size())) {
+                        m_selectedIndex = std::max(0, static_cast<int>(newHistory.size()) - 1);
+                    }
+                    updateMatchRows();
+                    SoundManager::getInstance().playSound(SoundId::BRICK);
+                    if (m_notificationText) {
+                        m_notificationText->setString("SELECTED RECORD DELETED!");
+                        m_notificationText->setFillColor(GREEN_COLOR);
+                        centerText(*m_notificationText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
+                    }
+                    m_notificationTimer = 3.0f;
+                }
+            }
+        } else {
+            // First press — show confirmation warning
+            m_confirmingDeleteSingle = true;
+            SoundManager::getInstance().playSound(SoundId::BUMP);
+            if (m_notificationText && m_selectedIndex >= 0 && m_selectedIndex < total) {
+                std::string scoreStr = std::to_string(history[m_selectedIndex].score);
+                while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
+                m_notificationText->setString("DELETE ENTRY #" + std::to_string(m_selectedIndex + 1) + " (SCORE: " + scoreStr + ")? PRESS [X/DEL] AGAIN  /  [ESC] CANCEL");
+                m_notificationText->setFillColor(RED_COLOR);
+                centerText(*m_notificationText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
+            }
+            m_notificationTimer = 15.0f;
+        }
+    } else if (inputState.wasPressed(sf::Keyboard::Key::C)) {
+        m_confirmingDeleteSingle = false;
         if (m_confirmingReset) {
-            // Second press — actually reset
+            // Second press — actually reset all data and level progress
             m_confirmingReset = false;
             if (GameManager::getInstance().getSaveManager().resetAllData()) {
+                m_selectedIndex = 0;
                 m_scrollOffset = 0;
                 initStageCards();
                 updateMatchRows();
@@ -348,14 +448,15 @@ void RecordsState::processInput(const InputState& inputState) {
             m_confirmingReset = true;
             SoundManager::getInstance().playSound(SoundId::BUMP);
             if (m_notificationText) {
-                m_notificationText->setString("RESET ALL DATA? PRESS [C] AGAIN TO CONFIRM  /  [ESC] TO CANCEL");
+                m_notificationText->setString("RESET ALL DATA & PROGRESS? PRESS [C] AGAIN  /  [ESC] CANCEL");
                 m_notificationText->setFillColor(RED_COLOR);
                 centerText(*m_notificationText, DisplayConfig::LOGICAL_WIDTH / 2.f, 327.f);
             }
-            m_notificationTimer = 20.0f;
+            m_notificationTimer = 15.0f;
         }
     } else if (inputState.wasPressed(sf::Keyboard::Key::F12) || inputState.wasPressed(sf::Keyboard::Key::P) || inputState.wasPressed(sf::Keyboard::Key::F10)) {
         m_confirmingReset = false;
+        m_confirmingDeleteSingle = false;
         if (m_notificationText) {
             m_notificationText->setString("SCREENSHOT CAPTURED (SAVED TO SCREENSHOTS/)");
             m_notificationText->setFillColor(GREEN_COLOR);
@@ -363,9 +464,10 @@ void RecordsState::processInput(const InputState& inputState) {
         }
         m_notificationTimer = 3.0f;
     } else if (inputState.wasPressed(sf::Keyboard::Key::Escape) || inputState.wasPressed(sf::Keyboard::Key::Enter) || inputState.wasPressed(sf::Keyboard::Key::Space)) {
-        if (m_confirmingReset) {
+        if (m_confirmingReset || m_confirmingDeleteSingle) {
             // Cancel confirmation instead of leaving
             m_confirmingReset = false;
+            m_confirmingDeleteSingle = false;
             m_notificationTimer = 0.f;
             SoundManager::getInstance().playSound(SoundId::BUMP);
             return;
@@ -382,6 +484,7 @@ void RecordsState::update(float dt) {
         m_notificationTimer -= dt;
         if (m_notificationTimer <= 0.f) {
             m_confirmingReset = false;
+            m_confirmingDeleteSingle = false;
         }
     }
 }

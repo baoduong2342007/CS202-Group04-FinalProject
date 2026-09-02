@@ -70,8 +70,10 @@ private:
     std::vector<MatchRow> m_matchRows;
 
     int m_scrollOffset = 0;
+    int m_selectedIndex = 0;
     float m_animTimer = 0.f;
     float m_notificationTimer = 0.f;
     bool m_transitioning = false;
     bool m_confirmingReset = false;
+    bool m_confirmingDeleteSingle = false;
 };
